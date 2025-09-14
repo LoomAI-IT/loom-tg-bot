@@ -2,6 +2,7 @@ create_state_table = """
 CREATE TABLE IF NOT EXISTS states (
     id SERIAL PRIMARY KEY,
     tg_chat_id BIGINT DEFAULT NULL,
+    account_id INTEGER DEFAULT NULL,
     
     status TEXT DEFAULT NULL,
     access_token TEXT DEFAULT NULL,

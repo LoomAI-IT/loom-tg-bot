@@ -6,6 +6,7 @@ from dataclasses import dataclass
 class State:
     id: int
     tg_chat_id: int
+    account_id: int
 
     status: str
     access_token: str
@@ -20,7 +21,10 @@ class State:
             cls(
                 id=row.id,
                 tg_chat_id=row.tg_chat_id,
+                account_id=row.account_id,
                 status=row.status,
+                access_token=row.access_token,
+                refresh_token=row.refresh_token,
                 created_at=row.created_at,
                 updated_at=row.updated_at,
             )
