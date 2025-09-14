@@ -5,7 +5,7 @@ from internal import interface
 from pkg.client.client import AsyncHTTPClient
 
 
-class EmployeeClient(interface.IEmployeeService):
+class EmployeeClient(interface.IEmployeeClient):
     def __init__(
             self,
             tel: interface.ITelemetry,

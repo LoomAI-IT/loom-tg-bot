@@ -4,7 +4,7 @@ from internal import interface, model
 from pkg.client.client import AsyncHTTPClient
 
 
-class AccountClient(interface.IAccountService):
+class AccountClient(interface.IAccountClient):
     def __init__(
             self,
             tel: interface.ITelemetry,

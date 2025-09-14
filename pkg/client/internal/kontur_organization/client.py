@@ -5,7 +5,7 @@ from internal import interface
 from pkg.client.client import AsyncHTTPClient
 
 
-class OrganizationClient(interface.IOrganizationService):
+class OrganizationClient(interface.IOrganizationClient):
     def __init__(
             self,
             tel: interface.ITelemetry,

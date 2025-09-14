@@ -8,7 +8,7 @@ from internal import interface
 from pkg.client.client import AsyncHTTPClient
 
 
-class PublicationClient(interface.IPublicationService):
+class PublicationClient(interface.IPublicationClient):
     def __init__(
             self,
             tel: interface.ITelemetry,
