@@ -4,9 +4,10 @@ CREATE TABLE IF NOT EXISTS states (
     tg_chat_id BIGINT DEFAULT NULL,
     
     status TEXT DEFAULT NULL,
+    access_token TEXT DEFAULT NULL,
+    refresh_token TEXT DEFAULT NULL,
     
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 """
 
