@@ -1,0 +1,39 @@
+name: Update ver. tag on server
+
+on:
+    create:
+        tags:
+            - 'v*'
+
+jobs:
+     update-tag-on-server:
+        runs-on: self-hosted
+        if: github.event.ref_type == 'tag'
+
+        steps:
+            -   name: Checkout code
+                uses: actions/checkout@v4
+                with:
+                    ref: ${{ github.event.ref }}
+
+            -   name: Update ver. tag on server
+                env:
+                    SERVER_IP: ${{ secrets.SERVER_IP }}
+                    SSH_USER: ${{ secrets.SSH_USER }}
+                    SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
+                run: |
+                    apt install -y sshpass
+                    sshpass -p "$SSH_PASSWORD" ssh -o StrictHostKeyChecking=no $SSH_USER@$SERVER_IP << EOF
+                        CURRENT_TAG=$(git describe --tags --exact-match HEAD 2>/dev/null || echo "none")
+                        NEW_TAG=github.event.ref
+                    
+                        cd wewall/wewall-admin-tg-bot
+                        git checkout main
+                        git pull
+                        git tag -l 'v*' | grep -v '$NEW_TAG' | head -5 | xargs -r git tag -d
+                   
+                        git fetch --all --prune
+                        git fetch --tags --force
+                        git checkout ${{ github.ref_name }}
+                    
+                    EOF
