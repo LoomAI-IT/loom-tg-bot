@@ -22,9 +22,6 @@ class IAuthDialog(Protocol):
     def get_data_processing_window(self) -> Window: pass
 
     @abstractmethod
-    def get_welcome_window(self) -> Window: pass
-
-    @abstractmethod
     def get_access_denied_window(self) -> Window: pass
 
 

@@ -4,7 +4,6 @@ from aiogram import Bot, Dispatcher
 from infrastructure.pg.pg import PG
 from infrastructure.telemetry.telemetry import Telemetry, AlertManager
 
-
 from pkg.client.internal.kontur_account.client import KonturAccountClient
 from pkg.client.internal.kontur_authorization.client import KonturAuthorizationClient
 from pkg.client.internal.kontur_employee.client import KonturEmployeeClient
@@ -18,9 +17,17 @@ from internal.controller.tg.command.handler import CommandController
 from internal.controller.http.webhook.handler import TelegramWebhookController
 
 from internal.controller.tg.dialog.auth.dialog import AuthDialog
+from internal.controller.tg.dialog.main_menu.dialog import MainMenuDialog
+from internal.controller.tg.dialog.personal_profile.dialog import PersonalProfileDialog
+from internal.controller.tg.dialog.organization_menu.dialog import OrganizationMenuDialog
+from internal.controller.tg.dialog.change_employee.dialog import ChangeEmployeeDialog
 
-from internal.service.auth.service import AuthDialogService
 from internal.service.state.service import StateService
+from internal.service.auth.service import AuthDialogService
+from internal.service.main_menu.service import MainMenuDialogService
+from internal.service.personal_profile.service import PersonalProfileDialogService
+from internal.service.organization_menu.service import OrganizationMenuDialogService
+from internal.service.change_employee.service import ChangeEmployeeDialogService
 
 from internal.repo.state.repo import StateRepo
 
@@ -77,9 +84,47 @@ auth_dialog_service = AuthDialogService(
     kontur_account_client,
     kontur_organization_client,
 )
+main_menu_service = MainMenuDialogService(
+    tel,
+    kontur_employee_client,
+    kontur_organization_client
+)
+personal_profile_service = PersonalProfileDialogService(
+    tel,
+    kontur_employee_client,
+    kontur_organization_client
+)
+organization_menu_service = OrganizationMenuDialogService(
+    tel,
+    kontur_organization_client,
+    kontur_employee_client,
+    kontur_publication_client,
+)
+change_employee_service = ChangeEmployeeDialogService(
+    tel,
+    kontur_employee_client,
+    kontur_organization_client
+)
+
 auth_dialog = AuthDialog(
     tel,
     auth_dialog_service,
+)
+main_menu_dialog = MainMenuDialog(
+    tel,
+    main_menu_service
+)
+personal_profile_dialog = PersonalProfileDialog(
+    tel,
+    personal_profile_service
+)
+organization_menu_dialog = OrganizationMenuDialog(
+    tel,
+    organization_menu_service
+)
+change_employee_dialog = ChangeEmployeeDialog(
+    tel,
+    change_employee_service
 )
 
 # Инициализация middleware
@@ -111,6 +156,10 @@ if __name__ == "__main__":
         tg_webhook_controller,
         command_controller,
         auth_dialog,
-        cfg.prefix
+        main_menu_dialog,
+        personal_profile_dialog,
+        organization_menu_dialog,
+        change_employee_dialog,
+        cfg.prefix,
     )
     uvicorn.run(app, host="0.0.0.0", port=int(cfg.http_port), access_log=False)

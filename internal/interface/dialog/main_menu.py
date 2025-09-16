@@ -19,7 +19,6 @@ class IMainMenuDialogService(Protocol):
             self,
             dialog_manager: DialogManager,
             user_state: model.UserState,
-            **kwargs
     ) -> dict: pass
 
     @abstractmethod

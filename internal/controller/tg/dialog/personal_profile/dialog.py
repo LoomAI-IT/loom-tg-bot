@@ -10,19 +10,18 @@ class PersonalProfileDialog(interface.IPersonalProfileDialog):
     def __init__(
             self,
             tel: interface.ITelemetry,
-            personal_profile_service: interface.IPersonalProfileDialog,
+            personal_profile_service: interface.IPersonalProfileDialogService,
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
         self.personal_profile_service = personal_profile_service
-        self._dialog = None
 
     def get_dialog(self) -> Dialog:
-        if self._dialog is None:
-            self._dialog = Dialog(
-                self.get_main_menu_window(),
-            )
-        return self._dialog
+        return Dialog(
+            self.get_personal_profile_window(),
+            self.get_faq_window(),
+            self.get_support_window()
+        )
 
     def get_personal_profile_window(self) -> Window:
         return Window(
@@ -38,18 +37,38 @@ class PersonalProfileDialog(interface.IPersonalProfileDialog):
                     Button(
                         Const("F.A.Q"),
                         id="faq",
-                        on_click=self.personal_profile_service.handle_go_to_personal_profile,
+                        on_click=self.personal_profile_service.handle_go_faq,
                     ),
                     Button(
-                        Const("📰 Организация"),
-                        id="publications",
-                        on_click=self.personal_profile_service.handle_go_to_organization,
+                        Const("📰 Поддержка"),
+                        id="support",
+                        on_click=self.personal_profile_service.handle_go_to_support,
                     ),
                 ),
-                Back(Const("◀️ Назад")),
+                Button(
+                    Const("В главное меню"),
+                    id="support",
+                    on_click=self.personal_profile_service.handle_go_to_main_menu,
+                ),
             ),
 
-            state=model.MainMenuStates.personal_cabinet,
+            state=model.PersonalProfileStates.personal_profile,
             getter=self.personal_profile_service.get_personal_profile_data,
+            parse_mode="HTML",
+        )
+
+    def get_faq_window(self) -> Window:
+        return Window(
+            Format("<b>Вопросики всякие тут< будут/b>\n\n"),
+            Back(Const("◀️ Назад")),
+            state=model.PersonalProfileStates.faq,
+            parse_mode="HTML",
+        )
+
+    def get_support_window(self) -> Window:
+        return Window(
+            Format("<b> А тут будут контактные данные поддержки/b>\n\n"),
+            Back(Const("◀️ Назад")),
+            state=model.PersonalProfileStates.support,
             parse_mode="HTML",
         )

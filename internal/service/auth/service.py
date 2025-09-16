@@ -9,8 +9,6 @@ from internal import interface, model, common
 
 
 class AuthDialogService(interface.IAuthDialogService):
-    """Класс для получения данных для диалога авторизации"""
-
     def __init__(
             self,
             tel: interface.ITelemetry,
@@ -159,7 +157,6 @@ class AuthDialogService(interface.IAuthDialogService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        """Обработать отказ в доступе"""
         with self.tracer.start_as_current_span(
                 "AuthDialogHandler.handle_access_denied",
                 kind=SpanKind.INTERNAL

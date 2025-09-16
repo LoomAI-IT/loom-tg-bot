@@ -1,3 +1,4 @@
+# internal/interface/dialog/change_employee.py
 from abc import abstractmethod
 from typing import Protocol, Any
 from aiogram_dialog import DialogManager, Dialog, Window
@@ -10,25 +11,81 @@ class IChangeEmployeeDialog(Protocol):
     def get_dialog(self) -> Dialog: pass
 
     @abstractmethod
-    def get_search_employee_window(self) -> Window: pass
-
-    @abstractmethod
     def get_employee_list_window(self) -> Window: pass
 
     @abstractmethod
-    def get_change_employee_window(self) -> Window: pass
+    def get_employee_detail_window(self) -> Window: pass
 
-class IPersonalProfileService(Protocol):
     @abstractmethod
-    async def get_employee_data(
+    def get_change_permissions_window(self) -> Window: pass
+
+
+class IChangeEmployeeDialogService(Protocol):
+    @abstractmethod
+    async def get_employee_list_data(
             self,
             dialog_manager: DialogManager,
-            user_state: model.UserState,
-            **kwargs
+            user_state: model.UserState
     ) -> dict: pass
 
     @abstractmethod
-    async def handle_go_to_employee_list(
+    async def get_employee_detail_data(
+            self,
+            dialog_manager: DialogManager,
+            user_state: model.UserState,
+    ) -> dict: pass
+
+    @abstractmethod
+    async def get_permissions_data(
+            self,
+            dialog_manager: DialogManager,
+            user_state: model.UserState,
+    ) -> dict: pass
+
+    @abstractmethod
+    async def handle_select_employee(
+            self,
+            callback: CallbackQuery,
+            widget: Any,
+            dialog_manager: DialogManager,
+            employee_id: str
+    ) -> None: pass
+
+    @abstractmethod
+    async def handle_search_employee(
+            self,
+            message: Message,
+            widget: Any,
+            dialog_manager: DialogManager,
+            search_query: str
+    ) -> None: pass
+
+    @abstractmethod
+    async def handle_toggle_permission(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
+    @abstractmethod
+    async def handle_save_permissions(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
+    @abstractmethod
+    async def handle_delete_employee(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
+    @abstractmethod
+    async def handle_pagination(
             self,
             callback: CallbackQuery,
             button: Any,

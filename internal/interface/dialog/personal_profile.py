@@ -19,13 +19,12 @@ class IPersonalProfileDialog(Protocol):
     def get_support_window(self) -> Window: pass
 
 
-class IPersonalProfileService(Protocol):
+class IPersonalProfileDialogService(Protocol):
     @abstractmethod
     async def get_personal_profile_data(
             self,
             dialog_manager: DialogManager,
             user_state: model.UserState,
-            **kwargs
     ) -> dict: pass
 
     @abstractmethod
@@ -38,6 +37,13 @@ class IPersonalProfileService(Protocol):
 
     @abstractmethod
     async def handle_go_to_support(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
+    async def handle_go_to_main_menu(
             self,
             callback: CallbackQuery,
             button: Any,

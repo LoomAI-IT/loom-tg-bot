@@ -15,6 +15,10 @@ def NewTg(
         tg_webhook_controller: interface.ITelegramWebhookController,
         command_controller: interface.ICommandController,
         auth_dialog: interface.IAuthDialog,
+        main_menu_dialog: interface.IMainMenuDialog,
+        personal_profile_dialog: interface.IPersonalProfileDialog,
+        organization_menu_dialog: interface.IOrganizationMenuDialog,
+        change_employee_dialog: interface.IChangeEmployeeDialog,
         prefix: str
 ):
     app = FastAPI(

@@ -1,13 +1,11 @@
-# internal/controller/tg/dialog/main_menu/dialog.py
 from aiogram_dialog import Window, Dialog
 from aiogram_dialog.widgets.text import Const, Format
-from aiogram_dialog.widgets.kbd import Button, Column, Row, Back
+from aiogram_dialog.widgets.kbd import Button, Column, Row
 
 from internal import interface, model
 
 
 class MainMenuDialog(interface.IMainMenuDialog):
-
     def __init__(
             self,
             tel: interface.ITelemetry,
@@ -16,14 +14,11 @@ class MainMenuDialog(interface.IMainMenuDialog):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
         self.main_menu_service = main_menu_service
-        self._dialog = None
 
     def get_dialog(self) -> Dialog:
-        if self._dialog is None:
-            self._dialog = Dialog(
-                self.get_main_menu_window(),
-            )
-        return self._dialog
+        return Dialog(
+            self.get_main_menu_window(),
+        )
 
     def get_main_menu_window(self) -> Window:
         return Window(
