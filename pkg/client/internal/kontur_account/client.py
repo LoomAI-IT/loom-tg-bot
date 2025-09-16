@@ -38,7 +38,11 @@ class KonturAccountClient(interface.IKonturAccountClient):
                 json_response = response.json()
 
                 span.set_status(Status(StatusCode.OK))
-                return model.AuthorizationDataDTO(**json_response)
+                return model.AuthorizationDataDTO(
+                    account_id=json_response["account_id"],
+                    access_token=response.cookies.get("Access-Token"),
+                    refresh_token=response.cookies.get("Refresh-Token"),
+                )
 
             except Exception as e:
                 span.record_exception(e)
@@ -66,7 +70,11 @@ class KonturAccountClient(interface.IKonturAccountClient):
                 json_response = response.json()
 
                 span.set_status(Status(StatusCode.OK))
-                return model.AuthorizationDataDTO(**json_response)
+                return model.AuthorizationDataDTO(
+                    account_id=json_response["account_id"],
+                    access_token=response.cookies.get("Access-Token"),
+                    refresh_token=response.cookies.get("Refresh-Token"),
+                )
             except Exception as e:
                 span.record_exception(e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
