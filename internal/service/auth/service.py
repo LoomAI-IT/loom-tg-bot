@@ -143,6 +143,9 @@ class AuthDialogService(interface.IAuthDialogService):
                         state.id,
                         organization_id=employee.organization_id
                     )
+                    await dialog_manager.done()
+
+                    # Запускаем новый диалог
                     await dialog_manager.start(
                         model.MainMenuStates.main_menu,
                         mode=StartMode.RESET_STACK
