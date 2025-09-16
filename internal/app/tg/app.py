@@ -19,7 +19,7 @@ def NewTg(
         personal_profile_dialog: interface.IPersonalProfileDialog,
         organization_menu_dialog: interface.IOrganizationMenuDialog,
         change_employee_dialog: interface.IChangeEmployeeDialog,
-        add_employee_dialog: interface.IChangeEmployeeDialog,
+        add_employee_dialog: interface.IAddEmployeeDialog,
         prefix: str
 ):
     app = FastAPI(
@@ -101,7 +101,7 @@ def include_dialogs(
         personal_profile_dialog: interface.IPersonalProfileDialog,
         organization_menu_dialog: interface.IOrganizationMenuDialog,
         change_employee_dialog: interface.IChangeEmployeeDialog,
-        add_employee_dialog: interface.IChangeEmployeeDialog,
+        add_employee_dialog: interface.IAddEmployeeDialog,
 ):
     dialog_router = Router()
     dialog_router.include_routers(
