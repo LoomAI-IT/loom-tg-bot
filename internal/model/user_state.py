@@ -12,7 +12,6 @@ class UserState:
     refresh_token: str
 
     created_at: datetime
-    updated_at: datetime
 
     @classmethod
     def serialize(cls, rows) -> list:
@@ -24,7 +23,6 @@ class UserState:
                 access_token=row.access_token,
                 refresh_token=row.refresh_token,
                 created_at=row.created_at,
-                updated_at=row.updated_at,
             )
             for row in rows
         ]
