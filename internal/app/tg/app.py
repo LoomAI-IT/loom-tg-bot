@@ -26,7 +26,7 @@ def NewTg(
         docs_url=prefix + "/docs",
         redoc_url=prefix + "/redoc",
     )
-    # include_tg_middleware(dp, tg_middleware)
+    include_tg_middleware(dp, tg_middleware)
     include_http_middleware(app, http_middleware)
 
     include_db_handler(app, db, prefix)
