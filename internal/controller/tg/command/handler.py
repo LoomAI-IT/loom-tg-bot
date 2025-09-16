@@ -1,3 +1,5 @@
+import traceback
+
 from aiogram.types import Message
 from aiogram_dialog import DialogManager, StartMode
 from opentelemetry.trace import SpanKind, StatusCode
@@ -47,4 +49,5 @@ class CommandController(interface.ICommandController):
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(StatusCode.ERROR, str(err))
+                self.logger.error("Failed to start command handler", {"traceback": traceback.format_exc()})
                 raise err
