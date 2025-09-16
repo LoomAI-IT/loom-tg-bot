@@ -17,6 +17,7 @@ class IStateService(Protocol):
             self,
             state_id: int,
             account_id: int = None,
+            organization_id: int = None,
             access_token: str = None,
             refresh_token: str = None,
     ) -> None: pass
@@ -38,6 +39,7 @@ class IStateRepo(Protocol):
             self,
             state_id: int,
             account_id: int = None,
+            organization_id: int = None,
             access_token: str = None,
             refresh_token: str = None,
     ) -> None: pass

@@ -56,6 +56,7 @@ class StateRepo(interface.IStateRepo):
             self,
             state_id: int,
             account_id: int = None,
+            organization_id: int = None,
             access_token: str = None,
             refresh_token: str = None,
     ) -> None:
@@ -74,6 +75,10 @@ class StateRepo(interface.IStateRepo):
                 if account_id is not None:
                     update_fields.append("account_id = :account_id")
                     args['account_id'] = account_id
+
+                if organization_id is not None:
+                    update_fields.append("organization_id = :organization_id")
+                    args['organization_id'] = organization_id
 
                 if access_token is not None:
                     update_fields.append("access_token = :access_token")

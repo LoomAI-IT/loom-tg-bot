@@ -120,9 +120,9 @@ class AuthDialogService(interface.IAuthDialogService):
                 # Обновляем состояние пользователя
                 await self.state_repo.change_user_state(
                     state.id,
-                    authorized_data.account_id,
-                    authorized_data.access_token,
-                    authorized_data.refresh_token
+                    account_id=authorized_data.account_id,
+                    access_token=authorized_data.access_token,
+                    refresh_token=authorized_data.refresh_token
                 )
 
                 self.logger.info(
@@ -139,6 +139,10 @@ class AuthDialogService(interface.IAuthDialogService):
                 )
 
                 if employee:
+                    await self.state_repo.change_user_state(
+                        state.id,
+                        organization_id=employee.organization_id
+                    )
                     await dialog_manager.start(
                         model.MainMenuStates.main_menu,
                         mode=StartMode.RESET_STACK

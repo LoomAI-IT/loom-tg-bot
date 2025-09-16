@@ -49,6 +49,7 @@ class StateService(interface.IStateService):
             self,
             state_id: int,
             account_id: int = None,
+            organization_id: int = None,
             access_token: str = None,
             refresh_token: str = None,
     ) -> None:
@@ -63,6 +64,7 @@ class StateService(interface.IStateService):
                 await self.state_repo.change_user_state(
                     state_id,
                     account_id,
+                    organization_id,
                     access_token,
                     refresh_token,
                 )

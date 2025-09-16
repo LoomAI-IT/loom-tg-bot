@@ -7,6 +7,7 @@ class UserState:
     id: int
     tg_chat_id: int
     account_id: int
+    organization_id: int
 
     access_token: str
     refresh_token: str
@@ -20,6 +21,7 @@ class UserState:
                 id=row.id,
                 tg_chat_id=row.tg_chat_id,
                 account_id=row.account_id,
+                organization_id=row.organization_id,
                 access_token=row.access_token,
                 refresh_token=row.refresh_token,
                 created_at=row.created_at,
