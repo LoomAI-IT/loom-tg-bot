@@ -1,9 +1,12 @@
 from abc import abstractmethod
 from typing import Protocol, Any
 
+from aiogram import Bot
 from aiogram.fsm.state import StatesGroup
 from aiogram_dialog import DialogManager, Dialog
-from aiogram.types import CallbackQuery
+from aiogram.types import CallbackQuery, Update
+
+from internal import model
 
 
 class IAuthDialogController(Protocol):
@@ -34,9 +37,13 @@ class IAuthDialogService(Protocol):
     """Интерфейс для получения данных авторизации"""
 
     @abstractmethod
-    async def get_agreement_data(self, dialog_manager: DialogManager) -> dict:
-        """Получает данные для окна соглашений"""
-        pass
+    async def get_agreement_data(
+            self,
+            dialog_manager: DialogManager,
+            bot: Bot,
+            event: Update,
+            user_state: model.UserState,
+    ) -> dict: pass
 
     @abstractmethod
     async def get_user_status(self, dialog_manager: DialogManager) -> dict:

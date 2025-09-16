@@ -1,7 +1,9 @@
+from aiogram import Bot
+from aiogram.types import Update
 from aiogram_dialog import DialogManager
 from opentelemetry.trace import SpanKind, Status, StatusCode
 
-from internal import interface
+from internal import interface, model
 
 
 class AuthDialogService(interface.IAuthDialogService):
@@ -18,7 +20,13 @@ class AuthDialogService(interface.IAuthDialogService):
         self.state_repo = state_repo
         self.domain = domain
 
-    async def get_agreement_data(self,dialog_manager: DialogManager) -> dict:
+    async def get_agreement_data(
+            self,
+            dialog_manager: DialogManager,
+            bot: Bot,
+            event: Update,
+            user_state: model.UserState,
+    ) -> dict:
         with self.tracer.start_as_current_span(
                 "AuthDialogGetter.get_agreement_data",
                 kind=SpanKind.INTERNAL
@@ -38,7 +46,7 @@ class AuthDialogService(interface.IAuthDialogService):
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
-    async def get_user_status(self,dialog_manager: DialogManager,) -> dict:
+    async def get_user_status(self, dialog_manager: DialogManager, ) -> dict:
         with self.tracer.start_as_current_span(
                 "AuthDialogGetter.get_user_status",
                 kind=SpanKind.INTERNAL
