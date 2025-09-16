@@ -52,6 +52,27 @@ class StateRepo(interface.IStateRepo):
                 span.set_status(StatusCode.ERROR, str(err))
                 raise
 
+    async def state_by_account_id(self, account_id) -> list[model.UserState]:
+        with self.tracer.start_as_current_span(
+                "StateRepo.state_by_account_id",
+                kind=SpanKind.INTERNAL,
+                attributes={
+                    "account_id": account_id,
+                }
+        ) as span:
+            try:
+                args = {'account_id': account_id}
+                rows = await self.db.select(state_by_account_id, args)
+                if rows:
+                    rows = model.UserState.serialize(rows)
+
+                span.set_status(StatusCode.OK)
+                return rows
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(StatusCode.ERROR, str(err))
+                raise
+
     async def change_user_state(
             self,
             state_id: int,

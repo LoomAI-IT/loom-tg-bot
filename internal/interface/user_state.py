@@ -35,6 +35,9 @@ class IStateRepo(Protocol):
     async def state_by_id(self, tg_chat_id: int) -> list[model.UserState]: pass
 
     @abstractmethod
+    async def state_by_account_id(self, account_id: int) -> list[model.UserState]: pass
+
+    @abstractmethod
     async def change_user_state(
             self,
             state_id: int,

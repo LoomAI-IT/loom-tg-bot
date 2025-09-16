@@ -1,5 +1,7 @@
 
 from typing import Any
+
+from aiogram import Bot
 from aiogram.types import CallbackQuery, Message
 from aiogram_dialog import DialogManager, StartMode
 from opentelemetry.trace import SpanKind, Status, StatusCode
@@ -12,11 +14,13 @@ class AddEmployeeDialogService(interface.IAddEmployeeDialogService):
     def __init__(
             self,
             tel: interface.ITelemetry,
+            bot: Bot,
             state_repo: interface.IStateRepo,
             kontur_employee_client: interface.IKonturEmployeeClient,
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
+        self.bot = bot
         self.state_repo = state_repo
         self.kontur_employee_client = kontur_employee_client
 
@@ -251,6 +255,16 @@ class AddEmployeeDialogService(interface.IAddEmployeeDialogService):
                     edit_employee_perm_permission=permissions.get("edit_permissions", False),
                     top_up_balance_permission=permissions.get("top_up_balance", False),
                     sign_up_social_net_permission=permissions.get("social_networks", False),
+                )
+
+                new_employee = (await self.state_repo.state_by_account_id(account_id))[0]
+                await self.state_repo.change_user_state(
+                    new_employee.id,
+                    organization_id=current_user_state.organization_id
+                )
+                await self.bot.send_message(
+                    new_employee.tg_chat_id,
+                    "Вас добавили в организацию. Нажмите /start"
                 )
 
                 self.logger.info(
