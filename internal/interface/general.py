@@ -1,4 +1,3 @@
-import io
 from abc import abstractmethod
 from typing import Protocol, Sequence, Any, Annotated, Callable, Awaitable
 
@@ -7,7 +6,6 @@ from aiogram_dialog import DialogManager
 from fastapi import FastAPI, Header
 from opentelemetry.metrics import Meter
 from opentelemetry.trace import Tracer
-from weed.util import WeedOperationResponse
 
 from internal import model
 
