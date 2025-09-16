@@ -10,18 +10,19 @@ class PersonalProfileDialogService(interface.IPersonalProfileDialogService):
     def __init__(
             self,
             tel: interface.ITelemetry,
+            state_repo: interface.IStateRepo,
             kontur_employee_client: interface.IKonturEmployeeClient,
             kontur_organization_client: interface.IKonturOrganizationClient,
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
+        self.state_repo = state_repo
         self.kontur_employee_client = kontur_employee_client
         self.kontur_organization_client = kontur_organization_client
 
     async def get_personal_profile_data(
             self,
             dialog_manager: DialogManager,
-            user_state: model.UserState,
             **kwargs
     ) -> dict:
         """Получить данные для личного профиля"""
@@ -30,14 +31,23 @@ class PersonalProfileDialogService(interface.IPersonalProfileDialogService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                if hasattr(dialog_manager.event, 'message') and dialog_manager.event.message:
+                    chat_id = dialog_manager.event.message.chat.id
+                elif hasattr(dialog_manager.event, 'chat'):
+                    chat_id = dialog_manager.event.chat.id
+                else:
+                    chat_id = None
+
+                state = (await self.state_repo.state_by_id(chat_id))[0]
+
                 # Получаем данные сотрудника
                 employee = await self.kontur_employee_client.get_employee_by_account_id(
-                    user_state.account_id
+                    state.account_id
                 )
 
                 # Получаем данные организации
                 organization = await self.kontur_organization_client.get_organization_by_id(
-                    user_state.organization_id
+                    state.organization_id
                 )
 
                 # Формируем список разрешений
@@ -82,8 +92,8 @@ class PersonalProfileDialogService(interface.IPersonalProfileDialogService):
                     "Ошибка получения данных личного профиля",
                     {
                         common.ERROR_KEY: str(err),
-                        "account_id": user_state.account_id,
-                        "organization_id": user_state.organization_id,
+                        "account_id": state.account_id,
+                        "organization_id": state.organization_id,
                     }
                 )
 

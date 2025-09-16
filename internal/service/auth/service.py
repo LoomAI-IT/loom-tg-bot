@@ -207,7 +207,6 @@ class AuthDialogService(interface.IAuthDialogService):
     async def get_user_status(
             self,
             dialog_manager: DialogManager,
-            user_state: model.UserState,
             **kwargs
     ) -> dict:
         with self.tracer.start_as_current_span(
@@ -223,11 +222,13 @@ class AuthDialogService(interface.IAuthDialogService):
                 else:
                     chat_id = None
 
+                state = (await self.state_repo.state_by_id(chat_id))[0]
+
                 data = {
                     "name": user.first_name or "Пользователь",
                     "username": user.username,
                     "chat_id": chat_id,
-                    "is_authorized": bool(user_state and user_state.account_id),
+                    "is_authorized": bool(state and state.account_id),
                 }
 
                 span.set_status(Status(StatusCode.OK))

@@ -93,11 +93,13 @@ main_menu_service = MainMenuDialogService(
 )
 personal_profile_service = PersonalProfileDialogService(
     tel,
+    state_repo,
     kontur_employee_client,
     kontur_organization_client
 )
 organization_menu_service = OrganizationMenuDialogService(
     tel,
+    state_repo,
     kontur_organization_client,
     kontur_employee_client,
     kontur_publication_client,

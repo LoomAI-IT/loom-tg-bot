@@ -7,8 +7,6 @@ from fastapi import FastAPI, Header
 from opentelemetry.metrics import Meter
 from opentelemetry.trace import Tracer
 
-from internal import model
-
 
 
 class ICommandController(Protocol):
@@ -17,7 +15,6 @@ class ICommandController(Protocol):
             self,
             message: Message,
             dialog_manager: DialogManager,
-            # user_state: model.UserState
     ): pass
 
 
@@ -40,14 +37,6 @@ class ITelegramMiddleware(Protocol):
 
     @abstractmethod
     async def logger_middleware03(
-            self,
-            handler: Callable[[TelegramObject, dict[str, Any]], Awaitable[Any]],
-            event: Update,
-            data: dict[str, Any]
-    ): pass
-
-    @abstractmethod
-    async def get_state_middleware04(
             self,
             handler: Callable[[TelegramObject, dict[str, Any]], Awaitable[Any]],
             event: Update,

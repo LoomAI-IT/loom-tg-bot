@@ -236,35 +236,3 @@ class TgMiddleware(interface.ITelegramMiddleware):
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise err
-
-
-    async def get_state_middleware04(
-            self,
-            handler: Callable[[TelegramObject, dict[str, Any]], Awaitable[Any]],
-            event: Update,
-            data: dict[str, Any]
-    ):
-        with self.tracer.start_as_current_span(
-                "TgMiddleware.get_state_middleware05",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                message = event.message if event.message is not None else event.callback_query.message
-
-                tg_chat_id = message.chat.id
-
-                state = await self.state_service.state_by_id(tg_chat_id)
-                if not state:
-                    await self.state_service.create_state(tg_chat_id)
-                    state = await self.state_service.state_by_id(tg_chat_id)
-
-
-                state = state[0]
-                data["user_state"] = state
-                await handler(event, data)
-
-                span.set_status(Status(StatusCode.OK))
-            except Exception as err:
-                span.record_exception(err)
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                raise err

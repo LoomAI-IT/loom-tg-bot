@@ -66,5 +66,4 @@ class IAuthDialogService(Protocol):
     async def get_user_status(
             self,
             dialog_manager: DialogManager,
-            user_state: model.UserState,
     ) -> dict: pass

@@ -23,8 +23,7 @@ class IPersonalProfileDialogService(Protocol):
     @abstractmethod
     async def get_personal_profile_data(
             self,
-            dialog_manager: DialogManager,
-            user_state: model.UserState,
+            dialog_manager: DialogManager
     ) -> dict: pass
 
     @abstractmethod

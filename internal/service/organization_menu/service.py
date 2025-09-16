@@ -13,12 +13,14 @@ class OrganizationMenuDialogService(interface.IOrganizationMenuDialogService):
     def __init__(
             self,
             tel: interface.ITelemetry,
+            state_repo: interface.IStateRepo,
             kontur_organization_client: interface.IKonturOrganizationClient,
             kontur_employee_client: interface.IKonturEmployeeClient,
             kontur_publication_client: interface.IKonturPublicationClient,
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
+        self.state_repo = state_repo
         self.kontur_organization_client = kontur_organization_client
         self.kontur_employee_client = kontur_employee_client
         self.kontur_publication_client = kontur_publication_client
@@ -26,7 +28,6 @@ class OrganizationMenuDialogService(interface.IOrganizationMenuDialogService):
     async def get_organization_menu_data(
             self,
             dialog_manager: DialogManager,
-            user_state: model.UserState,
             **kwargs
     ) -> dict:
         with self.tracer.start_as_current_span(
@@ -34,9 +35,17 @@ class OrganizationMenuDialogService(interface.IOrganizationMenuDialogService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                if hasattr(dialog_manager.event, 'message') and dialog_manager.event.message:
+                    chat_id = dialog_manager.event.message.chat.id
+                elif hasattr(dialog_manager.event, 'chat'):
+                    chat_id = dialog_manager.event.chat.id
+                else:
+                    chat_id = None
+
+                state = (await self.state_repo.state_by_id(chat_id))[0]
                 # Получаем данные организации
                 organization = await self.kontur_organization_client.get_organization_by_account_id(
-                    user_state.account_id
+                    state.account_id
                 )
 
                 # Получаем категории организации
@@ -73,7 +82,7 @@ class OrganizationMenuDialogService(interface.IOrganizationMenuDialogService):
                     "Ошибка получения данных организации",
                     {
                         common.ERROR_KEY: str(err),
-                        "account_id": user_state.account_id,
+                        "account_id": state.account_id,
                     }
                 )
                 return {

@@ -63,7 +63,6 @@ def include_tg_middleware(
     dp.update.middleware(tg_middleware.trace_middleware01)
     dp.update.middleware(tg_middleware.metric_middleware02)
     dp.update.middleware(tg_middleware.logger_middleware03)
-    dp.update.middleware(tg_middleware.get_state_middleware04)
 
 
 def include_tg_webhook(

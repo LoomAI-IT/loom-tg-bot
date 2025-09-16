@@ -21,15 +21,13 @@ class CommandController(interface.ICommandController):
     async def start_handler(
             self,
             message: Message,
-            dialog_manager: DialogManager,
-            # user_state: model.UserState
+            dialog_manager: DialogManager
     ):
         with self.tracer.start_as_current_span(
                 "CommandController.start_handler",
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-
                 tg_chat_id = dialog_manager.event.chat.id
 
                 user_state = await self.state_service.state_by_id(tg_chat_id)
@@ -58,5 +56,4 @@ class CommandController(interface.ICommandController):
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(StatusCode.ERROR, str(err))
-                self.logger.error("Failed to start command handler", {"traceback": traceback.format_exc()})
                 raise err

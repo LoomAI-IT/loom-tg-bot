@@ -18,7 +18,6 @@ class IOrganizationMenuDialogService(Protocol):
     async def get_organization_menu_data(
             self,
             dialog_manager: DialogManager,
-            user_state: model.UserState,
     ) -> dict: pass
 
     @abstractmethod
