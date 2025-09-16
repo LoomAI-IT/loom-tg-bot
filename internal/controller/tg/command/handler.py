@@ -27,7 +27,7 @@ class CommandController(interface.ICommandController):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                if user_state.refresh_token is not None:
+                if user_state.refresh_token is not None or not user_state.refresh_token:
                     await dialog_manager.start(
                         model.AuthStates.user_agreement,
                         mode=StartMode.RESET_STACK
