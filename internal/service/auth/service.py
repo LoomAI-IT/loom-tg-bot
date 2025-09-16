@@ -172,6 +172,7 @@ class AuthDialogService(interface.IAuthDialogService):
 
                 # Завершаем диалог
                 await dialog_manager.done()
+                await dialog_manager.reset_stack()
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
