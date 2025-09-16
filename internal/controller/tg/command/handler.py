@@ -29,9 +29,8 @@ class CommandController(interface.ICommandController):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                message = dialog_manager.event.message if dialog_manager.event.message is not None else dialog_manager.event.callback_query.message
 
-                tg_chat_id = message.chat.id
+                tg_chat_id = dialog_manager.event.chat.id
 
                 user_state = await self.state_service.state_by_id(tg_chat_id)
                 if not user_state:
