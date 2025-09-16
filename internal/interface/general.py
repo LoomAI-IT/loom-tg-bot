@@ -17,7 +17,7 @@ class ICommandController(Protocol):
             self,
             message: Message,
             dialog_manager: DialogManager,
-            user_state: model.UserState
+            # user_state: model.UserState
     ): pass
 
 

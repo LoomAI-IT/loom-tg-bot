@@ -22,13 +22,23 @@ class CommandController(interface.ICommandController):
             self,
             message: Message,
             dialog_manager: DialogManager,
-            user_state: model.UserState
+            # user_state: model.UserState
     ):
         with self.tracer.start_as_current_span(
                 "CommandController.start_handler",
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                message = dialog_manager.event.message if dialog_manager.event.message is not None else dialog_manager.event.callback_query.message
+
+                tg_chat_id = message.chat.id
+
+                user_state = await self.state_service.state_by_id(tg_chat_id)
+                if not user_state:
+                    await self.state_service.create_state(tg_chat_id)
+                    user_state = await self.state_service.state_by_id(tg_chat_id)
+                user_state = user_state[0]
+
                 if user_state.organization_id == 0 and user_state.account_id == 0:
                     await dialog_manager.start(
                         model.AuthStates.user_agreement,
