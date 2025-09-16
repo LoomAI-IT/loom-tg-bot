@@ -115,15 +115,6 @@ def include_dialogs(
     setup_dialogs(dp)
 
 
-def include_message_handler(
-        dp: Dispatcher,
-        message_controller: interface.IMessageController
-):
-    dp.message.register(
-        message_controller.message_handler,
-    )
-
-
 def include_db_handler(app: FastAPI, db: interface.IDB, prefix):
     app.add_api_route(prefix + "/table/create", create_table_handler(db), methods=["GET"])
     app.add_api_route(prefix + "/table/drop", drop_table_handler(db), methods=["GET"])
