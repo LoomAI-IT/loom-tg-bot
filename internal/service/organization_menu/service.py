@@ -137,8 +137,10 @@ class OrganizationMenuDialogService(interface.IOrganizationMenuDialogService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                # TODO: Запустить диалог добавления сотрудника
-                await callback.answer("Функция в разработке", show_alert=True)
+                await dialog_manager.start(
+                    model.AddEmployeeStates.enter_account_id,
+                    mode=StartMode.RESET_STACK
+                )
 
                 self.logger.info(
                     "Попытка перехода к добавлению сотрудника",
