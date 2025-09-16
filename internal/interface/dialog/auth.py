@@ -1,40 +1,66 @@
 from abc import abstractmethod
 from typing import Protocol, Any
 
-from aiogram import Bot
-from aiogram.fsm.state import StatesGroup
-from aiogram_dialog import DialogManager, Dialog
-from aiogram.types import CallbackQuery, Update
+from aiogram_dialog import DialogManager, Dialog, Window
+from aiogram.types import CallbackQuery
 
 from internal import model
 
 
-class IAuthDialogController(Protocol):
-    """Интерфейс для обработчиков авторизации"""
+class IAuthDialog(Protocol):
 
     @abstractmethod
-    async def accept_user_agreement(self, callback: CallbackQuery, button: Any, dialog_manager: DialogManager) -> None:
-        """Принять пользовательское соглашение"""
-        pass
+    def get_dialog(self) -> Dialog: pass
 
     @abstractmethod
-    async def accept_privacy_policy(self, callback: CallbackQuery, button: Any, dialog_manager: DialogManager) -> None:
-        """Принять политику конфиденциальности"""
-        pass
+    def get_user_agreement_window(self) -> Window: pass
 
     @abstractmethod
-    async def accept_data_processing(self, callback: CallbackQuery, button: Any, dialog_manager: DialogManager) -> None:
-        """Принять согласие на обработку данных"""
-        pass
+    def get_privacy_policy_window(self) -> Window: pass
 
     @abstractmethod
-    async def handle_access_denied(self, callback: CallbackQuery, button: Any, dialog_manager: DialogManager) -> None:
-        """Обработать отказ в доступе"""
-        pass
+    def get_data_processing_window(self) -> Window: pass
+
+    @abstractmethod
+    def get_welcome_window(self) -> Window: pass
+
+    @abstractmethod
+    def get_access_denied_window(self) -> Window: pass
 
 
 class IAuthDialogService(Protocol):
-    """Интерфейс для получения данных авторизации"""
+
+    @abstractmethod
+    async def accept_user_agreement(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
+    @abstractmethod
+    async def accept_privacy_policy(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
+    @abstractmethod
+    async def accept_data_processing(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
+    @abstractmethod
+    async def handle_access_denied(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None: pass
 
     @abstractmethod
     async def get_agreement_data(self) -> dict: pass
@@ -45,15 +71,3 @@ class IAuthDialogService(Protocol):
             dialog_manager: DialogManager,
             user_state: model.UserState,
     ) -> dict: pass
-
-
-class IAuthDialog(Protocol):
-    """Интерфейс для диалога авторизации"""
-
-    @abstractmethod
-    def get_dialog(self) -> Dialog:
-        pass
-
-    @abstractmethod
-    def get_states(self) -> type[StatesGroup]:
-        pass

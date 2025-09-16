@@ -15,7 +15,6 @@ from internal.controller.http.middlerware.middleware import HttpMiddleware
 from internal.controller.tg.middleware.middleware import TgMiddleware
 
 from internal.controller.tg.command.handler import CommandController
-from internal.controller.tg.dialog.auth.handler import AuthDialogController
 from internal.controller.http.webhook.handler import TelegramWebhookController
 
 from internal.controller.tg.dialog.auth.dialog import AuthDialog
@@ -75,16 +74,11 @@ auth_dialog_service = AuthDialogService(
     tel,
     state_repo,
     cfg.domain,
-)
-auth_dialog_controller = AuthDialogController(
-    tel,
-    state_service,
     kontur_account_client,
     kontur_organization_client,
 )
 auth_dialog = AuthDialog(
     tel,
-    auth_dialog_controller,
     auth_dialog_service,
 )
 

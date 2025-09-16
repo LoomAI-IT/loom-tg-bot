@@ -13,12 +13,10 @@ class AuthDialog(interface.IAuthDialog):
     def __init__(
             self,
             tel: interface.ITelemetry,
-            auth_dialog_controller: interface.IAuthDialogController,
             auth_dialog_service: interface.IAuthDialogService,
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
-        self.auth_dialog_controller = auth_dialog_controller
         self.auth_dialog_service = auth_dialog_service
         self._dialog = None
 
@@ -60,7 +58,7 @@ class AuthDialog(interface.IAuthDialog):
             Button(
                 Const("✅ Принять"),
                 id="accept_user_agreement",
-                on_click=self.auth_dialog_controller.accept_user_agreement,
+                on_click=self.auth_dialog_service.accept_user_agreement,
             ),
             state=model.AuthStates.user_agreement,
             getter=self.auth_dialog_service.get_agreement_data,
@@ -79,7 +77,7 @@ class AuthDialog(interface.IAuthDialog):
             Button(
                 Const("✅ Принять"),
                 id="accept_privacy_policy",
-                on_click=self.auth_dialog_controller.accept_privacy_policy,
+                on_click=self.auth_dialog_service.accept_privacy_policy,
             ),
             Back(Const("◀️ Назад")),
             state=model.AuthStates.privacy_policy,
@@ -99,7 +97,7 @@ class AuthDialog(interface.IAuthDialog):
             Button(
                 Const("✅ Принять"),
                 id="accept_data_processing",
-                on_click=self.auth_dialog_controller.accept_data_processing,
+                on_click=self.auth_dialog_service.accept_data_processing,
             ),
             Back(Const("◀️ Назад")),
             state=model.AuthStates.data_processing,
@@ -142,7 +140,7 @@ class AuthDialog(interface.IAuthDialog):
             Button(
                 Const("📞 Поддержка"),
                 id="contact_support",
-                on_click=self.auth_dialog_controller.handle_access_denied,
+                on_click=self.auth_dialog_service.handle_access_denied,
             ),
             state=model.AuthStates.access_denied,
             getter=self.auth_dialog_service.get_user_status,
