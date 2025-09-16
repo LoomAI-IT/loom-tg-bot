@@ -94,6 +94,8 @@ def include_dialogs(
         auth_dialog.get_dialog()
     )
 
+    dp.include_routers(dialog_router)
+
     setup_dialogs(dp)
 
 
