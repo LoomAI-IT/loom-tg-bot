@@ -209,7 +209,12 @@ class AuthDialogService(interface.IAuthDialogService):
         ) as span:
             try:
                 user = dialog_manager.event.from_user
-                chat_id = dialog_manager.event.chat.id
+                if hasattr(dialog_manager.event, 'message') and dialog_manager.event.message:
+                    chat_id = dialog_manager.event.message.chat.id
+                elif hasattr(dialog_manager.event, 'chat'):
+                    chat_id = dialog_manager.event.chat.id
+                else:
+                    chat_id = None
 
                 data = {
                     "name": user.first_name or "Пользователь",
