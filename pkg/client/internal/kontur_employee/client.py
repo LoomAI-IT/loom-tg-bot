@@ -49,7 +49,7 @@ class KonturEmployeeClient(interface.IKonturEmployeeClient):
                     "name": name,
                     "role": role.value if hasattr(role, 'value') else str(role)
                 }
-                response = await self.client.post("/", json=body)
+                response = await self.client.post("/create", json=body)
                 json_response = response.json()
 
                 span.set_status(Status(StatusCode.OK))
@@ -87,7 +87,7 @@ class KonturEmployeeClient(interface.IKonturEmployeeClient):
                 }
         ) as span:
             try:
-                response = await self.client.get(f"/organization/{organization_id}")
+                response = await self.client.get(f"/organization/{organization_id}/employees")
                 json_response = response.json()
 
                 span.set_status(Status(StatusCode.OK))
@@ -147,7 +147,7 @@ class KonturEmployeeClient(interface.IKonturEmployeeClient):
                 kind=SpanKind.CLIENT,
                 attributes={
                     "employee_id": employee_id,
-                    "role": role.value if hasattr(role, 'value') else str(role)
+                    "role": role
                 }
         ) as span:
             try:
