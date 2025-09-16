@@ -7,19 +7,19 @@ from opentelemetry.trace import SpanKind, Status, StatusCode
 from internal import interface, common, model
 
 
-class AuthDialogHandler(interface.IAuthDialogHandler):
+class AuthDialogController(interface.IAuthDialogController):
     def __init__(
             self,
             tel: interface.ITelemetry,
             state_service: interface.IStateService,
-            account_client: interface.IAccountClient,
-            organization_client: interface.IOrganizationClient,
+            kontur_account_client: interface.IKonturAccountClient,
+            kontur_organization_client: interface.IKonturOrganizationClient,
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
         self.state_service = state_service
-        self.account_client = account_client
-        self.organization_client = organization_client
+        self.kontur_account_client = kontur_account_client
+        self.kontur_organization_client = kontur_organization_client
 
     async def accept_user_agreement(
             self,
@@ -107,7 +107,7 @@ class AuthDialogHandler(interface.IAuthDialogHandler):
                 # Сохраняем принятие
                 dialog_manager.dialog_data["data_processing_accepted"] = True
 
-                authorized_data = await self.account_client.register(
+                authorized_data = await self.kontur_account_client.register(
                     uuid.uuid4().hex,
                     uuid.uuid4().hex,
                 )
@@ -127,7 +127,9 @@ class AuthDialogHandler(interface.IAuthDialogHandler):
                     }
                 )
 
-                organization = await self.organization_client.get_organization_by_account_id(authorized_data.account_id)
+                organization = await self.kontur_organization_client.get_organization_by_account_id(
+                    authorized_data.account_id
+                )
 
                 if organization:
                     # Переходим к приветственному окну

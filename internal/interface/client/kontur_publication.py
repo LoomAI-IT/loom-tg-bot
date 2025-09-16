@@ -6,7 +6,7 @@ from fastapi import UploadFile
 
 from internal import model
 
-class IPublicationClient(Protocol):
+class IKonturPublicationClient(Protocol):
 
     # ПУБЛИКАЦИИ
     @abstractmethod

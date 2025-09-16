@@ -1,4 +1,3 @@
-# internal/controller/tg/dialogs/auth/dialog.py
 from aiogram_dialog import Window, Dialog
 from aiogram_dialog.widgets.text import Const, Format
 from aiogram_dialog.widgets.kbd import Button, Url, Back
@@ -14,14 +13,12 @@ class AuthDialog(interface.IAuthDialog):
     def __init__(
             self,
             tel: interface.ITelemetry,
-            windows: interface.IAuthDialogWindows,
-            auth_dialog_handler: interface.IAuthDialogHandler,
+            auth_dialog_controller: interface.IAuthDialogController,
             auth_dialog_service: interface.IAuthDialogService,
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
-        self.windows = windows
-        self.auth_dialog_handler = auth_dialog_handler
+        self.auth_dialog_controller = auth_dialog_controller
         self.auth_dialog_service = auth_dialog_service
         self._dialog = None
 
@@ -34,11 +31,11 @@ class AuthDialog(interface.IAuthDialog):
             try:
                 if self._dialog is None:
                     self._dialog = Dialog(
-                        self.windows.get_user_agreement_window(),
-                        self.windows.get_privacy_policy_window(),
-                        self.windows.get_data_processing_window(),
-                        self.windows.get_welcome_window(),
-                        self.windows.get_access_denied_window(),
+                        self.get_user_agreement_window(),
+                        self.get_privacy_policy_window(),
+                        self.get_data_processing_window(),
+                        self.get_welcome_window(),
+                        self.get_access_denied_window(),
                     )
 
                 span.set_status(Status(StatusCode.OK))
@@ -63,7 +60,7 @@ class AuthDialog(interface.IAuthDialog):
             Button(
                 Const("✅ Принять"),
                 id="accept_user_agreement",
-                on_click=self.auth_dialog_handler.accept_user_agreement,
+                on_click=self.auth_dialog_controller.accept_user_agreement,
             ),
             state=model.AuthStates.user_agreement,
             getter=self.auth_dialog_service.get_agreement_data,
@@ -82,7 +79,7 @@ class AuthDialog(interface.IAuthDialog):
             Button(
                 Const("✅ Принять"),
                 id="accept_privacy_policy",
-                on_click=self.auth_dialog_handler.accept_privacy_policy,
+                on_click=self.auth_dialog_controller.accept_privacy_policy,
             ),
             Back(Const("◀️ Назад")),
             state=model.AuthStates.privacy_policy,
@@ -102,7 +99,7 @@ class AuthDialog(interface.IAuthDialog):
             Button(
                 Const("✅ Принять"),
                 id="accept_data_processing",
-                on_click=self.auth_dialog_handler.accept_data_processing,
+                on_click=self.auth_dialog_controller.accept_data_processing,
             ),
             Back(Const("◀️ Назад")),
             state=model.AuthStates.data_processing,
@@ -124,7 +121,7 @@ class AuthDialog(interface.IAuthDialog):
             Button(
                 Const("🚀 Начать работу"),
                 id="go_to_main_menu",
-                on_click=self.auth_dialog_handler.go_to_main_menu,
+                on_click=self.auth_dialog_controller.go_to_main_menu,
             ),
             state=model.AuthStates.welcome,
             getter=self.auth_dialog_service.get_user_status,
@@ -145,7 +142,7 @@ class AuthDialog(interface.IAuthDialog):
             Button(
                 Const("📞 Поддержка"),
                 id="contact_support",
-                on_click=self.auth_dialog_handler.handle_access_denied,
+                on_click=self.auth_dialog_controller.handle_access_denied,
             ),
             state=model.AuthStates.access_denied,
             getter=self.auth_dialog_service.get_user_status,

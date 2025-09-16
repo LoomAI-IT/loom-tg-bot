@@ -1,7 +1,8 @@
 from fastapi import FastAPI
 
-from aiogram import Dispatcher
 from aiogram.filters import Command
+from aiogram_dialog import setup_dialogs
+from aiogram import Dispatcher, Router
 
 from internal import model, interface, common
 
@@ -13,7 +14,7 @@ def NewTg(
         tg_middleware: interface.ITelegramMiddleware,
         tg_webhook_controller: interface.ITelegramWebhookController,
         command_controller: interface.ICommandController,
-        message_controller: interface.IMessageController
+        auth_dialog: interface.IAuthDialog,
 ):
     app = FastAPI()
     include_tg_middleware(dp, tg_middleware)
@@ -25,9 +26,9 @@ def NewTg(
         dp,
         command_controller
     )
-    include_message_handler(
+    include_dialogs(
         dp,
-        message_controller
+        auth_dialog
     )
 
     return app
@@ -76,6 +77,18 @@ def include_command_handlers(
         command_controller.start_handler,
         Command("start")
     )
+
+
+def include_dialogs(
+        dp: Dispatcher,
+        auth_dialog: interface.IAuthDialog,
+):
+    dialog_router = Router()
+    dialog_router.include_routers(
+        auth_dialog.get_dialog()
+    )
+
+    setup_dialogs(dp)
 
 
 def include_message_handler(

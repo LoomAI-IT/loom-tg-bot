@@ -4,7 +4,7 @@ from abc import abstractmethod
 from internal import model
 
 
-class IAccountClient(Protocol):
+class IKonturAccountClient(Protocol):
 
     @abstractmethod
     async def register(self, login: str, password: str) -> model.AuthorizationDataDTO: pass

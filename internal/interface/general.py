@@ -3,6 +3,7 @@ from abc import abstractmethod
 from typing import Protocol, Sequence, Any, Annotated, Callable, Awaitable
 
 from aiogram.types import TelegramObject, Update, Message
+from aiogram_dialog import DialogManager
 from fastapi import FastAPI, Header
 from opentelemetry.metrics import Meter
 from opentelemetry.trace import Tracer
@@ -18,7 +19,12 @@ class IMessageController(Protocol):
 
 class ICommandController(Protocol):
     @abstractmethod
-    async def start_handler(self, message: Message, user_state: model.UserState): pass
+    async def start_handler(
+            self,
+            message: Message,
+            dialog_manager: DialogManager,
+            user_state: model.UserState
+    ): pass
 
 
 class ITelegramMiddleware(Protocol):

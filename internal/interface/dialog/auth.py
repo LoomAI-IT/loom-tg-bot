@@ -2,40 +2,11 @@ from abc import abstractmethod
 from typing import Protocol, Any
 
 from aiogram.fsm.state import StatesGroup
-from aiogram_dialog import DialogManager, Window, Dialog
+from aiogram_dialog import DialogManager, Dialog
 from aiogram.types import CallbackQuery
 
 
-class IAuthDialogWindows(Protocol):
-    """Интерфейс для окон авторизации"""
-
-    @abstractmethod
-    def get_user_agreement_window(self) -> Window:
-        """Окно пользовательского соглашения"""
-        pass
-
-    @abstractmethod
-    def get_privacy_policy_window(self) -> Window:
-        """Окно политики конфиденциальности"""
-        pass
-
-    @abstractmethod
-    def get_data_processing_window(self) -> Window:
-        """Окно согласия на обработку данных"""
-        pass
-
-    @abstractmethod
-    def get_welcome_window(self) -> Window:
-        """Приветственное окно"""
-        pass
-
-    @abstractmethod
-    def get_access_denied_window(self) -> Window:
-        """Окно отказа в доступе"""
-        pass
-
-
-class IAuthDialogHandler(Protocol):
+class IAuthDialogController(Protocol):
     """Интерфейс для обработчиков авторизации"""
 
     @abstractmethod

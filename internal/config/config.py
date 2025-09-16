@@ -1,41 +1,54 @@
 import os
 
+
 class Config:
-    db_pass: str = os.environ.get('WEWALL_ADMIN_TG_BOT_POSTGRES_PASSWORD')
-    db_user: str = os.environ.get('WEWALL_ADMIN_TG_BOT_POSTGRES_USER')
-    db_name: str = os.environ.get('WEWALL_ADMIN_TG_BOT_POSTGRES_DB_NAME')
-    db_host: str = os.environ.get('WEWALL_ADMIN_TG_BOT_POSTGRES_CONTAINER_NAME')
-    db_port: str = "5432"
+    def __init__(self):
+        # Service configuration
+        self.environment = os.getenv("ENVIRONMENT", "dev")
+        self.service_name = os.getenv("KONTUR_TG_BOT_CONTAINER_NAME", "kontur-tg-bot")
+        self.http_port = os.getenv("KONTUR_TG_BOT_PORT", "8000")
+        self.service_version = os.getenv("SERVICE_VERSION", "1.0.0")
+        self.root_path = os.getenv("ROOT_PATH", "/")
+        self.prefix = os.getenv("KONTUR_TG_BOT_PREFIX", "/api/tg-bot")
+        self.log_level = os.getenv("LOG_LEVEL", "INFO")
+        self.tg_bot_token: str = os.environ.get('KONTUR_TG_BOT_TOKEN')
+        self.domain: str = os.environ.get("KONTUR_DOMAIN")
 
-    domain: str = os.environ.get("WEWALL_DOMAIN")
-    bot_link: str = os.environ.get('WEWALL_AI_BOT_LINK')
+        self.interserver_secret_key = os.getenv("INTERSERVER_SECRET_KEY")
 
-    wewall_tg_bot_host: str = os.environ.get('WEWALL_TG_BOT_CONTAINER_NAME')
-    wewall_tg_bot_port: int = int(os.environ.get("WEWALL_TG_BOT_PORT"))
+        # PostgreSQL configuration
+        self.db_host = os.getenv("KONTUR_TG_BOT_POSTGRES_CONTAINER_NAME", "localhost")
+        self.db_port = "5432"
+        self.db_name = os.getenv("KONTUR_TG_BOT_POSTGRES_DB_NAME", "hr_interview")
+        self.db_user = os.getenv("KONTUR_TG_BOT_POSTGRES_USER", "postgres")
+        self.db_pass = os.getenv("KONTUR_TG_BOT_POSTGRES_PASSWORD", "password")
 
-    tg_bot_token: str = os.environ.get('WEWALL_ADMIN_TG_BOT_TOKEN')
+        # Настройки телеметрии
+        self.alert_tg_bot_token = os.getenv("KONTUR_ALERT_TG_BOT_TOKEN", "")
+        self.alert_tg_chat_id = int(os.getenv("KONTUR_ALERT_TG_CHAT_ID", "0"))
+        self.alert_tg_chat_thread_id = int(os.getenv("KONTUR_ALERT_TG_CHAT_THREAD_ID", "0"))
+        self.grafana_url = os.getenv("KONTUR_GRAFANA_URL", "")
 
-    environment = os.environ.get('ENVIRONMENT')
-    log_level = os.environ.get('LOG_LEVEL')
-    http_port: int = int(os.environ.get("WEWALL_ADMIN_TG_BOT_PORT"))
-    service_name = "wewall-admin-tg-bot"
-    root_path = "/app"
-    service_version = "0.0.1"
-    prefix = os.environ.get("WEWALL_ADMIN_TG_BOT_PREFIX")
+        self.monitoring_redis_host = os.getenv("KONTUR_MONITORING_REDIS_CONTAINER_NAME", "localhost")
+        self.monitoring_redis_port = int(os.getenv("KONTUR_MONITORING_REDIS_PORT", "6379"))
+        self.monitoring_redis_db = int(os.getenv("KONTUR_MONITORING_DEDUPLICATE_ERROR_ALERT_REDIS_DB", "0"))
+        self.monitoring_redis_password = os.getenv("KONTUR_MONITORING_REDIS_PASSWORD", "")
 
-    otlp_host: str = os.environ.get("WEWALL_OTEL_COLLECTOR_CONTAINER_NAME")
-    otlp_port: int = int(os.environ.get("WEWALL_OTEL_COLLECTOR_GRPC_PORT"))
+        # Настройки OpenTelemetry
+        self.otlp_host = os.getenv("KONTUR_OTEL_COLLECTOR_CONTAINER_NAME", "kontur-otel-collector")
+        self.otlp_port = int(os.getenv("KONTUR_OTEL_COLLECTOR_GRPC_PORT", "4317"))
 
-    alert_tg_bot_token: str = os.environ.get('WEWALL_ALERT_TG_BOT_TOKEN')
-    alert_tg_chat_id: int = int(os.environ.get('WEWALL_ALERT_TG_CHAT_ID'))
-    alert_tg_chat_thread_id: int = int(os.environ.get('WEWALL_ALERT_TG_CHAT_THREAD_ID'))
-    grafana_url: str = os.environ.get('WEWALL_GRAFANA_URL')
+        # OpenAI configuration
+        self.openai_api_key = os.getenv("OPENAI_API_KEY", "")
 
-    monitoring_redis_host: str = os.environ.get('WEWALL_MONITORING_REDIS_CONTAINER_NAME')
-    monitoring_redis_port: int = int(os.environ.get('WEWALL_MONITORING_REDIS_PORT'))
-    monitoring_redis_db: int = int(os.environ.get('WEWALL_MONITORING_DEDUPLICATE_ERROR_ALERT_REDIS_DB'))
-    monitoring_redis_password: str = os.environ.get('WEWALL_MONITORING_REDIS_PASSWORD')
+        self.kontur_account_host = os.getenv("KONTUR_ACCOUNT_CONTAINER_NAME", "kontur-account")
+        self.kontur_authorization_host = os.getenv("KONTUR_AUTHORIZATION_CONTAINER_NAME", "kontur-authorization")
+        self.kontur_employee_host = os.getenv("KONTUR_EMPLOYEE_CONTAINER_NAME", "kontur-employee")
+        self.kontur_organization_host = os.getenv("KONTUR_ORGANIZATION_CONTAINER_NAME", "kontur-organization")
+        self.kontur_publication_host = os.getenv("KONTUR_PUBLICATION_CONTAINER_NAME", "kontur-publication")
 
-    weed_master_host: str = os.environ.get('WEWALL_WEED_MASTER_CONTAINER_NAME')
-    weed_master_port: int = int(os.environ.get('WEWALL_WEED_MASTER_PORT'))
-
+        self.kontur_account_port = int(os.getenv("KONTUR_ACCOUNT_PORT", 8000))
+        self.kontur_authorization_port = int(os.getenv("KONTUR_AUTHORIZATION_PORT", 8000))
+        self.kontur_employee_port = int(os.getenv("KONTUR_EMPLOYEE_PORT", 8000))
+        self.kontur_organization_port = int(os.getenv("KONTUR_ORGANIZATION_PORT", 8000))
+        self.kontur_publication_port = int(os.getenv("KONTUR_PUBLICATION_PORT", 8000))

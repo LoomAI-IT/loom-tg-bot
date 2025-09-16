@@ -27,8 +27,7 @@ class StateService(interface.IStateService):
                 span.set_status(StatusCode.ERROR, str(err))
                 raise
 
-
-    async def state_by_id(self, tg_chat_id: int) -> list[model.State]:
+    async def state_by_id(self, tg_chat_id: int) -> list[model.UserState]:
         with self.tracer.start_as_current_span(
                 "StateService.state_by_id",
                 kind=SpanKind.INTERNAL,
@@ -46,23 +45,32 @@ class StateService(interface.IStateService):
                 span.set_status(StatusCode.ERROR, str(err))
                 raise
 
-    async def change_status(self, state_id: int, status: str) -> None:
+    async def change_user_state(
+            self,
+            state_id: int,
+            account_id: int = None,
+            access_token: str = None,
+            refresh_token: str = None,
+    ) -> None:
         with self.tracer.start_as_current_span(
                 "StateService.change_status",
                 kind=SpanKind.INTERNAL,
                 attributes={
-                    "status": status,
                     "state_id": state_id
                 }
         ) as span:
             try:
-                await self.state_repo.change_status(state_id, status)
+                await self.state_repo.change_user_state(
+                    state_id,
+                    account_id,
+                    access_token,
+                    refresh_token,
+                )
                 span.set_status(StatusCode.OK)
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(StatusCode.ERROR, str(err))
                 raise
-
 
     async def delete_state_by_tg_chat_id(self, tg_chat_id: int) -> None:
         with self.tracer.start_as_current_span(
@@ -80,4 +88,3 @@ class StateService(interface.IStateService):
                 span.record_exception(err)
                 span.set_status(StatusCode.ERROR, str(err))
                 raise
-

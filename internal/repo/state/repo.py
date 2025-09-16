@@ -31,7 +31,7 @@ class StateRepo(interface.IStateRepo):
                 span.set_status(StatusCode.ERROR, str(err))
                 raise err
 
-    async def state_by_id(self, tg_chat_id) -> list[model.State]:
+    async def state_by_id(self, tg_chat_id) -> list[model.UserState]:
         with self.tracer.start_as_current_span(
                 "StateRepo.state_by_id",
                 kind=SpanKind.INTERNAL,
@@ -43,7 +43,7 @@ class StateRepo(interface.IStateRepo):
                 args = {'tg_chat_id': tg_chat_id}
                 rows = await self.db.select(state_by_id, args)
                 if rows:
-                    rows = model.State.serialize(rows)
+                    rows = model.UserState.serialize(rows)
 
                 span.set_status(StatusCode.OK)
                 return rows
@@ -52,19 +52,23 @@ class StateRepo(interface.IStateRepo):
                 span.set_status(StatusCode.ERROR, str(err))
                 raise
 
-    async def change_status(self, state_id: int, status: str) -> None:
+    async def change_user_state(
+            self,
+            state_id: int,
+            account_id: int = None,
+            access_token: str = None,
+            refresh_token: str = None,
+    ) -> None:
         with self.tracer.start_as_current_span(
                 "StateRepo.change_status",
                 kind=SpanKind.INTERNAL,
                 attributes={
                     "state_id": state_id,
-                    "status": status
                 }
         ) as span:
             try:
                 args = {
                     'state_id': state_id,
-                    'status': status,
                 }
                 await self.db.update(update_state_status, args)
                 span.set_status(StatusCode.OK)

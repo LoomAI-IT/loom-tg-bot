@@ -8,7 +8,7 @@ from internal import interface
 from pkg.client.client import AsyncHTTPClient
 
 
-class PublicationClient(interface.IPublicationClient):
+class KonturPublicationClient(interface.IKonturPublicationClient):
     def __init__(
             self,
             tel: interface.ITelemetry,

@@ -37,6 +37,7 @@ class IStateRepo(Protocol):
     async def change_user_state(
             self,
             state_id: int,
+            account_id: int = None,
             access_token: str = None,
             refresh_token: str = None,
     ) -> None: pass

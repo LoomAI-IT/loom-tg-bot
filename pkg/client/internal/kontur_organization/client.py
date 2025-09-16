@@ -5,7 +5,7 @@ from internal import interface
 from pkg.client.client import AsyncHTTPClient
 
 
-class OrganizationClient(interface.IOrganizationClient):
+class KonturOrganizationClient(interface.IKonturOrganizationClient):
     def __init__(
             self,
             tel: interface.ITelemetry,
@@ -57,6 +57,25 @@ class OrganizationClient(interface.IOrganizationClient):
         ) as span:
             try:
                 response = await self.client.get(f"/{organization_id}")
+                json_response = response.json()
+
+                span.set_status(Status(StatusCode.OK))
+                return model.Organization(**json_response)
+            except Exception as e:
+                span.record_exception(e)
+                span.set_status(Status(StatusCode.ERROR, str(e)))
+                raise
+
+    async def get_organization_by_account_id(self, account_id: int) -> model.Organization:
+        with self.tracer.start_as_current_span(
+                "OrganizationClient.get_organization_by_account_id",
+                kind=SpanKind.CLIENT,
+                attributes={
+                    "account_id": account_id
+                }
+        ) as span:
+            try:
+                response = await self.client.get(f"/account/{account_id}")
                 json_response = response.json()
 
                 span.set_status(Status(StatusCode.OK))
