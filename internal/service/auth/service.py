@@ -96,7 +96,8 @@ class AuthDialogService(interface.IAuthDialogService):
             self,
             callback: CallbackQuery,
             button: Any,
-            dialog_manager: DialogManager
+            dialog_manager: DialogManager,
+            user_state: model.UserState,
     ) -> None:
         with self.tracer.start_as_current_span(
                 "AuthDialogService.accept_data_processing",
@@ -117,7 +118,7 @@ class AuthDialogService(interface.IAuthDialogService):
 
                 # Обновляем состояние пользователя
                 await self.state_repo.change_user_state(
-                    chat_id,
+                    user_state.id,
                     authorized_data.account_id,
                     authorized_data.access_token,
                     authorized_data.refresh_token
