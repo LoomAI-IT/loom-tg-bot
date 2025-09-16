@@ -2,7 +2,7 @@ import uuid
 from typing import Any
 
 from aiogram.types import CallbackQuery
-from aiogram_dialog import DialogManager
+from aiogram_dialog import DialogManager, StartMode
 from opentelemetry.trace import SpanKind, Status, StatusCode
 
 from internal import interface, model, common
@@ -99,7 +99,7 @@ class AuthDialogService(interface.IAuthDialogService):
             dialog_manager: DialogManager
     ) -> None:
         with self.tracer.start_as_current_span(
-                "AuthDialogHandler.accept_data_processing",
+                "AuthDialogService.accept_data_processing",
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
@@ -109,11 +109,13 @@ class AuthDialogService(interface.IAuthDialogService):
                 # Сохраняем принятие
                 dialog_manager.dialog_data["data_processing_accepted"] = True
 
+                # Регистрируем пользователя
                 authorized_data = await self.kontur_account_client.register(
                     uuid.uuid4().hex,
                     uuid.uuid4().hex,
                 )
 
+                # Обновляем состояние пользователя
                 await self.state_repo.change_user_state(
                     chat_id,
                     authorized_data.account_id,
@@ -129,15 +131,19 @@ class AuthDialogService(interface.IAuthDialogService):
                     }
                 )
 
+                # Проверяем доступ к организации
                 organization = await self.kontur_organization_client.get_organization_by_account_id(
                     authorized_data.account_id
                 )
 
                 if organization:
-                    # Переходим к приветственному окну
-                    await dialog_manager.switch_to(model.AuthStates.welcome)
+                    # Переходим в главное меню
+                    await dialog_manager.start(
+                        model.MainMenuStates.main_menu,
+                        mode=StartMode.RESET_STACK
+                    )
                 else:
-                    # Переходим к окну отказа в доступе
+                    # Если нет доступа - переходим к окну отказа
                     await dialog_manager.switch_to(model.AuthStates.access_denied)
 
                 span.set_status(Status(StatusCode.OK))
