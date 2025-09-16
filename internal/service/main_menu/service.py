@@ -32,9 +32,11 @@ class MainMenuDialogService(interface.IMainMenuDialogService):
             try:
                 user = dialog_manager.event.from_user
 
+                employee = await self.kontur_employee_client.get_employee_by_account_id(user_state.account_id)
+
                 # Получаем данные организации
-                organization = await self.kontur_organization_client.get_organization_by_account_id(
-                    user_state.account_id
+                organization = await self.kontur_organization_client.get_organization_by_id(
+                    employee.organization_id
                 )
 
                 data = {
@@ -47,10 +49,7 @@ class MainMenuDialogService(interface.IMainMenuDialogService):
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-                return {
-                    "name": "Пользователь",
-                    "organization_name": "Нет организации",
-                }
+                raise err
 
     async def handle_go_to_content(
             self,
