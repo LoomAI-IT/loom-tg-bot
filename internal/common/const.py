@@ -1,7 +1,5 @@
 from dataclasses import dataclass
 
-PREFIX = "/api/admin-tg-bot"
-
 TRACE_ID_KEY = "trace_id"
 SPAN_ID_KEY = "span_id"
 REQUEST_ID_KEY = "request_id"

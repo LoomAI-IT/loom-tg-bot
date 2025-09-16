@@ -117,5 +117,6 @@ if __name__ == "__main__":
         tg_webhook_controller,
         command_controller,
         auth_dialog,
+        cfg.prefix
     )
     uvicorn.run(app, host="0.0.0.0", port=int(cfg.http_port), access_log=False)
