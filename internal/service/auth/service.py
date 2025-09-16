@@ -227,8 +227,7 @@ class AuthDialogService(interface.IAuthDialogService):
                 data = {
                     "name": user.first_name or "Пользователь",
                     "username": user.username,
-                    "chat_id": chat_id,
-                    "is_authorized": bool(state and state.account_id),
+                    "account_id": state.account_id,
                 }
 
                 span.set_status(Status(StatusCode.OK))

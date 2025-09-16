@@ -53,6 +53,11 @@ class OrganizationMenuDialog(interface.IOrganizationMenuDialog):
                     id="social_networks",
                     on_click=self.organization_menu_service.handle_go_to_social_networks,
                 ),
+                Button(
+                    Const("В главное меню"),
+                    id="to_main_menu",
+                    on_click=self.organization_menu_service.handle_go_to_main_menu,
+                ),
             ),
 
             state=model.OrganizationMenuStates.organization_menu,
