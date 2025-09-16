@@ -53,7 +53,6 @@ class OrganizationMenuDialog(interface.IOrganizationMenuDialog):
                     id="social_networks",
                     on_click=self.organization_menu_service.handle_go_to_social_networks,
                 ),
-                Back(Const("◀️ Назад")),
             ),
 
             state=model.OrganizationMenuStates.organization_menu,

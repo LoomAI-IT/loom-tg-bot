@@ -33,6 +33,8 @@ class Category:
     id: int
     organization_id: int
 
+    name: str
+
     prompt_for_image_style: str
     prompt_for_text_style: str
 

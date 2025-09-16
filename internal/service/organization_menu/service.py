@@ -1,4 +1,5 @@
 # internal/service/organization_menu/service.py
+from datetime import datetime
 from typing import Any
 from aiogram.types import CallbackQuery
 from aiogram_dialog import DialogManager, StartMode
@@ -52,9 +53,18 @@ class OrganizationMenuDialogService(interface.IOrganizationMenuDialogService):
                 )
 
                 # Получаем категории организации
-                categories = await self.kontur_publication_client.get_categories_by_organization(
-                    organization.id
-                )
+                # categories = await self.kontur_publication_client.get_categories_by_organization(
+                #     organization.id
+                # )
+
+                categories = [model.Category(
+                    id=1,
+                    organization_id=1,
+                    name="Рубрика 1",
+                    prompt_for_image_style="prompt",
+                    prompt_for_text_style="prompt",
+                    created_at="date 0101",
+                )]
 
                 # Форматируем список платформ (пока заглушка)
                 platforms_list = "• Telegram\n• Instagram\n• VKontakte\n• YouTube (короткие видео)"

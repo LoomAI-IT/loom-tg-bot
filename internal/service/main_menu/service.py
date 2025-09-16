@@ -101,7 +101,7 @@ class MainMenuDialogService(interface.IMainMenuDialogService):
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 await callback.answer("Ошибка при переходе к организации", show_alert=True)
-                raise
+                raise err
 
     async def handle_go_to_personal_profile(
             self,
