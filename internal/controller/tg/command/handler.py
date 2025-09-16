@@ -27,9 +27,14 @@ class CommandController(interface.ICommandController):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                if user_state.organization_id == 0:
+                if user_state.organization_id == 0 and user_state.account_id == 0:
                     await dialog_manager.start(
                         model.AuthStates.user_agreement,
+                        mode=StartMode.RESET_STACK
+                    )
+                elif user_state.organization_id == 0 and user_state.account_id != 0:
+                    await dialog_manager.start(
+                        model.AuthStates.access_denied,
                         mode=StartMode.RESET_STACK
                     )
                 else:
