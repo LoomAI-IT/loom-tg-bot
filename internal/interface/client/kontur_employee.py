@@ -16,7 +16,7 @@ class IKonturEmployeeClient(Protocol):
     ) -> int: pass
 
     @abstractmethod
-    async def get_employee_by_account_id(self, employee_id: int) -> model.Employee: pass
+    async def get_employee_by_account_id(self, employee_id: int) -> model.Employee | None: pass
 
     @abstractmethod
     async def get_employees_by_organization(self, organization_id: int) -> list[model.Employee]: pass

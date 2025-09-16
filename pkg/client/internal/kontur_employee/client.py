@@ -59,7 +59,7 @@ class KonturEmployeeClient(interface.IKonturEmployeeClient):
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
-    async def get_employee_by_account_id(self, account_id: int) -> model.Employee:
+    async def get_employee_by_account_id(self, account_id: int) -> model.Employee | None:
         with self.tracer.start_as_current_span(
                 "EmployeeClient.get_employee_by_account_id",
                 kind=SpanKind.CLIENT,
@@ -72,7 +72,10 @@ class KonturEmployeeClient(interface.IKonturEmployeeClient):
                 json_response = response.json()
 
                 span.set_status(Status(StatusCode.OK))
-                return model.Employee(**json_response)
+                if json_response:
+                    return model.Employee(**json_response[0])
+                else:
+                    return None
             except Exception as e:
                 span.record_exception(e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
