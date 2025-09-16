@@ -156,8 +156,7 @@ class AuthDialogService(interface.IAuthDialogService):
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-                await callback.answer("Произошла ошибка. Попробуйте снова.", show_alert=True)
-                raise
+                raise err
 
     async def handle_access_denied(
             self,
