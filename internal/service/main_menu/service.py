@@ -10,18 +10,20 @@ class MainMenuDialogService(interface.IMainMenuDialogService):
     def __init__(
             self,
             tel: interface.ITelemetry,
+            state_repo: interface.IStateRepo,
             kontur_employee_client: interface.IKonturEmployeeClient,
             kontur_organization_client: interface.IKonturOrganizationClient,
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
+
+        self.state_repo = state_repo
         self.kontur_employee_client = kontur_employee_client
         self.kontur_organization_client = kontur_organization_client
 
     async def get_main_menu_data(
             self,
             dialog_manager: DialogManager,
-            user_state: model.UserState,
             **kwargs
     ) -> dict:
         """Получить данные для главного меню"""
@@ -32,16 +34,8 @@ class MainMenuDialogService(interface.IMainMenuDialogService):
             try:
                 user = dialog_manager.event.from_user
 
-                employee = await self.kontur_employee_client.get_employee_by_account_id(user_state.account_id)
-
-                # Получаем данные организации
-                organization = await self.kontur_organization_client.get_organization_by_id(
-                    employee.organization_id
-                )
-
                 data = {
                     "name": user.first_name or "Пользователь",
-                    "organization_name": organization.name if organization else "Нет организации",
                 }
 
                 span.set_status(Status(StatusCode.OK))
