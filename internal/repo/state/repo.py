@@ -94,6 +94,8 @@ class StateRepo(interface.IStateRepo):
                 SET {', '.join(update_fields)}
                 WHERE id = :state_id;
                 """
+
+                await self.db.update(query, args)
                 span.set_status(StatusCode.OK)
             except Exception as err:
                 span.record_exception(err)
