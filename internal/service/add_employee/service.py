@@ -103,7 +103,7 @@ class AddEmployeeDialogService(interface.IAddEmployeeDialogService):
                     "Имя сотрудника введено",
                     {
                         common.TELEGRAM_CHAT_ID_KEY: message.chat.id,
-                        "name": name,
+                        "employee_name": name,
                     }
                 )
 
@@ -273,7 +273,7 @@ class AddEmployeeDialogService(interface.IAddEmployeeDialogService):
                         common.TELEGRAM_CHAT_ID_KEY: chat_id,
                         "employee_id": employee_id,
                         "account_id": account_id,
-                        "name": name,
+                        "employee_name": name,
                         "role": role,
                     }
                 )
