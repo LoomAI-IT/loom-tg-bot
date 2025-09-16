@@ -49,7 +49,6 @@ class IAuthDialogService(Protocol):
             callback: CallbackQuery,
             button: Any,
             dialog_manager: DialogManager,
-            user_state: model.UserState,
     ) -> None: pass
 
     @abstractmethod
