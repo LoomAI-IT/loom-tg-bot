@@ -24,7 +24,77 @@ class PersonalProfileDialogService(interface.IPersonalProfileDialogService):
             user_state: model.UserState,
             **kwargs
     ) -> dict:
-        pass
+        """Получить данные для личного профиля"""
+        with self.tracer.start_as_current_span(
+                "PersonalProfileDialogService.get_personal_profile_data",
+                kind=SpanKind.INTERNAL
+        ) as span:
+            try:
+                # Получаем данные сотрудника
+                employee = await self.kontur_employee_client.get_employee_by_account_id(
+                    user_state.account_id
+                )
+
+                # Получаем данные организации
+                organization = await self.kontur_organization_client.get_organization_by_id(
+                    user_state.organization_id
+                )
+
+                # Формируем список разрешений
+                permissions_list = []
+                if employee:
+                    if not employee.required_moderation:
+                        permissions_list.append("✅ Публикации без одобрения")
+                    if employee.autoposting_permission:
+                        permissions_list.append("✅ Авто-постинг")
+                    if employee.add_employee_permission:
+                        permissions_list.append("✅ Добавление сотрудников")
+                    if employee.edit_employee_perm_permission:
+                        permissions_list.append("✅ Изменение разрешений")
+                    if employee.top_up_balance_permission:
+                        permissions_list.append("✅ Пополнение баланса")
+                    if employee.sign_up_social_net_permission:
+                        permissions_list.append("✅ Подключение соцсетей")
+
+                if not permissions_list:
+                    permissions_list.append("❌ Нет специальных разрешений")
+
+                # Получаем имя пользователя из события
+                user = dialog_manager.event.from_user
+                name = user.first_name or user.username or "Пользователь"
+
+                data = {
+                    "name": name,
+                    "organization_name": organization.name if organization else "Неизвестно",
+                    "publications_count": 0,  # TODO: Получить реальные данные из API публикаций
+                    "generations_count": 0,  # TODO: Получить реальные данные из API публикаций
+                    "permissions_list": "\n".join(permissions_list),
+                }
+
+                span.set_status(Status(StatusCode.OK))
+                return data
+
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
+
+                self.logger.error(
+                    "Ошибка получения данных личного профиля",
+                    {
+                        common.ERROR_KEY: str(err),
+                        "account_id": user_state.account_id,
+                        "organization_id": user_state.organization_id,
+                    }
+                )
+
+                user = dialog_manager.event.from_user
+                return {
+                    "name": user.first_name or user.username or "Пользователь",
+                    "organization_name": "Неизвестно",
+                    "publications_count": 0,
+                    "generations_count": 0,
+                    "permissions_list": "❌ Не удалось загрузить разрешения",
+                }
 
     async def handle_go_faq(
             self,
