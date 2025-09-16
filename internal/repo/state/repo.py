@@ -67,10 +67,33 @@ class StateRepo(interface.IStateRepo):
                 }
         ) as span:
             try:
-                args = {
-                    'state_id': state_id,
-                }
-                await self.db.update(update_state_status, args)
+                # Формируем запрос динамически в зависимости от переданных параметров
+                update_fields = []
+                args: dict = {'state_id': state_id}
+
+                if account_id is not None:
+                    update_fields.append("account_id = :account_id")
+                    args['account_id'] = account_id
+
+                if access_token is not None:
+                    update_fields.append("access_token = :access_token")
+                    args['access_token'] = access_token
+
+                if refresh_token is not None:
+                    update_fields.append("refresh_token = :refresh_token")
+                    args['refresh_token'] = refresh_token
+
+                if not update_fields:
+                    # Если нет полей для обновления, просто возвращаемся
+                    span.set_status(Status(StatusCode.OK))
+                    return
+
+                # Формируем финальный запрос
+                query = f"""
+                UPDATE user_states 
+                SET {', '.join(update_fields)}
+                WHERE id = :state_id;
+                """
                 span.set_status(StatusCode.OK)
             except Exception as err:
                 span.record_exception(err)

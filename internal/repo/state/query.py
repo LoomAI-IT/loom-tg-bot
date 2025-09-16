@@ -9,12 +9,6 @@ SELECT * FROM user_states
 WHERE tg_chat_id = :tg_chat_id;
 """
 
-update_state_status = """
-UPDATE user_states
-SET status = :status
-WHERE id = :state_id;
-"""
-
 delete_state_by_tg_chat_id = """
 DELETE FROM user_states
 WHERE tg_chat_id = :tg_chat_id;
