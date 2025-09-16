@@ -47,7 +47,7 @@ class PersonalProfileDialog(interface.IPersonalProfileDialog):
                 ),
                 Button(
                     Const("В главное меню"),
-                    id="support",
+                    id="to_main_menu",
                     on_click=self.personal_profile_service.handle_go_to_main_menu,
                 ),
             ),
@@ -59,7 +59,7 @@ class PersonalProfileDialog(interface.IPersonalProfileDialog):
 
     def get_faq_window(self) -> Window:
         return Window(
-            Format("<b>Вопросики всякие тут< будут/b>\n\n"),
+            Format("<b>Вопросики всякие тут будут</b>\n\n"),
             Back(Const("◀️ Назад")),
             state=model.PersonalProfileStates.faq,
             parse_mode="HTML",
@@ -67,7 +67,7 @@ class PersonalProfileDialog(interface.IPersonalProfileDialog):
 
     def get_support_window(self) -> Window:
         return Window(
-            Format("<b> А тут будут контактные данные поддержки/b>\n\n"),
+            Format("<b>А тут будут контактные данные поддержки</b>\n\n"),
             Back(Const("◀️ Назад")),
             state=model.PersonalProfileStates.support,
             parse_mode="HTML",

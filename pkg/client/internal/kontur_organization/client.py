@@ -22,31 +22,6 @@ class KonturOrganizationClient(interface.IKonturOrganizationClient):
         )
         self.tracer = tel.tracer()
 
-    async def create_organization(
-            self,
-            name: str
-    ) -> int:
-        with self.tracer.start_as_current_span(
-                "OrganizationClient.create_organization",
-                kind=SpanKind.CLIENT,
-                attributes={
-                    "name": name
-                }
-        ) as span:
-            try:
-                body = {
-                    "name": name
-                }
-                response = await self.client.post("/", json=body)
-                json_response = response.json()
-
-                span.set_status(Status(StatusCode.OK))
-                return json_response["organization_id"]
-            except Exception as e:
-                span.record_exception(e)
-                span.set_status(Status(StatusCode.ERROR, str(e)))
-                raise
-
     async def get_organization_by_id(self, organization_id: int) -> model.Organization:
         with self.tracer.start_as_current_span(
                 "OrganizationClient.get_organization_by_id",
@@ -72,7 +47,7 @@ class KonturOrganizationClient(interface.IKonturOrganizationClient):
                 kind=SpanKind.CLIENT,
         ) as span:
             try:
-                response = await self.client.get("/")
+                response = await self.client.get("/all")
                 json_response = response.json()
 
                 span.set_status(Status(StatusCode.OK))

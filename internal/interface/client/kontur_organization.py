@@ -7,9 +7,6 @@ from internal import model
 class IKonturOrganizationClient(Protocol):
 
     @abstractmethod
-    async def create_organization(self, name: str) -> int: pass
-
-    @abstractmethod
     async def get_organization_by_id(self, organization_id: int) -> model.Organization: pass
 
     @abstractmethod
@@ -24,9 +21,6 @@ class IKonturOrganizationClient(Protocol):
             video_cut_description_end_sample: str = None,
             publication_text_end_sample: str = None,
     ) -> None: pass
-
-    @abstractmethod
-    async def delete_organization(self, organization_id: int) -> None: pass
 
     @abstractmethod
     async def top_up_balance(self, organization_id: int, amount_rub: int) -> None: pass
