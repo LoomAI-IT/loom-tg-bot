@@ -37,7 +37,11 @@ def NewTg(
     )
     include_dialogs(
         dp,
-        auth_dialog
+        auth_dialog,
+        main_menu_dialog,
+        personal_profile_dialog,
+        organization_menu_dialog,
+        change_employee_dialog,
     )
 
     return app
@@ -92,10 +96,18 @@ def include_command_handlers(
 def include_dialogs(
         dp: Dispatcher,
         auth_dialog: interface.IAuthDialog,
+        main_menu_dialog: interface.IMainMenuDialog,
+        personal_profile_dialog: interface.IPersonalProfileDialog,
+        organization_menu_dialog: interface.IOrganizationMenuDialog,
+        change_employee_dialog: interface.IChangeEmployeeDialog,
 ):
     dialog_router = Router()
     dialog_router.include_routers(
-        auth_dialog.get_dialog()
+        auth_dialog.get_dialog(),
+        main_menu_dialog.get_dialog(),
+        personal_profile_dialog.get_dialog(),
+        organization_menu_dialog.get_dialog(),
+        change_employee_dialog.get_dialog(),
     )
 
     dp.include_routers(dialog_router)
