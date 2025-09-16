@@ -16,6 +16,7 @@ class AuthDialogService(interface.IAuthDialogService):
             domain: str,
             kontur_account_client: interface.IKonturAccountClient,
             kontur_organization_client: interface.IKonturOrganizationClient,
+            kontur_employee_client: interface.IKonturEmployeeClient,
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
@@ -23,6 +24,7 @@ class AuthDialogService(interface.IAuthDialogService):
         self.domain = domain
         self.kontur_account_client = kontur_account_client
         self.kontur_organization_client = kontur_organization_client
+        self.kontur_employee_client = kontur_employee_client
 
     async def accept_user_agreement(
             self,
@@ -130,12 +132,11 @@ class AuthDialogService(interface.IAuthDialogService):
                 )
 
                 # Проверяем доступ к организации
-                organization = await self.kontur_organization_client.get_organization_by_account_id(
+                employee = await self.kontur_employee_client.get_employee_by_account_id(
                     authorized_data.account_id
                 )
 
-                if organization:
-                    # Переходим в главное меню
+                if employee:
                     await dialog_manager.start(
                         model.MainMenuStates.main_menu,
                         mode=StartMode.RESET_STACK
