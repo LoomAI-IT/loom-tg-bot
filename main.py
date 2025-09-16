@@ -87,6 +87,7 @@ auth_dialog_service = AuthDialogService(
 )
 main_menu_service = MainMenuDialogService(
     tel,
+    state_repo,
     kontur_employee_client,
     kontur_organization_client
 )
