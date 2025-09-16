@@ -3,12 +3,11 @@ from dataclasses import dataclass
 
 
 @dataclass
-class State:
+class UserState:
     id: int
     tg_chat_id: int
     account_id: int
 
-    status: str
     access_token: str
     refresh_token: str
 
@@ -22,7 +21,6 @@ class State:
                 id=row.id,
                 tg_chat_id=row.tg_chat_id,
                 account_id=row.account_id,
-                status=row.status,
                 access_token=row.access_token,
                 refresh_token=row.refresh_token,
                 created_at=row.created_at,

@@ -13,12 +13,12 @@ from internal import model
 
 class IMessageController(Protocol):
     @abstractmethod
-    async def message_handler(self, message: Message, user_state: model.State): pass
+    async def message_handler(self, message: Message, user_state: model.UserState): pass
 
 
 class ICommandController(Protocol):
     @abstractmethod
-    async def start_handler(self, message: Message, user_state: model.State): pass
+    async def start_handler(self, message: Message, user_state: model.UserState): pass
 
 
 class ITelegramMiddleware(Protocol):
@@ -134,27 +134,3 @@ class IDB(Protocol):
 
     @abstractmethod
     async def multi_query(self, queries: list[str]) -> None: pass
-
-
-class IStorage(Protocol):
-    @abstractmethod
-    def delete(self, fid: str, name: str): pass
-
-    @abstractmethod
-    def download(self, fid: str, name: str) -> tuple[io.BytesIO, str]: pass
-
-    @abstractmethod
-    def upload(self, file: io.BytesIO, name: str) -> WeedOperationResponse: pass
-
-    @abstractmethod
-    def update(self, file: io.BytesIO, fid: str, name: str): pass
-
-
-class ILLMClient(Protocol):
-    @abstractmethod
-    async def generate(
-            self,
-            text: str,
-            temperature: float,
-            _model: str = "gpt-4o-mini"
-    ) -> str: pass

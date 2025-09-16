@@ -10,10 +10,16 @@ class IStateService(Protocol):
     async def create_state(self, tg_chat_id: int) -> int: pass
 
     @abstractmethod
-    async def state_by_id(self, tg_chat_id: int) -> list[model.State]: pass
+    async def state_by_id(self, tg_chat_id: int) -> list[model.UserState]: pass
 
     @abstractmethod
-    async def change_status(self, state_id: int, status: str) -> None: pass
+    async def change_user_state(
+            self,
+            state_id: int,
+            account_id: int = None,
+            access_token: str = None,
+            refresh_token: str = None,
+    ) -> None: pass
 
     @abstractmethod
     async def delete_state_by_tg_chat_id(self, tg_chat_id: int) -> None: pass
@@ -25,10 +31,15 @@ class IStateRepo(Protocol):
     async def create_state(self, tg_chat_id: int) -> int: pass
 
     @abstractmethod
-    async def state_by_id(self, tg_chat_id: int) -> list[model.State]: pass
+    async def state_by_id(self, tg_chat_id: int) -> list[model.UserState]: pass
 
     @abstractmethod
-    async def change_status(self, state_id: int, status: str) -> None: pass
+    async def change_user_state(
+            self,
+            state_id: int,
+            access_token: str = None,
+            refresh_token: str = None,
+    ) -> None: pass
 
     @abstractmethod
     async def delete_state_by_tg_chat_id(self, tg_chat_id: int) -> None: pass

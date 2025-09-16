@@ -1,5 +1,6 @@
-from internal.interface.state import *
+from internal.interface.user_state import *
 from internal.interface.general import *
+from internal.interface.dialog.auth import *
 from internal.interface.client.kontur_account import *
 from internal.interface.client.kontur_authorization import *
 from internal.interface.client.kontur_employee import *

@@ -13,6 +13,9 @@ class IOrganizationClient(Protocol):
     async def get_organization_by_id(self, organization_id: int) -> model.Organization: pass
 
     @abstractmethod
+    async def get_organization_by_account_id(self, account_id: int) -> model.Organization: pass
+
+    @abstractmethod
     async def get_all_organizations(self) -> list[model.Organization]: pass
 
     @abstractmethod
