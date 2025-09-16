@@ -118,7 +118,7 @@ class KonturEmployeeClient(interface.IKonturEmployeeClient):
                 }
         ) as span:
             try:
-                body = {}
+                body = {"employee_id": employee_id}
                 if required_moderation is not None:
                     body["required_moderation"] = required_moderation
                 if autoposting_permission is not None:
@@ -132,7 +132,7 @@ class KonturEmployeeClient(interface.IKonturEmployeeClient):
                 if sign_up_social_net_permission is not None:
                     body["sign_up_social_net_permission"] = sign_up_social_net_permission
 
-                await self.client.put(f"/{employee_id}/permissions", json=body)
+                await self.client.put(f"/permissions", json=body)
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as e:
