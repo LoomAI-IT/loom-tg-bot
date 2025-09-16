@@ -121,7 +121,7 @@ class AuthDialog(interface.IAuthDialog):
             Button(
                 Const("🚀 Начать работу"),
                 id="go_to_main_menu",
-                on_click=self.auth_dialog_controller.go_to_main_menu,
+                on_click=None,
             ),
             state=model.AuthStates.welcome,
             getter=self.auth_dialog_service.get_user_status,
