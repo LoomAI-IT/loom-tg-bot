@@ -56,7 +56,7 @@ class AuthDialogService(interface.IAuthDialogService):
                     "name": user.first_name or "Пользователь",
                     "username": user.username,
                     "chat_id": chat_id,
-                    "is_authorized": bool(user_state and user_state[0].account_id),
+                    "is_authorized": bool(user_state and user_state.account_id),
                 }
 
                 span.set_status(Status(StatusCode.OK))
