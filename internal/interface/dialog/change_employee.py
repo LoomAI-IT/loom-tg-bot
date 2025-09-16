@@ -25,21 +25,18 @@ class IChangeEmployeeDialogService(Protocol):
     async def get_employee_list_data(
             self,
             dialog_manager: DialogManager,
-            user_state: model.UserState
     ) -> dict: pass
 
     @abstractmethod
     async def get_employee_detail_data(
             self,
             dialog_manager: DialogManager,
-            user_state: model.UserState,
     ) -> dict: pass
 
     @abstractmethod
     async def get_permissions_data(
             self,
             dialog_manager: DialogManager,
-            user_state: model.UserState,
     ) -> dict: pass
 
     @abstractmethod

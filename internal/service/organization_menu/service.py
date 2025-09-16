@@ -93,7 +93,7 @@ class OrganizationMenuDialogService(interface.IOrganizationMenuDialogService):
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise err
 
-    async def handle_go_to_user_settings(
+    async def handle_go_to_employee_settings(
             self,
             callback: CallbackQuery,
             button: Any,
@@ -101,7 +101,7 @@ class OrganizationMenuDialogService(interface.IOrganizationMenuDialogService):
     ) -> None:
         """Перейти к настройкам пользователей (изменение сотрудников)"""
         with self.tracer.start_as_current_span(
-                "OrganizationMenuDialogService.handle_go_to_user_settings",
+                "OrganizationMenuDialogService.handle_go_to_employee_settings",
                 kind=SpanKind.INTERNAL
         ) as span:
             try:

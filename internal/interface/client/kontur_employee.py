@@ -24,7 +24,7 @@ class IKonturEmployeeClient(Protocol):
     @abstractmethod
     async def update_employee_permissions(
             self,
-            employee_id: int,
+            account_id: int,
             required_moderation: bool = None,
             autoposting_permission: bool = None,
             add_employee_permission: bool = None,
@@ -36,16 +36,16 @@ class IKonturEmployeeClient(Protocol):
     @abstractmethod
     async def update_employee_role(
             self,
-            employee_id: int,
+            account_id: int,
             role: str
     ) -> None: pass
 
     @abstractmethod
-    async def delete_employee(self, employee_id: int) -> None: pass
+    async def delete_employee(self, account_id: int) -> None: pass
 
     @abstractmethod
     async def check_employee_permission(
             self,
-            employee_id: int,
+            account_id: int,
             permission_type: str
     ) -> bool: pass

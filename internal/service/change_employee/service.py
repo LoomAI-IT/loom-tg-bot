@@ -1,10 +1,9 @@
-# internal/service/change_employee/service.py
 from typing import Any
 from aiogram.types import CallbackQuery, Message
-from aiogram_dialog import DialogManager, StartMode
+from aiogram_dialog import DialogManager
 from opentelemetry.trace import SpanKind, Status, StatusCode
 
-from internal import interface, model, common
+from internal import interface, model
 
 
 class ChangeEmployeeDialogService(interface.IChangeEmployeeDialogService):
@@ -13,18 +12,19 @@ class ChangeEmployeeDialogService(interface.IChangeEmployeeDialogService):
     def __init__(
             self,
             tel: interface.ITelemetry,
+            state_repo: interface.IStateRepo,
             kontur_employee_client: interface.IKonturEmployeeClient,
             kontur_organization_client: interface.IKonturOrganizationClient,
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
+        self.state_repo = state_repo
         self.kontur_employee_client = kontur_employee_client
         self.kontur_organization_client = kontur_organization_client
 
     async def get_employee_list_data(
             self,
             dialog_manager: DialogManager,
-            user_state: model.UserState,
             **kwargs
     ) -> dict:
         """Получить данные для окна списка сотрудников"""
@@ -33,9 +33,17 @@ class ChangeEmployeeDialogService(interface.IChangeEmployeeDialogService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                # Получаем организацию пользователя
-                organization = await self.kontur_organization_client.get_organization_by_account_id(
-                    user_state.account_id
+                if hasattr(dialog_manager.event, 'message') and dialog_manager.event.message:
+                    chat_id = dialog_manager.event.message.chat.id
+                elif hasattr(dialog_manager.event, 'chat'):
+                    chat_id = dialog_manager.event.chat.id
+                else:
+                    chat_id = None
+
+                state = (await self.state_repo.state_by_id(chat_id))[0]
+
+                organization = await self.kontur_organization_client.get_organization_by_id(
+                    state.organization_id
                 )
 
                 # Получаем список сотрудников
@@ -51,7 +59,7 @@ class ChangeEmployeeDialogService(interface.IChangeEmployeeDialogService):
                 # Форматируем данные для отображения
                 employees_data = [
                     {
-                        "id": str(emp.id),
+                        "id": str(emp.account_id),
                         "name": emp.name,
                         "role": emp.role,
                     }
@@ -74,7 +82,6 @@ class ChangeEmployeeDialogService(interface.IChangeEmployeeDialogService):
     async def get_employee_detail_data(
             self,
             dialog_manager: DialogManager,
-            user_state: model.UserState,
             **kwargs
     ) -> dict:
         """Получить детальные данные сотрудника"""
@@ -83,10 +90,10 @@ class ChangeEmployeeDialogService(interface.IChangeEmployeeDialogService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                employee_id = int(dialog_manager.dialog_data.get("selected_employee_id"))
+                account_id = int(dialog_manager.dialog_data.get("selected_account_id"))
 
                 # Получаем данные сотрудника
-                employee = await self.kontur_employee_client.get_employee_by_id(employee_id)
+                employee = await self.kontur_employee_client.get_employee_by_account_id(account_id)
 
                 # Формируем текст разрешений
                 permissions_list = []
@@ -122,7 +129,6 @@ class ChangeEmployeeDialogService(interface.IChangeEmployeeDialogService):
     async def get_permissions_data(
             self,
             dialog_manager: DialogManager,
-            user_state: model.UserState,
             **kwargs
     ) -> dict:
         """Получить данные для окна изменения разрешений"""
@@ -131,10 +137,10 @@ class ChangeEmployeeDialogService(interface.IChangeEmployeeDialogService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                employee_id = int(dialog_manager.dialog_data.get("selected_employee_id"))
+                account_id = int(dialog_manager.dialog_data.get("selected_account_id"))
 
                 # Получаем данные сотрудника
-                employee = await self.kontur_employee_client.get_employee_by_id(employee_id)
+                employee = await self.kontur_employee_client.get_employee_by_account_id(account_id)
 
                 # Получаем текущие значения разрешений из dialog_data или из сотрудника
                 permissions = dialog_manager.dialog_data.get("permissions", {
@@ -208,7 +214,7 @@ class ChangeEmployeeDialogService(interface.IChangeEmployeeDialogService):
                 dialog_manager.dialog_data["search_query"] = search_query
 
                 # Обновляем окно
-                await dialog_manager.update()
+                await dialog_manager.update(dialog_manager.dialog_data)
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
@@ -230,9 +236,10 @@ class ChangeEmployeeDialogService(interface.IChangeEmployeeDialogService):
             try:
                 button_id = button.widget_id
 
-                # Получаем текущие разрешения
-                employee_id = int(dialog_manager.dialog_data.get("selected_employee_id"))
-                employee = await self.kontur_employee_client.get_employee_by_id(employee_id)
+                account_id = int(dialog_manager.dialog_data.get("selected_account_id"))
+
+                # Получаем данные сотрудника
+                employee = await self.kontur_employee_client.get_employee_by_account_id(account_id)
 
                 permissions = dialog_manager.dialog_data.get("permissions", {
                     "no_moderation": not employee.required_moderation,
@@ -265,7 +272,7 @@ class ChangeEmployeeDialogService(interface.IChangeEmployeeDialogService):
                     dialog_manager.dialog_data["permissions"] = permissions
 
                 # Обновляем окно
-                await dialog_manager.update()
+                await dialog_manager.update(dialog_manager.dialog_data)
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
@@ -286,12 +293,12 @@ class ChangeEmployeeDialogService(interface.IChangeEmployeeDialogService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                employee_id = int(dialog_manager.dialog_data.get("selected_employee_id"))
+                account_id = int(dialog_manager.dialog_data.get("selected_account_id"))
                 permissions = dialog_manager.dialog_data.get("permissions", {})
 
                 # Обновляем разрешения через API
                 await self.kontur_employee_client.update_employee_permissions(
-                    employee_id=employee_id,
+                    account_id=account_id,
                     required_moderation=not permissions.get("no_moderation", False),
                     autoposting_permission=permissions.get("autoposting", False),
                     add_employee_permission=permissions.get("add_employee", False),
@@ -324,10 +331,10 @@ class ChangeEmployeeDialogService(interface.IChangeEmployeeDialogService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                employee_id = int(dialog_manager.dialog_data.get("selected_employee_id"))
+                account_id = int(dialog_manager.dialog_data.get("selected_account_id"))
 
                 # Удаляем сотрудника
-                await self.kontur_employee_client.delete_employee(employee_id)
+                await self.kontur_employee_client.delete_employee(account_id)
 
                 await callback.answer("✅ Сотрудник успешно удален!", show_alert=True)
 

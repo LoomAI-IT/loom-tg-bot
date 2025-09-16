@@ -21,7 +21,7 @@ class IOrganizationMenuDialogService(Protocol):
     ) -> dict: pass
 
     @abstractmethod
-    async def handle_go_to_user_settings(
+    async def handle_go_to_employee_settings(
             self,
             callback: CallbackQuery,
             button: Any,

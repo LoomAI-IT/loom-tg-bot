@@ -102,7 +102,7 @@ class KonturEmployeeClient(interface.IKonturEmployeeClient):
 
     async def update_employee_permissions(
             self,
-            employee_id: int,
+            account_id: int,
             required_moderation: bool = None,
             autoposting_permission: bool = None,
             add_employee_permission: bool = None,
@@ -114,11 +114,11 @@ class KonturEmployeeClient(interface.IKonturEmployeeClient):
                 "EmployeeClient.update_employee_permissions",
                 kind=SpanKind.CLIENT,
                 attributes={
-                    "employee_id": employee_id
+                    "account_id": account_id
                 }
         ) as span:
             try:
-                body = {"employee_id": employee_id}
+                body = {"account_id": account_id}
                 if required_moderation is not None:
                     body["required_moderation"] = required_moderation
                 if autoposting_permission is not None:
@@ -142,14 +142,14 @@ class KonturEmployeeClient(interface.IKonturEmployeeClient):
 
     async def update_employee_role(
             self,
-            employee_id: int,
+            account_id: int,
             role: str
     ) -> None:
         with self.tracer.start_as_current_span(
                 "EmployeeClient.update_employee_role",
                 kind=SpanKind.CLIENT,
                 attributes={
-                    "employee_id": employee_id,
+                    "account_id": account_id,
                     "role": role
                 }
         ) as span:
@@ -157,7 +157,7 @@ class KonturEmployeeClient(interface.IKonturEmployeeClient):
                 body = {
                     "role": role.value if hasattr(role, 'value') else str(role)
                 }
-                await self.client.put(f"/{employee_id}/role", json=body)
+                await self.client.put(f"/{account_id}/role", json=body)
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as e:
@@ -165,16 +165,16 @@ class KonturEmployeeClient(interface.IKonturEmployeeClient):
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
-    async def delete_employee(self, employee_id: int) -> None:
+    async def delete_employee(self, account_id: int) -> None:
         with self.tracer.start_as_current_span(
                 "EmployeeClient.delete_employee",
                 kind=SpanKind.CLIENT,
                 attributes={
-                    "employee_id": employee_id
+                    "account_id": account_id
                 }
         ) as span:
             try:
-                await self.client.delete(f"/{employee_id}")
+                await self.client.delete(f"/{account_id}")
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as e:
@@ -184,20 +184,20 @@ class KonturEmployeeClient(interface.IKonturEmployeeClient):
 
     async def check_employee_permission(
             self,
-            employee_id: int,
+            account_id: int,
             permission_type: str
     ) -> bool:
         with self.tracer.start_as_current_span(
                 "EmployeeClient.check_employee_permission",
                 kind=SpanKind.CLIENT,
                 attributes={
-                    "employee_id": employee_id,
+                    "account_id": account_id,
                     "permission_type": permission_type
                 }
         ) as span:
             try:
                 params = {"permission_type": permission_type}
-                response = await self.client.get(f"/{employee_id}/permissions/check", params=params)
+                response = await self.client.get(f"/{account_id}/permissions/check", params=params)
                 json_response = response.json()
 
                 span.set_status(Status(StatusCode.OK))

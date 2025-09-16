@@ -36,10 +36,10 @@ class OrganizationMenuDialog(interface.IOrganizationMenuDialog):
                 Button(
                     Const("⚙️ Настройка пользователей"),
                     id="user_settings",
-                    on_click=self.organization_menu_service.handle_go_to_user_settings,
+                    on_click=self.organization_menu_service.handle_go_to_employee_settings,
                 ),
                 Button(
-                    Const("👥 Добавить пользователя"),
+                    Const("👥 Добавить сотрудника"),
                     id="add_employee",
                     on_click=self.organization_menu_service.handle_go_to_add_employee,
                 ),
