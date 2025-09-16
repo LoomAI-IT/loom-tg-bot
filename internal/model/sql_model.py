@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS user_states (
 """
 
 drop_state_table = """
-DROP TABLE IF EXISTS states;
+DROP TABLE IF EXISTS user_states;
 """
 
 
