@@ -34,7 +34,7 @@ class CommandController(interface.ICommandController):
                     )
                 else:
                     await dialog_manager.start(
-                        model.AuthStates.welcome,
+                        model.MainMenuStates.main_menu,
                         mode=StartMode.RESET_STACK
                     )
 
