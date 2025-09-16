@@ -6,7 +6,7 @@ class Employee:
     id: int
     organization_id: int
     account_id: int
-    invited_from_employee_id: int
+    invited_from_account_id: int
 
     required_moderation: bool
     autoposting_permission: bool
