@@ -43,9 +43,12 @@ class OrganizationMenuDialogService(interface.IOrganizationMenuDialogService):
                     chat_id = None
 
                 state = (await self.state_repo.state_by_id(chat_id))[0]
+
+                employee = await self.kontur_employee_client.get_employee_by_account_id(state.account_id)
+
                 # Получаем данные организации
-                organization = await self.kontur_organization_client.get_organization_by_account_id(
-                    state.account_id
+                organization = await self.kontur_organization_client.get_organization_by_id(
+                    employee.organization_id
                 )
 
                 # Получаем категории организации
@@ -78,20 +81,7 @@ class OrganizationMenuDialogService(interface.IOrganizationMenuDialogService):
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-                self.logger.error(
-                    "Ошибка получения данных организации",
-                    {
-                        common.ERROR_KEY: str(err),
-                        "account_id": state.account_id,
-                    }
-                )
-                return {
-                    "organization_name": "Неизвестно",
-                    "balance": 0,
-                    "content_available": 0,
-                    "platforms_list": "Нет подключенных платформ",
-                    "categories_list": "Нет рубрик",
-                }
+                raise err
 
     async def handle_go_to_user_settings(
             self,
