@@ -37,18 +37,14 @@ class IAuthDialogService(Protocol):
     """Интерфейс для получения данных авторизации"""
 
     @abstractmethod
-    async def get_agreement_data(
-            self,
-            dialog_manager: DialogManager,
-            bot: Bot,
-            event: Update,
-            user_state: model.UserState,
-    ) -> dict: pass
+    async def get_agreement_data(self) -> dict: pass
 
     @abstractmethod
-    async def get_user_status(self, dialog_manager: DialogManager) -> dict:
-        """Получает статус пользователя"""
-        pass
+    async def get_user_status(
+            self,
+            dialog_manager: DialogManager,
+            user_state: model.UserState,
+    ) -> dict: pass
 
 
 class IAuthDialog(Protocol):

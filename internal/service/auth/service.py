@@ -1,5 +1,3 @@
-from aiogram import Bot
-from aiogram.types import Update
 from aiogram_dialog import DialogManager
 from opentelemetry.trace import SpanKind, Status, StatusCode
 
@@ -20,13 +18,7 @@ class AuthDialogService(interface.IAuthDialogService):
         self.state_repo = state_repo
         self.domain = domain
 
-    async def get_agreement_data(
-            self,
-            dialog_manager: DialogManager,
-            bot: Bot,
-            event: Update,
-            user_state: model.UserState,
-    ) -> dict:
+    async def get_agreement_data(self, **kwargs) -> dict:
         with self.tracer.start_as_current_span(
                 "AuthDialogGetter.get_agreement_data",
                 kind=SpanKind.INTERNAL
@@ -46,7 +38,12 @@ class AuthDialogService(interface.IAuthDialogService):
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
-    async def get_user_status(self, dialog_manager: DialogManager, ) -> dict:
+    async def get_user_status(
+            self,
+            dialog_manager: DialogManager,
+            user_state: model.UserState,
+            **kwargs
+    ) -> dict:
         with self.tracer.start_as_current_span(
                 "AuthDialogGetter.get_user_status",
                 kind=SpanKind.INTERNAL
@@ -55,14 +52,11 @@ class AuthDialogService(interface.IAuthDialogService):
                 user = dialog_manager.event.from_user
                 chat_id = dialog_manager.event.chat.id
 
-                # Получаем состояние пользователя
-                state = await self.state_repo.state_by_id(chat_id)
-
                 data = {
                     "name": user.first_name or "Пользователь",
                     "username": user.username,
                     "chat_id": chat_id,
-                    "is_authorized": bool(state and state[0].account_id),
+                    "is_authorized": bool(user_state and user_state[0].account_id),
                 }
 
                 span.set_status(Status(StatusCode.OK))
