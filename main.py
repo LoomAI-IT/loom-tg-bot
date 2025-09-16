@@ -83,6 +83,7 @@ auth_dialog_service = AuthDialogService(
     cfg.domain,
     kontur_account_client,
     kontur_organization_client,
+    kontur_employee_client,
 )
 main_menu_service = MainMenuDialogService(
     tel,
