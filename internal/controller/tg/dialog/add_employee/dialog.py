@@ -30,7 +30,7 @@ class AddEmployeeDialog(interface.IAddEmployeeDialog):
     def get_enter_account_id_window(self) -> Window:
         return Window(
             Const("👤 <b>Добавление нового сотрудника</b>\n\n"),
-            Const("📝 <b>Шаг 1/4: Введите ID аккауниа сотрудника</b>\n\n"),
+            Const("📝 <b>Шаг 1/4: Введите ID аккаунта сотрудника</b>\n\n"),
             Const("⚠️ <i>Убедитесь, что пользователь уже зарегистрирован в системе</i>"),
 
             TextInput(
@@ -40,8 +40,8 @@ class AddEmployeeDialog(interface.IAddEmployeeDialog):
 
             Back(Const("◀️ Назад")),
 
-            state=model.AddEmployeeStates.enter_username,
-            getter=self.add_employee_service.get_enter_username_data,
+            state=model.AddEmployeeStates.enter_account_id,
+            getter=self.add_employee_service.get_enter_account_id_data,
             parse_mode="HTML",
         )
 
@@ -74,7 +74,7 @@ class AddEmployeeDialog(interface.IAddEmployeeDialog):
             Multi(
                 Const("👤 <b>Добавление нового сотрудника</b>\n\n"),
                 Const("📝 <b>Шаг 3/4: Выберите роль сотрудника</b>\n\n"),
-                Format("ID Аккаунта: <b>{account_id}</b>\n\n"),
+                Format("ID Аккаунта: <b>{account_id}</b>\n"),
                 Format("Имя: <b>{name}</b>\n\n"),
                 Const("Выберите роль для сотрудника:"),
                 sep="",
@@ -103,7 +103,7 @@ class AddEmployeeDialog(interface.IAddEmployeeDialog):
             Multi(
                 Const("👤 <b>Добавление нового сотрудника</b>\n\n"),
                 Const("📝 <b>Шаг 4/4: Настройте разрешения сотрудника</b>\n\n"),
-                Format("ID Аккаунта: <b>{account_id}</b>\n\n"),
+                Format("ID Аккаунта: <b>{account_id}</b>\n"),
                 Format("Имя: <b>{name}</b>\n"),
                 Format("Роль: <b>{role}</b>\n\n"),
                 Const("⚙️ <b>Разрешения:</b>"),
@@ -215,7 +215,7 @@ class AddEmployeeDialog(interface.IAddEmployeeDialog):
             Multi(
                 Const("👤 <b>Подтверждение создания сотрудника</b>\n\n"),
                 Const("📋 <b>Проверьте введенные данные:</b>\n\n"),
-                Format("ID Аккаунта: <b>{account_id}</b>\n\n"),
+                Format("ID Аккаунта: <b>{account_id}</b>\n"),
                 Format("Имя: <b>{name}</b>\n"),
                 Format("Роль: <b>{role}</b>\n\n"),
                 Const("⚙️ <b>Разрешения:</b>\n"),

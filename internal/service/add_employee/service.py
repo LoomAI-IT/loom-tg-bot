@@ -1,5 +1,4 @@
-# internal/service/add_employee/service.py
-import re
+
 from typing import Any
 from aiogram.types import CallbackQuery, Message
 from aiogram_dialog import DialogManager, StartMode
@@ -14,13 +13,11 @@ class AddEmployeeDialogService(interface.IAddEmployeeDialogService):
             self,
             tel: interface.ITelemetry,
             state_repo: interface.IStateRepo,
-            kontur_account_client: interface.IKonturAccountClient,
             kontur_employee_client: interface.IKonturEmployeeClient,
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
         self.state_repo = state_repo
-        self.kontur_account_client = kontur_account_client
         self.kontur_employee_client = kontur_employee_client
 
     async def handle_account_id_input(
@@ -31,20 +28,30 @@ class AddEmployeeDialogService(interface.IAddEmployeeDialogService):
             account_id: str
     ) -> None:
         with self.tracer.start_as_current_span(
-                "AddEmployeeDialogService.handle_username_input",
+                "AddEmployeeDialogService.handle_account_id_input",
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                account_id = account_id.strip()
 
                 if not account_id:
-                    await message.answer("❌ Username не может быть пустым. Попробуйте снова.")
+                    await message.answer("❌ ID аккаунта не может быть пустым. Попробуйте снова.")
                     return
 
-                # Сохраняем username в данные диалога
+                # Проверяем, что это число
+                try:
+                    account_id_int = int(account_id)
+                    if account_id_int <= 0:
+                        raise ValueError("ID должен быть положительным числом")
+                except ValueError:
+                    await message.answer("❌ ID аккаунта должен быть положительным числом. Попробуйте снова.")
+                    return
+
+                # Сохраняем account_id в данные диалога
                 dialog_manager.dialog_data["account_id"] = account_id
 
                 self.logger.info(
-                    "Username сотрудника введен",
+                    "ID аккаунта сотрудника введен",
                     {
                         common.TELEGRAM_CHAT_ID_KEY: message.chat.id,
                         "account_id": account_id,
@@ -212,19 +219,13 @@ class AddEmployeeDialogService(interface.IAddEmployeeDialogService):
         ) as span:
             try:
                 # Получаем данные из диалога
-                username = dialog_manager.dialog_data.get("username")
+                account_id = int(dialog_manager.dialog_data.get("account_id"))
                 name = dialog_manager.dialog_data.get("name")
                 role = dialog_manager.dialog_data.get("role")
                 permissions = dialog_manager.dialog_data.get("permissions", {})
 
                 # Получаем информацию о текущем пользователе
-                if hasattr(dialog_manager.event, 'message') and dialog_manager.event.message:
-                    chat_id = dialog_manager.event.message.chat.id
-                elif hasattr(dialog_manager.event, 'chat'):
-                    chat_id = dialog_manager.event.chat.id
-                else:
-                    chat_id = None
-
+                chat_id = callback.message.chat.id
                 current_user_state = (await self.state_repo.state_by_id(chat_id))[0]
 
                 # Получаем текущего сотрудника (который добавляет)
@@ -232,16 +233,11 @@ class AddEmployeeDialogService(interface.IAddEmployeeDialogService):
                     current_user_state.account_id
                 )
 
-                # TODO: Здесь нужно получить account_id по username
-                # Это требует дополнительного API в kontur_account_client
-                # Пока используем заглушку
-                new_employee_account_id = 12345  # Заглушка
-
                 # Создаем сотрудника
                 employee_id = await self.kontur_employee_client.create_employee(
                     organization_id=current_employee.organization_id,
                     invited_from_account_id=current_user_state.account_id,
-                    account_id=new_employee_account_id,
+                    account_id=account_id,
                     name=name,
                     role=role
                 )
@@ -262,7 +258,7 @@ class AddEmployeeDialogService(interface.IAddEmployeeDialogService):
                     {
                         common.TELEGRAM_CHAT_ID_KEY: chat_id,
                         "employee_id": employee_id,
-                        "username": username,
+                        "account_id": account_id,
                         "name": name,
                         "role": role,
                     }
@@ -326,7 +322,7 @@ class AddEmployeeDialogService(interface.IAddEmployeeDialogService):
             }
 
     async def get_enter_account_id_data(self, **kwargs) -> dict:
-        """Данные для окна ввода username"""
+        """Данные для окна ввода account_id"""
         return {}
 
     async def get_enter_name_data(
@@ -336,7 +332,7 @@ class AddEmployeeDialogService(interface.IAddEmployeeDialogService):
     ) -> dict:
         """Данные для окна ввода имени"""
         return {
-            "username": dialog_manager.dialog_data.get("username", ""),
+            "account_id": dialog_manager.dialog_data.get("account_id", ""),
         }
 
     async def get_enter_role_data(
@@ -352,7 +348,7 @@ class AddEmployeeDialogService(interface.IAddEmployeeDialogService):
         ]
 
         return {
-            "username": dialog_manager.dialog_data.get("username", ""),
+            "account_id": dialog_manager.dialog_data.get("account_id", ""),
             "name": dialog_manager.dialog_data.get("name", ""),
             "roles": roles,
         }
@@ -375,14 +371,14 @@ class AddEmployeeDialogService(interface.IAddEmployeeDialogService):
         # Получаем читаемое название роли
         role_names = {
             "employee": "Сотрудник",
-            "manager": "Менеджер",
+            "moderator": "Модератор",
             "admin": "Администратор",
         }
         role = dialog_manager.dialog_data.get("role", "employee")
         role_display = role_names.get(role, role)
 
         return {
-            "username": dialog_manager.dialog_data.get("username", ""),
+            "account_id": dialog_manager.dialog_data.get("account_id", ""),
             "name": dialog_manager.dialog_data.get("name", ""),
             "role": role_display,
             "no_moderation_icon": "✅" if permissions["no_moderation"] else "❌",
@@ -391,4 +387,46 @@ class AddEmployeeDialogService(interface.IAddEmployeeDialogService):
             "edit_permissions_icon": "✅" if permissions["edit_permissions"] else "❌",
             "top_up_balance_icon": "✅" if permissions["top_up_balance"] else "❌",
             "social_networks_icon": "✅" if permissions["social_networks"] else "❌",
+        }
+
+    async def get_confirm_data(
+            self,
+            dialog_manager: DialogManager,
+            **kwargs
+    ) -> dict:
+        """Данные для окна подтверждения"""
+        permissions = dialog_manager.dialog_data.get("permissions", {})
+
+        # Формируем текст разрешений
+        permissions_text_list = []
+        if permissions.get("no_moderation", False):
+            permissions_text_list.append("✅ Публикации без одобрения")
+        if permissions.get("autoposting", False):
+            permissions_text_list.append("✅ Авто-постинг")
+        if permissions.get("add_employee", False):
+            permissions_text_list.append("✅ Добавление сотрудников")
+        if permissions.get("edit_permissions", False):
+            permissions_text_list.append("✅ Изменение разрешений")
+        if permissions.get("top_up_balance", False):
+            permissions_text_list.append("✅ Пополнение баланса")
+        if permissions.get("social_networks", False):
+            permissions_text_list.append("✅ Подключение соцсетей")
+
+        if not permissions_text_list:
+            permissions_text_list.append("❌ Нет специальных разрешений")
+
+        # Получаем читаемое название роли
+        role_names = {
+            "employee": "Сотрудник",
+            "moderator": "Модератор",
+            "admin": "Администратор",
+        }
+        role = dialog_manager.dialog_data.get("role", "employee")
+        role_display = role_names.get(role, role)
+
+        return {
+            "account_id": dialog_manager.dialog_data.get("account_id", ""),
+            "name": dialog_manager.dialog_data.get("name", ""),
+            "role": role_display,
+            "permissions_text": "\n".join(permissions_text_list),
         }

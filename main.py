@@ -22,6 +22,7 @@ from internal.controller.tg.dialog.main_menu.dialog import MainMenuDialog
 from internal.controller.tg.dialog.personal_profile.dialog import PersonalProfileDialog
 from internal.controller.tg.dialog.organization_menu.dialog import OrganizationMenuDialog
 from internal.controller.tg.dialog.change_employee.dialog import ChangeEmployeeDialog
+from internal.controller.tg.dialog.add_employee.dialog import AddEmployeeDialog
 
 from internal.service.state.service import StateService
 from internal.service.auth.service import AuthDialogService
@@ -29,6 +30,7 @@ from internal.service.main_menu.service import MainMenuDialogService
 from internal.service.personal_profile.service import PersonalProfileDialogService
 from internal.service.organization_menu.service import OrganizationMenuDialogService
 from internal.service.change_employee.service import ChangeEmployeeDialogService
+from internal.service.add_employee.service import AddEmployeeDialogService
 
 from internal.repo.state.repo import StateRepo
 
@@ -112,6 +114,12 @@ change_employee_service = ChangeEmployeeDialogService(
     kontur_organization_client
 )
 
+add_employee_service = AddEmployeeDialogService(
+    tel,
+    state_repo,
+    kontur_employee_client,
+)
+
 auth_dialog = AuthDialog(
     tel,
     auth_dialog_service,
@@ -131,6 +139,11 @@ organization_menu_dialog = OrganizationMenuDialog(
 change_employee_dialog = ChangeEmployeeDialog(
     tel,
     change_employee_service
+)
+
+add_employee_dialog = AddEmployeeDialog(
+    tel,
+    add_employee_service
 )
 
 # Инициализация middleware
@@ -166,6 +179,7 @@ if __name__ == "__main__":
         personal_profile_dialog,
         organization_menu_dialog,
         change_employee_dialog,
+        add_employee_dialog,
         cfg.prefix,
     )
     uvicorn.run(app, host="0.0.0.0", port=int(cfg.http_port), access_log=False)
