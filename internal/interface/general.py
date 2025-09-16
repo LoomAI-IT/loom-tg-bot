@@ -10,10 +10,6 @@ from opentelemetry.trace import Tracer
 from internal import model
 
 
-class IMessageController(Protocol):
-    @abstractmethod
-    async def message_handler(self, message: Message, user_state: model.UserState): pass
-
 
 class ICommandController(Protocol):
     @abstractmethod

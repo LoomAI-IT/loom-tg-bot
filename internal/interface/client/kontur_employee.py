@@ -9,14 +9,14 @@ class IKonturEmployeeClient(Protocol):
     async def create_employee(
             self,
             organization_id: int,
-            invited_from_employee_id: int,
+            invited_from_account_id: int,
             account_id: int,
             name: str,
             role: str
     ) -> int: pass
 
     @abstractmethod
-    async def get_employee_by_account_id(self, employee_id: int) -> model.Employee | None: pass
+    async def get_employee_by_account_id(self, account_id: int) -> model.Employee | None: pass
 
     @abstractmethod
     async def get_employees_by_organization(self, organization_id: int) -> list[model.Employee]: pass

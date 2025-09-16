@@ -25,7 +25,7 @@ class KonturEmployeeClient(interface.IKonturEmployeeClient):
     async def create_employee(
             self,
             organization_id: int,
-            invited_from_employee_id: int,
+            invited_from_account_id: int,
             account_id: int,
             name: str,
             role: str
@@ -35,7 +35,7 @@ class KonturEmployeeClient(interface.IKonturEmployeeClient):
                 kind=SpanKind.CLIENT,
                 attributes={
                     "organization_id": organization_id,
-                    "invited_from_employee_id": invited_from_employee_id,
+                    "invited_from_account_id": invited_from_account_id,
                     "account_id": account_id,
                     "name": name,
                     "role": role.value if hasattr(role, 'value') else str(role)
@@ -44,7 +44,7 @@ class KonturEmployeeClient(interface.IKonturEmployeeClient):
             try:
                 body = {
                     "organization_id": organization_id,
-                    "invited_from_employee_id": invited_from_employee_id,
+                    "invited_from_account_id": invited_from_account_id,
                     "account_id": account_id,
                     "name": name,
                     "role": role.value if hasattr(role, 'value') else str(role)
