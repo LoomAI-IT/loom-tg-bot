@@ -692,7 +692,7 @@ class KonturPublicationClient(interface.IKonturPublicationClient):
                 }
         ) as span:
             try:
-                response = await self.client.get(f"/video-cut/organization/{organization_id}")
+                response = await self.client.get(f"/organization/{organization_id}/video-cuts")
                 json_response = response.json()
 
                 span.set_status(Status(StatusCode.OK))
