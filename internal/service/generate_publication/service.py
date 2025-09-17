@@ -230,7 +230,6 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                await callback.answer("🔄 Генерирую текст + картинку...")
                 category_id = dialog_manager.dialog_data["category_id"]
                 input_text = dialog_manager.dialog_data["input_text"]
 
@@ -271,7 +270,6 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                await callback.answer("🔄 Перегенерирую текст...")
 
                 category_id = dialog_manager.dialog_data["category_id"]
                 current_text = dialog_manager.dialog_data["publication_text"]
@@ -476,7 +474,6 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                await callback.answer("🎨 Генерирую новое изображение...")
 
                 category_id = dialog_manager.dialog_data["category_id"]
                 publication_text = dialog_manager.dialog_data["publication_text"]
@@ -519,7 +516,6 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                     await message.answer("❌ Введите описание изображения")
                     return
 
-                await message.answer("🎨 Генерирую изображение по вашему описанию...")
 
                 category_id = dialog_manager.dialog_data["category_id"]
                 publication_text = dialog_manager.dialog_data["publication_text"]
@@ -560,8 +556,6 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 if not message.photo:
                     await message.answer("❌ Пожалуйста, отправьте изображение")
                     return
-
-                await message.answer("📤 Загружаю изображение...")
 
                 # Берем фото в лучшем качестве
                 photo = message.photo[-1]
