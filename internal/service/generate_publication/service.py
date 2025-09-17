@@ -213,11 +213,10 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 dialog_manager.dialog_data["publication_name"] = publication_data["name"]
                 dialog_manager.dialog_data["publication_text"] = publication_data["text"]
 
-                await loading_message.delete()
-                success_message = await callback.message.answer("✅ Пост успешно сгенерирован!")
+                await loading_message.edit_text("✅ Пост успешно сгенерирован!")
                 await asyncio.sleep(3)
                 try:
-                    await success_message.delete()
+                    await loading_message.delete()
                 except:
                     pass
 
@@ -241,6 +240,9 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                await callback.answer()
+                loading_message = await callback.message.answer("🔄 Герегенерирую текст + картинку, это может занять время...")
+
                 category_id = dialog_manager.dialog_data["category_id"]
                 input_text = dialog_manager.dialog_data["input_text"]
 
@@ -260,6 +262,13 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 )
 
                 dialog_manager.dialog_data["publication_image_url"] = image_url
+
+                await loading_message.edit_text("✅ Пост успешно сгенерирован!")
+                await asyncio.sleep(3)
+                try:
+                    await loading_message.delete()
+                except:
+                    pass
 
                 # Переходим к предпросмотру
                 await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
@@ -299,11 +308,10 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 dialog_manager.dialog_data["publication_text"] = regenerated_data["text"]
                 dialog_manager.dialog_data["publication_tags"] = regenerated_data["tags"]
 
-                await loading_message.delete()
-                success_message = await callback.message.answer("✅ Текст успешно обновлен!")
+                await loading_message.edit_text("✅ Пост успешно сгенерирован!")
                 await asyncio.sleep(3)
                 try:
-                    await success_message.delete()
+                    await loading_message.delete()
                 except:
                     pass
 
@@ -316,7 +324,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 await callback.answer("❌ Ошибка при перегенерации", show_alert=True)
                 raise
 
-    async def handle_regenerate_with_prompt(
+    async def handle_regenerate_text_with_prompt(
             self,
             message: Message,
             widget: Any,
@@ -332,7 +340,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                     await message.answer("❌ Введите указания для перегенерации")
                     return
 
-                await message.answer("🔄 Перегенерирую с учетом ваших пожеланий...")
+                loading_message = await message.answer("🔄 Перегенерирую с учетом ваших пожеланий...")
 
                 category_id = dialog_manager.dialog_data["category_id"]
                 current_text = dialog_manager.dialog_data["publication_text"]
@@ -347,7 +355,13 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 dialog_manager.dialog_data["publication_text"] = regenerated_data["text"]
                 dialog_manager.dialog_data["publication_tags"] = regenerated_data["tags"]
 
-                await message.answer("✅ Текст обновлен с учетом ваших пожеланий!")
+                await loading_message.edit_text("✅ Пост успешно сгенерирован!")
+                await asyncio.sleep(3)
+                try:
+                    await loading_message.delete()
+                except:
+                    pass
+
                 await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
 
                 span.set_status(Status(StatusCode.OK))
@@ -494,6 +508,8 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                await callback.answer()
+                loading_message = await callback.message.answer("🔄 Генерирую изображение, это может занять время...")
 
                 category_id = dialog_manager.dialog_data["category_id"]
                 publication_text = dialog_manager.dialog_data["publication_text"]
@@ -510,7 +526,13 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 dialog_manager.dialog_data["publication_image_url"] = image_url
                 dialog_manager.dialog_data["has_image"] = True
 
-                await callback.answer("✅ Изображение сгенерировано!", show_alert=True)
+                await loading_message.edit_text("✅ Текст успешно обновлен!")
+                await asyncio.sleep(3)
+                try:
+                    await loading_message.delete()
+                except:
+                    pass
+
                 await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
 
                 span.set_status(Status(StatusCode.OK))
@@ -536,6 +558,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                     await message.answer("❌ Введите описание изображения")
                     return
 
+                loading_message = await message.answer("🔄 Перегенерирую с учетом ваших пожеланий...")
 
                 category_id = dialog_manager.dialog_data["category_id"]
                 publication_text = dialog_manager.dialog_data["publication_text"]
@@ -551,7 +574,12 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 dialog_manager.dialog_data["publication_image_url"] = image_url
                 dialog_manager.dialog_data["has_image"] = True
 
-                await message.answer("✅ Изображение сгенерировано!")
+                await loading_message.edit_text("✅ Изображение успешно сгенерирован!")
+                await asyncio.sleep(3)
+                try:
+                    await loading_message.delete()
+                except:
+                    pass
                 await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
 
                 span.set_status(Status(StatusCode.OK))

@@ -115,7 +115,7 @@ class IGeneratePublicationDialogService(Protocol):
     ) -> None: pass
 
     @abstractmethod
-    async def handle_regenerate_with_prompt(
+    async def handle_regenerate_text_with_prompt(
             self,
             message: Message,
             widget: Any,

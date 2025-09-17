@@ -281,7 +281,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
 
             TextInput(
                 id="regenerate_prompt_input",
-                on_success=self.generate_publication_service.handle_regenerate_with_prompt,
+                on_success=self.generate_publication_service.handle_regenerate_text_with_prompt,
             ),
 
             Back(Const("◀️ Назад")),
