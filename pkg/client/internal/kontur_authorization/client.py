@@ -22,9 +22,9 @@ class KonturAuthorizationClient(interface.IKonturAuthorizationClient):
         )
         self.tracer = tel.tracer()
 
-    async def authorization(self, account_id: int) -> model.JWTTokens:
+    async def authorization_tg(self, account_id: int) -> model.JWTTokens:
         with self.tracer.start_as_current_span(
-                "KonturAuthorizationClient.authorization",
+                "KonturAuthorizationClient.authorization_tg",
                 kind=SpanKind.CLIENT,
                 attributes={
                     "account_id": account_id
@@ -34,7 +34,7 @@ class KonturAuthorizationClient(interface.IKonturAuthorizationClient):
                 body = {
                     "account_id": account_id
                 }
-                response = await self.client.post("/", json=body)
+                response = await self.client.post("/tg", json=body)
                 json_response = response.json()
 
                 span.set_status(Status(StatusCode.OK))

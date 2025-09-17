@@ -7,7 +7,7 @@ from internal import model
 class IKonturAuthorizationClient(Protocol):
 
     @abstractmethod
-    async def authorization(self, account_id: int) -> model.JWTTokens: pass
+    async def authorization_rg(self, account_id: int) -> model.JWTTokens: pass
 
     @abstractmethod
     async def check_authorization(self, access_token: str) -> model.AuthorizationData: pass

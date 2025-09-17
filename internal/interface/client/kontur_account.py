@@ -10,6 +10,9 @@ class IKonturAccountClient(Protocol):
     async def register(self, login: str, password: str) -> model.AuthorizationDataDTO: pass
 
     @abstractmethod
+    async def register_from_tg(self, login: str, password: str) -> model.AuthorizationDataDTO: pass
+
+    @abstractmethod
     async def login(self, login: str, password: str) -> model.AuthorizationDataDTO: pass
 
     @abstractmethod

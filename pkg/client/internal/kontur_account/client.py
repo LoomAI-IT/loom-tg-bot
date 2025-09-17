@@ -49,6 +49,34 @@ class KonturAccountClient(interface.IKonturAccountClient):
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
+    async def register_from_tg(self, login: str, password: str) -> model.AuthorizationDataDTO:
+        with self.tracer.start_as_current_span(
+                "AccountClient.register_from_tg",
+                kind=SpanKind.CLIENT,
+                attributes={
+                    "login": login
+                }
+        ) as span:
+            try:
+                body = {
+                    "login": login,
+                    "password": password
+                }
+                response = await self.client.post("/register/tg", json=body)
+                json_response = response.json()
+
+                span.set_status(Status(StatusCode.OK))
+                return model.AuthorizationDataDTO(
+                    account_id=json_response["account_id"],
+                    access_token=response.cookies.get("Access-Token"),
+                    refresh_token=response.cookies.get("Refresh-Token"),
+                )
+
+            except Exception as e:
+                span.record_exception(e)
+                span.set_status(Status(StatusCode.ERROR, str(e)))
+                raise
+
     async def login(
             self,
             login: str,
