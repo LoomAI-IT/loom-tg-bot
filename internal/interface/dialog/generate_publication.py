@@ -19,9 +19,8 @@ class IGeneratePublicationDialog(Protocol):
     @abstractmethod
     def get_input_text_window(self) -> Window: pass
 
-
     @abstractmethod
-    def get_image_generation_window(self) -> Window: pass
+    def get_generation_window(self) -> Window: pass
 
     @abstractmethod
     def get_preview_window(self) -> Window: pass
@@ -31,12 +30,6 @@ class IGeneratePublicationDialog(Protocol):
 
 
 class IGeneratePublicationDialogService(Protocol):
-    @abstractmethod
-    async def get_categories_data(
-            self,
-            dialog_manager: DialogManager,
-    ) -> dict: pass
-
     @abstractmethod
     async def handle_select_category(
             self,
@@ -88,63 +81,6 @@ class IGeneratePublicationDialogService(Protocol):
     ) -> None: pass
 
     @abstractmethod
-    async def handle_auto_generate_image(
-            self,
-            callback: CallbackQuery,
-            button: Any,
-            dialog_manager: DialogManager
-    ) -> None: pass
-
-    @abstractmethod
-    async def handle_custom_prompt_image(
-            self,
-            message: Message,
-            widget: Any,
-            dialog_manager: DialogManager,
-            prompt: str
-    ) -> None: pass
-
-    @abstractmethod
-    async def handle_request_custom_prompt(
-            self,
-            callback: CallbackQuery,
-            button: Any,
-            dialog_manager: DialogManager
-    ) -> None: pass
-
-    @abstractmethod
-    async def handle_upload_image(
-            self,
-            message: Message,
-            widget: MessageInput,
-            dialog_manager: DialogManager
-    ) -> None: pass
-
-    @abstractmethod
-    async def handle_request_upload_image(
-            self,
-            callback: CallbackQuery,
-            button: Any,
-            dialog_manager: DialogManager
-    ) -> None: pass
-
-    @abstractmethod
-    async def handle_regenerate_image(
-            self,
-            callback: CallbackQuery,
-            button: Any,
-            dialog_manager: DialogManager
-    ) -> None: pass
-
-    @abstractmethod
-    async def handle_delete_image(
-            self,
-            callback: CallbackQuery,
-            button: Any,
-            dialog_manager: DialogManager
-    ) -> None: pass
-
-    @abstractmethod
     async def handle_edit_text(
             self,
             callback: CallbackQuery,
@@ -162,14 +98,6 @@ class IGeneratePublicationDialogService(Protocol):
 
     @abstractmethod
     async def handle_add_to_drafts(
-            self,
-            callback: CallbackQuery,
-            button: Any,
-            dialog_manager: DialogManager
-    ) -> None: pass
-
-    @abstractmethod
-    async def handle_schedule_time(
             self,
             callback: CallbackQuery,
             button: Any,
@@ -218,14 +146,9 @@ class IGeneratePublicationDialogService(Protocol):
             dialog_manager: DialogManager,
     ) -> dict: pass
 
-    @abstractmethod
-    async def get_image_option_data(
-            self,
-            dialog_manager: DialogManager,
-    ) -> dict: pass
 
     @abstractmethod
-    async def get_image_generation_data(
+    async def get_categories_data(
             self,
             dialog_manager: DialogManager,
     ) -> dict: pass

@@ -7,31 +7,44 @@ from fastapi import UploadFile
 from internal import model
 
 class IKonturPublicationClient(Protocol):
-
     # ПУБЛИКАЦИИ
     @abstractmethod
-    async def generate_publication(
+    async def generate_publication_text(
             self,
-            organization_id: int,
             category_id: int,
-            creator_id: int,
-            need_images: bool,
-            text_reference: str,
-    ) -> model.Publication: pass
-
-    @abstractmethod
-    async def regenerate_publication_image(
-            self,
-            publication_id: int,
-            prompt: str = None,
-    ) -> io.BytesIO: pass
+            text_reference: str
+    ) -> dict: pass
 
     @abstractmethod
     async def regenerate_publication_text(
             self,
-            publication_id: int,
-            prompt: str = None,
+            category_id: int,
+            publication_text: str,
+            prompt: str = None
+    ) -> dict: pass
+
+    @abstractmethod
+    async def generate_publication_image(
+            self,
+            category_id: int,
+            publication_text: str,
+            text_reference: str,
+            prompt: str = None
     ) -> str: pass
+
+    @abstractmethod
+    async def create_publication(
+            self,
+            organization_id: int,
+            category_id: int,
+            creator_id: int,
+            text_reference: str,
+            name: str,
+            text: str,
+            tags: list[str],
+            moderation_status: str,
+            image_url: str = None
+    ) -> int: pass
 
     @abstractmethod
     async def change_publication(

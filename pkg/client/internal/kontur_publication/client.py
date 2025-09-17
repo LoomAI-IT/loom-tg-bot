@@ -26,69 +26,26 @@ class KonturPublicationClient(interface.IKonturPublicationClient):
         self.tracer = tel.tracer()
 
     # ПУБЛИКАЦИИ
-    async def generate_publication(
+    async def generate_publication_text(
             self,
-            organization_id: int,
             category_id: int,
-            creator_id: int,
-            need_images: bool,
-            text_reference: str,
-    ) -> model.Publication:
+            text_reference: str
+    ) -> dict:
         with self.tracer.start_as_current_span(
-                "PublicationClient.generate_publication",
-                kind=SpanKind.CLIENT,
-                attributes={
-                    "organization_id": organization_id,
-                    "category_id": category_id,
-                    "creator_id": creator_id,
-                    "need_images": need_images
-                }
+                "PublicationClient.generate_publication_text",
+                kind=SpanKind.CLIENT
         ) as span:
             try:
                 body = {
-                    "organization_id": organization_id,
                     "category_id": category_id,
-                    "creator_id": creator_id,
-                    "need_images": need_images,
                     "text_reference": text_reference,
                 }
-
-                response = await self.client.post("/generate", json=body)
+                response = await self.client.post("/text/generate", json=body)
                 json_response = response.json()
 
                 span.set_status(Status(StatusCode.OK))
-                return model.Publication(**json_response)
+                return json_response
 
-            except Exception as e:
-                span.record_exception(e)
-                span.set_status(Status(StatusCode.ERROR, str(e)))
-                raise
-
-    async def regenerate_publication_image(
-            self,
-            publication_id: int,
-            prompt: str = None,
-    ) -> io.BytesIO:
-        with self.tracer.start_as_current_span(
-                "PublicationClient.regenerate_publication_image",
-                kind=SpanKind.CLIENT,
-                attributes={
-                    "publication_id": publication_id
-                }
-        ) as span:
-            try:
-                body: dict = {"publication_id": publication_id}
-                if prompt:
-                    body["prompt"] = prompt
-
-                response = await self.client.post(f"/{publication_id}/image/regenerate", json=body)
-
-                # Assuming response contains binary image data
-                image_data = response.content
-                image_bytes = io.BytesIO(image_data)
-
-                span.set_status(Status(StatusCode.OK))
-                return image_bytes
             except Exception as e:
                 span.record_exception(e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
@@ -96,26 +53,94 @@ class KonturPublicationClient(interface.IKonturPublicationClient):
 
     async def regenerate_publication_text(
             self,
-            publication_id: int,
-            prompt: str = None,
-    ) -> str:
+            category_id: int,
+            publication_text: str,
+            prompt: str = None
+    ) -> dict:
         with self.tracer.start_as_current_span(
                 "PublicationClient.regenerate_publication_text",
-                kind=SpanKind.CLIENT,
-                attributes={
-                    "publication_id": publication_id
-                }
+                kind=SpanKind.CLIENT
         ) as span:
             try:
-                body: dict = {"publication_id": publication_id}
-                if prompt:
-                    body["prompt"] = prompt
-
-                response = await self.client.post(f"/{publication_id}/text/regenerate", json=body)
+                body = {
+                    "category_id": category_id,
+                    "publication_text": publication_text,
+                    "prompt": prompt,
+                }
+                response = await self.client.post("/text/regenerate", json=body)
                 json_response = response.json()
 
                 span.set_status(Status(StatusCode.OK))
-                return json_response["text"]
+                return json_response
+
+            except Exception as e:
+                span.record_exception(e)
+                span.set_status(Status(StatusCode.ERROR, str(e)))
+                raise
+
+    async def generate_publication_image(
+            self,
+            category_id: int,
+            publication_text: str,
+            text_reference: str,
+            prompt: str = None
+    ) -> str:
+        with self.tracer.start_as_current_span(
+                "PublicationClient.generate_publication_image",
+                kind=SpanKind.CLIENT
+        ) as span:
+            try:
+                body = {
+                    "category_id": category_id,
+                    "publication_text": publication_text,
+                    "text_reference": text_reference,
+                    "prompt": prompt,
+                }
+                response = await self.client.post("/image/generate", json=body)
+                json_response = response.json()
+
+                span.set_status(Status(StatusCode.OK))
+                return json_response
+
+            except Exception as e:
+                span.record_exception(e)
+                span.set_status(Status(StatusCode.ERROR, str(e)))
+                raise
+
+    async def create_publication(
+            self,
+            organization_id: int,
+            category_id: int,
+            creator_id: int,
+            text_reference: str,
+            name: str,
+            text: str,
+            tags: list[str],
+            moderation_status: str,
+            image_url: str = None
+    ) -> int:
+        with self.tracer.start_as_current_span(
+                "PublicationClient.create_publication",
+                kind=SpanKind.CLIENT
+        ) as span:
+            try:
+                body = {
+                    "organization_id": organization_id,
+                    "category_id": category_id,
+                    "creator_id": creator_id,
+                    "text_reference": text_reference,
+                    "name": name,
+                    "text": text,
+                    "tags": tags,
+                    "moderation_status": moderation_status,
+                    "image_url": image_url,
+                }
+                response = await self.client.post("/create", json=body)
+                json_response = response.json()
+
+                span.set_status(Status(StatusCode.OK))
+                return json_response
+
             except Exception as e:
                 span.record_exception(e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
