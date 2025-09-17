@@ -237,25 +237,29 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
             dialog_manager: DialogManager
     ) -> None:
         with self.tracer.start_as_current_span(
-                "GeneratePublicationDialogService.handle_generate_text",
+                "GeneratePublicationDialogService.handle_generate_text_with_image",
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
                 await callback.answer()
-                loading_message = await callback.message.answer("🔄 Герегенерирую текст + картинку, это может занять время...")
+                loading_message = await callback.message.answer(
+                    "🔄 Генерирую текст и изображение, это может занять время..."
+                )
 
                 category_id = dialog_manager.dialog_data["category_id"]
                 input_text = dialog_manager.dialog_data["input_text"]
 
+                # Генерируем текст
                 publication_data = await self.kontur_publication_client.generate_publication_text(
                     category_id=category_id,
                     text_reference=input_text,
                 )
 
-                dialog_manager.dialog_data["publication_tags"] = publication_data["tags"]
+                dialog_manager.dialog_data["publication_tags"] = publication_data.get("tags", [])
                 dialog_manager.dialog_data["publication_name"] = publication_data["name"]
                 dialog_manager.dialog_data["publication_text"] = publication_data["text"]
 
+                # Генерируем изображение
                 image_url = await self.kontur_publication_client.generate_publication_image(
                     category_id,
                     publication_data["text"],
@@ -263,9 +267,11 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 )
 
                 dialog_manager.dialog_data["publication_image_url"] = image_url
+                dialog_manager.dialog_data["has_image"] = True
+                dialog_manager.dialog_data["is_custom_image"] = False
 
-                await loading_message.edit_text("✅ Пост успешно сгенерирован!")
-                await asyncio.sleep(3)
+                await loading_message.edit_text("✅ Публикация успешно создана!")
+                await asyncio.sleep(2)
                 try:
                     await loading_message.delete()
                 except:
@@ -278,6 +284,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
+                await callback.answer("❌ Ошибка при генерации", show_alert=True)
                 raise
 
     async def handle_regenerate_text(
@@ -602,34 +609,8 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                if not message.photo:
-                    await message.answer("❌ Пожалуйста, отправьте изображение")
-                    return
-
-                # Берем фото в лучшем качестве
-                photo = message.photo[-1]
-                file = await self.bot.get_file(photo.file_id)
-
-                # Сохраняем file_id для дальнейшего использования
-                dialog_manager.dialog_data["custom_image_file_id"] = photo.file_id
-                dialog_manager.dialog_data["has_image"] = True
-                dialog_manager.dialog_data["is_custom_image"] = True
-
-                # TODO: Здесь нужно будет загрузить изображение на сервер
-                # и получить URL, пока сохраняем file_id
-
-                await message.answer("✅ Изображение загружено!")
-                await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
-
-                self.logger.info(
-                    "Пользовательское изображение загружено",
-                    {
-                        common.TELEGRAM_CHAT_ID_KEY: message.chat.id,
-                        "file_id": photo.file_id,
-                    }
-                )
-
-                span.set_status(Status(StatusCode.OK))
+                # TODO: Реализовать
+                await message.answer("🚧 Функция в разработке", show_alert=True)
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
@@ -670,7 +651,6 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 await callback.answer("❌ Ошибка при удалении изображения", show_alert=True)
                 raise
-
 
     async def handle_edit_text(
             self,
@@ -974,27 +954,50 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                     state.account_id
                 )
 
-                tags = dialog_manager.dialog_data["publication_tags"]
-                name = dialog_manager.dialog_data["publication_name"]
-                text = dialog_manager.dialog_data["publication_text"]
-                image_url = dialog_manager.dialog_data.get("publication_image_url")
+                tags = dialog_manager.dialog_data.get("publication_tags", [])
+                name = dialog_manager.dialog_data.get("publication_name", "")
+                text = dialog_manager.dialog_data.get("publication_text", "")
+
+                # Проверяем наличие изображения
+                has_image = False
+                preview_image_media = None
+
+                # Если есть URL изображения (сгенерированное)
+                if dialog_manager.dialog_data.get("publication_image_url"):
+                    has_image = True
+                    from aiogram_dialog.api.entities import MediaAttachment, MediaId
+                    from aiogram.types import URLInputFile
+
+                    image_url = dialog_manager.dialog_data["publication_image_url"]
+                    preview_image_media = MediaAttachment(
+                        url=image_url,
+                        type=ContentType.PHOTO
+                    )
+
+                # Если есть загруженное пользователем изображение
+                elif dialog_manager.dialog_data.get("custom_image_file_id"):
+                    has_image = True
+                    from aiogram_dialog.api.entities import MediaAttachment, MediaId
+
+                    file_id = dialog_manager.dialog_data["custom_image_file_id"]
+                    preview_image_media = MediaAttachment(
+                        file_id=MediaId(file_id),
+                        type=ContentType.PHOTO
+                    )
 
                 # Проверяем требования модерации
                 requires_moderation = employee.required_moderation
                 can_publish_directly = not requires_moderation
-
-                # Нужно реализовать гле-то это
-                preview_image_media = None
 
                 data = {
                     "category_name": dialog_manager.dialog_data.get("category_name", ""),
                     "publication_name": name,
                     "publication_text": text,
                     "has_tags": bool(tags),
-                    "publication_tags": tags,
+                    "publication_tags": ", ".join(tags) if tags else "",
                     "has_scheduled_time": False,
                     "publish_time": "",
-                    "has_image": dialog_manager.dialog_data.get("has_image", False),
+                    "has_image": has_image,
                     "preview_image_media": preview_image_media,
                     "requires_moderation": requires_moderation,
                     "can_publish_directly": can_publish_directly,
