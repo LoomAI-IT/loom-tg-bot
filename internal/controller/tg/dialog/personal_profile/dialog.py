@@ -1,6 +1,6 @@
 from aiogram_dialog import Window, Dialog
 from aiogram_dialog.widgets.text import Const, Format
-from aiogram_dialog.widgets.kbd import Button, Column, Row, Back
+from aiogram_dialog.widgets.kbd import Button, Column, Row
 
 from internal import interface, model
 
@@ -60,7 +60,11 @@ class PersonalProfileDialog(interface.IPersonalProfileDialog):
     def get_faq_window(self) -> Window:
         return Window(
             Format("<b>Вопросики всякие тут будут</b>\n\n"),
-            Back(Const("◀️ Назад")),
+            Button(
+                Const("◀️ Назад"),
+                id="back_to_profile",
+                on_click=self.personal_profile_service.handle_back_to_profile,
+            ),
             state=model.PersonalProfileStates.faq,
             parse_mode="HTML",
         )
@@ -68,7 +72,11 @@ class PersonalProfileDialog(interface.IPersonalProfileDialog):
     def get_support_window(self) -> Window:
         return Window(
             Format("<b>А тут будут контактные данные поддержки</b>\n\n"),
-            Back(Const("◀️ Назад")),
+            Button(
+                Const("◀️ Назад"),
+                id="back_to_profile",
+                on_click=self.personal_profile_service.handle_back_to_profile,
+            ),
             state=model.PersonalProfileStates.support,
             parse_mode="HTML",
         )

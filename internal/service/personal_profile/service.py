@@ -133,6 +133,33 @@ class PersonalProfileDialogService(interface.IPersonalProfileDialogService):
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
+    async def handle_back_to_profile(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        """Возврат к основному окну личного профиля"""
+        with self.tracer.start_as_current_span(
+                "PersonalProfileDialogService.handle_back_to_profile",
+                kind=SpanKind.INTERNAL
+        ) as span:
+            try:
+                await dialog_manager.switch_to(model.PersonalProfileStates.personal_profile)
+
+                self.logger.info(
+                    "Возврат к личному профилю",
+                    {
+                        common.TELEGRAM_CHAT_ID_KEY: callback.message.chat.id,
+                    }
+                )
+
+                span.set_status(Status(StatusCode.OK))
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
+                raise
+
     async def handle_go_to_main_menu(
             self,
             callback: CallbackQuery,
