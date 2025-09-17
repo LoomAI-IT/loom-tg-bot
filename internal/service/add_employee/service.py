@@ -239,7 +239,7 @@ class AddEmployeeDialogService(interface.IAddEmployeeDialogService):
                     current_user_state.account_id
                 )
 
-                # Создаем сотрудника
+                # Создаем сотрудника, этот микросервис потом по вебхуку уведомит сотрудника и обновит стейт
                 new_employee_id = await self.kontur_employee_client.create_employee(
                     organization_id=current_employee.organization_id,
                     invited_from_account_id=current_user_state.account_id,
@@ -257,18 +257,6 @@ class AddEmployeeDialogService(interface.IAddEmployeeDialogService):
                     edit_employee_perm_permission=permissions.get("edit_permissions", False),
                     top_up_balance_permission=permissions.get("top_up_balance", False),
                     sign_up_social_net_permission=permissions.get("social_networks", False),
-                )
-
-                # Обновляем и уведомляем нового сотрудника
-                new_employee = (await self.state_repo.state_by_account_id(account_id))[0]
-
-                await self.state_repo.change_user_state(
-                    new_employee.id,
-                    organization_id=current_user_state.organization_id
-                )
-                await self.bot.send_message(
-                    new_employee.tg_chat_id,
-                    "Вас добавили в организацию. Нажмите /start"
                 )
 
                 self.logger.info(
