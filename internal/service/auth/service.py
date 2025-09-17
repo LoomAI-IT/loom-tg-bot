@@ -110,7 +110,7 @@ class AuthDialogService(interface.IAuthDialogService):
                 dialog_manager.dialog_data["data_processing_accepted"] = True
 
                 # Регистрируем пользователя
-                authorized_data = await self.kontur_account_client.register(
+                authorized_data = await self.kontur_account_client.register_from_tg(
                     uuid.uuid4().hex,
                     uuid.uuid4().hex,
                 )
