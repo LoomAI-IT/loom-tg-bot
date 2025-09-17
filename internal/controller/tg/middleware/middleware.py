@@ -5,9 +5,12 @@ from aiogram import Bot
 from typing import Callable, Any, Awaitable
 from aiogram.types import TelegramObject, Update
 from aiogram.exceptions import TelegramBadRequest
+from aiogram_dialog import DialogManager, StartMode
+from aiogram_dialog.api.exceptions import UnknownIntent
 from opentelemetry.trace import SpanKind, Status, StatusCode
 
-from internal import interface, common
+from internal import interface, common, model
+
 
 class TgMiddleware(interface.ITelegramMiddleware):
     def __init__(
@@ -48,24 +51,28 @@ class TgMiddleware(interface.ITelegramMiddleware):
             unit="1"
         )
 
+    async def error_middleware00(
+            self,
+            handler: Callable[[TelegramObject, dict[str, Any]], Awaitable[Any]],
+            event: Update,
+            data: dict[str, Any]
+    ):
+        try:
+            await handler(event, data)
+
+        except UnknownIntent as err:
+            await self._handle_unknown_intent_error(event, data, err)
+
+        except Exception as err:
+            pass
+
     async def trace_middleware01(
             self,
             handler: Callable[[TelegramObject, dict[str, Any]], Awaitable[Any]],
             event: Update,
             data: dict[str, Any]
     ):
-        message = event.message if event.message is not None else event.callback_query.message
-        event_type = "message" if event.message is not None else "callback_query"
-        message_id = message.message_id
-        if event_type == "message":
-            user_username = message.from_user.username
-        else:
-            user_username = event.callback_query.from_user.username
-        tg_chat_id = message.chat.id
-        if message.text is not None:
-            message_text = message.text
-        else:
-            message_text = "Изображение"
+        message, event_type, message_text, user_username, tg_chat_id, message_id = self.__extract_metadata(event)
 
         callback_query_data = event.callback_query.data if event.callback_query is not None else ""
 
@@ -91,12 +98,10 @@ class TgMiddleware(interface.ITelegramMiddleware):
                 await handler(event, data)
 
                 root_span.set_status(Status(StatusCode.OK))
-            except TelegramBadRequest:
-                pass
             except Exception as error:
-                await message.answer("Непредвиденная ошибка на сервере")
                 root_span.record_exception(error)
                 root_span.set_status(Status(StatusCode.ERROR, str(error)))
+                raise error
 
     async def metric_middleware02(
             self,
@@ -111,21 +116,9 @@ class TgMiddleware(interface.ITelegramMiddleware):
             start_time = time.time()
             self.active_messages.add(1)
 
-            message = event.message if event.message is not None else event.callback_query.message
-            event_type = "message" if event.message is not None else "callback_query"
-            message_id = message.message_id
-            if event_type == "message":
-                user_username = message.from_user.username
-            else:
-                user_username = event.callback_query.from_user.username
-            tg_chat_id = message.chat.id
-            if message.text is not None:
-                message_text = message.text
-            else:
-                message_text = "Изображение"
+            message, event_type, message_text, user_username, tg_chat_id, message_id = self.__extract_metadata(event)
+
             callback_query_data = event.callback_query.data if event.callback_query is not None else ""
-            trace_id = data["trace_id"]
-            span_id = data["span_id"]
 
             request_attrs: dict = {
                 common.TELEGRAM_EVENT_TYPE_KEY: event_type,
@@ -134,8 +127,8 @@ class TgMiddleware(interface.ITelegramMiddleware):
                 common.TELEGRAM_USER_MESSAGE_KEY: message_text,
                 common.TELEGRAM_MESSAGE_ID_KEY: message_id,
                 common.TELEGRAM_CALLBACK_QUERY_DATA_KEY: callback_query_data,
-                common.TRACE_ID_KEY: trace_id,
-                common.SPAN_ID_KEY: span_id,
+                common.TRACE_ID_KEY: data["trace_id"],
+                common.SPAN_ID_KEY: data["span_id"],
             }
 
             try:
@@ -176,21 +169,9 @@ class TgMiddleware(interface.ITelegramMiddleware):
         ) as span:
             start_time = time.time()
 
-            message = event.message if event.message is not None else event.callback_query.message
-            event_type = "message" if event.message is not None else "callback_query"
-            message_id = message.message_id
-            if event_type == "message":
-                user_username = message.from_user.username
-            else:
-                user_username = event.callback_query.from_user.username
-            tg_chat_id = message.chat.id
-            if message.text is not None:
-                message_text = message.text
-            else:
-                message_text = "Изображение"
+            message, event_type, message_text, user_username, tg_chat_id, message_id = self.__extract_metadata(event)
+
             callback_query_data = event.callback_query.data if event.callback_query is not None else ""
-            trace_id = data["trace_id"]
-            span_id = data["span_id"]
 
             extra_log: dict = {
                 common.TELEGRAM_EVENT_TYPE_KEY: event_type,
@@ -199,14 +180,11 @@ class TgMiddleware(interface.ITelegramMiddleware):
                 common.TELEGRAM_USER_MESSAGE_KEY: message_text,
                 common.TELEGRAM_MESSAGE_ID_KEY: message_id,
                 common.TELEGRAM_CALLBACK_QUERY_DATA_KEY: callback_query_data,
-                common.TRACE_ID_KEY: trace_id,
-                common.SPAN_ID_KEY: span_id,
+                common.TRACE_ID_KEY: data["trace_id"],
+                common.SPAN_ID_KEY: data["span_id"],
             }
             try:
-                if event_type == "message":
-                    self.logger.info("Начали обработку telegram message", extra_log)
-                if event_type == "callback_query":
-                    self.logger.info("Начали обработку telegram callback", extra_log)
+                self.logger.info(f"Начали обработку telegram {event_type}", extra_log)
 
                 del data["trace_id"], data["span_id"]
                 await handler(event, data)
@@ -215,13 +193,17 @@ class TgMiddleware(interface.ITelegramMiddleware):
                     **extra_log,
                     common.TELEGRAM_MESSAGE_DURATION_KEY: int((time.time() - start_time) * 1000),
                 }
-                if event_type == "message":
-                    self.logger.info("Завершили обработку telegram message", extra_log)
-                elif event_type == "callback_query":
-                    self.logger.info("Завершили обработку telegram callback", extra_log)
+                self.logger.info(f"Закончили обработку telegram {event_type}", extra_log)
 
                 span.set_status(Status(StatusCode.OK))
-            except TelegramBadRequest:
+            except TelegramBadRequest as err:
+                self.logger.warning(
+                    "TelegramBadRequest в dialog middleware",
+                    {
+                        common.ERROR_KEY: str(err),
+                        common.TELEGRAM_CHAT_ID_KEY: self._get_chat_id(event),
+                    }
+                )
                 pass
             except Exception as err:
                 extra_log = {
@@ -229,10 +211,117 @@ class TgMiddleware(interface.ITelegramMiddleware):
                     common.TELEGRAM_MESSAGE_DURATION_KEY: int((time.time() - start_time) * 1000),
                     common.TRACEBACK_KEY: traceback.format_exc()
                 }
-                if event_type == "message":
-                    self.logger.error(f"Ошибка обработки telegram message: {str(err)}", extra_log)
-                elif event_type == "callback_query":
-                    self.logger.error(f"Ошибка обработки telegram callback: {str(err)}", extra_log)
+                self.logger.error(f"Ошибка обработки telegram {event_type}: {str(err)}", extra_log)
+
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise err
+
+    async def _handle_unknown_intent_error(
+            self,
+            event: Update,
+            data: dict[str, Any],
+            err: UnknownIntent,
+    ):
+        chat_id = self._get_chat_id(event)
+
+        self.logger.warning(
+            "UnknownIntent error - сбрасываем диалог пользователя",
+            {
+                common.TELEGRAM_CHAT_ID_KEY: chat_id,
+                common.ERROR_KEY: str(err),
+                "intent_id": getattr(err, 'intent_id', 'unknown'),
+            }
+        )
+
+        try:
+            # Получаем состояние пользователя
+            user_state = await self.state_service.state_by_id(chat_id)
+
+            if not user_state:
+                # Если пользователь не найден, создаем состояние
+                await self.state_service.create_state(chat_id)
+                user_state = await self.state_service.state_by_id(chat_id)
+
+            user_state = user_state[0]
+
+            # Получаем dialog_manager из данных
+            dialog_manager: DialogManager = data.get("dialog_manager")
+
+            if dialog_manager:
+                # Сбрасываем стек диалогов и перенаправляем пользователя
+                await dialog_manager.reset_stack()
+
+                # Определяем, куда направить пользователя в зависимости от его состояния
+                if user_state.organization_id == 0 and user_state.account_id == 0:
+                    # Не авторизован - отправляем на авторизацию
+                    await dialog_manager.start(
+                        model.AuthStates.user_agreement,
+                        mode=StartMode.RESET_STACK
+                    )
+                elif user_state.organization_id == 0 and user_state.account_id != 0:
+                    # Авторизован, но нет доступа к организации
+                    await dialog_manager.start(
+                        model.AuthStates.access_denied,
+                        mode=StartMode.RESET_STACK
+                    )
+                else:
+                    # Полностью авторизован - отправляем в главное меню
+                    await dialog_manager.start(
+                        model.MainMenuStates.main_menu,
+                        mode=StartMode.RESET_STACK
+                    )
+            else:
+                # Если нет dialog_manager, отправляем простое сообщение
+                message = self._get_message(event)
+                if message:
+                    await message.answer(
+                        "🔄 Произошла ошибка в диалоге. Нажмите /start для перезапуска."
+                    )
+
+        except Exception as recovery_err:
+            self.logger.error(
+                "Ошибка при восстановлении после UnknownIntent",
+                {
+                    common.TELEGRAM_CHAT_ID_KEY: chat_id,
+                    common.ERROR_KEY: str(recovery_err),
+                    common.TRACEBACK_KEY: traceback.format_exc(),
+                }
+            )
+
+            message = self._get_message(event)
+            if message:
+                await message.answer(
+                    "❌ Произошла серьезная ошибка. Нажмите /start для перезапуска."
+                )
+
+    def __extract_metadata(self, event: Update):
+        message = event.message if event.message is not None else event.callback_query.message
+        event_type = "message" if event.message is not None else "callback_query"
+
+        if event_type == "message":
+            user_username = message.from_user.username
+        else:
+            user_username = event.callback_query.from_user.username
+        tg_chat_id = message.chat.id
+        if message.text is not None:
+            message_text = message.text
+        else:
+            message_text = "Изображение"
+
+        message_id = message.message_id
+        return message, event_type, message_text, user_username, tg_chat_id, message_id
+
+    def _get_chat_id(self, event: Update) -> int:
+        if event.message:
+            return event.message.chat.id
+        elif event.callback_query and event.callback_query.message:
+            return event.callback_query.message.chat.id
+        return 0
+
+    def _get_message(self, event: Update):
+        if event.message:
+            return event.message
+        elif event.callback_query and event.callback_query.message:
+            return event.callback_query.message
+        return None

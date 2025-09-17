@@ -62,6 +62,7 @@ def include_tg_middleware(
         dp: Dispatcher,
         tg_middleware: interface.ITelegramMiddleware,
 ):
+    dp.update.middleware(tg_middleware.error_middleware00)
     dp.update.middleware(tg_middleware.trace_middleware01)
     dp.update.middleware(tg_middleware.metric_middleware02)
     dp.update.middleware(tg_middleware.logger_middleware03)

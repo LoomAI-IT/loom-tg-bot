@@ -20,6 +20,14 @@ class ICommandController(Protocol):
 
 class ITelegramMiddleware(Protocol):
     @abstractmethod
+    async def error_middleware00(
+            self,
+            handler: Callable[[TelegramObject, dict[str, Any]], Awaitable[Any]],
+            event: Update,
+            data: dict[str, Any]
+    ): pass
+
+    @abstractmethod
     async def trace_middleware01(
             self,
             handler: Callable[[TelegramObject, dict[str, Any]], Awaitable[Any]],
