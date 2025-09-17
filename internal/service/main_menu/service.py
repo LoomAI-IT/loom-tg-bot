@@ -57,8 +57,10 @@ class MainMenuDialogService(interface.IMainMenuDialogService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                # TODO: Запустить диалог контента
-                await callback.answer("Функция контента в разработке", show_alert=True)
+                await dialog_manager.start(
+                    model.ContentMenuStates.content_menu,
+                    mode=StartMode.RESET_STACK
+                )
 
                 self.logger.info(
                     "Попытка перехода к контенту",
