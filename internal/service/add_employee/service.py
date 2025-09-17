@@ -300,6 +300,34 @@ class AddEmployeeDialogService(interface.IAddEmployeeDialogService):
                 await callback.answer("❌ Ошибка при создании сотрудника", show_alert=True)
                 raise
 
+    async def handle_go_to_organization_menu(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        with self.tracer.start_as_current_span(
+                "AddEmployeeDialogService.handle_go_to_organization_menu",
+                kind=SpanKind.INTERNAL
+        ) as span:
+            try:
+                await dialog_manager.start(
+                    model.OrganizationMenuStates.organization_menu,
+                    mode=StartMode.RESET_STACK
+                )
+
+                self.logger.info(
+                    "Переход в меню организации",
+                    {
+                        common.TELEGRAM_CHAT_ID_KEY: callback.message.chat.id,
+                    }
+                )
+                span.set_status(Status(StatusCode.OK))
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
+                raise
+
     def _get_default_permissions_by_role(self, role: str) -> dict:
         if role == "admin":
             return {

@@ -38,7 +38,11 @@ class AddEmployeeDialog(interface.IAddEmployeeDialog):
                 on_success=self.add_employee_service.handle_account_id_input,
             ),
 
-            Back(Const("◀️ Назад")),
+            Button(
+                Const("⬅️ Вернуться в меню организации"),
+                id="go_to_organization_menu",
+                on_click=self.add_employee_service.handle_go_to_organization_menu,
+            ),
 
             state=model.AddEmployeeStates.enter_account_id,
             getter=self.add_employee_service.get_enter_account_id_data,

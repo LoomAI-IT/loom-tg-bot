@@ -71,6 +71,15 @@ class IAddEmployeeDialogService(Protocol):
     ) -> None: pass
 
     @abstractmethod
+    async def handle_go_to_organization_menu(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        pass
+
+    @abstractmethod
     async def get_enter_account_id_data(self) -> dict: pass
 
     @abstractmethod
