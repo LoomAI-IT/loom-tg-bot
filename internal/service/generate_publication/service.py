@@ -980,14 +980,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-                return {
-                    "category_name": "",
-                    "publication_title": "Ошибка загрузки",
-                    "publication_text": "Не удалось загрузить данные публикации",
-                    "has_tags": False,
-                    "requires_moderation": True,
-                    "can_publish_directly": False,
-                }
+                raise err
 
     async def get_publish_locations_data(
             self,
@@ -1028,14 +1021,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-                return {
-                    "telegram_available": False,
-                    "instagram_available": False,
-                    "vkontakte_available": False,
-                    "youtube_available": False,
-                    "has_selected_platforms": False,
-                    "selected_count": 0,
-                }
+                raise err
 
     # Вспомогательные методы
 
