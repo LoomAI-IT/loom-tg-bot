@@ -948,7 +948,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                     "publication_name": name,
                     "publication_text": text,
                     "has_tags": bool(tags),
-                    "tags_list": tags,
+                    "publication_tags": tags,
                     "has_scheduled_time": False,
                     "publish_time": "",
                     "has_image": dialog_manager.dialog_data.get("has_image", False),
