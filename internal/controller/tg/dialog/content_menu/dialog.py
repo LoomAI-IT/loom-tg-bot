@@ -30,7 +30,10 @@ class ContentMenuDialog(interface.IContentMenuDialog):
             Format("📊 <b>Статистика:</b>\n"),
             Format("• Черновиков: <b>{drafts_count}</b>\n"),
             Format("• На модерации: <b>{moderation_count}</b>\n"),
+            Format("• Прошли модерацию: <b>{approved_count}</b>\n"),
             Format("• Опубликовано: <b>{published_count}</b>\n"),
+            Format("• Сгенерированно публикаций: <b>{publication_count}</b>\n"),
+            Format("• Сгенерировано нарезок: <b>{video_cut_count}</b>\n"),
             Format("• Всего генераций: <b>{total_generations}</b>\n\n"),
 
             Column(
@@ -49,46 +52,6 @@ class ContentMenuDialog(interface.IContentMenuDialog):
                         Const("🔍 Модерация"),
                         id="moderation",
                         on_click=lambda c, b, d: d.switch_to(model.ContentMenuStates.select_moderation_type),
-                    ),
-                ),
-                Button(
-                    Const("🏠 В главное меню"),
-                    id="to_main_menu",
-                    on_click=self.content_menu_service.handle_go_to_main_menu,
-                ),
-            ),
-
-            state=model.ContentMenuStates.content_menu,
-            getter=self.content_menu_service.get_content_menu_data,
-            parse_mode="HTML",
-        )
-
-    def get_content_type_selection_window(self) -> Window:
-        return Window(
-            Const("✍️ <b>Контент и публикации</b>\n\n"),
-            Const("🎯 <b>Что хотите сделать?</b>\n\n"),
-            Format("📊 <b>Статистика:</b>\n"),
-            Format("• Черновиков: <b>{drafts_count}</b>\n"),
-            Format("• На модерации: <b>{moderation_count}</b>\n"),
-            Format("• Опубликовано: <b>{published_count}</b>\n"),
-            Format("• Всего генераций: <b>{total_generations}</b>\n\n"),
-
-            Column(
-                Button(
-                    Const("🚀 Создать новый контент"),
-                    id="create_content",
-                    on_click=lambda c, b, d: d.switch_to(model.ContentMenuStates.select_content_type),
-                ),
-                Row(
-                    Button(
-                        Const("📝 Черновики"),
-                        id="drafts",
-                        on_click=self.content_menu_service.handle_go_to_drafts,
-                    ),
-                    Button(
-                        Const("🔍 Модерация"),
-                        id="moderation",
-                        on_click=self.content_menu_service.handle_go_to_moderation,
                     ),
                 ),
                 Button(

@@ -53,43 +53,62 @@ class ContentMenuDialogService(interface.IContentMenuDialogService):
                 # Подсчитываем статистику
                 drafts_count = 0
                 moderation_count = 0
+                approved_count = 0
                 published_count = 0
+                total_generations = 0
+
+                video_cut_count = 0
+                publication_count = 0
 
                 # Статистика публикаций
                 for pub in publications:
+                    total_generations += 1
+                    publication_count += 1
+
                     if pub.moderation_status == "draft":
                         drafts_count += 1
-                    elif pub.moderation_status == "pending":
+                    elif pub.moderation_status == "moderation":
                         moderation_count += 1
-                    elif pub.moderation_status == "approved" or pub.publication_at:
+                    elif pub.moderation_status == "approved":
+                        approved_count += 1
+                    elif pub.moderation_status == "published":
                         published_count += 1
 
                 # Статистика видео-нарезок
                 for video in video_cuts:
-                    if video.moderation_status == "draft":
-                        drafts_count += 1
-                    elif video.moderation_status == "pending":
-                        moderation_count += 1
-                    elif video.moderation_status == "approved" or video.publication_at:
-                        published_count += 1
+                    total_generations += 1
+                    video_cut_count += 1
 
-                total_generations = len(publications) + len(video_cuts)
+                    if pub.moderation_status == "draft":
+                        drafts_count += 1
+                    elif pub.moderation_status == "moderation":
+                        moderation_count += 1
+                    elif pub.moderation_status == "approved":
+                        approved_count += 1
+                    elif pub.moderation_status == "published":
+                        published_count += 1
 
                 data = {
                     "drafts_count": drafts_count,
                     "moderation_count": moderation_count,
+                    "approved_count": approved_count,
                     "published_count": published_count,
                     "total_generations": total_generations,
+                    "video_cut_count": video_cut_count,
+                    "publication_count": publication_count,
                 }
 
                 self.logger.info(
                     "Данные меню контента загружены",
                     {
                         common.TELEGRAM_CHAT_ID_KEY: self._get_chat_id(dialog_manager),
-                        "organization_id": employee.organization_id,
                         "drafts_count": drafts_count,
                         "moderation_count": moderation_count,
+                        "approved_count": approved_count,
                         "published_count": published_count,
+                        "total_generations": total_generations,
+                        "video_cut_count": video_cut_count,
+                        "publication_count": publication_count,
                     }
                 )
 
@@ -99,13 +118,7 @@ class ContentMenuDialogService(interface.IContentMenuDialogService):
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-                # В случае ошибки возвращаем данные по умолчанию
-                return {
-                    "drafts_count": 0,
-                    "moderation_count": 0,
-                    "published_count": 0,
-                    "total_generations": 0,
-                }
+                raise err
 
     async def handle_go_to_publication_generation(
             self,
@@ -250,8 +263,8 @@ class ContentMenuDialogService(interface.IContentMenuDialogService):
                 )
 
                 can_moderate = (
-                    employee.role in ["moderator", "admin", "owner"] or
-                    employee.edit_employee_perm_permission
+                        employee.role in ["moderator", "admin", "owner"] or
+                        employee.edit_employee_perm_permission
                 )
 
                 if not can_moderate:
@@ -301,8 +314,8 @@ class ContentMenuDialogService(interface.IContentMenuDialogService):
                 )
 
                 can_moderate = (
-                    employee.role in ["moderator", "admin", "owner"] or
-                    employee.edit_employee_perm_permission
+                        employee.role in ["moderator", "admin", "owner"] or
+                        employee.edit_employee_perm_permission
                 )
 
                 if not can_moderate:
@@ -363,6 +376,122 @@ class ContentMenuDialogService(interface.IContentMenuDialogService):
                 raise
 
     # Вспомогательные методы
+
+    # Добавить эти методы в класс ContentMenuDialogService
+
+    async def get_drafts_type_data(
+            self,
+            dialog_manager: DialogManager,
+            **kwargs
+    ) -> dict:
+        with self.tracer.start_as_current_span(
+                "ContentMenuDialogService.get_drafts_type_data",
+                kind=SpanKind.INTERNAL
+        ) as span:
+            try:
+                state = await self._get_state(dialog_manager)
+
+                # Получаем данные сотрудника
+                employee = await self.kontur_employee_client.get_employee_by_account_id(
+                    state.account_id
+                )
+
+                # Получаем публикации организации
+                publications = await self.kontur_publication_client.get_publications_by_organization(
+                    employee.organization_id
+                )
+
+                # Получаем видео-нарезки организации
+                video_cuts = await self.kontur_publication_client.get_video_cuts_by_organization(
+                    employee.organization_id
+                )
+
+                # Подсчитываем черновики
+                publication_drafts_count = sum(1 for pub in publications if pub.moderation_status == "draft")
+                video_drafts_count = sum(1 for video in video_cuts if video.moderation_status == "draft")
+
+                data = {
+                    "publication_drafts_count": publication_drafts_count,
+                    "video_drafts_count": video_drafts_count,
+                }
+
+                self.logger.info(
+                    "Данные типов черновиков загружены",
+                    {
+                        common.TELEGRAM_CHAT_ID_KEY: self._get_chat_id(dialog_manager),
+                        "publication_drafts_count": publication_drafts_count,
+                        "video_drafts_count": video_drafts_count,
+                    }
+                )
+
+                span.set_status(Status(StatusCode.OK))
+                return data
+
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
+                # В случае ошибки возвращаем данные по умолчанию
+                return {
+                    "publication_drafts_count": 0,
+                    "video_drafts_count": 0,
+                }
+
+    async def get_moderation_type_data(
+            self,
+            dialog_manager: DialogManager,
+            **kwargs
+    ) -> dict:
+        with self.tracer.start_as_current_span(
+                "ContentMenuDialogService.get_moderation_type_data",
+                kind=SpanKind.INTERNAL
+        ) as span:
+            try:
+                state = await self._get_state(dialog_manager)
+
+                # Получаем данные сотрудника
+                employee = await self.kontur_employee_client.get_employee_by_account_id(
+                    state.account_id
+                )
+
+                # Получаем публикации организации
+                publications = await self.kontur_publication_client.get_publications_by_organization(
+                    employee.organization_id
+                )
+
+                # Получаем видео-нарезки организации
+                video_cuts = await self.kontur_publication_client.get_video_cuts_by_organization(
+                    employee.organization_id
+                )
+
+                # Подсчитываем элементы на модерации
+                publication_moderation_count = sum(1 for pub in publications if pub.moderation_status == "pending")
+                video_moderation_count = sum(1 for video in video_cuts if video.moderation_status == "pending")
+
+                data = {
+                    "publication_moderation_count": publication_moderation_count,
+                    "video_moderation_count": video_moderation_count,
+                }
+
+                self.logger.info(
+                    "Данные типов модерации загружены",
+                    {
+                        common.TELEGRAM_CHAT_ID_KEY: self._get_chat_id(dialog_manager),
+                        "publication_moderation_count": publication_moderation_count,
+                        "video_moderation_count": video_moderation_count,
+                    }
+                )
+
+                span.set_status(Status(StatusCode.OK))
+                return data
+
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
+                # В случае ошибки возвращаем данные по умолчанию
+                return {
+                    "publication_moderation_count": 0,
+                    "video_moderation_count": 0,
+                }
 
     async def _get_state(self, dialog_manager: DialogManager) -> model.UserState:
         """Получить состояние текущего пользователя"""
