@@ -3,6 +3,7 @@ from aiogram import Bot, Dispatcher
 import redis.asyncio as redis
 from aiogram.fsm.storage.base import DefaultKeyBuilder
 from aiogram.fsm.storage.redis import RedisStorage
+from aiohttp import ClientTimeout, ClientSession
 
 from infrastructure.pg.pg import PG
 from infrastructure.telemetry.telemetry import Telemetry, AlertManager
@@ -70,7 +71,10 @@ tel = Telemetry(
     alert_manager
 )
 
-bot = Bot(cfg.tg_bot_token)
+bot = Bot(
+    cfg.tg_bot_token,
+    timeout=ClientTimeout(total=120)
+)
 redis_client = redis.Redis(
     host=cfg.monitoring_redis_host,
     port=cfg.monitoring_redis_port,
