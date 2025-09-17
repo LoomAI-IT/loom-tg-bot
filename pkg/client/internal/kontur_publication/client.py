@@ -15,13 +15,12 @@ class KonturPublicationClient(interface.IKonturPublicationClient):
             host: str,
             port: int
     ):
-        logger = tel.logger()
         self.client = AsyncHTTPClient(
             host,
             port,
             prefix="/api/publication",
             use_tracing=True,
-            logger=logger,
+            logger=None,
         )
         self.tracer = tel.tracer()
 
