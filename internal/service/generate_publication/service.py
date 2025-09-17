@@ -197,7 +197,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                await callback.answer("🔄 Генерирую текст")
+                await callback.answer("🔄 Генерирую текст", cache_time=20)
                 category_id = dialog_manager.dialog_data["category_id"]
                 input_text = dialog_manager.dialog_data["input_text"]
 
