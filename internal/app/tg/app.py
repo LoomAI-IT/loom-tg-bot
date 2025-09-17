@@ -88,6 +88,12 @@ def include_tg_webhook(
         methods=["POST"]
     )
 
+    app.add_api_route(
+        prefix + "/employee/notify/added",
+        tg_webhook_controller.notify_employee_added,
+        methods=["POST"]
+    )
+
 
 def include_command_handlers(
         dp: Dispatcher,

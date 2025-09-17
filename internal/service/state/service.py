@@ -45,6 +45,24 @@ class StateService(interface.IStateService):
                 span.set_status(StatusCode.ERROR, str(err))
                 raise
 
+    async def state_by_account_id(self, account_id: int) -> list[model.UserState]:
+        with self.tracer.start_as_current_span(
+                "StateService.state_by_account_id",
+                kind=SpanKind.INTERNAL,
+                attributes={
+                    "account_id": account_id,
+                }
+        ) as span:
+            try:
+                state = await self.state_repo.state_by_account_id(account_id)
+
+                span.set_status(StatusCode.OK)
+                return state
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(StatusCode.ERROR, str(err))
+                raise
+
     async def change_user_state(
             self,
             state_id: int,

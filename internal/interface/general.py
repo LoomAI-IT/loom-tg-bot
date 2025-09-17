@@ -4,8 +4,11 @@ from typing import Protocol, Sequence, Any, Annotated, Callable, Awaitable
 from aiogram.types import TelegramObject, Update, Message, ErrorEvent
 from aiogram_dialog import DialogManager
 from fastapi import FastAPI, Header
+from fastapi.responses import JSONResponse
 from opentelemetry.metrics import Meter
 from opentelemetry.trace import Tracer
+
+from internal.controller.http.webhook.model import *
 
 
 
@@ -59,6 +62,12 @@ class ITelegramWebhookController(Protocol):
 
     @abstractmethod
     async def bot_set_webhook(self): pass
+
+    @abstractmethod
+    async def notify_employee_added(
+            self,
+            body: EmployeeNotificationBody,
+    ) -> JSONResponse: pass
 
 
 class IHttpMiddleware(Protocol):
