@@ -176,8 +176,10 @@ tg_webhook_controller = TelegramWebhookController(
     tel,
     dp,
     bot,
+    state_service,
     cfg.domain,
     cfg.prefix,
+    cfg.interserver_secret_key
 )
 
 command_controller = CommandController(tel, state_service)
