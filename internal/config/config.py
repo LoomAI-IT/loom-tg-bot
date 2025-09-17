@@ -14,7 +14,7 @@ class Config:
         self.tg_bot_token: str = os.environ.get('KONTUR_TG_BOT_TOKEN')
         self.domain: str = os.environ.get("KONTUR_DOMAIN")
 
-        self.interserver_secret_key = os.getenv("INTERSERVER_SECRET_KEY")
+        self.interserver_secret_key = os.getenv("KONTUR_INTERSERVER_SECRET_KEY")
 
         # PostgreSQL configuration
         self.db_host = os.getenv("KONTUR_TG_BOT_POSTGRES_CONTAINER_NAME", "localhost")
