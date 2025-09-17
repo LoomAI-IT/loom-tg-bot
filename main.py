@@ -110,6 +110,7 @@ organization_menu_service = OrganizationMenuDialogService(
 )
 change_employee_service = ChangeEmployeeDialogService(
     tel,
+    state_repo,
     kontur_employee_client,
     kontur_organization_client
 )

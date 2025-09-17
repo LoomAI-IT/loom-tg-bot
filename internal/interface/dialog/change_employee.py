@@ -1,9 +1,8 @@
-# internal/interface/dialog/change_employee.py
 from abc import abstractmethod
 from typing import Protocol, Any
+
 from aiogram_dialog import DialogManager, Dialog, Window
 from aiogram.types import CallbackQuery, Message
-from internal import model
 
 
 class IChangeEmployeeDialog(Protocol):
