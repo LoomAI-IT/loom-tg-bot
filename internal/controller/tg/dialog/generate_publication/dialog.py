@@ -162,7 +162,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                 Format("{publication_text}\n\n"),
                 Case(
                     {
-                        True: Format("🏷 Теги: {tags}"),
+                        True: Format("🏷 Теги: {publication_tags}"),
                         False: Const(""),
                     },
                     selector="has_tags"
@@ -318,7 +318,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
         return Window(
             Multi(
                 Const("🏷 <b>Изменение тегов</b>\n\n"),
-                Format("Текущие теги: <b>{tags}</b>\n\n"),
+                Format("Текущие теги: <b>{publication_tags}</b>\n\n"),
                 Const("✍️ <b>Введите теги через запятую:</b>\n"),
                 Const("<i>Например: маркетинг, продажи, SMM</i>"),
                 sep="",
