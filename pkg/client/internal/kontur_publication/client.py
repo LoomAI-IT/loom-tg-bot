@@ -261,12 +261,13 @@ class KonturPublicationClient(interface.IKonturPublicationClient):
         ) as span:
             try:
                 body = {
+                    "publication_id": publication_id,
                     "moderator_id": moderator_id,
                     "moderation_status": moderation_status.value if hasattr(moderation_status, 'value') else str(
                         moderation_status),
                     "moderation_comment": moderation_comment
                 }
-                await self.client.post(f"/{publication_id}/moderation/moderate", json=body)
+                await self.client.post("/moderate", json=body)
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as e:
@@ -302,7 +303,7 @@ class KonturPublicationClient(interface.IKonturPublicationClient):
                 }
         ) as span:
             try:
-                response = await self.client.get(f"/organization/{organization_id}")
+                response = await self.client.get(f"/organization/{organization_id}/publications")
                 json_response = response.json()
 
                 span.set_status(Status(StatusCode.OK))
@@ -400,7 +401,7 @@ class KonturPublicationClient(interface.IKonturPublicationClient):
                 }
         ) as span:
             try:
-                response = await self.client.get(f"/category/organization/{organization_id}")
+                response = await self.client.get(f"/organization/{organization_id}/categories")
                 json_response = response.json()
 
                 span.set_status(Status(StatusCode.OK))
@@ -498,7 +499,7 @@ class KonturPublicationClient(interface.IKonturPublicationClient):
                 }
         ) as span:
             try:
-                response = await self.client.get(f"/autoposting/organization/{organization_id}")
+                response = await self.client.get(f"/organization/{organization_id}/autopostings")
                 json_response = response.json()
 
                 span.set_status(Status(StatusCode.OK))
