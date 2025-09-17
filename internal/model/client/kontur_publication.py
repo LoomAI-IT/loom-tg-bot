@@ -7,25 +7,25 @@ class Publication:
     organization_id: int
     category_id: int
     creator_id: int
-    moderator_id: int
+    moderator_id: int | None
 
-    vk_source_id: int
-    tg_source_id: int
+    vk_source_id: int | None
+    tg_source_id: int | None
 
     text_reference: str
     name: str
     text: str
     tags: list[str]
-    image_fid: str
-    image_name: str
+    image_fid: str | None
+    image_name: str | None
 
     openai_rub_cost: int
 
-    moderation_status: str
-    moderation_comment: str
+    moderation_status: str | None
+    moderation_comment: str | None
 
     time_for_publication: str
-    publication_at: str
+    publication_at: str | None
     created_at: str
 
 
