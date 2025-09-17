@@ -1,8 +1,8 @@
+
 from abc import abstractmethod
 from typing import Protocol, Any
 from aiogram_dialog import DialogManager, Dialog, Window
 from aiogram.types import CallbackQuery
-from internal import model
 
 
 class IContentMenuDialog(Protocol):
@@ -21,7 +21,7 @@ class IContentMenuDialogService(Protocol):
     ) -> dict: pass
 
     @abstractmethod
-    async def handle_go_to_content_on_moderation(
+    async def handle_go_to_generation(
             self,
             callback: CallbackQuery,
             button: Any,
@@ -29,7 +29,7 @@ class IContentMenuDialogService(Protocol):
     ) -> None: pass
 
     @abstractmethod
-    async def handle_go_to_draft_content(
+    async def handle_go_to_drafts(
             self,
             callback: CallbackQuery,
             button: Any,
@@ -37,7 +37,7 @@ class IContentMenuDialogService(Protocol):
     ) -> None: pass
 
     @abstractmethod
-    async def handle_go_to_content_generation(
+    async def handle_go_to_moderation(
             self,
             callback: CallbackQuery,
             button: Any,

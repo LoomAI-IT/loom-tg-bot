@@ -8,6 +8,12 @@ from internal.model.dialog_states.organization_menu import *
 from internal.model.dialog_states.change_employee import *
 from internal.model.dialog_states.add_employee import *
 from internal.model.dialog_states.content_menu import *
+from internal.model.dialog_states.generate_publication import *
+from internal.model.dialog_states.generate_video_cut import *
+from internal.model.dialog_states.publication_draft_content import *
+from internal.model.dialog_states.video_cut_draft_content import *
+from internal.model.dialog_states.moderation_publication import *
+from internal.model.dialog_states.moderation_video_cut import *
 
 from internal.model.client.kontur_account import *
 from internal.model.client.kontur_authorization import *
