@@ -17,7 +17,6 @@ class IKonturPublicationClient(Protocol):
             creator_id: int,
             need_images: bool,
             text_reference: str,
-            time_for_publication: datetime = None
     ) -> model.Publication: pass
 
     @abstractmethod

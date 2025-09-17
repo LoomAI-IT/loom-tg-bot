@@ -1056,7 +1056,6 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
             creator_id=state.account_id,
             need_images=need_images,
             text_reference=input_text,
-            time_for_publication=None
         )
 
         dialog_manager.dialog_data["publication_id"] = publication.id

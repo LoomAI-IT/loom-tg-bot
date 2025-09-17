@@ -33,7 +33,6 @@ class KonturPublicationClient(interface.IKonturPublicationClient):
             creator_id: int,
             need_images: bool,
             text_reference: str,
-            time_for_publication: datetime = None
     ) -> model.Publication:
         with self.tracer.start_as_current_span(
                 "PublicationClient.generate_publication",
@@ -53,8 +52,6 @@ class KonturPublicationClient(interface.IKonturPublicationClient):
                     "need_images": need_images,
                     "text_reference": text_reference,
                 }
-                if time_for_publication:
-                    body["time_for_publication"] = time_for_publication.isoformat()
 
                 response = await self.client.post("/generate", json=body)
                 json_response = response.json()
