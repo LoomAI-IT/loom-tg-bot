@@ -197,6 +197,9 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                await callback.answer()
+                loading_message = await callback.message.answer("🔄 Герегенерирую текст, это может занять время...")
+
                 category_id = dialog_manager.dialog_data["category_id"]
                 input_text = dialog_manager.dialog_data["input_text"]
 
@@ -209,6 +212,14 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 dialog_manager.dialog_data["publication_tags"] = publication_data["tags"]
                 dialog_manager.dialog_data["publication_name"] = publication_data["name"]
                 dialog_manager.dialog_data["publication_text"] = publication_data["text"]
+
+                await loading_message.delete()
+                success_message = await callback.message.answer("✅ Пост успешно сгенерирован!")
+                await asyncio.sleep(3)
+                try:
+                    await success_message.delete()
+                except:
+                    pass
 
                 # Переходим к предпросмотру
                 await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
@@ -270,6 +281,8 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                await callback.answer()
+                loading_message = await callback.message.answer("🔄 Перегенерирую текст, это может занять время...")
 
                 category_id = dialog_manager.dialog_data["category_id"]
                 current_text = dialog_manager.dialog_data["publication_text"]
@@ -286,7 +299,14 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 dialog_manager.dialog_data["publication_text"] = regenerated_data["text"]
                 dialog_manager.dialog_data["publication_tags"] = regenerated_data["tags"]
 
-                await callback.answer("✅ Текст успешно обновлен!", show_alert=True)
+                await loading_message.delete()
+                success_message = await callback.message.answer("✅ Текст успешно обновлен!")
+                await asyncio.sleep(3)
+                try:
+                    await success_message.delete()
+                except:
+                    pass
+
                 await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
 
                 span.set_status(Status(StatusCode.OK))
