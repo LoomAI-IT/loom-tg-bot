@@ -3,10 +3,9 @@ import traceback
 
 from aiogram import Bot
 from typing import Callable, Any, Awaitable
-from aiogram.types import TelegramObject, Update
+from aiogram.types import TelegramObject, Update, ErrorEvent
 from aiogram.exceptions import TelegramBadRequest
 from aiogram_dialog import DialogManager, StartMode
-from aiogram_dialog.api.exceptions import UnknownIntent
 from opentelemetry.trace import SpanKind, Status, StatusCode
 
 from internal import interface, common, model
@@ -50,21 +49,6 @@ class TgMiddleware(interface.ITelegramMiddleware):
             description="Number of active messages",
             unit="1"
         )
-
-    async def error_middleware00(
-            self,
-            handler: Callable[[TelegramObject, dict[str, Any]], Awaitable[Any]],
-            event: Update,
-            data: dict[str, Any]
-    ):
-        try:
-            await handler(event, data)
-
-        except UnknownIntent as err:
-            await self._handle_unknown_intent_error(event, data, err)
-
-        except Exception as err:
-            pass
 
     async def trace_middleware01(
             self,
@@ -217,20 +201,16 @@ class TgMiddleware(interface.ITelegramMiddleware):
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise err
 
-    async def _handle_unknown_intent_error(
-            self,
-            event: Update,
-            data: dict[str, Any],
-            err: UnknownIntent,
-    ):
-        chat_id = self._get_chat_id(event)
+    async def on_unknown_intent(self, event: ErrorEvent, dialog_manager: DialogManager):
+        if hasattr(dialog_manager.event, 'message') and dialog_manager.event.message:
+            chat_id = dialog_manager.event.message.chat.id
+        else:
+            chat_id = dialog_manager.event.chat.id
 
         self.logger.warning(
             "UnknownIntent error - сбрасываем диалог пользователя",
             {
                 common.TELEGRAM_CHAT_ID_KEY: chat_id,
-                common.ERROR_KEY: str(err),
-                "intent_id": getattr(err, 'intent_id', 'unknown'),
             }
         )
 
@@ -245,39 +225,28 @@ class TgMiddleware(interface.ITelegramMiddleware):
 
             user_state = user_state[0]
 
-            # Получаем dialog_manager из данных
-            dialog_manager: DialogManager = data.get("dialog_manager")
+            await dialog_manager.reset_stack()
 
-            if dialog_manager:
-                # Сбрасываем стек диалогов и перенаправляем пользователя
-                await dialog_manager.reset_stack()
-
-                # Определяем, куда направить пользователя в зависимости от его состояния
-                if user_state.organization_id == 0 and user_state.account_id == 0:
-                    # Не авторизован - отправляем на авторизацию
-                    await dialog_manager.start(
-                        model.AuthStates.user_agreement,
-                        mode=StartMode.RESET_STACK
-                    )
-                elif user_state.organization_id == 0 and user_state.account_id != 0:
-                    # Авторизован, но нет доступа к организации
-                    await dialog_manager.start(
-                        model.AuthStates.access_denied,
-                        mode=StartMode.RESET_STACK
-                    )
-                else:
-                    # Полностью авторизован - отправляем в главное меню
-                    await dialog_manager.start(
-                        model.MainMenuStates.main_menu,
-                        mode=StartMode.RESET_STACK
-                    )
+            # Определяем, куда направить пользователя в зависимости от его состояния
+            if user_state.organization_id == 0 and user_state.account_id == 0:
+                # Не авторизован - отправляем на авторизацию
+                await dialog_manager.start(
+                    model.AuthStates.user_agreement,
+                    mode=StartMode.RESET_STACK
+                )
+            elif user_state.organization_id == 0 and user_state.account_id != 0:
+                # Авторизован, но нет доступа к организации
+                await dialog_manager.start(
+                    model.AuthStates.access_denied,
+                    mode=StartMode.RESET_STACK
+                )
             else:
-                # Если нет dialog_manager, отправляем простое сообщение
-                message = self._get_message(event)
-                if message:
-                    await message.answer(
-                        "🔄 Произошла ошибка в диалоге. Нажмите /start для перезапуска."
-                    )
+                # Полностью авторизован - отправляем в главное меню
+                await dialog_manager.start(
+                    model.MainMenuStates.main_menu,
+                    mode=StartMode.RESET_STACK
+                )
+
 
         except Exception as recovery_err:
             self.logger.error(
@@ -288,12 +257,12 @@ class TgMiddleware(interface.ITelegramMiddleware):
                     common.TRACEBACK_KEY: traceback.format_exc(),
                 }
             )
-
-            message = self._get_message(event)
-            if message:
-                await message.answer(
+            if hasattr(dialog_manager.event, 'message') and dialog_manager.event.message:
+                await dialog_manager.event.message.answer(
                     "❌ Произошла серьезная ошибка. Нажмите /start для перезапуска."
                 )
+            else:
+                await dialog_manager.event.answer("❌ Произошла серьезная ошибка. Нажмите /start для перезапуска.")
 
     def __extract_metadata(self, event: Update):
         message = event.message if event.message is not None else event.callback_query.message

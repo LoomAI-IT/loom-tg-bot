@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from typing import Protocol, Sequence, Any, Annotated, Callable, Awaitable
 
-from aiogram.types import TelegramObject, Update, Message
+from aiogram.types import TelegramObject, Update, Message, ErrorEvent
 from aiogram_dialog import DialogManager
 from fastapi import FastAPI, Header
 from opentelemetry.metrics import Meter
@@ -19,13 +19,6 @@ class ICommandController(Protocol):
 
 
 class ITelegramMiddleware(Protocol):
-    @abstractmethod
-    async def error_middleware00(
-            self,
-            handler: Callable[[TelegramObject, dict[str, Any]], Awaitable[Any]],
-            event: Update,
-            data: dict[str, Any]
-    ): pass
 
     @abstractmethod
     async def trace_middleware01(
@@ -50,6 +43,9 @@ class ITelegramMiddleware(Protocol):
             event: Update,
             data: dict[str, Any]
     ): pass
+
+    @abstractmethod
+    async def on_unknown_intent(self, event: ErrorEvent, dialog_manager: DialogManager): pass
 
 
 

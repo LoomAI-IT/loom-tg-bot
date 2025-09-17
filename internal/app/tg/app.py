@@ -1,6 +1,7 @@
+from aiogram_dialog.api.exceptions import UnknownIntent
 from fastapi import FastAPI
 
-from aiogram.filters import Command
+from aiogram.filters import Command, ExceptionTypeFilter
 from aiogram_dialog import setup_dialogs
 from aiogram import Dispatcher, Router
 
@@ -45,6 +46,10 @@ def NewTg(
         change_employee_dialog,
         add_employee_dialog
     )
+    dp.errors.register(
+        tg_middleware.on_unknown_intent,
+        ExceptionTypeFilter(UnknownIntent),
+    )
 
     return app
 
@@ -62,7 +67,6 @@ def include_tg_middleware(
         dp: Dispatcher,
         tg_middleware: interface.ITelegramMiddleware,
 ):
-    dp.update.middleware(tg_middleware.error_middleware00)
     dp.update.middleware(tg_middleware.trace_middleware01)
     dp.update.middleware(tg_middleware.metric_middleware02)
     dp.update.middleware(tg_middleware.logger_middleware03)
