@@ -1,4 +1,3 @@
-# internal/controller/tg/dialog/change_employee/dialog.py
 from aiogram_dialog import Window, Dialog
 from aiogram_dialog.widgets.text import Const, Format, Multi, Case
 from aiogram_dialog.widgets.kbd import Button, Column, Row, Back, ScrollingGroup, Select, NumberedPager, Group
@@ -27,7 +26,6 @@ class ChangeEmployeeDialog(interface.IChangeEmployeeDialog):
         )
 
     def get_employee_list_window(self) -> Window:
-        """Окно со списком сотрудников"""
         return Window(
             Multi(
                 Const("👥 <b>Управление сотрудниками</b>\n\n"),
@@ -90,7 +88,13 @@ class ChangeEmployeeDialog(interface.IChangeEmployeeDialog):
                 ),
             ),
 
-            Back(Const("◀️ Назад")),
+            Button(
+                Const("➡️"),
+                id="go_to_organization_menu",
+                on_click=self.change_employee_service.handle_navigate_employee,
+                when="has_next",
+            ),
+            Back(Const("◀️ Вернуться в меню организации")),
 
             state=model.ChangeEmployeeStates.employee_list,
             getter=self.change_employee_service.get_employee_list_data,
@@ -98,7 +102,6 @@ class ChangeEmployeeDialog(interface.IChangeEmployeeDialog):
         )
 
     def get_employee_detail_window(self) -> Window:
-        """Окно с детальной информацией о сотруднике"""
         return Window(
             Multi(
                 Const("👤 <b>Информация о сотруднике</b>\n\n"),
@@ -125,7 +128,6 @@ class ChangeEmployeeDialog(interface.IChangeEmployeeDialog):
                 sep="",
             ),
 
-            # Навигация между сотрудниками в строку
             Row(
                 Button(
                     Const("⬅️"),
@@ -146,7 +148,6 @@ class ChangeEmployeeDialog(interface.IChangeEmployeeDialog):
                 ),
             ),
 
-            # Остальные кнопки действий в колонку
             Column(
                 Button(
                     Const("✏️ Изменить разрешения"),
@@ -176,7 +177,6 @@ class ChangeEmployeeDialog(interface.IChangeEmployeeDialog):
         )
 
     def get_change_permissions_window(self) -> Window:
-        """Окно изменения разрешений сотрудника"""
         return Window(
             Multi(
                 Const("⚙️ <b>Изменение разрешений</b>\n\n"),
@@ -196,7 +196,6 @@ class ChangeEmployeeDialog(interface.IChangeEmployeeDialog):
             ),
 
             Column(
-                # Разрешения с одной кнопкой на правило
                 Button(
                     Format("{no_moderation_icon} Публикации без модерации"),
                     id="toggle_no_moderation",
@@ -251,7 +250,6 @@ class ChangeEmployeeDialog(interface.IChangeEmployeeDialog):
         )
 
     def get_confirm_delete_window(self) -> Window:
-        """Окно подтверждения удаления сотрудника"""
         return Window(
             Multi(
                 Const("⚠️ <b>Подтверждение удаления</b>\n\n"),

@@ -106,6 +106,15 @@ class IChangeEmployeeDialogService(Protocol):
     ) -> None:
         pass
 
+    @abstractmethod
+    async def handle_go_to_organization_menu(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        pass
+
     # Обработчики разрешений
     @abstractmethod
     async def handle_toggle_permission(
