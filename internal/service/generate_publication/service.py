@@ -80,7 +80,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-                return {"categories": [], "has_categories": False}
+                raise err
 
     async def handle_select_category(
             self,
