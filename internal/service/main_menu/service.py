@@ -1,6 +1,8 @@
 from typing import Any
+
 from aiogram.types import CallbackQuery
 from aiogram_dialog import DialogManager, StartMode
+
 from opentelemetry.trace import SpanKind, Status, StatusCode
 
 from internal import interface, model, common
@@ -26,7 +28,6 @@ class MainMenuDialogService(interface.IMainMenuDialogService):
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        """Получить данные для главного меню"""
         with self.tracer.start_as_current_span(
                 "MainMenuDialogService.get_main_menu_data",
                 kind=SpanKind.INTERNAL
@@ -51,7 +52,6 @@ class MainMenuDialogService(interface.IMainMenuDialogService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        """Перейти к меню контента"""
         with self.tracer.start_as_current_span(
                 "MainMenuDialogService.handle_go_to_content",
                 kind=SpanKind.INTERNAL

@@ -1,16 +1,15 @@
-
 from typing import Any
 
 from aiogram import Bot
 from aiogram.types import CallbackQuery, Message
 from aiogram_dialog import DialogManager, StartMode
+
 from opentelemetry.trace import SpanKind, Status, StatusCode
 
 from internal import interface, model, common
 
 
 class AddEmployeeDialogService(interface.IAddEmployeeDialogService):
-
     def __init__(
             self,
             tel: interface.ITelemetry,
@@ -79,7 +78,6 @@ class AddEmployeeDialogService(interface.IAddEmployeeDialogService):
             dialog_manager: DialogManager,
             name: str
     ) -> None:
-        """Обработать ввод имени"""
         with self.tracer.start_as_current_span(
                 "AddEmployeeDialogService.handle_name_input",
                 kind=SpanKind.INTERNAL
@@ -124,7 +122,6 @@ class AddEmployeeDialogService(interface.IAddEmployeeDialogService):
             dialog_manager: DialogManager,
             role: str
     ) -> None:
-        """Обработать выбор роли"""
         with self.tracer.start_as_current_span(
                 "AddEmployeeDialogService.handle_role_selection",
                 kind=SpanKind.INTERNAL
@@ -161,7 +158,6 @@ class AddEmployeeDialogService(interface.IAddEmployeeDialogService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        """Переключить разрешение"""
         with self.tracer.start_as_current_span(
                 "AddEmployeeDialogService.handle_toggle_permission",
                 kind=SpanKind.INTERNAL
@@ -170,14 +166,7 @@ class AddEmployeeDialogService(interface.IAddEmployeeDialogService):
                 button_id = button.widget_id
 
                 # Получаем текущие разрешения
-                permissions = dialog_manager.dialog_data.get("permissions", {
-                    "no_moderation": False,
-                    "autoposting": False,
-                    "add_employee": False,
-                    "edit_permissions": False,
-                    "top_up_balance": False,
-                    "social_networks": False,
-                })
+                permissions = dialog_manager.dialog_data.get("permissions")
 
                 # Определяем какое разрешение переключаем
                 permission_map = {
@@ -216,7 +205,6 @@ class AddEmployeeDialogService(interface.IAddEmployeeDialogService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        """Создать сотрудника"""
         with self.tracer.start_as_current_span(
                 "AddEmployeeDialogService.handle_create_employee",
                 kind=SpanKind.INTERNAL
@@ -238,7 +226,7 @@ class AddEmployeeDialogService(interface.IAddEmployeeDialogService):
                 )
 
                 # Создаем сотрудника
-                employee_id = await self.kontur_employee_client.create_employee(
+                new_employee_id = await self.kontur_employee_client.create_employee(
                     organization_id=current_employee.organization_id,
                     invited_from_account_id=current_user_state.account_id,
                     account_id=account_id,
@@ -248,7 +236,7 @@ class AddEmployeeDialogService(interface.IAddEmployeeDialogService):
 
                 # Устанавливаем разрешения
                 await self.kontur_employee_client.update_employee_permissions(
-                    employee_id=employee_id,
+                    account_id=account_id,
                     required_moderation=not permissions.get("no_moderation", False),
                     autoposting_permission=permissions.get("autoposting", False),
                     add_employee_permission=permissions.get("add_employee", False),
@@ -257,7 +245,9 @@ class AddEmployeeDialogService(interface.IAddEmployeeDialogService):
                     sign_up_social_net_permission=permissions.get("social_networks", False),
                 )
 
+                # Обновляем и уведомляем нового сотрудника
                 new_employee = (await self.state_repo.state_by_account_id(account_id))[0]
+
                 await self.state_repo.change_user_state(
                     new_employee.id,
                     organization_id=current_user_state.organization_id
@@ -271,7 +261,7 @@ class AddEmployeeDialogService(interface.IAddEmployeeDialogService):
                     "Новый сотрудник создан",
                     {
                         common.TELEGRAM_CHAT_ID_KEY: chat_id,
-                        "employee_id": employee_id,
+                        "new_employee_id": new_employee_id,
                         "account_id": account_id,
                         "employee_name": name,
                         "role": role,
@@ -297,7 +287,6 @@ class AddEmployeeDialogService(interface.IAddEmployeeDialogService):
                 raise
 
     def _get_default_permissions_by_role(self, role: str) -> dict:
-        """Получить разрешения по умолчанию для роли"""
         if role == "admin":
             return {
                 "no_moderation": True,
@@ -325,7 +314,7 @@ class AddEmployeeDialogService(interface.IAddEmployeeDialogService):
                 "top_up_balance": False,
                 "social_networks": False,
             }
-        else:  # default
+        else:
             return {
                 "no_moderation": False,
                 "autoposting": False,
@@ -336,7 +325,6 @@ class AddEmployeeDialogService(interface.IAddEmployeeDialogService):
             }
 
     async def get_enter_account_id_data(self, **kwargs) -> dict:
-        """Данные для окна ввода account_id"""
         return {}
 
     async def get_enter_name_data(
@@ -344,7 +332,6 @@ class AddEmployeeDialogService(interface.IAddEmployeeDialogService):
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        """Данные для окна ввода имени"""
         return {
             "account_id": dialog_manager.dialog_data.get("account_id", ""),
         }
@@ -354,7 +341,6 @@ class AddEmployeeDialogService(interface.IAddEmployeeDialogService):
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        """Данные для окна выбора роли"""
         roles = [
             {"value": "employee", "title": "👤 Сотрудник"},
             {"value": "moderator", "title": "👨‍💼 Модератор"},
@@ -372,7 +358,6 @@ class AddEmployeeDialogService(interface.IAddEmployeeDialogService):
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        """Данные для окна настройки разрешений"""
         permissions = dialog_manager.dialog_data.get("permissions", {
             "no_moderation": False,
             "autoposting": False,
@@ -408,7 +393,6 @@ class AddEmployeeDialogService(interface.IAddEmployeeDialogService):
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        """Данные для окна подтверждения"""
         permissions = dialog_manager.dialog_data.get("permissions", {})
 
         # Формируем текст разрешений

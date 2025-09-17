@@ -1,16 +1,13 @@
-# internal/service/organization_menu/service.py
-from datetime import datetime
 from typing import Any
 from aiogram.types import CallbackQuery
 from aiogram_dialog import DialogManager, StartMode
+
 from opentelemetry.trace import SpanKind, Status, StatusCode
 
 from internal import interface, model, common
 
 
 class OrganizationMenuDialogService(interface.IOrganizationMenuDialogService):
-    """Сервис для работы с диалогом меню организации"""
-
     def __init__(
             self,
             tel: interface.ITelemetry,
@@ -36,16 +33,12 @@ class OrganizationMenuDialogService(interface.IOrganizationMenuDialogService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                if hasattr(dialog_manager.event, 'message') and dialog_manager.event.message:
-                    chat_id = dialog_manager.event.message.chat.id
-                elif hasattr(dialog_manager.event, 'chat'):
-                    chat_id = dialog_manager.event.chat.id
-                else:
-                    chat_id = None
+                state = await self.__get_state(dialog_manager)
 
-                state = (await self.state_repo.state_by_id(chat_id))[0]
-
-                employee = await self.kontur_employee_client.get_employee_by_account_id(state.account_id)
+                # Получаем данные сотрудника
+                employee = await self.kontur_employee_client.get_employee_by_account_id(
+                    state.account_id
+                )
 
                 # Получаем данные организации
                 organization = await self.kontur_organization_client.get_organization_by_id(
@@ -71,7 +64,7 @@ class OrganizationMenuDialogService(interface.IOrganizationMenuDialogService):
 
                 # Форматируем список рубрик
                 if categories:
-                    categories_list = "\n".join([f"• Название" for cat in categories])
+                    categories_list = "\n".join([f"• {category.name}" for category in categories])
                 else:
                     categories_list = "• Краткое описание"
 
@@ -99,7 +92,6 @@ class OrganizationMenuDialogService(interface.IOrganizationMenuDialogService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        """Перейти к настройкам пользователей (изменение сотрудников)"""
         with self.tracer.start_as_current_span(
                 "OrganizationMenuDialogService.handle_go_to_employee_settings",
                 kind=SpanKind.INTERNAL
@@ -131,7 +123,6 @@ class OrganizationMenuDialogService(interface.IOrganizationMenuDialogService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        """Перейти к добавлению сотрудника"""
         with self.tracer.start_as_current_span(
                 "OrganizationMenuDialogService.handle_go_to_add_employee",
                 kind=SpanKind.INTERNAL
@@ -161,7 +152,6 @@ class OrganizationMenuDialogService(interface.IOrganizationMenuDialogService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        """Перейти к пополнению баланса"""
         with self.tracer.start_as_current_span(
                 "OrganizationMenuDialogService.handle_go_to_top_up_balance",
                 kind=SpanKind.INTERNAL
@@ -189,7 +179,6 @@ class OrganizationMenuDialogService(interface.IOrganizationMenuDialogService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        """Перейти к управлению социальными сетями"""
         with self.tracer.start_as_current_span(
                 "OrganizationMenuDialogService.handle_go_to_social_networks",
                 kind=SpanKind.INTERNAL
@@ -239,3 +228,14 @@ class OrganizationMenuDialogService(interface.IOrganizationMenuDialogService):
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
+
+    async def __get_state(self, dialog_manager: DialogManager) -> model.UserState:
+        if hasattr(dialog_manager.event, 'message') and dialog_manager.event.message:
+            chat_id = dialog_manager.event.message.chat.id
+        elif hasattr(dialog_manager.event, 'chat'):
+            chat_id = dialog_manager.event.chat.id
+        else:
+            chat_id = None
+
+        state = (await self.state_repo.state_by_id(chat_id))[0]
+        return state

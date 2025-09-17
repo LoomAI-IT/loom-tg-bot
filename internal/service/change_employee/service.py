@@ -1,14 +1,14 @@
 from typing import Any
+
 from aiogram.types import CallbackQuery, Message
 from aiogram_dialog import DialogManager
+
 from opentelemetry.trace import SpanKind, Status, StatusCode
 
 from internal import interface, model
 
 
 class ChangeEmployeeDialogService(interface.IChangeEmployeeDialogService):
-    """Сервис для работы с диалогом изменения сотрудников"""
-
     def __init__(
             self,
             tel: interface.ITelemetry,
@@ -27,7 +27,6 @@ class ChangeEmployeeDialogService(interface.IChangeEmployeeDialogService):
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        """Получить данные для окна списка сотрудников"""
         with self.tracer.start_as_current_span(
                 "ChangeEmployeeDialogService.get_employee_list_data",
                 kind=SpanKind.INTERNAL

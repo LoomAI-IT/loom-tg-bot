@@ -3,6 +3,7 @@ from typing import Any
 
 from aiogram.types import CallbackQuery
 from aiogram_dialog import DialogManager, StartMode
+
 from opentelemetry.trace import SpanKind, Status, StatusCode
 
 from internal import interface, model, common
@@ -39,7 +40,6 @@ class AuthDialogService(interface.IAuthDialogService):
             try:
                 chat_id = callback.message.chat.id
 
-                # Сохраняем принятие в dialog_data
                 dialog_manager.dialog_data["user_agreement_accepted"] = True
 
                 self.logger.info(
@@ -215,14 +215,8 @@ class AuthDialogService(interface.IAuthDialogService):
         ) as span:
             try:
                 user = dialog_manager.event.from_user
-                if hasattr(dialog_manager.event, 'message') and dialog_manager.event.message:
-                    chat_id = dialog_manager.event.message.chat.id
-                elif hasattr(dialog_manager.event, 'chat'):
-                    chat_id = dialog_manager.event.chat.id
-                else:
-                    chat_id = None
 
-                state = (await self.state_repo.state_by_id(chat_id))[0]
+                state = await self.__get_state(dialog_manager)
 
                 data = {
                     "name": user.first_name or "Пользователь",
@@ -236,3 +230,14 @@ class AuthDialogService(interface.IAuthDialogService):
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
+
+    async def __get_state(self, dialog_manager: DialogManager) -> model.UserState:
+        if hasattr(dialog_manager.event, 'message') and dialog_manager.event.message:
+            chat_id = dialog_manager.event.message.chat.id
+        elif hasattr(dialog_manager.event, 'chat'):
+            chat_id = dialog_manager.event.chat.id
+        else:
+            chat_id = None
+
+        state = (await self.state_repo.state_by_id(chat_id))[0]
+        return state

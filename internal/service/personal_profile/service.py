@@ -25,20 +25,12 @@ class PersonalProfileDialogService(interface.IPersonalProfileDialogService):
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        """Получить данные для личного профиля"""
         with self.tracer.start_as_current_span(
                 "PersonalProfileDialogService.get_personal_profile_data",
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                if hasattr(dialog_manager.event, 'message') and dialog_manager.event.message:
-                    chat_id = dialog_manager.event.message.chat.id
-                elif hasattr(dialog_manager.event, 'chat'):
-                    chat_id = dialog_manager.event.chat.id
-                else:
-                    chat_id = None
-
-                state = (await self.state_repo.state_by_id(chat_id))[0]
+                state = await self.__get_state(dialog_manager)
 
                 # Получаем данные сотрудника
                 employee = await self.kontur_employee_client.get_employee_by_account_id(
@@ -87,24 +79,7 @@ class PersonalProfileDialogService(interface.IPersonalProfileDialogService):
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-
-                self.logger.error(
-                    "Ошибка получения данных личного профиля",
-                    {
-                        common.ERROR_KEY: str(err),
-                        "account_id": state.account_id,
-                        "organization_id": state.organization_id,
-                    }
-                )
-
-                user = dialog_manager.event.from_user
-                return {
-                    "name": user.first_name or user.username or "Пользователь",
-                    "organization_name": "Неизвестно",
-                    "publications_count": 0,
-                    "generations_count": 0,
-                    "permissions_list": "❌ Не удалось загрузить разрешения",
-                }
+                raise err
 
     async def handle_go_faq(
             self,
@@ -186,3 +161,14 @@ class PersonalProfileDialogService(interface.IPersonalProfileDialogService):
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
+
+    async def __get_state(self, dialog_manager: DialogManager) -> model.UserState:
+        if hasattr(dialog_manager.event, 'message') and dialog_manager.event.message:
+            chat_id = dialog_manager.event.message.chat.id
+        elif hasattr(dialog_manager.event, 'chat'):
+            chat_id = dialog_manager.event.chat.id
+        else:
+            chat_id = None
+
+        state = (await self.state_repo.state_by_id(chat_id))[0]
+        return state
