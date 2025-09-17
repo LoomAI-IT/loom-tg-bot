@@ -3,12 +3,9 @@ from pydantic import BaseModel
 class EmployeeNotificationBody(BaseModel):
     account_id: int
     organization_id: int
-    organization_name: str
-    invited_by_name: str
     employee_name: str
     role: str
     interserver_secret_key: str
-    permissions: dict = None
 
 
 class SendMessageWebhookBody(BaseModel):
