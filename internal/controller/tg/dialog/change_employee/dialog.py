@@ -125,29 +125,29 @@ class ChangeEmployeeDialog(interface.IChangeEmployeeDialog):
                 sep="",
             ),
 
-            Column(
-                # Навигация между сотрудниками
-                Row(
-                    Button(
-                        Const("⬅️"),
-                        id="prev_employee",
-                        on_click=self.change_employee_service.handle_navigate_employee,
-                        when="has_prev",
-                    ),
-                    Button(
-                        Format("📍 {current_index}/{total_count}"),
-                        id="current_position",
-                        on_click=None,
-                    ),
-                    Button(
-                        Const("➡️"),
-                        id="next_employee",
-                        on_click=self.change_employee_service.handle_navigate_employee,
-                        when="has_next",
-                    ),
+            # Навигация между сотрудниками в строку
+            Row(
+                Button(
+                    Const("⬅️"),
+                    id="prev_employee",
+                    on_click=self.change_employee_service.handle_navigate_employee,
+                    when="has_prev",
                 ),
+                Button(
+                    Format("📍 {current_index}/{total_count}"),
+                    id="current_position",
+                    on_click=None,
+                ),
+                Button(
+                    Const("➡️"),
+                    id="next_employee",
+                    on_click=self.change_employee_service.handle_navigate_employee,
+                    when="has_next",
+                ),
+            ),
 
-                # Кнопки действий
+            # Остальные кнопки действий в колонку
+            Column(
                 Button(
                     Const("✏️ Изменить разрешения"),
                     id="edit_permissions",
