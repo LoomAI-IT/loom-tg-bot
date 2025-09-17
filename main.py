@@ -1,6 +1,7 @@
 import uvicorn
 from aiogram import Bot, Dispatcher
 import redis.asyncio as redis
+from aiogram.fsm.storage.base import DefaultKeyBuilder
 from aiogram.fsm.storage.redis import RedisStorage
 
 from infrastructure.pg.pg import PG
@@ -73,7 +74,11 @@ redis_client = redis.Redis(
     password=cfg.monitoring_redis_password,
     db=2
 )
-storage = RedisStorage(redis=redis_client)
+key_builder = DefaultKeyBuilder(with_destiny=True)
+storage = RedisStorage(
+    redis=redis_client,
+    key_builder=key_builder
+)
 dp = Dispatcher(storage=storage)
 
 # Инициализация клиентов
