@@ -212,10 +212,10 @@ class TgMiddleware(interface.ITelegramMiddleware):
                 raise err
 
     async def on_unknown_intent(self, event: ErrorEvent, dialog_manager: DialogManager):
-        if hasattr(dialog_manager.event, 'message') and dialog_manager.event.message:
-            chat_id = dialog_manager.event.message.chat.id
+        if event.update.callback_query:
+            chat_id = event.update.callback_query.message.chat.id
         else:
-            chat_id = dialog_manager.event.message.chat.id
+            chat_id = event.update.message.chat.id
 
         self.logger.warning(
             "UnknownIntent error - сбрасываем диалог пользователя",
