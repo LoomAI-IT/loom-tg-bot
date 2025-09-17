@@ -15,6 +15,7 @@ class Publication:
     text_reference: str
     name: str
     text: str
+    tags: list[str]
     image_fid: str
     image_name: str
 
