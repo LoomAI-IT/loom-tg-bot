@@ -696,7 +696,7 @@ class KonturPublicationClient(interface.IKonturPublicationClient):
                 json_response = response.json()
 
                 span.set_status(Status(StatusCode.OK))
-                return [model.VideoCut(**cut) for cut in json_response["video_cuts"]]
+                return [model.VideoCut(**cut) for cut in json_response]
             except Exception as e:
                 span.record_exception(e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
