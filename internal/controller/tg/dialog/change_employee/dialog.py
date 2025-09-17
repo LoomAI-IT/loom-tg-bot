@@ -89,12 +89,10 @@ class ChangeEmployeeDialog(interface.IChangeEmployeeDialog):
             ),
 
             Button(
-                Const("➡️"),
+                Const("⬅️ Вернуться в меню организации"),
                 id="go_to_organization_menu",
-                on_click=self.change_employee_service.handle_navigate_employee,
-                when="has_next",
+                on_click=self.change_employee_service.handle_go_to_organization_menu,
             ),
-            Back(Const("◀️ Вернуться в меню организации")),
 
             state=model.ChangeEmployeeStates.employee_list,
             getter=self.change_employee_service.get_employee_list_data,
