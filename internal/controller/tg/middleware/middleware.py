@@ -278,6 +278,7 @@ class TgMiddleware(interface.ITelegramMiddleware):
                     {
                         common.TELEGRAM_CHAT_ID_KEY: chat_id,
                         common.ERROR_KEY: str(err),
+                        common.TRACEBACK_KEY: traceback.format_exc(),
                     }
                 )
 
