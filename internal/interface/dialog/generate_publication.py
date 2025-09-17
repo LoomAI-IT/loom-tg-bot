@@ -19,8 +19,6 @@ class IGeneratePublicationDialog(Protocol):
     @abstractmethod
     def get_input_text_window(self) -> Window: pass
 
-    @abstractmethod
-    def get_choose_image_option_window(self) -> Window: pass
 
     @abstractmethod
     def get_image_generation_window(self) -> Window: pass
@@ -74,7 +72,7 @@ class IGeneratePublicationDialogService(Protocol):
     ) -> None: pass
 
     @abstractmethod
-    async def handle_choose_with_image(
+    async def handle_generate_text_with_image(
             self,
             callback: CallbackQuery,
             button: Any,
@@ -82,7 +80,7 @@ class IGeneratePublicationDialogService(Protocol):
     ) -> None: pass
 
     @abstractmethod
-    async def handle_choose_text_only(
+    async def handle_generate_text(
             self,
             callback: CallbackQuery,
             button: Any,

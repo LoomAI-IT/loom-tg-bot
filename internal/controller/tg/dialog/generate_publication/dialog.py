@@ -34,7 +34,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
         return Window(
             Multi(
                 Const("📝 <b>Создание новой публикации</b>\n\n"),
-                Const("🏷 <b>Шаг 1/5: Выберите рубрику</b>\n\n"),
+                Const("🏷 <b>Шаг 1/4: Выберите рубрику</b>\n\n"),
                 Case(
                     {
                         True: Const("📂 Доступные рубрики для публикации:"),
@@ -75,7 +75,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
         return Window(
             Multi(
                 Const("📝 <b>Создание новой публикации</b>\n\n"),
-                Const("✍️ <b>Шаг 2/5: Опишите тему публикации</b>\n\n"),
+                Const("✍️ <b>Шаг 2/4: Опишите тему публикации</b>\n\n"),
                 Format("🏷 Рубрика: <b>{category_name}</b>\n\n"),
                 Const("💡 <b>Введите тему или описание публикации:</b>\n"),
                 Const("<i>• Можете описать своими словами о чем должен быть пост\n"),
@@ -103,49 +103,20 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                 content_types=["voice", "audio"],
             ),
 
-            Row(
-                Button(
-                    Const("➡️ Далее"),
-                    id="next_to_image",
-                    on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.choose_image_option),
-                    when="has_input_text",
-                ),
-                Back(Const("◀️ Назад")),
+            Button(
+                Const("📄 Сгенерировать только текст"),
+                id="with_image",
+                on_click=self.generate_publication_service.handle_generate_text_with_image,
             ),
+            Button(
+                Const("📄 Сгенерировать текст + картинку"),
+                id="text_only",
+                on_click=self.generate_publication_service.handle_generate_text,
+            ),
+            Back(Const("◀️ Назад")),
 
             state=model.GeneratePublicationStates.input_text,
             getter=self.generate_publication_service.get_input_text_data,
-            parse_mode="HTML",
-        )
-
-    def get_choose_image_option_window(self) -> Window:
-        """Окно выбора опций изображения"""
-        return Window(
-            Multi(
-                Const("📝 <b>Создание новой публикации</b>\n\n"),
-                Const("🖼 <b>Шаг 3/5: Изображение для публикации</b>\n\n"),
-                Format("🏷 Рубрика: <b>{category_name}</b>\n\n"),
-                Const("🎨 <b>Выберите вариант работы с изображением:</b>"),
-                sep="",
-            ),
-
-            Column(
-                Button(
-                    Const("🎨 Сгенерировать изображение с помощью ИИ"),
-                    id="with_image",
-                    on_click=self.generate_publication_service.handle_choose_with_image,
-                ),
-                Button(
-                    Const("📄 Только текст (без изображения)"),
-                    id="text_only",
-                    on_click=self.generate_publication_service.handle_choose_text_only,
-                ),
-            ),
-
-            Back(Const("◀️ Назад")),
-
-            state=model.GeneratePublicationStates.choose_image_option,
-            getter=self.generate_publication_service.get_image_option_data,
             parse_mode="HTML",
         )
 

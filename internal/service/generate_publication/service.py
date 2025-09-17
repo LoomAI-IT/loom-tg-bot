@@ -236,28 +236,23 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 await message.answer("❌ Ошибка обработки голосового сообщения")
                 raise
 
-    async def handle_choose_with_image(
+    async def handle_generate_text_with_image(
             self,
             callback: CallbackQuery,
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
         with self.tracer.start_as_current_span(
-                "GeneratePublicationDialogService.handle_choose_with_image",
+                "GeneratePublicationDialogService.handle_generate_text",
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
                 dialog_manager.dialog_data["need_image"] = True
-                dialog_manager.dialog_data["image_status"] = "waiting"
 
-                self.logger.info(
-                    "Выбрана генерация с изображением",
-                    {
-                        common.TELEGRAM_CHAT_ID_KEY: callback.message.chat.id,
-                    }
-                )
+                await self._generate_publication(callback, dialog_manager)
 
-                await dialog_manager.switch_to(model.GeneratePublicationStates.image_generation)
+                # Переходим к предпросмотру
+                await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
@@ -265,21 +260,20 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
-    async def handle_choose_text_only(
+    async def handle_generate_text(
             self,
             callback: CallbackQuery,
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
         with self.tracer.start_as_current_span(
-                "GeneratePublicationDialogService.handle_choose_text_only",
+                "GeneratePublicationDialogService.handle_generate_text",
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
                 dialog_manager.dialog_data["need_image"] = False
 
-                # Запускаем генерацию текста публикации
-                await self._generate_publication_text(callback, dialog_manager)
+                await self._generate_publication(callback, dialog_manager)
 
                 # Переходим к предпросмотру
                 await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
@@ -487,7 +481,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
 
                 # Создаем публикацию если еще не создана
                 if "publication_id" not in dialog_manager.dialog_data:
-                    await self._generate_publication_text_internal(message.chat.id, dialog_manager)
+                    await self._generate_publication_internal(message.chat.id, dialog_manager)
 
                 publication_id = dialog_manager.dialog_data["publication_id"]
 
@@ -1025,7 +1019,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
 
     # Вспомогательные методы
 
-    async def _generate_publication_text(
+    async def _generate_publication(
             self,
             callback: CallbackQuery,
             dialog_manager: DialogManager
@@ -1033,9 +1027,9 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
         await callback.answer("⏳ Генерирую текст публикации...")
 
         chat_id = callback.message.chat.id
-        await self._generate_publication_text_internal(chat_id, dialog_manager)
+        await self._generate_publication_internal(chat_id, dialog_manager)
 
-    async def _generate_publication_text_internal(
+    async def _generate_publication_internal(
             self,
             chat_id: int,
             dialog_manager: DialogManager
