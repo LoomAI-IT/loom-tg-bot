@@ -408,7 +408,7 @@ class KonturPublicationClient(interface.IKonturPublicationClient):
                 json_response = response.json()
 
                 span.set_status(Status(StatusCode.OK))
-                return [model.Category(**cat) for cat in json_response["categories"]]
+                return [model.Category(**cat) for cat in json_response]
             except Exception as e:
                 span.record_exception(e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
