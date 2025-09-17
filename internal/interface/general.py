@@ -48,7 +48,7 @@ class ITelegramMiddleware(Protocol):
     ): pass
 
     @abstractmethod
-    async def on_unknown_intent(self, event: ErrorEvent, dialog_manager: DialogManager): pass
+    async def on_critical_error(self, event: ErrorEvent, dialog_manager: DialogManager): pass
 
 
 

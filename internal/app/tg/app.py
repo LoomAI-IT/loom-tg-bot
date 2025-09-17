@@ -47,8 +47,8 @@ def NewTg(
         add_employee_dialog
     )
     dp.errors.register(
-        tg_middleware.on_unknown_intent,
-        ExceptionTypeFilter(UnknownIntent),
+        tg_middleware.on_critical_error,
+        ExceptionTypeFilter(Exception),
     )
 
     return app

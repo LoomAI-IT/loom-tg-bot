@@ -83,13 +83,10 @@ class TgMiddleware(interface.ITelegramMiddleware):
                 await handler(event, data)
 
                 root_span.set_status(Status(StatusCode.OK))
-
-            except UnknownIntent as err:
+            except Exception as err:
+                root_span.record_exception(err)
+                root_span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise err
-            except Exception as error:
-                root_span.record_exception(error)
-                root_span.set_status(Status(StatusCode.ERROR, str(error)))
-                raise error
 
     async def metric_middleware02(
             self,
@@ -129,10 +126,6 @@ class TgMiddleware(interface.ITelegramMiddleware):
                 self.ok_message_counter.add(1, attributes=request_attrs)
                 self.message_duration.record(duration_seconds, attributes=request_attrs)
                 span.set_status(Status(StatusCode.OK))
-            except TelegramBadRequest:
-                pass
-            except UnknownIntent as err:
-                raise err
             except Exception as err:
                 duration_seconds = time.time() - start_time
                 request_attrs[common.TELEGRAM_MESSAGE_DURATION_KEY] = 500
@@ -211,68 +204,103 @@ class TgMiddleware(interface.ITelegramMiddleware):
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise err
 
-    async def on_unknown_intent(self, event: ErrorEvent, dialog_manager: DialogManager):
+    async def on_critical_error(self, event: ErrorEvent, dialog_manager: DialogManager):
+
         if event.update.callback_query:
             chat_id = event.update.callback_query.message.chat.id
+            user = event.update.callback_query.from_user
         else:
             chat_id = event.update.message.chat.id
+            user = event.update.message.from_user
+
+        username = user.username if user else "unknown"
+        error = event.exception
 
         self.logger.warning(
-            "UnknownIntent error - сбрасываем диалог пользователя",
+            "Критическая ошибка - выполняем полный сброс состояния пользователя",
             {
                 common.TELEGRAM_CHAT_ID_KEY: chat_id,
+                common.TELEGRAM_USER_USERNAME_KEY: username,
+                common.ERROR_KEY: str(error),
+                "error_type": type(error).__name__,
+                common.TRACEBACK_KEY: traceback.format_exc(),
             }
         )
 
         try:
-            # Получаем состояние пользователя
-            user_state = await self.state_service.state_by_id(chat_id)
-
-            if not user_state:
-                # Если пользователь не найден, создаем состояние
-                await self.state_service.create_state(chat_id)
-                user_state = await self.state_service.state_by_id(chat_id)
-
-            user_state = user_state[0]
-
+            # Сбрасываем диалоги
             await dialog_manager.reset_stack()
 
-            # Определяем, куда направить пользователя в зависимости от его состояния
-            if user_state.organization_id == 0 and user_state.account_id == 0:
-                # Не авторизован - отправляем на авторизацию
-                await dialog_manager.start(
-                    model.AuthStates.user_agreement,
-                    mode=StartMode.RESET_STACK
+            try:
+                # Получаем состояние пользователя
+                user_state = await self.state_service.state_by_id(chat_id)
+
+                if not user_state:
+                    # Если пользователь не найден, создаем состояние
+                    await self.state_service.create_state(chat_id)
+                    user_state = await self.state_service.state_by_id(chat_id)
+
+                user_state = user_state[0]
+
+                await dialog_manager.reset_stack()
+                await dialog_manager.update({})
+
+                # Определяем, куда направить пользователя в зависимости от его состояния
+                if user_state.organization_id == 0 and user_state.account_id == 0:
+                    # Не авторизован - отправляем на авторизацию
+                    await dialog_manager.start(
+                        model.AuthStates.user_agreement,
+                        mode=StartMode.RESET_STACK
+                    )
+                elif user_state.organization_id == 0 and user_state.account_id != 0:
+                    # Авторизован, но нет доступа к организации
+                    await dialog_manager.start(
+                        model.AuthStates.access_denied,
+                        mode=StartMode.RESET_STACK
+                    )
+                else:
+                    # Полностью авторизован - отправляем в главное меню
+                    await dialog_manager.start(
+                        model.MainMenuStates.main_menu,
+                        mode=StartMode.RESET_STACK
+                    )
+
+                self.logger.info(
+                    "Состояние пользователя успешно сброшено после критической ошибки",
+                    {
+                        common.TELEGRAM_CHAT_ID_KEY: chat_id,
+                        common.TELEGRAM_USER_USERNAME_KEY: username,
+                    }
                 )
-            elif user_state.organization_id == 0 and user_state.account_id != 0:
-                # Авторизован, но нет доступа к организации
-                await dialog_manager.start(
-                    model.AuthStates.access_denied,
-                    mode=StartMode.RESET_STACK
-                )
-            else:
-                # Полностью авторизован - отправляем в главное меню
-                await dialog_manager.start(
-                    model.MainMenuStates.main_menu,
-                    mode=StartMode.RESET_STACK
+            except Exception as err:
+                self.logger.error(
+                    "Не удалось перенаправить на главную",
+                    {
+                        common.TELEGRAM_CHAT_ID_KEY: chat_id,
+                        common.ERROR_KEY: str(err),
+                    }
                 )
 
-
-        except Exception as recovery_err:
+        except Exception as err:
             self.logger.error(
-                "Ошибка при восстановлении после UnknownIntent",
+                "Критическая ошибка при восстановлении после сбоя",
                 {
                     common.TELEGRAM_CHAT_ID_KEY: chat_id,
-                    common.ERROR_KEY: str(recovery_err),
+                    common.TELEGRAM_USER_USERNAME_KEY: username,
+                    "original_error": str(error),
+                    "recovery_error": str(err),
                     common.TRACEBACK_KEY: traceback.format_exc(),
                 }
             )
-            if hasattr(dialog_manager.event, 'message') and dialog_manager.event.message:
-                await dialog_manager.event.message.answer(
-                    "❌ Произошла серьезная ошибка. Нажмите /start для перезапуска."
-                )
-            else:
-                await dialog_manager.event.answer("❌ Произошла серьезная ошибка. Нажмите /start для перезапуска.")
+            try:
+                if hasattr(dialog_manager.event, 'message') and dialog_manager.event.message:
+                    await dialog_manager.event.message.answer(
+                        "❌ Произошла серьезная ошибка. Нажмите /start для перезапуска бота."
+                    )
+                else:
+                    await dialog_manager.event.answer("❌ Произошла серьезная ошибка. Нажмите /start для перезапуска.")
+            except:
+                pass
 
     def __extract_metadata(self, event: Update):
         message = event.message if event.message is not None else event.callback_query.message
