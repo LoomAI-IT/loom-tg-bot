@@ -197,6 +197,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                await callback.answer("🔄 Генерирую текст")
                 category_id = dialog_manager.dialog_data["category_id"]
                 input_text = dialog_manager.dialog_data["input_text"]
 
@@ -229,6 +230,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                await callback.answer("🔄 Генерирую текст + картинку...")
                 category_id = dialog_manager.dialog_data["category_id"]
                 input_text = dialog_manager.dialog_data["input_text"]
 
@@ -257,6 +259,375 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
+
+    async def handle_regenerate_text(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        with self.tracer.start_as_current_span(
+                "GeneratePublicationDialogService.handle_regenerate_all",
+                kind=SpanKind.INTERNAL
+        ) as span:
+            try:
+                await callback.answer("🔄 Перегенерирую текст...")
+
+                category_id = dialog_manager.dialog_data["category_id"]
+                current_text = dialog_manager.dialog_data["publication_text"]
+
+                # Перегенерация через API
+                regenerated_data = await self.kontur_publication_client.regenerate_publication_text(
+                    category_id=category_id,
+                    publication_text=current_text,
+                    prompt=None
+                )
+
+                # Обновляем данные
+                dialog_manager.dialog_data["publication_name"] = regenerated_data["name"]
+                dialog_manager.dialog_data["publication_text"] = regenerated_data["text"]
+                dialog_manager.dialog_data["publication_tags"] = regenerated_data["tags"]
+
+                await callback.answer("✅ Текст успешно обновлен!", show_alert=True)
+                await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
+
+                span.set_status(Status(StatusCode.OK))
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
+                await callback.answer("❌ Ошибка при перегенерации", show_alert=True)
+                raise
+
+    async def handle_regenerate_with_prompt(
+            self,
+            message: Message,
+            widget: Any,
+            dialog_manager: DialogManager,
+            prompt: str
+    ) -> None:
+        with self.tracer.start_as_current_span(
+                "GeneratePublicationDialogService.handle_regenerate_with_prompt",
+                kind=SpanKind.INTERNAL
+        ) as span:
+            try:
+                if not prompt.strip():
+                    await message.answer("❌ Введите указания для перегенерации")
+                    return
+
+                await message.answer("🔄 Перегенерирую с учетом ваших пожеланий...")
+
+                category_id = dialog_manager.dialog_data["category_id"]
+                current_text = dialog_manager.dialog_data["publication_text"]
+
+                regenerated_data = await self.kontur_publication_client.regenerate_publication_text(
+                    category_id=category_id,
+                    publication_text=current_text,
+                    prompt=prompt
+                )
+
+                dialog_manager.dialog_data["publication_name"] = regenerated_data["name"]
+                dialog_manager.dialog_data["publication_text"] = regenerated_data["text"]
+                dialog_manager.dialog_data["publication_tags"] = regenerated_data["tags"]
+
+                await message.answer("✅ Текст обновлен с учетом ваших пожеланий!")
+                await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
+
+                span.set_status(Status(StatusCode.OK))
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
+                await message.answer("❌ Ошибка при перегенерации")
+                raise
+
+    async def handle_edit_title_save(
+            self,
+            message: Message,
+            widget: Any,
+            dialog_manager: DialogManager,
+            text: str
+    ) -> None:
+        with self.tracer.start_as_current_span(
+                "GeneratePublicationDialogService.handle_edit_title_save",
+                kind=SpanKind.INTERNAL
+        ) as span:
+            try:
+                new_title = text.strip()
+
+                if not new_title:
+                    await message.answer("❌ Название не может быть пустым")
+                    return
+
+                if len(new_title) > 200:
+                    await message.answer("❌ Слишком длинное название (макс. 200 символов)")
+                    return
+
+                dialog_manager.dialog_data["publication_name"] = new_title
+
+                await message.answer("✅ Название обновлено!")
+                await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
+
+                self.logger.info(
+                    "Название публикации изменено",
+                    {
+                        common.TELEGRAM_CHAT_ID_KEY: message.chat.id,
+                        "new_title": new_title,
+                    }
+                )
+
+                span.set_status(Status(StatusCode.OK))
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
+                await message.answer("❌ Ошибка при сохранении названия")
+                raise
+
+    async def handle_edit_tags_save(
+            self,
+            message: Message,
+            widget: Any,
+            dialog_manager: DialogManager,
+            text: str
+    ) -> None:
+        with self.tracer.start_as_current_span(
+                "GeneratePublicationDialogService.handle_edit_tags_save",
+                kind=SpanKind.INTERNAL
+        ) as span:
+            try:
+                # Парсим теги из строки
+                tags_raw = text.strip()
+                if not tags_raw:
+                    dialog_manager.dialog_data["publication_tags"] = []
+                    await message.answer("✅ Теги удалены")
+                else:
+                    # Разделяем по запятым и очищаем
+                    tags = [tag.strip() for tag in tags_raw.split(",")]
+                    tags = [tag for tag in tags if tag]  # Убираем пустые
+
+                    if len(tags) > 10:
+                        await message.answer("❌ Слишком много тегов (макс. 10)")
+                        return
+
+                    dialog_manager.dialog_data["publication_tags"] = tags
+                    await message.answer(f"✅ Сохранено {len(tags)} тегов")
+
+                await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
+
+                span.set_status(Status(StatusCode.OK))
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
+                await message.answer("❌ Ошибка при сохранении тегов")
+                raise
+
+    async def handle_edit_content_save(
+            self,
+            message: Message,
+            widget: Any,
+            dialog_manager: DialogManager,
+            text: str
+    ) -> None:
+        with self.tracer.start_as_current_span(
+                "GeneratePublicationDialogService.handle_edit_content_save",
+                kind=SpanKind.INTERNAL
+        ) as span:
+            try:
+                new_text = text.strip()
+
+                if not new_text:
+                    await message.answer("❌ Текст не может быть пустым")
+                    return
+
+                if len(new_text) > 4000:
+                    await message.answer("❌ Слишком длинный текст (макс. 4000 символов)")
+                    return
+
+                if len(new_text) < 50:
+                    await message.answer("⚠️ Текст слишком короткий. Минимум 50 символов.")
+                    return
+
+                dialog_manager.dialog_data["publication_text"] = new_text
+
+                await message.answer("✅ Текст обновлен!")
+                await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
+
+                self.logger.info(
+                    "Текст публикации изменен",
+                    {
+                        common.TELEGRAM_CHAT_ID_KEY: message.chat.id,
+                        "text_length": len(new_text),
+                    }
+                )
+
+                span.set_status(Status(StatusCode.OK))
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
+                await message.answer("❌ Ошибка при сохранении текста")
+                raise
+
+    async def handle_generate_new_image(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        with self.tracer.start_as_current_span(
+                "GeneratePublicationDialogService.handle_generate_new_image",
+                kind=SpanKind.INTERNAL
+        ) as span:
+            try:
+                await callback.answer("🎨 Генерирую новое изображение...")
+
+                category_id = dialog_manager.dialog_data["category_id"]
+                publication_text = dialog_manager.dialog_data["publication_text"]
+                text_reference = dialog_manager.dialog_data["input_text"]
+
+                # Генерация через API
+                image_url = await self.kontur_publication_client.generate_publication_image(
+                    category_id=category_id,
+                    publication_text=publication_text,
+                    text_reference=text_reference,
+                    prompt=None
+                )
+
+                dialog_manager.dialog_data["publication_image_url"] = image_url
+                dialog_manager.dialog_data["has_image"] = True
+
+                await callback.answer("✅ Изображение сгенерировано!", show_alert=True)
+                await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
+
+                span.set_status(Status(StatusCode.OK))
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
+                await callback.answer("❌ Ошибка при генерации изображения", show_alert=True)
+                raise
+
+    async def handle_generate_image_with_prompt(
+            self,
+            message: Message,
+            widget: Any,
+            dialog_manager: DialogManager,
+            prompt: str
+    ) -> None:
+        with self.tracer.start_as_current_span(
+                "GeneratePublicationDialogService.handle_generate_image_with_prompt",
+                kind=SpanKind.INTERNAL
+        ) as span:
+            try:
+                if not prompt.strip():
+                    await message.answer("❌ Введите описание изображения")
+                    return
+
+                await message.answer("🎨 Генерирую изображение по вашему описанию...")
+
+                category_id = dialog_manager.dialog_data["category_id"]
+                publication_text = dialog_manager.dialog_data["publication_text"]
+                text_reference = dialog_manager.dialog_data["input_text"]
+
+                image_url = await self.kontur_publication_client.generate_publication_image(
+                    category_id=category_id,
+                    publication_text=publication_text,
+                    text_reference=text_reference,
+                    prompt=prompt
+                )
+
+                dialog_manager.dialog_data["publication_image_url"] = image_url
+                dialog_manager.dialog_data["has_image"] = True
+
+                await message.answer("✅ Изображение сгенерировано!")
+                await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
+
+                span.set_status(Status(StatusCode.OK))
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
+                await message.answer("❌ Ошибка при генерации изображения")
+                raise
+
+    async def handle_image_upload(
+            self,
+            message: Message,
+            widget: MessageInput,
+            dialog_manager: DialogManager
+    ) -> None:
+        """Обработка загрузки пользовательского изображения"""
+        with self.tracer.start_as_current_span(
+                "GeneratePublicationDialogService.handle_image_upload",
+                kind=SpanKind.INTERNAL
+        ) as span:
+            try:
+                if not message.photo:
+                    await message.answer("❌ Пожалуйста, отправьте изображение")
+                    return
+
+                await message.answer("📤 Загружаю изображение...")
+
+                # Берем фото в лучшем качестве
+                photo = message.photo[-1]
+                file = await self.bot.get_file(photo.file_id)
+
+                # Сохраняем file_id для дальнейшего использования
+                dialog_manager.dialog_data["custom_image_file_id"] = photo.file_id
+                dialog_manager.dialog_data["has_image"] = True
+                dialog_manager.dialog_data["is_custom_image"] = True
+
+                # TODO: Здесь нужно будет загрузить изображение на сервер
+                # и получить URL, пока сохраняем file_id
+
+                await message.answer("✅ Изображение загружено!")
+                await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
+
+                self.logger.info(
+                    "Пользовательское изображение загружено",
+                    {
+                        common.TELEGRAM_CHAT_ID_KEY: message.chat.id,
+                        "file_id": photo.file_id,
+                    }
+                )
+
+                span.set_status(Status(StatusCode.OK))
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
+                await message.answer("❌ Ошибка при загрузке изображения")
+                raise
+
+    async def handle_remove_image(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        """Удаление изображения из публикации"""
+        with self.tracer.start_as_current_span(
+                "GeneratePublicationDialogService.handle_remove_image",
+                kind=SpanKind.INTERNAL
+        ) as span:
+            try:
+                # Удаляем все данные об изображении
+                dialog_manager.dialog_data["has_image"] = False
+                dialog_manager.dialog_data.pop("publication_image_url", None)
+                dialog_manager.dialog_data.pop("custom_image_file_id", None)
+                dialog_manager.dialog_data.pop("is_custom_image", None)
+
+                await callback.answer("✅ Изображение удалено", show_alert=True)
+                await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
+
+                self.logger.info(
+                    "Изображение удалено из публикации",
+                    {
+                        common.TELEGRAM_CHAT_ID_KEY: callback.message.chat.id,
+                    }
+                )
+
+                span.set_status(Status(StatusCode.OK))
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
+                await callback.answer("❌ Ошибка при удалении изображения", show_alert=True)
+                raise
+
 
     async def handle_edit_text(
             self,
@@ -631,6 +1002,39 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise err
+
+    async def get_regenerate_data(
+            self,
+            dialog_manager: DialogManager,
+            **kwargs
+    ) -> dict:
+        """Данные для окна перегенерации с промптом"""
+        return {
+            "has_regenerate_prompt": dialog_manager.dialog_data.get("regenerate_prompt", "") != "",
+            "regenerate_prompt": dialog_manager.dialog_data.get("regenerate_prompt", ""),
+        }
+
+    async def get_image_menu_data(
+            self,
+            dialog_manager: DialogManager,
+            **kwargs
+    ) -> dict:
+        """Данные для меню управления изображением"""
+        return {
+            "has_image": dialog_manager.dialog_data.get("has_image", False),
+            "is_custom_image": dialog_manager.dialog_data.get("is_custom_image", False),
+        }
+
+    async def get_image_prompt_data(
+            self,
+            dialog_manager: DialogManager,
+            **kwargs
+    ) -> dict:
+        """Данные для окна генерации изображения с промптом"""
+        return {
+            "has_image_prompt": dialog_manager.dialog_data.get("image_prompt", "") != "",
+            "image_prompt": dialog_manager.dialog_data.get("image_prompt", ""),
+        }
 
     async def _convert_voice_to_text(self, voice_data: io.BytesIO) -> str:
         """Конвертация голоса в текст (заглушка)"""
