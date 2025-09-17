@@ -3,6 +3,8 @@ from abc import abstractmethod
 from typing import Protocol, Any
 from aiogram_dialog import DialogManager, Dialog, Window
 from aiogram.types import CallbackQuery, Message
+from aiogram_dialog.widgets.input import MessageInput
+
 from internal import model
 
 
@@ -46,6 +48,14 @@ class IGeneratePublicationDialogService(Protocol):
     ) -> None: pass
 
     @abstractmethod
+    async def handle_go_to_content_menu(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
+    @abstractmethod
     async def handle_text_input(
             self,
             message: Message,
@@ -58,6 +68,7 @@ class IGeneratePublicationDialogService(Protocol):
     async def handle_voice_input(
             self,
             message: Message,
+            widget: MessageInput,
             dialog_manager: DialogManager
     ) -> None: pass
 
@@ -95,9 +106,34 @@ class IGeneratePublicationDialogService(Protocol):
     ) -> None: pass
 
     @abstractmethod
+    async def handle_request_custom_prompt(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
+    @abstractmethod
     async def handle_upload_image(
             self,
             message: Message,
+            widget: MessageInput,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
+    @abstractmethod
+    async def handle_request_upload_image(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
+    @abstractmethod
+    async def handle_regenerate_image(
+            self,
+            callback: CallbackQuery,
+            button: Any,
             dialog_manager: DialogManager
     ) -> None: pass
 
@@ -127,6 +163,14 @@ class IGeneratePublicationDialogService(Protocol):
 
     @abstractmethod
     async def handle_add_to_drafts(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
+    @abstractmethod
+    async def handle_schedule_time(
             self,
             callback: CallbackQuery,
             button: Any,
@@ -165,6 +209,24 @@ class IGeneratePublicationDialogService(Protocol):
 
     @abstractmethod
     async def get_publish_locations_data(
+            self,
+            dialog_manager: DialogManager,
+    ) -> dict: pass
+
+    @abstractmethod
+    async def get_input_text_data(
+            self,
+            dialog_manager: DialogManager,
+    ) -> dict: pass
+
+    @abstractmethod
+    async def get_image_option_data(
+            self,
+            dialog_manager: DialogManager,
+    ) -> dict: pass
+
+    @abstractmethod
+    async def get_image_generation_data(
             self,
             dialog_manager: DialogManager,
     ) -> dict: pass
