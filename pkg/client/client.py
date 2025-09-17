@@ -178,7 +178,7 @@ class AsyncHTTPClient:
             timeout: float = 30,
             max_connections: int = 100,
             max_keepalive_connections: int = 20,
-            retry_count: int = 3,
+            retry_count: int = 0,
             retry_wait_multiplier: float = 0.3,
             retry_wait_min: float = 0.1,
             retry_wait_max: float = 10,
