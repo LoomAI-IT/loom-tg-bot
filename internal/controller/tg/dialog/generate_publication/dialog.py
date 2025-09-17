@@ -255,8 +255,11 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                     on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.edit_content),
                 ),
             ),
-
-            Back(Const("◀️ Назад к превью")),
+            Button(
+                Const("📄 ◀️ Назад к превью"),
+                id="preview",
+                on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.preview),
+            ),
 
             state=model.GeneratePublicationStates.edit_text_menu,
             parse_mode="HTML",
@@ -283,8 +286,11 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                 id="regenerate_prompt_input",
                 on_success=self.generate_publication_service.handle_regenerate_text_with_prompt,
             ),
-
-            Back(Const("◀️ Назад")),
+            Button(
+                Const("📄 ◀️ Назад"),
+                id="edit_text_menu",
+                on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.edit_text_menu),
+            ),
 
             state=model.GeneratePublicationStates.regenerate_text,
             getter=self.generate_publication_service.get_regenerate_data,
@@ -306,7 +312,11 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                 on_success=self.generate_publication_service.handle_edit_title_save,
             ),
 
-            Back(Const("◀️ Назад")),
+            Button(
+                Const("📄 ◀️ Назад"),
+                id="edit_text_menu",
+                on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.edit_text_menu),
+            ),
 
             state=model.GeneratePublicationStates.edit_title,
             getter=self.generate_publication_service.get_preview_data,
@@ -329,7 +339,11 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                 on_success=self.generate_publication_service.handle_edit_tags_save,
             ),
 
-            Back(Const("◀️ Назад")),
+            Button(
+                Const("📄 ◀️ Назад"),
+                id="edit_text_menu",
+                on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.edit_text_menu),
+            ),
 
             state=model.GeneratePublicationStates.edit_tags,
             getter=self.generate_publication_service.get_preview_data,
@@ -351,7 +365,11 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                 on_success=self.generate_publication_service.handle_edit_content_save,
             ),
 
-            Back(Const("◀️ Назад")),
+            Button(
+                Const("📄 ◀️ Назад"),
+                id="edit_text_menu",
+                on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.edit_text_menu),
+            ),
 
             state=model.GeneratePublicationStates.edit_content,
             parse_mode="HTML",
@@ -397,7 +415,11 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                 ),
             ),
 
-            Back(Const("◀️ Назад к превью")),
+            Button(
+                Const("📄 ◀️ Назад"),
+                id="preview",
+                on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.preview),
+            ),
 
             state=model.GeneratePublicationStates.image_menu,
             getter=self.generate_publication_service.get_image_menu_data,
@@ -426,7 +448,11 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                 on_success=self.generate_publication_service.handle_generate_image_with_prompt,
             ),
 
-            Back(Const("◀️ Назад")),
+            Button(
+                Const("📄 ◀️ Назад"),
+                id="image_menu",
+                on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.image_menu),
+            ),
 
             state=model.GeneratePublicationStates.generate_image,
             getter=self.generate_publication_service.get_image_prompt_data,
@@ -449,7 +475,11 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                 content_types=["photo"],
             ),
 
-            Back(Const("◀️ Назад")),
+            Button(
+                Const("📄 ◀️ Назад"),
+                id="image_menu",
+                on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.image_menu),
+            ),
 
             state=model.GeneratePublicationStates.upload_image,
             parse_mode="HTML",
