@@ -166,28 +166,42 @@ class AddEmployeeDialogService(interface.IAddEmployeeDialogService):
                 button_id = button.widget_id
 
                 # Получаем текущие разрешения
-                permissions = dialog_manager.dialog_data.get("permissions")
+                permissions = dialog_manager.dialog_data.get("permissions", {
+                    "no_moderation": False,
+                    "autoposting": False,
+                    "add_employee": False,
+                    "edit_permissions": False,
+                    "top_up_balance": False,
+                    "social_networks": False,
+                })
 
-                # Определяем какое разрешение переключаем
                 permission_map = {
                     "toggle_no_moderation": "no_moderation",
-                    "no_moderation_label": "no_moderation",
                     "toggle_autoposting": "autoposting",
-                    "autoposting_label": "autoposting",
                     "toggle_add_employee": "add_employee",
-                    "add_employee_label": "add_employee",
                     "toggle_edit_permissions": "edit_permissions",
-                    "edit_permissions_label": "edit_permissions",
                     "toggle_top_up_balance": "top_up_balance",
-                    "top_up_balance_label": "top_up_balance",
                     "toggle_social_networks": "social_networks",
-                    "social_networks_label": "social_networks",
                 }
 
                 permission_key = permission_map.get(button_id)
                 if permission_key:
                     permissions[permission_key] = not permissions[permission_key]
                     dialog_manager.dialog_data["permissions"] = permissions
+
+                    # Добавим обратную связь пользователю
+                    status = "включено" if permissions[permission_key] else "выключено"
+                    permission_names = {
+                        "no_moderation": "Публикации без одобрения",
+                        "autoposting": "Авто-постинг",
+                        "add_employee": "Добавление сотрудников",
+                        "edit_permissions": "Изменение разрешений",
+                        "top_up_balance": "Пополнение баланса",
+                        "social_networks": "Подключение соцсетей",
+                    }
+
+                    permission_name = permission_names.get(permission_key, "Разрешение")
+                    await callback.answer(f"{permission_name}: {status}", show_alert=False)
 
                 # Обновляем окно
                 await dialog_manager.update(dialog_manager.dialog_data)

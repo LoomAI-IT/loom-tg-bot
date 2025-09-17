@@ -98,7 +98,7 @@ class AddEmployeeDialog(interface.IAddEmployeeDialog):
         )
 
     def get_set_permissions_window(self) -> Window:
-        """Окно настройки разрешений сотрудника"""
+        """Окно настройки разрешений сотрудника - улучшенная версия с одной кнопкой на правило"""
         return Window(
             Multi(
                 Const("👤 <b>Добавление нового сотрудника</b>\n\n"),
@@ -106,95 +106,53 @@ class AddEmployeeDialog(interface.IAddEmployeeDialog):
                 Format("ID Аккаунта: <b>{account_id}</b>\n"),
                 Format("Имя: <b>{name}</b>\n"),
                 Format("Роль: <b>{role}</b>\n\n"),
-                Const("⚙️ <b>Разрешения:</b>"),
+                Const("⚙️ <b>Разрешения:</b>\n"),
+                Const("<i>Нажмите на правило, чтобы включить/выключить его</i>"),
                 sep="",
             ),
 
             Column(
                 # Публикации без одобрения
-                Row(
-                    Button(
-                        Format("{no_moderation_icon}"),
-                        id="toggle_no_moderation",
-                        on_click=self.add_employee_service.handle_toggle_permission,
-                    ),
-                    Button(
-                        Const("Публикации без одобрения"),
-                        id="no_moderation_label",
-                        on_click=self.add_employee_service.handle_toggle_permission,
-                    ),
+                Button(
+                    Format("{no_moderation_icon} Публикации без одобрения"),
+                    id="toggle_no_moderation",
+                    on_click=self.add_employee_service.handle_toggle_permission,
                 ),
 
                 # Включить авто-постинг
-                Row(
-                    Button(
-                        Format("{autoposting_icon}"),
-                        id="toggle_autoposting",
-                        on_click=self.add_employee_service.handle_toggle_permission,
-                    ),
-                    Button(
-                        Const("Включить авто-постинг"),
-                        id="autoposting_label",
-                        on_click=self.add_employee_service.handle_toggle_permission,
-                    ),
+                Button(
+                    Format("{autoposting_icon} Включить авто-постинг"),
+                    id="toggle_autoposting",
+                    on_click=self.add_employee_service.handle_toggle_permission,
                 ),
 
                 # Добавлять сотрудников
-                Row(
-                    Button(
-                        Format("{add_employee_icon}"),
-                        id="toggle_add_employee",
-                        on_click=self.add_employee_service.handle_toggle_permission,
-                    ),
-                    Button(
-                        Const("Добавлять сотрудников"),
-                        id="add_employee_label",
-                        on_click=self.add_employee_service.handle_toggle_permission,
-                    ),
+                Button(
+                    Format("{add_employee_icon} Добавлять сотрудников"),
+                    id="toggle_add_employee",
+                    on_click=self.add_employee_service.handle_toggle_permission,
                 ),
 
                 # Изменять разрешения сотрудников
-                Row(
-                    Button(
-                        Format("{edit_permissions_icon}"),
-                        id="toggle_edit_permissions",
-                        on_click=self.add_employee_service.handle_toggle_permission,
-                    ),
-                    Button(
-                        Const("Изменять разрешения сотрудников"),
-                        id="edit_permissions_label",
-                        on_click=self.add_employee_service.handle_toggle_permission,
-                    ),
+                Button(
+                    Format("{edit_permissions_icon} Изменять разрешения сотрудников"),
+                    id="toggle_edit_permissions",
+                    on_click=self.add_employee_service.handle_toggle_permission,
                 ),
 
                 # Пополнять баланс
-                Row(
-                    Button(
-                        Format("{top_up_balance_icon}"),
-                        id="toggle_top_up_balance",
-                        on_click=self.add_employee_service.handle_toggle_permission,
-                    ),
-                    Button(
-                        Const("Пополнять баланс"),
-                        id="top_up_balance_label",
-                        on_click=self.add_employee_service.handle_toggle_permission,
-                    ),
+                Button(
+                    Format("{top_up_balance_icon} Пополнять баланс"),
+                    id="toggle_top_up_balance",
+                    on_click=self.add_employee_service.handle_toggle_permission,
                 ),
 
                 # Подключать социальные сети
-                Row(
-                    Button(
-                        Format("{social_networks_icon}"),
-                        id="toggle_social_networks",
-                        on_click=self.add_employee_service.handle_toggle_permission,
-                    ),
-                    Button(
-                        Const("Подключать социальные сети"),
-                        id="social_networks_label",
-                        on_click=self.add_employee_service.handle_toggle_permission,
-                    ),
+                Button(
+                    Format("{social_networks_icon} Подключать социальные сети"),
+                    id="toggle_social_networks",
+                    on_click=self.add_employee_service.handle_toggle_permission,
                 ),
-
                 Button(
                     Const("➡️ Далее"),
                     id="next_to_confirm",
