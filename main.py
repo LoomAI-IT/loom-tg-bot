@@ -110,9 +110,11 @@ organization_menu_service = OrganizationMenuDialogService(
 )
 change_employee_service = ChangeEmployeeDialogService(
     tel,
+    bot,
     state_repo,
     kontur_employee_client,
-    kontur_organization_client
+    kontur_organization_client,
+    kontur_publication_client
 )
 
 add_employee_service = AddEmployeeDialogService(
