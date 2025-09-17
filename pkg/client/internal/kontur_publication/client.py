@@ -99,7 +99,7 @@ class KonturPublicationClient(interface.IKonturPublicationClient):
                 json_response = response.json()
 
                 span.set_status(Status(StatusCode.OK))
-                return json_response
+                return json_response["image_url"]
 
             except Exception as e:
                 span.record_exception(e)
