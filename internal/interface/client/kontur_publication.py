@@ -18,7 +18,7 @@ class IKonturPublicationClient(Protocol):
             need_images: bool,
             text_reference: str,
             time_for_publication: datetime = None
-    ) -> None: pass
+    ) -> model.Publication: pass
 
     @abstractmethod
     async def regenerate_publication_image(

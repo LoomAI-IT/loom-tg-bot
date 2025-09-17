@@ -34,7 +34,7 @@ class KonturPublicationClient(interface.IKonturPublicationClient):
             need_images: bool,
             text_reference: str,
             time_for_publication: datetime = None
-    ) -> None:
+    ) -> model.Publication:
         with self.tracer.start_as_current_span(
                 "PublicationClient.generate_publication",
                 kind=SpanKind.CLIENT,
@@ -56,9 +56,12 @@ class KonturPublicationClient(interface.IKonturPublicationClient):
                 if time_for_publication:
                     body["time_for_publication"] = time_for_publication.isoformat()
 
-                await self.client.post("/generate", json=body)
+                response = await self.client.post("/generate", json=body)
+                json_response = response.json()
 
                 span.set_status(Status(StatusCode.OK))
+                return model.Publication(**json_response)
+
             except Exception as e:
                 span.record_exception(e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))

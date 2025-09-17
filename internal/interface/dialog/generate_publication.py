@@ -4,6 +4,7 @@ from typing import Protocol, Any
 from aiogram_dialog import DialogManager, Dialog, Window
 from aiogram.types import CallbackQuery, Message
 from aiogram_dialog.widgets.input import MessageInput
+from aiogram_dialog.widgets.kbd import ManagedCheckbox
 
 from internal import model
 
@@ -194,10 +195,10 @@ class IGeneratePublicationDialogService(Protocol):
     ) -> None: pass
 
     @abstractmethod
-    async def handle_select_publish_location(
+    async def handle_platform_toggle(
             self,
             callback: CallbackQuery,
-            widget: Any,
+            checkbox: ManagedCheckbox,
             dialog_manager: DialogManager
     ) -> None: pass
 

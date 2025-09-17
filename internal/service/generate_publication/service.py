@@ -1,13 +1,10 @@
-# internal/service/generate_publication/service.py
 import io
 import asyncio
 from typing import Any
-from datetime import datetime, timedelta
-import speech_recognition as sr
-from pydub import AudioSegment
+from aiogram_dialog.widgets.input import MessageInput
 
 from aiogram import Bot
-from aiogram.types import CallbackQuery, Message, ContentType, BufferedInputFile
+from aiogram.types import CallbackQuery, Message, ContentType
 from aiogram_dialog import DialogManager, StartMode
 from aiogram_dialog.api.entities import MediaAttachment, MediaId
 from aiogram_dialog.widgets.kbd import ManagedCheckbox
@@ -205,9 +202,8 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
 
                 file = await self.bot.get_file(file_id)
                 file_data = await self.bot.download_file(file.file_path)
+                file_data = io.BytesIO(file_data.read())
 
-                # Конвертируем в текст (заглушка - в реальности нужна интеграция с STT)
-                # Здесь должна быть интеграция с сервисом распознавания речи
                 text = await self._convert_voice_to_text(file_data)
 
                 if not text:
@@ -220,8 +216,6 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 # Сохраняем распознанный текст
                 dialog_manager.dialog_data["input_text"] = text
                 dialog_manager.dialog_data["has_input_text"] = True
-
-                await message.answer(f"✅ Распознанный текст:\n\n<i>{text}</i>", parse_mode="HTML")
 
                 self.logger.info(
                     "Голосовое сообщение обработано",
@@ -743,20 +737,23 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
             try:
                 publication_id = dialog_manager.dialog_data["publication_id"]
 
-                # Получаем выбранные платформы
+                # Получаем выбранные платформы из dialog_data
                 selected_platforms = []
+                platforms_data = dialog_manager.dialog_data.get("selected_platforms", {})
+
                 for platform in ["telegram", "instagram", "vkontakte", "youtube"]:
-                    checkbox_id = f"platform_{platform}"
-                    checkbox = dialog_manager.find(checkbox_id)
-                    if isinstance(checkbox, ManagedCheckbox) and checkbox.is_checked():
+                    if platforms_data.get(f"platform_{platform}", False):
                         selected_platforms.append(platform)
 
                 if not selected_platforms:
                     await callback.answer("⚠️ Выберите хотя бы одну платформу", show_alert=True)
                     return
 
-                # TODO: Передать платформы в API публикации
-                await self.kontur_publication_client.publish_publication(publication_id)
+                # Публикуем на выбранные платформы
+                await self.kontur_publication_client.publish_publication(
+                    publication_id,
+                    platforms=selected_platforms
+                )
 
                 self.logger.info(
                     "Публикация опубликована",
@@ -797,6 +794,42 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
             try:
                 await dialog_manager.update(dialog_manager.dialog_data)
                 await callback.answer("🔄 Список обновлен")
+
+                span.set_status(Status(StatusCode.OK))
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
+                raise
+
+    async def handle_platform_toggle(
+            self,
+            callback: CallbackQuery,
+            checkbox: ManagedCheckbox,
+            dialog_manager: DialogManager
+    ) -> None:
+        """Обработка переключения платформ"""
+        with self.tracer.start_as_current_span(
+                "GeneratePublicationDialogService.handle_platform_toggle",
+                kind=SpanKind.INTERNAL
+        ) as span:
+            try:
+                # Инициализируем словарь выбранных платформ если его нет
+                if "selected_platforms" not in dialog_manager.dialog_data:
+                    dialog_manager.dialog_data["selected_platforms"] = {}
+
+                platform_id = checkbox.widget_id
+                is_checked = checkbox.is_checked()
+
+                dialog_manager.dialog_data["selected_platforms"][platform_id] = is_checked
+
+                self.logger.info(
+                    "Платформа переключена",
+                    {
+                        common.TELEGRAM_CHAT_ID_KEY: callback.message.chat.id,
+                        "platform": platform_id,
+                        "selected": is_checked,
+                    }
+                )
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
@@ -961,24 +994,48 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        # TODO: Получить реальные подключенные платформы из API
-        selected_count = 0
+        """Получение данных для окна выбора платформ"""
+        with self.tracer.start_as_current_span(
+                "GeneratePublicationDialogService.get_publish_locations_data",
+                kind=SpanKind.INTERNAL
+        ) as span:
+            try:
+                state = await self._get_state(dialog_manager)
+                employee = await self.kontur_employee_client.get_employee_by_account_id(
+                    state.account_id
+                )
 
-        # Проверяем состояние чекбоксов
-        for platform in ["telegram", "instagram", "vkontakte", "youtube"]:
-            checkbox_id = f"platform_{platform}"
-            checkbox = dialog_manager.find(checkbox_id)
-            if isinstance(checkbox, ManagedCheckbox) and checkbox.is_checked():
-                selected_count += 1
+                # TODO: Получить реальные подключенные платформы из API организации
+                # organization_platforms = await self.kontur_organization_client.get_connected_platforms(
+                #     employee.organization_id
+                # )
 
-        return {
-            "telegram_available": True,
-            "instagram_available": True,
-            "vkontakte_available": True,
-            "youtube_available": False,  # Только для видео
-            "has_selected_platforms": selected_count > 0,
-            "selected_count": selected_count,
-        }
+                # Пока используем статичные данные
+                platforms_data = dialog_manager.dialog_data.get("selected_platforms", {})
+                selected_count = sum(1 for selected in platforms_data.values() if selected)
+
+                data = {
+                    "telegram_available": True,
+                    "instagram_available": True,
+                    "vkontakte_available": True,
+                    "youtube_available": False,  # Только для видео контента
+                    "has_selected_platforms": selected_count > 0,
+                    "selected_count": selected_count,
+                }
+
+                span.set_status(Status(StatusCode.OK))
+                return data
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
+                return {
+                    "telegram_available": False,
+                    "instagram_available": False,
+                    "vkontakte_available": False,
+                    "youtube_available": False,
+                    "has_selected_platforms": False,
+                    "selected_count": 0,
+                }
 
     # Вспомогательные методы
 
@@ -987,7 +1044,6 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
             callback: CallbackQuery,
             dialog_manager: DialogManager
     ) -> None:
-        """Генерация текста публикации через API"""
         await callback.answer("⏳ Генерирую текст публикации...")
 
         chat_id = callback.message.chat.id
@@ -998,7 +1054,6 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
             chat_id: int,
             dialog_manager: DialogManager
     ) -> None:
-        """Внутренний метод генерации текста публикации"""
         state = await self._get_state_by_chat_id(chat_id)
         employee = await self.kontur_employee_client.get_employee_by_account_id(
             state.account_id
@@ -1009,7 +1064,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
         need_images = dialog_manager.dialog_data.get("need_image", False)
 
         # Генерируем публикацию через API
-        await self.kontur_publication_client.generate_publication(
+        publication = await self.kontur_publication_client.generate_publication(
             organization_id=employee.organization_id,
             category_id=category_id,
             creator_id=state.account_id,
@@ -1018,28 +1073,18 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
             time_for_publication=None
         )
 
-        # Получаем созданную публикацию (последнюю)
-        publications = await self.kontur_publication_client.get_publications_by_organization(
-            employee.organization_id
+        dialog_manager.dialog_data["publication_id"] = publication.id
+        dialog_manager.dialog_data["generated_text"] = publication.text
+        dialog_manager.dialog_data["publication_title"] = publication.name
+
+        self.logger.info(
+            "Текст публикации сгенерирован",
+            {
+                common.TELEGRAM_CHAT_ID_KEY: chat_id,
+                "publication_id": publication.id,
+                "text_length": len(publication.text),
+            }
         )
-
-        # Находим последнюю созданную публикацию этим пользователем
-        user_publications = [p for p in publications if p.creator_id == state.account_id]
-        if user_publications:
-            publication = sorted(user_publications, key=lambda p: p.created_at, reverse=True)[0]
-
-            dialog_manager.dialog_data["publication_id"] = publication.id
-            dialog_manager.dialog_data["generated_text"] = publication.text
-            dialog_manager.dialog_data["publication_title"] = publication.name
-
-            self.logger.info(
-                "Текст публикации сгенерирован",
-                {
-                    common.TELEGRAM_CHAT_ID_KEY: chat_id,
-                    "publication_id": publication.id,
-                    "text_length": len(publication.text),
-                }
-            )
 
     async def _convert_voice_to_text(self, voice_data: io.BytesIO) -> str:
         """Конвертация голоса в текст (заглушка)"""

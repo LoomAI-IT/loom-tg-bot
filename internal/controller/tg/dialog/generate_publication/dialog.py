@@ -60,7 +60,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             ),
 
             Button(
-                Const("❌ Отмена"),
+                Const("❌ Вернуться в меню контента"),
                 id="cancel_to_content_menu",
                 on_click=self.generate_publication_service.handle_go_to_content_menu,
             ),
@@ -353,37 +353,39 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                 sep="",
             ),
 
+            # Вариант с обычными Checkbox (более стабильный)
             Column(
-                Group(
-                    ManagedCheckbox(
-                        Const("✈️ Telegram"),
-                        id="platform_telegram",
-                        checked_text="✅",
-                        unchecked_text="☐",
-                        when="telegram_available",
-                    ),
-                    ManagedCheckbox(
-                        Const("📷 Instagram"),
-                        id="platform_instagram",
-                        checked_text="✅",
-                        unchecked_text="☐",
-                        when="instagram_available",
-                    ),
-                    ManagedCheckbox(
-                        Const("📘 VKontakte"),
-                        id="platform_vkontakte",
-                        checked_text="✅",
-                        unchecked_text="☐",
-                        when="vkontakte_available",
-                    ),
-                    ManagedCheckbox(
-                        Const("🎬 YouTube Shorts"),
-                        id="platform_youtube",
-                        checked_text="✅",
-                        unchecked_text="☐",
-                        when="youtube_available",
-                    ),
-                    width=1,
+                Checkbox(
+                    Const("✅ Telegram"),
+                    Const("☐ Telegram"),
+                    id="platform_telegram",
+                    default=False,
+                    on_state_changed=self.generate_publication_service.handle_platform_toggle,
+                    when="telegram_available",
+                ),
+                Checkbox(
+                    Const("✅ Instagram"),
+                    Const("☐ Instagram"),
+                    id="platform_instagram",
+                    default=False,
+                    on_state_changed=self.generate_publication_service.handle_platform_toggle,
+                    when="instagram_available",
+                ),
+                Checkbox(
+                    Const("✅ VKontakte"),
+                    Const("☐ VKontakte"),
+                    id="platform_vkontakte",
+                    default=False,
+                    on_state_changed=self.generate_publication_service.handle_platform_toggle,
+                    when="vkontakte_available",
+                ),
+                Checkbox(
+                    Const("✅ YouTube Shorts"),
+                    Const("☐ YouTube Shorts"),
+                    id="platform_youtube",
+                    default=False,
+                    on_state_changed=self.generate_publication_service.handle_platform_toggle,
+                    when="youtube_available",
                 ),
             ),
 
