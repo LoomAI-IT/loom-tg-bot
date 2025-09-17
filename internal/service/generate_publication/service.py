@@ -205,6 +205,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                     category_id=category_id,
                     text_reference=input_text,
                 )
+                print(publication_data, flush=True)
 
                 dialog_manager.dialog_data["publication_tags"] = publication_data["tags"]
                 dialog_manager.dialog_data["publication_name"] = publication_data["name"]
