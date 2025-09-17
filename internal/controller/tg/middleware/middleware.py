@@ -6,6 +6,7 @@ from typing import Callable, Any, Awaitable
 from aiogram.types import TelegramObject, Update, ErrorEvent
 from aiogram.exceptions import TelegramBadRequest
 from aiogram_dialog import DialogManager, StartMode
+from aiogram_dialog.api.exceptions import UnknownIntent
 from opentelemetry.trace import SpanKind, Status, StatusCode
 
 from internal import interface, common, model
@@ -82,6 +83,9 @@ class TgMiddleware(interface.ITelegramMiddleware):
                 await handler(event, data)
 
                 root_span.set_status(Status(StatusCode.OK))
+
+            except UnknownIntent as err:
+                raise err
             except Exception as error:
                 root_span.record_exception(error)
                 root_span.set_status(Status(StatusCode.ERROR, str(error)))
@@ -127,6 +131,8 @@ class TgMiddleware(interface.ITelegramMiddleware):
                 span.set_status(Status(StatusCode.OK))
             except TelegramBadRequest:
                 pass
+            except UnknownIntent as err:
+                raise err
             except Exception as err:
                 duration_seconds = time.time() - start_time
                 request_attrs[common.TELEGRAM_MESSAGE_DURATION_KEY] = 500
@@ -189,6 +195,10 @@ class TgMiddleware(interface.ITelegramMiddleware):
                     }
                 )
                 pass
+
+            except UnknownIntent as err:
+                raise err
+
             except Exception as err:
                 extra_log = {
                     **extra_log,
