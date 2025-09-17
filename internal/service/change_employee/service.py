@@ -447,6 +447,7 @@ class ChangeEmployeeDialogService(interface.IChangeEmployeeDialogService):
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
+
     async def handle_go_to_organization_menu(
             self,
             callback: CallbackQuery,

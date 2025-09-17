@@ -1,6 +1,7 @@
 import uvicorn
 from aiogram import Bot, Dispatcher
-from aiogram.fsm.storage.memory import MemoryStorage
+import redis.asyncio as redis
+from aiogram.fsm.storage.redis import RedisStorage
 
 from infrastructure.pg.pg import PG
 from infrastructure.telemetry.telemetry import Telemetry, AlertManager
@@ -66,7 +67,13 @@ tel = Telemetry(
 )
 
 bot = Bot(cfg.tg_bot_token)
-storage = MemoryStorage()
+redis_client = redis.Redis(
+    host=cfg.monitoring_redis_host,
+    port=cfg.monitoring_redis_port,
+    password=cfg.monitoring_redis_password,
+    db=2
+)
+storage = RedisStorage(redis=redis_client)
 dp = Dispatcher(storage=storage)
 
 # Инициализация клиентов
