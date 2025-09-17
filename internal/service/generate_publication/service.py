@@ -1,12 +1,13 @@
 import io
 import asyncio
 from typing import Any
+
+import httpx
 from aiogram_dialog.widgets.input import MessageInput
 
 from aiogram import Bot
 from aiogram.types import CallbackQuery, Message, ContentType
 from aiogram_dialog import DialogManager, StartMode
-from aiogram_dialog.api.entities import MediaAttachment, MediaId
 from aiogram_dialog.widgets.kbd import ManagedCheckbox
 
 from opentelemetry.trace import SpanKind, Status, StatusCode
@@ -1103,3 +1104,24 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
             return dialog_manager.event.chat.id
         else:
             raise ValueError("Cannot extract chat_id from dialog_manager")
+
+    async def _download_image_from_url(
+            self,
+            image_url: str
+    ) -> bytes:
+        with self.tracer.start_as_current_span(
+                "GeneratePublicationDialogService._download_image_from_url",
+                kind=SpanKind.CLIENT,
+        ) as span:
+            try:
+                async with httpx.AsyncClient() as client:
+                    response = await client.get(image_url)
+                    response.raise_for_status()
+
+                span.set_status(Status(StatusCode.OK))
+                return response.content
+
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
+                raise
