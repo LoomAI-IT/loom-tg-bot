@@ -205,7 +205,7 @@ class TgMiddleware(interface.ITelegramMiddleware):
         if hasattr(dialog_manager.event, 'message') and dialog_manager.event.message:
             chat_id = dialog_manager.event.message.chat.id
         else:
-            chat_id = dialog_manager.event.chat.id
+            chat_id = dialog_manager.event.message.chat.id
 
         self.logger.warning(
             "UnknownIntent error - сбрасываем диалог пользователя",
