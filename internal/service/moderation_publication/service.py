@@ -1,4 +1,5 @@
 import asyncio
+import time
 from datetime import datetime, timezone
 from typing import Any
 
@@ -93,8 +94,11 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
                 # Подготавливаем медиа для изображения
                 preview_image_media = None
                 if current_pub.image_fid:
+                    cache_buster = int(time.time())
+                    image_url = f"https://kontur-media.ru/api/publication/{current_pub.id}/image/download?v={cache_buster}"
+
                     preview_image_media = MediaAttachment(
-                        url=f"https://kontur-media.ru/api/publication/{current_pub.id}/image/download",
+                        url=image_url,
                         type=ContentType.PHOTO
                     )
 
