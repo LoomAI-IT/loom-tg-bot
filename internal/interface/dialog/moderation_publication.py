@@ -48,22 +48,6 @@ class IModerationPublicationDialogService(Protocol):
     ) -> dict: pass
 
     @abstractmethod
-    async def handle_select_publication(
-            self,
-            callback: CallbackQuery,
-            widget: Any,
-            dialog_manager: DialogManager,
-            publication_id: str
-    ) -> None: pass
-
-    # Обработчики для просмотра публикации
-    @abstractmethod
-    async def get_publication_review_data(
-            self,
-            dialog_manager: DialogManager,
-    ) -> dict: pass
-
-    @abstractmethod
     async def handle_navigate_publication(
             self,
             callback: CallbackQuery,

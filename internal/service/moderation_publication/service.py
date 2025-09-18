@@ -36,6 +36,7 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
+        """Получение данных для основного окна - сразу показываем первую публикацию"""
         with self.tracer.start_as_current_span(
                 "ModerationPublicationDialogService.get_moderation_list_data",
                 kind=SpanKind.INTERNAL
@@ -48,56 +49,105 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
                     organization_id=state.organization_id
                 )
 
-                # Форматируем данные для отображения
-                publications_data = []
-                for pub in publications:
-                    if pub.moderation_status == "moderation":
-                        # Определяем эмодзи статуса
-                        status_emoji = self._get_status_emoji(pub.moderation_status)
+                # Фильтруем только те, что на модерации
+                moderation_publications = [
+                    pub for pub in publications
+                    if pub.moderation_status == "moderation"
+                ]
 
-                        # Форматируем дату создания
-                        created_at = self._format_datetime(pub.created_at)
+                if not moderation_publications:
+                    return {
+                        "has_publications": False,
+                        "publications_count": 0,
+                        "period_text": "",
+                    }
 
-                        # Получаем информацию об авторе
-                        author = await self.kontur_employee_client.get_employee_by_account_id(
-                            pub.creator_id
-                        )
+                # Сохраняем список для навигации
+                dialog_manager.dialog_data["moderation_list"] = moderation_publications
 
-                        # Получаем категорию
-                        category = await self.kontur_publication_client.get_category_by_id(
-                            pub.category_id
-                        )
+                # Устанавливаем текущий индекс (0 если не был установлен)
+                if "current_index" not in dialog_manager.dialog_data:
+                    dialog_manager.dialog_data["current_index"] = 0
 
-                        publications_data.append({
-                            "id": pub.id,
-                            "title": self._truncate_text(pub.name, 50),
-                            "author": author.name,
-                            "category": category.name,
-                            "created_at": created_at,
-                            "emoji": status_emoji,
-                            "moderation_status": pub.moderation_status,
-                            "waiting_hours": self._calculate_waiting_hours(pub.created_at),
-                        })
+                current_index = dialog_manager.dialog_data["current_index"]
+                current_pub = moderation_publications[current_index]
 
-                # Сохраняем список в dialog_data для навигации
-                dialog_manager.dialog_data["moderation_list"] = publications_data
-                dialog_manager.dialog_data["current_index"] = 0
+                # Получаем информацию об авторе
+                author = await self.kontur_employee_client.get_employee_by_account_id(
+                    current_pub.creator_id
+                )
+
+                # Получаем категорию
+                category = await self.kontur_publication_client.get_category_by_id(
+                    current_pub.category_id
+                )
+
+                # Форматируем теги
+                tags = current_pub.tags or []
+                tags_text = ", ".join(tags) if tags else ""
+
+                # Рассчитываем время ожидания
+                waiting_time = self._calculate_waiting_time_text(current_pub.created_at)
+
+                # Подготавливаем медиа для изображения
+                preview_image_media = None
+                if current_pub.image_fid:
+                    from aiogram_dialog.api.entities import MediaAttachment
+                    preview_image_media = MediaAttachment(
+                        url=f"https://kontur-media.ru/api/publication/{current_pub.id}/image/download",
+                        type=ContentType.PHOTO
+                    )
+
+                # Форматируем историю изменений
+                edit_history = dialog_manager.dialog_data.get("edit_history", [])
+                edit_history_text = self._format_edit_history(edit_history)
 
                 # Определяем период
-                period_text = self._get_period_text(publications_data)
+                period_text = self._get_period_text(moderation_publications)
 
                 data = {
-                    "publications": publications_data,
-                    "has_publications": len(publications_data) > 0,
-                    "publications_count": len(publications_data),
+                    "has_publications": True,
+                    "publications_count": len(moderation_publications),
                     "period_text": period_text,
+                    "author_name": author.name,
+                    "category_name": category.name,
+                    "created_at": self._format_datetime(current_pub.created_at),
+                    "has_waiting_time": bool(waiting_time),
+                    "waiting_time": waiting_time,
+                    "publication_name": current_pub.name,
+                    "publication_text": current_pub.text,
+                    "has_tags": bool(tags),
+                    "publication_tags": tags_text,
+                    "has_image": bool(current_pub.image_fid),
+                    "preview_image_media": preview_image_media,
+                    "has_edit_history": len(edit_history) > 0,
+                    "edit_history": edit_history_text,
+                    "current_index": current_index + 1,
+                    "total_count": len(moderation_publications),
+                    "has_prev": current_index > 0,
+                    "has_next": current_index < len(moderation_publications) - 1,
+                }
+
+                # Сохраняем данные текущей публикации
+                dialog_manager.dialog_data["publication_data"] = {
+                    "id": current_pub.id,
+                    "creator_id": current_pub.creator_id,
+                    "name": current_pub.name,
+                    "text": current_pub.text,
+                    "tags": current_pub.tags or [],
+                    "category_id": current_pub.category_id,
+                    "image_url": f"https://kontur-media.ru/api/publication/{current_pub.id}/image/download" if current_pub.image_fid else None,
+                    "has_image": bool(current_pub.image_fid),
+                    "moderation_status": current_pub.moderation_status,
+                    "created_at": current_pub.created_at,
                 }
 
                 self.logger.info(
                     "Список модерации загружен",
                     {
                         common.TELEGRAM_CHAT_ID_KEY: self._get_chat_id(dialog_manager),
-                        "publications_count": len(publications_data),
+                        "publications_count": len(moderation_publications),
+                        "current_index": current_index,
                     }
                 )
 
@@ -116,156 +166,16 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
             dialog_manager: DialogManager,
             publication_id: str
     ) -> None:
-        with self.tracer.start_as_current_span(
-                "ModerationPublicationDialogService.handle_select_publication",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                # Находим индекс выбранной публикации
-                publications = dialog_manager.dialog_data.get("moderation_list", [])
-                current_index = next(
-                    (i for i, pub in enumerate(publications) if str(pub["id"]) == publication_id),
-                    0
-                )
-
-                dialog_manager.dialog_data["current_index"] = current_index
-                dialog_manager.dialog_data["selected_publication_id"] = int(publication_id)
-
-                # Загружаем полные данные публикации
-                publication = await self.kontur_publication_client.get_publication_by_id(
-                    int(publication_id)
-                )
-
-                # Сохраняем данные публикации для редактирования
-                dialog_manager.dialog_data["publication_data"] = {
-                    "id": publication.id,
-                    "creator_id": publication.creator_id,
-                    "name": publication.name,
-                    "text": publication.text,
-                    "tags": publication.tags,
-                    "category_id": publication.category_id,
-                    "image_url": f"https://kontur-media.ru/api/publication/{publication.id}/image/download",
-                    "has_image": bool(publication.image_fid),
-                    "moderation_status": publication.moderation_status,
-                    "created_at": publication.created_at,
-                }
-
-                # Инициализируем флаги изменений
-                dialog_manager.dialog_data["has_changes"] = False
-                dialog_manager.dialog_data["edit_history"] = []
-
-                self.logger.info(
-                    "Публикация выбрана для просмотра",
-                    {
-                        common.TELEGRAM_CHAT_ID_KEY: callback.message.chat.id,
-                        "publication_id": publication_id,
-                        "index": current_index,
-                    }
-                )
-
-                # Переходим к просмотру
-                await dialog_manager.switch_to(model.ModerationPublicationStates.publication_review)
-
-                span.set_status(Status(StatusCode.OK))
-
-            except Exception as err:
-                span.record_exception(err)
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                await callback.answer("❌ Ошибка при загрузке публикации", show_alert=True)
-                raise
+        """Этот метод больше не используется, но оставляем для совместимости"""
+        pass
 
     async def get_publication_review_data(
             self,
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        with self.tracer.start_as_current_span(
-                "ModerationPublicationDialogService.get_publication_review_data",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                publication_data = dialog_manager.dialog_data.get("publication_data", {})
-                current_index = dialog_manager.dialog_data.get("current_index", 0)
-                moderation_list = dialog_manager.dialog_data.get("moderation_list", [])
-                total_count = len(moderation_list)
-
-                # Получаем информацию об авторе
-                author = await self.kontur_employee_client.get_employee_by_account_id(
-                    publication_data["creator_id"]
-                )
-
-                # Получаем категорию
-                category = await self.kontur_publication_client.get_category_by_id(
-                    publication_data["category_id"]
-                )
-
-                # Форматируем теги
-                tags = publication_data.get("tags", [])
-                tags_text = ", ".join(tags) if tags else ""
-
-                # Рассчитываем время ожидания
-                waiting_time = self._calculate_waiting_time_text(publication_data["created_at"])
-
-                # Форматируем историю изменений
-                edit_history = dialog_manager.dialog_data.get("edit_history", [])
-                edit_history_text = self._format_edit_history(edit_history)
-
-                # Подготавливаем медиа для изображения
-                preview_image_media = None
-                if publication_data.get("has_image"):
-                    from aiogram_dialog.api.entities import MediaAttachment
-
-                    if publication_data.get("custom_image_file_id"):
-                        # Пользовательское изображение из Telegram
-                        from aiogram_dialog.api.entities import MediaId
-                        file_id = publication_data["custom_image_file_id"]
-                        preview_image_media = MediaAttachment(
-                            file_id=MediaId(file_id),
-                            type=ContentType.PHOTO
-                        )
-                    elif publication_data.get("image_url"):
-                        # URL изображения
-                        preview_image_media = MediaAttachment(
-                            url=publication_data["image_url"],
-                            type=ContentType.PHOTO
-                        )
-
-                # Проверяем права на публикацию
-                state = await self._get_state(dialog_manager)
-                employee = await self.kontur_employee_client.get_employee_by_account_id(
-                    state.account_id
-                )
-                can_publish_directly = employee.role in ["admin", "moderator", "editor"]
-
-                data = {
-                    "publication_id": publication_data["id"],
-                    "publication_name": publication_data["name"],
-                    "publication_text": publication_data["text"],
-                    "author_name": author.name,
-                    "category_name": category.name,
-                    "created_at": self._format_datetime(publication_data["created_at"]),
-                    "has_tags": bool(tags),
-                    "publication_tags": tags_text,
-                    "has_waiting_time": bool(waiting_time),
-                    "waiting_time": waiting_time,
-                    "current_index": current_index + 1,
-                    "total_count": total_count,
-                    "has_prev": current_index > 0,
-                    "has_next": current_index < total_count - 1,
-                    "has_image": publication_data.get("has_image", False),
-                    "preview_image_media": preview_image_media,
-                    "has_edit_history": len(edit_history) > 0,
-                    "edit_history": edit_history_text,
-                    "can_publish_directly": can_publish_directly,
-                }
-
-                span.set_status(Status(StatusCode.OK))
-                return data
-
-            except Exception as err:
-                span.record_exception(err)
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                raise
+        """Этот метод больше не используется, данные теперь в get_moderation_list_data"""
+        return {}
 
     async def handle_navigate_publication(
             self,
@@ -291,29 +201,8 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
                     await callback.answer()
                     return
 
-                # Обновляем индекс и загружаем новую публикацию
+                # Обновляем индекс
                 dialog_manager.dialog_data["current_index"] = new_index
-                new_publication = moderation_list[new_index]
-                dialog_manager.dialog_data["selected_publication_id"] = new_publication["id"]
-
-                # Загружаем полные данные новой публикации
-                publication = await self.kontur_publication_client.get_publication_by_id(
-                    new_publication["id"]
-                )
-
-                # Обновляем данные публикации
-                dialog_manager.dialog_data["publication_data"] = {
-                    "id": publication.id,
-                    "creator_id": publication.creator_id,
-                    "name": publication.name,
-                    "text": publication.text,
-                    "tags": publication.tags,
-                    "category_id": publication.category_id,
-                    "image_url": f"https://kontur-media.ru/api/publication/{publication.id}/image/download",
-                    "has_image": bool(publication.image_fid),
-                    "moderation_status": publication.moderation_status,
-                    "created_at": publication.created_at,
-                }
 
                 # Сбрасываем историю изменений для новой публикации
                 dialog_manager.dialog_data["has_changes"] = False
@@ -325,12 +214,10 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
                         common.TELEGRAM_CHAT_ID_KEY: callback.message.chat.id,
                         "from_index": current_index,
                         "to_index": new_index,
-                        "publication_id": new_publication["id"],
                     }
                 )
 
                 await callback.answer()
-
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
@@ -350,7 +237,8 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                publication_id = dialog_manager.dialog_data["selected_publication_id"]
+                publication_data = dialog_manager.dialog_data["publication_data"]
+                publication_id = publication_data["id"]
 
                 # Если были изменения, сохраняем их
                 if dialog_manager.dialog_data.get("has_changes"):
@@ -375,9 +263,20 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
 
                 await callback.answer("✅ Публикация одобрена!", show_alert=True)
 
-                # Возвращаемся к списку
-                await dialog_manager.switch_to(model.ModerationPublicationStates.moderation_list)
+                # Удаляем одобренную публикацию из списка
+                moderation_list = dialog_manager.dialog_data.get("moderation_list", [])
+                current_index = dialog_manager.dialog_data.get("current_index", 0)
 
+                if moderation_list and current_index < len(moderation_list):
+                    moderation_list.pop(current_index)
+
+                    # Корректируем индекс если нужно
+                    if current_index >= len(moderation_list) and moderation_list:
+                        dialog_manager.dialog_data["current_index"] = len(moderation_list) - 1
+                    elif not moderation_list:
+                        dialog_manager.dialog_data["current_index"] = 0
+
+                # Обновляем экран (останемся в том же состоянии)
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
@@ -385,7 +284,6 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 await callback.answer("❌ Ошибка при одобрении", show_alert=True)
                 raise
-
 
     async def get_reject_comment_data(
             self,
@@ -478,7 +376,8 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
         ) as span:
             try:
                 state = await self._get_state(dialog_manager)
-                publication_id = dialog_manager.dialog_data["selected_publication_id"]
+                publication_data = dialog_manager.dialog_data["publication_data"]
+                publication_id = publication_data["id"]
                 reject_comment = dialog_manager.dialog_data.get("reject_comment", "Нет комментария")
 
                 # Отклоняем публикацию через API
@@ -500,7 +399,20 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
 
                 await callback.answer("❌ Публикация отклонена", show_alert=True)
 
-                # Возвращаемся к списку
+                # Удаляем отклоненную публикацию из списка
+                moderation_list = dialog_manager.dialog_data.get("moderation_list", [])
+                current_index = dialog_manager.dialog_data.get("current_index", 0)
+
+                if moderation_list and current_index < len(moderation_list):
+                    moderation_list.pop(current_index)
+
+                    # Корректируем индекс если нужно
+                    if current_index >= len(moderation_list) and moderation_list:
+                        dialog_manager.dialog_data["current_index"] = len(moderation_list) - 1
+                    elif not moderation_list:
+                        dialog_manager.dialog_data["current_index"] = 0
+
+                # Возвращаемся к основному окну
                 await dialog_manager.switch_to(model.ModerationPublicationStates.moderation_list)
 
                 span.set_status(Status(StatusCode.OK))
@@ -526,7 +438,7 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
 
                 # Получаем информацию об авторе
                 author = await self.kontur_employee_client.get_employee_by_account_id(
-                    publication_data["creator"]
+                    publication_data["creator_id"]
                 )
 
                 data = {
@@ -733,6 +645,10 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
                 dialog_manager.dialog_data["publication_data"]["has_image"] = True
                 dialog_manager.dialog_data["has_changes"] = True
 
+                # Удаляем пользовательское изображение если было
+                dialog_manager.dialog_data["publication_data"].pop("custom_image_file_id", None)
+                dialog_manager.dialog_data["publication_data"].pop("is_custom_image", None)
+
                 # Добавляем в историю изменений
                 self._add_to_edit_history(
                     dialog_manager,
@@ -748,7 +664,7 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
                 except:
                     pass
 
-                await dialog_manager.switch_to(model.ModerationPublicationStates.publication_review)
+                await dialog_manager.switch_to(model.ModerationPublicationStates.edit_image_menu)
 
                 span.set_status(Status(StatusCode.OK))
 
@@ -793,6 +709,10 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
                 dialog_manager.dialog_data["publication_data"]["has_image"] = True
                 dialog_manager.dialog_data["has_changes"] = True
 
+                # Удаляем пользовательское изображение если было
+                dialog_manager.dialog_data["publication_data"].pop("custom_image_file_id", None)
+                dialog_manager.dialog_data["publication_data"].pop("is_custom_image", None)
+
                 # Добавляем в историю изменений
                 self._add_to_edit_history(
                     dialog_manager,
@@ -808,7 +728,7 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
                 except:
                     pass
 
-                await dialog_manager.switch_to(model.ModerationPublicationStates.publication_review)
+                await dialog_manager.switch_to(model.ModerationPublicationStates.edit_image_menu)
 
                 span.set_status(Status(StatusCode.OK))
 
@@ -871,7 +791,7 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
                     )
 
                     await message.answer("✅ Изображение загружено!")
-                    await dialog_manager.switch_to(model.ModerationPublicationStates.publication_review)
+                    await dialog_manager.switch_to(model.ModerationPublicationStates.edit_image_menu)
 
                 span.set_status(Status(StatusCode.OK))
 
@@ -914,7 +834,7 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
                 else:
                     await callback.answer("ℹ️ Изображение отсутствует", show_alert=True)
 
-                await dialog_manager.switch_to(model.ModerationPublicationStates.publication_review)
+                await dialog_manager.switch_to(model.ModerationPublicationStates.edit_image_menu)
 
                 span.set_status(Status(StatusCode.OK))
 
@@ -955,7 +875,7 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
                 except:
                     pass
 
-                await dialog_manager.switch_to(model.ModerationPublicationStates.publication_review)
+                await dialog_manager.switch_to(model.ModerationPublicationStates.moderation_list)
 
                 span.set_status(Status(StatusCode.OK))
 
@@ -991,7 +911,7 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
     async def get_edit_title_data(
             self,
             dialog_manager: DialogManager,
-             **kwargs
+            **kwargs
     ) -> dict:
         """Данные для окна редактирования названия"""
         publication_data = dialog_manager.dialog_data.get("publication_data", {})
@@ -1002,7 +922,7 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
     async def get_edit_tags_data(
             self,
             dialog_manager: DialogManager,
-             **kwargs
+            **kwargs
     ) -> dict:
         """Данные для окна редактирования тегов"""
         publication_data = dialog_manager.dialog_data.get("publication_data", {})
@@ -1015,7 +935,7 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
     async def get_edit_content_data(
             self,
             dialog_manager: DialogManager,
-             **kwargs
+            **kwargs
     ) -> dict:
         """Данные для окна редактирования текста"""
         publication_data = dialog_manager.dialog_data.get("publication_data", {})
@@ -1027,7 +947,7 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
     async def get_image_menu_data(
             self,
             dialog_manager: DialogManager,
-             **kwargs
+            **kwargs
     ) -> dict:
         """Данные для меню управления изображением"""
         publication_data = dialog_manager.dialog_data.get("publication_data", {})
@@ -1039,7 +959,7 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
     async def get_image_prompt_data(
             self,
             dialog_manager: DialogManager,
-             **kwargs
+            **kwargs
     ) -> dict:
         """Данные для окна генерации с промптом"""
         return {
@@ -1174,14 +1094,15 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
         # Находим самую старую и новую публикацию
         dates = []
         for pub in publications:
-            if pub.get("created_at"):
-                dates.append(pub["created_at"])
+            if hasattr(pub, 'created_at') and pub.created_at:
+                dates.append(pub.created_at)
 
         if not dates:
             return "Сегодня"
 
-        # Простое определение периода
-        waiting_hours = max(pub.get("waiting_hours", 0) for pub in publications)
+        # Простое определение периода на основе самой старой публикации
+        oldest_date = min(dates)
+        waiting_hours = self._calculate_waiting_hours(oldest_date)
 
         if waiting_hours < 24:
             return "За сегодня"
