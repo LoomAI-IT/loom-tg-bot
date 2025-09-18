@@ -51,7 +51,7 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
 
                 # Фильтруем только те, что на модерации
                 moderation_publications = [
-                    pub for pub in publications
+                    pub.to_dict() for pub in publications
                     if pub.moderation_status == "moderation"
                 ]
 
@@ -159,23 +159,6 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
-    async def handle_select_publication(
-            self,
-            callback: CallbackQuery,
-            widget: Any,
-            dialog_manager: DialogManager,
-            publication_id: str
-    ) -> None:
-        """Этот метод больше не используется, но оставляем для совместимости"""
-        pass
-
-    async def get_publication_review_data(
-            self,
-            dialog_manager: DialogManager,
-            **kwargs
-    ) -> dict:
-        """Этот метод больше не используется, данные теперь в get_moderation_list_data"""
-        return {}
 
     async def handle_navigate_publication(
             self,

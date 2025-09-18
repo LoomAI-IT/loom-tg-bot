@@ -28,6 +28,29 @@ class Publication:
     publication_at: str | None
     created_at: str
 
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "organization_id": self.organization_id,
+            "category_id": self.category_id,
+            "creator_id": self.creator_id,
+            "moderator_id": self.moderator_id,
+            "vk_source_id": self.vk_source_id,
+            "tg_source_id": self.tg_source_id,
+            "text_reference": self.text_reference,
+            "name": self.name,
+            "text": self.text,
+            "tags": self.tags,
+            "image_fid": self.image_fid,
+            "image_name": self.image_name,
+            "openai_rub_cost": self.openai_rub_cost,
+            "moderation_status": self.moderation_status,
+            "moderation_comment": self.moderation_comment,
+            "time_for_publication": self.time_for_publication,
+            "publication_at": self.publication_at,
+            "created_at": self.created_at,
+        }
+
 
 @dataclass
 class Category:
