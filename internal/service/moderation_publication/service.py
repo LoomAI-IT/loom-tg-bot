@@ -635,7 +635,7 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
                 except:
                     pass
 
-                await dialog_manager.switch_to(model.ModerationPublicationStates.edit_image_menu)
+                await dialog_manager.switch_to(model.ModerationPublicationStates.edit_preview)
 
                 span.set_status(Status(StatusCode.OK))
 
@@ -689,7 +689,7 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
                 except:
                     pass
 
-                await dialog_manager.switch_to(model.ModerationPublicationStates.edit_image_menu)
+                await dialog_manager.switch_to(model.ModerationPublicationStates.edit_preview)
 
                 span.set_status(Status(StatusCode.OK))
 
@@ -741,7 +741,7 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
                     )
 
                     await message.answer("✅ Изображение загружено!")
-                    await dialog_manager.switch_to(model.ModerationPublicationStates.edit_image_menu)
+                    await dialog_manager.switch_to(model.ModerationPublicationStates.edit_preview)
 
                 span.set_status(Status(StatusCode.OK))
 
@@ -775,7 +775,7 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
                 else:
                     await callback.answer("ℹ️ Изображение отсутствует", show_alert=True)
 
-                await dialog_manager.switch_to(model.ModerationPublicationStates.edit_image_menu)
+                await dialog_manager.switch_to(model.ModerationPublicationStates.edit_preview)
 
                 span.set_status(Status(StatusCode.OK))
 
