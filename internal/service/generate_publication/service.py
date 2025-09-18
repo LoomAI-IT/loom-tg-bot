@@ -89,6 +89,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
             try:
                 text = text.strip()
 
+
                 if not text:
                     await message.answer("❌ Текст не может быть пустым. Попробуйте снова.")
                     return
@@ -112,9 +113,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                         "text_length": len(text),
                     }
                 )
-
-                # Обновляем окно
-                await dialog_manager.update(dialog_manager.dialog_data)
+                await message.delete()
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
