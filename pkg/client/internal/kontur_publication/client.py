@@ -1,4 +1,5 @@
 import io
+import json
 from datetime import datetime
 from opentelemetry.trace import Status, StatusCode, SpanKind
 from fastapi import UploadFile
@@ -133,7 +134,7 @@ class KonturPublicationClient(interface.IKonturPublicationClient):
                     "text_reference": text_reference,
                     "name": name,
                     "text": text,
-                    "tags": ",".join(tags),
+                    "tags": json.dumps(tags),
                     "moderation_status": moderation_status,
                 }
 
