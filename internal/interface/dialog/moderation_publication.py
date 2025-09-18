@@ -59,14 +59,6 @@ class IModerationPublicationDialogService(Protocol):
             publication_id: str
     ) -> None: pass
 
-    @abstractmethod
-    async def handle_refresh_list(
-            self,
-            callback: CallbackQuery,
-            button: Any,
-            dialog_manager: DialogManager
-    ) -> None: pass
-
     # Обработчики для просмотра публикации
     @abstractmethod
     async def get_publication_review_data(
@@ -84,22 +76,6 @@ class IModerationPublicationDialogService(Protocol):
 
     @abstractmethod
     async def handle_approve_publication(
-            self,
-            callback: CallbackQuery,
-            button: Any,
-            dialog_manager: DialogManager
-    ) -> None: pass
-
-    @abstractmethod
-    async def handle_reject_publication(
-            self,
-            callback: CallbackQuery,
-            button: Any,
-            dialog_manager: DialogManager
-    ) -> None: pass
-
-    @abstractmethod
-    async def handle_reject_with_comment(
             self,
             callback: CallbackQuery,
             button: Any,
@@ -214,14 +190,6 @@ class IModerationPublicationDialogService(Protocol):
     ) -> None: pass
 
     # Навигация
-    @abstractmethod
-    async def handle_back_to_list(
-            self,
-            callback: CallbackQuery,
-            button: Any,
-            dialog_manager: DialogManager
-    ) -> None: pass
-
     @abstractmethod
     async def handle_back_to_content_menu(
             self,

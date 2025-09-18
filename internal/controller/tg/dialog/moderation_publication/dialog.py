@@ -152,12 +152,7 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
                 ),
                 Row(
                     Button(
-                        Const("❌ Отклонить"),
-                        id="reject",
-                        on_click=self.moderation_publication_service.handle_reject_publication,
-                    ),
-                    Button(
-                        Const("💬 Отклонить с комментарием"),
+                        Const("💬 Отклонить"),
                         id="reject_with_comment",
                         on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.reject_comment),
                     ),
