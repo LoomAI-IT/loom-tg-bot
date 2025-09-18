@@ -690,46 +690,6 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 await callback.answer("❌ Ошибка при удалении изображения", show_alert=True)
                 raise
 
-    async def handle_edit_text(
-            self,
-            callback: CallbackQuery,
-            button: Any,
-            dialog_manager: DialogManager
-    ) -> None:
-        with self.tracer.start_as_current_span(
-                "GeneratePublicationDialogService.handle_edit_text",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                # TODO: Реализовать редактирование текста
-                await callback.answer("🚧 Функция редактирования в разработке", show_alert=True)
-
-                span.set_status(Status(StatusCode.OK))
-            except Exception as err:
-                span.record_exception(err)
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                raise
-
-    async def handle_edit_image(
-            self,
-            callback: CallbackQuery,
-            button: Any,
-            dialog_manager: DialogManager
-    ) -> None:
-        with self.tracer.start_as_current_span(
-                "GeneratePublicationDialogService.handle_edit_image",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                # TODO: Реализовать
-                await callback.answer("🚧 Функция в разработке", show_alert=True)
-
-                span.set_status(Status(StatusCode.OK))
-            except Exception as err:
-                span.record_exception(err)
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                raise
-
     async def handle_add_to_drafts(
             self,
             callback: CallbackQuery,
