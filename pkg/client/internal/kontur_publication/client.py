@@ -116,25 +116,47 @@ class KonturPublicationClient(interface.IKonturPublicationClient):
             text: str,
             tags: list[str],
             moderation_status: str,
-            image_url: str = None
+            image_url: str = None,
+            image_content: bytes = None,
+            image_filename: str = None,
     ) -> int:
         with self.tracer.start_as_current_span(
                 "PublicationClient.create_publication",
                 kind=SpanKind.CLIENT
         ) as span:
             try:
-                body = {
-                    "organization_id": organization_id,
-                    "category_id": category_id,
-                    "creator_id": creator_id,
+
+                data = {
+                    "organization_id": str(organization_id),
+                    "category_id": str(category_id),
+                    "creator_id": str(creator_id),
                     "text_reference": text_reference,
                     "name": name,
                     "text": text,
-                    "tags": tags,
+                    "tags": ",".join(tags),
                     "moderation_status": moderation_status,
-                    "image_url": image_url,
                 }
-                response = await self.client.post("/create", json=body)
+
+                # Добавляем image_url если есть
+                if image_url:
+                    data["image_url"] = image_url
+
+                files = {}
+
+                # Если есть содержимое файла
+                if image_content and image_filename:
+                    files["image_file"] = (
+                        image_filename,
+                        image_content,
+                        "image/png"  # можно определять по расширению
+                    )
+
+                # Отправляем запрос
+                if files:
+                    response = await self.client.post("/create", data=data, files=files)
+                else:
+                    response = await self.client.post("/create", data=data)
+
                 json_response = response.json()
 
                 span.set_status(Status(StatusCode.OK))

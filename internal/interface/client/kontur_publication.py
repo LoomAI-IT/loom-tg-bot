@@ -43,7 +43,9 @@ class IKonturPublicationClient(Protocol):
             text: str,
             tags: list[str],
             moderation_status: str,
-            image_url: str = None
+            image_url: str = None,
+            image_content: bytes = None,
+            image_filename: str = None,
     ) -> int: pass
 
     @abstractmethod

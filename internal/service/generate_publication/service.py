@@ -603,14 +603,52 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
             widget: MessageInput,
             dialog_manager: DialogManager
     ) -> None:
-        """Обработка загрузки пользовательского изображения"""
         with self.tracer.start_as_current_span(
                 "GeneratePublicationDialogService.handle_image_upload",
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                # TODO: Реализовать
-                await message.answer("🚧 Функция в разработке", show_alert=True)
+                if message.content_type != ContentType.PHOTO:
+                    await message.answer("❌ Пожалуйста, отправьте изображение")
+                    return
+
+                # Проверяем размер файла (если доступно)
+                if message.photo:
+                    # Берем фото с наибольшим разрешением
+                    photo = message.photo[-1]
+
+                    # Проверяем размер (если доступно)
+                    if hasattr(photo, 'file_size') and photo.file_size:
+                        if photo.file_size > 10 * 1024 * 1024:  # 10 МБ
+                            await message.answer("❌ Файл слишком большой (макс. 10 МБ)")
+                            return
+
+                    await message.answer("📸 Загружаю изображение...")
+
+                    # Сохраняем file_id для дальнейшего использования
+                    dialog_manager.dialog_data["custom_image_file_id"] = photo.file_id
+                    dialog_manager.dialog_data["has_image"] = True
+                    dialog_manager.dialog_data["is_custom_image"] = True
+
+                    # Удаляем сгенерированное изображение если было
+                    dialog_manager.dialog_data.pop("publication_image_url", None)
+
+                    self.logger.info(
+                        "Пользовательское изображение загружено",
+                        {
+                            common.TELEGRAM_CHAT_ID_KEY: message.chat.id,
+                            "file_id": photo.file_id,
+                            "file_size": getattr(photo, 'file_size', 'unknown'),
+                        }
+                    )
+
+                    await message.answer("✅ Изображение загружено!")
+                    await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
+
+                    span.set_status(Status(StatusCode.OK))
+                else:
+                    await message.answer("❌ Не удалось получить изображение")
+
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
@@ -710,8 +748,30 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 tags = dialog_manager.dialog_data["publication_tags"]
                 name = dialog_manager.dialog_data["publication_name"]
                 text = dialog_manager.dialog_data["publication_text"]
-                image_url = dialog_manager.dialog_data.get("publication_image_url")
 
+                # Подготавливаем данные об изображении
+                image_url = dialog_manager.dialog_data.get("publication_image_url")  # от OpenAI
+                image_content = None
+                image_filename = None
+
+                # Если есть пользовательское изображение из Telegram
+                telegram_file_id = dialog_manager.dialog_data.get("custom_image_file_id")
+                if telegram_file_id:
+                    file = await self.bot.get_file(telegram_file_id)
+                    file_data = await self.bot.download_file(file.file_path)
+                    image_content = file_data.read()
+                    image_filename = f"user_image_{telegram_file_id[:8]}.jpg"
+
+                    self.logger.info(
+                        "Подготовлено пользовательское изображение для публикации",
+                        {
+                            common.TELEGRAM_CHAT_ID_KEY: callback.message.chat.id,
+                            "file_id": telegram_file_id,
+                            "image_size": len(image_content),
+                        }
+                    )
+
+                # Вызываем HTTP клиент с подготовленными данными
                 await self.kontur_publication_client.create_publication(
                     state.organization_id,
                     category_id,
@@ -721,13 +781,17 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                     text,
                     tags,
                     "draft",
-                    image_url,
+                    image_url=image_url,
+                    image_content=image_content,
+                    image_filename=image_filename,
                 )
 
                 self.logger.info(
                     "Публикация сохранена в черновики",
                     {
                         common.TELEGRAM_CHAT_ID_KEY: callback.message.chat.id,
+                        "has_generated_image": bool(image_url),
+                        "has_user_image": bool(image_content),
                     }
                 )
 
@@ -764,7 +828,27 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 tags = dialog_manager.dialog_data["publication_tags"]
                 name = dialog_manager.dialog_data["publication_name"]
                 text = dialog_manager.dialog_data["publication_text"]
+
+                # Подготавливаем изображение
                 image_url = dialog_manager.dialog_data.get("publication_image_url")
+                image_content = None
+                image_filename = None
+
+                telegram_file_id = dialog_manager.dialog_data.get("custom_image_file_id")
+                if telegram_file_id:
+                    file = await self.bot.get_file(telegram_file_id)
+                    file_data = await self.bot.download_file(file.file_path)
+                    image_content = file_data.read()
+                    image_filename = f"user_image_{telegram_file_id[:8]}.jpg"
+
+                    self.logger.info(
+                        "Подготовлено пользовательское изображение для модерации",
+                        {
+                            common.TELEGRAM_CHAT_ID_KEY: callback.message.chat.id,
+                            "file_id": telegram_file_id,
+                            "image_size": len(image_content),
+                        }
+                    )
 
                 await self.kontur_publication_client.create_publication(
                     state.organization_id,
@@ -774,20 +858,23 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                     name,
                     text,
                     tags,
-                    "moderation",
-                    image_url,
+                    "moderation",  # статус модерации
+                    image_url=image_url,
+                    image_content=image_content,
+                    image_filename=image_filename,
                 )
 
                 self.logger.info(
                     "Отправлено на модерацию",
                     {
                         common.TELEGRAM_CHAT_ID_KEY: callback.message.chat.id,
+                        "has_generated_image": bool(image_url),
+                        "has_user_image": bool(image_content),
                     }
                 )
 
                 await callback.answer("💾 Отправлено на модерацию!", show_alert=True)
 
-                # Возвращаемся в меню контента
                 await dialog_manager.start(
                     model.ContentMenuStates.content_menu,
                     mode=StartMode.RESET_STACK
@@ -962,26 +1049,25 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 has_image = False
                 preview_image_media = None
 
-                # Если есть URL изображения (сгенерированное)
-                if dialog_manager.dialog_data.get("publication_image_url"):
-                    has_image = True
-                    from aiogram_dialog.api.entities import MediaAttachment, MediaId
-                    from aiogram.types import URLInputFile
-
-                    image_url = dialog_manager.dialog_data["publication_image_url"]
-                    preview_image_media = MediaAttachment(
-                        url=image_url,
-                        type=ContentType.PHOTO
-                    )
-
-                # Если есть загруженное пользователем изображение
-                elif dialog_manager.dialog_data.get("custom_image_file_id"):
+                # Приоритет: пользовательское изображение > сгенерированное
+                if dialog_manager.dialog_data.get("custom_image_file_id"):
+                    # Пользовательское изображение
                     has_image = True
                     from aiogram_dialog.api.entities import MediaAttachment, MediaId
 
                     file_id = dialog_manager.dialog_data["custom_image_file_id"]
                     preview_image_media = MediaAttachment(
                         file_id=MediaId(file_id),
+                        type=ContentType.PHOTO
+                    )
+                elif dialog_manager.dialog_data.get("publication_image_url"):
+                    # Сгенерированное изображение
+                    has_image = True
+                    from aiogram_dialog.api.entities import MediaAttachment
+
+                    image_url = dialog_manager.dialog_data["publication_image_url"]
+                    preview_image_media = MediaAttachment(
+                        url=image_url,
                         type=ContentType.PHOTO
                     )
 
@@ -1001,6 +1087,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                     "preview_image_media": preview_image_media,
                     "requires_moderation": requires_moderation,
                     "can_publish_directly": can_publish_directly,
+                    "is_custom_image": dialog_manager.dialog_data.get("is_custom_image", False),
                 }
 
                 span.set_status(Status(StatusCode.OK))
