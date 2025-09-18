@@ -98,10 +98,6 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
                         type=ContentType.PHOTO
                     )
 
-                # Форматируем историю изменений
-                edit_history = dialog_manager.dialog_data.get("edit_history", [])
-                edit_history_text = self._format_edit_history(edit_history)
-
                 # Определяем период
                 period_text = self._get_period_text(moderation_publications)
 
@@ -120,16 +116,14 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
                     "publication_tags": tags_text,
                     "has_image": bool(current_pub.image_fid),
                     "preview_image_media": preview_image_media,
-                    "has_edit_history": len(edit_history) > 0,
-                    "edit_history": edit_history_text,
                     "current_index": current_index + 1,
                     "total_count": len(moderation_publications),
                     "has_prev": current_index > 0,
                     "has_next": current_index < len(moderation_publications) - 1,
                 }
 
-                # Сохраняем данные текущей публикации
-                dialog_manager.dialog_data["publication_data"] = {
+                # Сохраняем данные текущей публикации для редактирования
+                dialog_manager.dialog_data["original_publication"] = {
                     "id": current_pub.id,
                     "creator_id": current_pub.creator_id,
                     "name": current_pub.name,
@@ -141,6 +135,11 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
                     "moderation_status": current_pub.moderation_status,
                     "created_at": current_pub.created_at,
                 }
+
+                # Копируем в рабочую версию, если ее еще нет
+                if "working_publication" not in dialog_manager.dialog_data:
+                    dialog_manager.dialog_data["working_publication"] = dict(
+                        dialog_manager.dialog_data["original_publication"])
 
                 self.logger.info(
                     "Список модерации загружен",
@@ -158,7 +157,6 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
-
 
     async def handle_navigate_publication(
             self,
@@ -187,9 +185,8 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
                 # Обновляем индекс
                 dialog_manager.dialog_data["current_index"] = new_index
 
-                # Сбрасываем историю изменений для новой публикации
-                dialog_manager.dialog_data["has_changes"] = False
-                dialog_manager.dialog_data["edit_history"] = []
+                # Сбрасываем рабочие данные для новой публикации
+                dialog_manager.dialog_data.pop("working_publication", None)
 
                 self.logger.info(
                     "Навигация по публикациям",
@@ -220,13 +217,12 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                publication_data = dialog_manager.dialog_data["publication_data"]
-                publication_id = publication_data["id"]
-
-                # Если были изменения, сохраняем их
-                if dialog_manager.dialog_data.get("has_changes"):
+                # Если есть несохраненные изменения, сохраняем их перед одобрением
+                if self._has_changes(dialog_manager):
                     await self._save_publication_changes(dialog_manager)
 
+                original_pub = dialog_manager.dialog_data["original_publication"]
+                publication_id = original_pub["id"]
                 state = await self._get_state(dialog_manager)
 
                 # Одобряем публикацию через API
@@ -259,6 +255,9 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
                     elif not moderation_list:
                         dialog_manager.dialog_data["current_index"] = 0
 
+                    # Сбрасываем рабочие данные
+                    dialog_manager.dialog_data.pop("working_publication", None)
+
                 # Обновляем экран (останемся в том же состоянии)
                 span.set_status(Status(StatusCode.OK))
 
@@ -278,15 +277,15 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                publication_data = dialog_manager.dialog_data.get("publication_data", {})
+                original_pub = dialog_manager.dialog_data.get("original_publication", {})
 
                 # Получаем информацию об авторе
                 author = await self.kontur_employee_client.get_employee_by_account_id(
-                    publication_data["creator_id"],
+                    original_pub["creator_id"],
                 )
 
                 data = {
-                    "publication_name": publication_data["name"],
+                    "publication_name": original_pub["name"],
                     "author_name": author.name,
                     "has_comment": bool(dialog_manager.dialog_data.get("reject_comment")),
                     "reject_comment": dialog_manager.dialog_data.get("reject_comment", ""),
@@ -359,8 +358,8 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
         ) as span:
             try:
                 state = await self._get_state(dialog_manager)
-                publication_data = dialog_manager.dialog_data["publication_data"]
-                publication_id = publication_data["id"]
+                original_pub = dialog_manager.dialog_data["original_publication"]
+                publication_id = original_pub["id"]
                 reject_comment = dialog_manager.dialog_data.get("reject_comment", "Нет комментария")
 
                 # Отклоняем публикацию через API
@@ -395,6 +394,9 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
                     elif not moderation_list:
                         dialog_manager.dialog_data["current_index"] = 0
 
+                    # Сбрасываем рабочие данные
+                    dialog_manager.dialog_data.pop("working_publication", None)
+
                 # Возвращаемся к основному окну
                 await dialog_manager.switch_to(model.ModerationPublicationStates.moderation_list)
 
@@ -406,28 +408,68 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
                 await callback.answer("❌ Ошибка при отклонении", show_alert=True)
                 raise
 
-    async def get_edit_menu_data(
+    async def get_edit_preview_data(
             self,
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        """Получение данных для меню редактирования"""
+        """Получение данных для окна редактирования с превью"""
         with self.tracer.start_as_current_span(
-                "ModerationPublicationDialogService.get_edit_menu_data",
+                "ModerationPublicationDialogService.get_edit_preview_data",
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                publication_data = dialog_manager.dialog_data.get("publication_data", {})
+                # Инициализируем рабочую версию если ее нет
+                if "working_publication" not in dialog_manager.dialog_data:
+                    dialog_manager.dialog_data["working_publication"] = dict(
+                        dialog_manager.dialog_data["original_publication"]
+                    )
+
+                working_pub = dialog_manager.dialog_data["working_publication"]
+                original_pub = dialog_manager.dialog_data["original_publication"]
 
                 # Получаем информацию об авторе
                 author = await self.kontur_employee_client.get_employee_by_account_id(
-                    publication_data["creator_id"]
+                    working_pub["creator_id"]
                 )
 
+                # Получаем категорию
+                category = await self.kontur_publication_client.get_category_by_id(
+                    working_pub["category_id"]
+                )
+
+                # Форматируем теги
+                tags = working_pub.get("tags", [])
+                tags_text = ", ".join(tags) if tags else ""
+
+                # Подготавливаем медиа для изображения
+                preview_image_media = None
+                if working_pub.get("has_image"):
+                    from aiogram_dialog.api.entities import MediaAttachment
+
+                    # Если есть пользовательское изображение
+                    if working_pub.get("custom_image_file_id"):
+                        preview_image_media = MediaAttachment(
+                            file_id=working_pub["custom_image_file_id"],
+                            type=ContentType.PHOTO
+                        )
+                    elif working_pub.get("image_url"):
+                        preview_image_media = MediaAttachment(
+                            url=working_pub["image_url"],
+                            type=ContentType.PHOTO
+                        )
+
                 data = {
-                    "publication_name": publication_data["name"],
                     "author_name": author.name,
-                    "has_changes": dialog_manager.dialog_data.get("has_changes", False),
+                    "category_name": category.name,
+                    "created_at": self._format_datetime(original_pub["created_at"]),
+                    "publication_name": working_pub["name"],
+                    "publication_text": working_pub["text"],
+                    "has_tags": bool(tags),
+                    "publication_tags": tags_text,
+                    "has_image": working_pub.get("has_image", False),
+                    "preview_image_media": preview_image_media,
+                    "has_changes": self._has_changes(dialog_manager),
                 }
 
                 span.set_status(Status(StatusCode.OK))
@@ -460,26 +502,11 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
                     await message.answer("❌ Слишком длинное название (макс. 200 символов)")
                     return
 
-                old_title = dialog_manager.dialog_data["publication_data"]["name"]
+                # Обновляем рабочую версию
+                dialog_manager.dialog_data["working_publication"]["name"] = new_title
 
-                if old_title != new_title:
-                    # Сохраняем изменение
-                    dialog_manager.dialog_data["publication_data"]["name"] = new_title
-                    dialog_manager.dialog_data["has_changes"] = True
-
-                    # Добавляем в историю изменений
-                    self._add_to_edit_history(
-                        dialog_manager,
-                        "название",
-                        old_title,
-                        new_title
-                    )
-
-                    await message.answer("✅ Название обновлено!")
-                else:
-                    await message.answer("ℹ️ Название не изменилось")
-
-                await dialog_manager.switch_to(model.ModerationPublicationStates.edit_text_menu)
+                await message.answer("✅ Название обновлено!")
+                await dialog_manager.switch_to(model.ModerationPublicationStates.edit_preview)
 
                 span.set_status(Status(StatusCode.OK))
 
@@ -502,7 +529,6 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
         ) as span:
             try:
                 tags_raw = text.strip()
-                old_tags = dialog_manager.dialog_data["publication_data"].get("tags", [])
 
                 if not tags_raw:
                     new_tags = []
@@ -515,24 +541,11 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
                         await message.answer("❌ Слишком много тегов (макс. 10)")
                         return
 
-                if set(old_tags) != set(new_tags):
-                    # Сохраняем изменение
-                    dialog_manager.dialog_data["publication_data"]["tags"] = new_tags
-                    dialog_manager.dialog_data["has_changes"] = True
+                # Обновляем рабочую версию
+                dialog_manager.dialog_data["working_publication"]["tags"] = new_tags
 
-                    # Добавляем в историю изменений
-                    self._add_to_edit_history(
-                        dialog_manager,
-                        "теги",
-                        ", ".join(old_tags) if old_tags else "отсутствовали",
-                        ", ".join(new_tags) if new_tags else "удалены"
-                    )
-
-                    await message.answer(f"✅ Теги обновлены ({len(new_tags)} шт.)")
-                else:
-                    await message.answer("ℹ️ Теги не изменились")
-
-                await dialog_manager.switch_to(model.ModerationPublicationStates.edit_text_menu)
+                await message.answer(f"✅ Теги обновлены ({len(new_tags)} шт.)")
+                await dialog_manager.switch_to(model.ModerationPublicationStates.edit_preview)
 
                 span.set_status(Status(StatusCode.OK))
 
@@ -568,26 +581,11 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
                     await message.answer("❌ Слишком длинный текст (макс. 4000 символов)")
                     return
 
-                old_text = dialog_manager.dialog_data["publication_data"]["text"]
+                # Обновляем рабочую версию
+                dialog_manager.dialog_data["working_publication"]["text"] = new_text
 
-                if old_text != new_text:
-                    # Сохраняем изменение
-                    dialog_manager.dialog_data["publication_data"]["text"] = new_text
-                    dialog_manager.dialog_data["has_changes"] = True
-
-                    # Добавляем в историю изменений
-                    self._add_to_edit_history(
-                        dialog_manager,
-                        "текст",
-                        f"{len(old_text)} символов",
-                        f"{len(new_text)} символов"
-                    )
-
-                    await message.answer("✅ Текст обновлен!")
-                else:
-                    await message.answer("ℹ️ Текст не изменился")
-
-                await dialog_manager.switch_to(model.ModerationPublicationStates.edit_text_menu)
+                await message.answer("✅ Текст обновлен!")
+                await dialog_manager.switch_to(model.ModerationPublicationStates.edit_preview)
 
                 span.set_status(Status(StatusCode.OK))
 
@@ -611,34 +609,24 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
                 await callback.answer()
                 loading_message = await callback.message.answer("🔄 Генерирую изображение...")
 
-                publication_data = dialog_manager.dialog_data["publication_data"]
-                category_id = publication_data["category_id"]
-                publication_text = publication_data["text"]
+                working_pub = dialog_manager.dialog_data["working_publication"]
+                category_id = working_pub["category_id"]
+                publication_text = working_pub["text"]
 
                 # Генерация через API
                 image_url = await self.kontur_publication_client.generate_publication_image(
                     category_id=category_id,
                     publication_text=publication_text,
-                    text_reference=publication_text[:200],  # Используем начало текста как референс
+                    text_reference=publication_text[:200],
                     prompt=None
                 )
 
-                # Обновляем данные
-                dialog_manager.dialog_data["publication_data"]["image_url"] = image_url
-                dialog_manager.dialog_data["publication_data"]["has_image"] = True
-                dialog_manager.dialog_data["has_changes"] = True
-
+                # Обновляем рабочую версию
+                dialog_manager.dialog_data["working_publication"]["image_url"] = image_url
+                dialog_manager.dialog_data["working_publication"]["has_image"] = True
                 # Удаляем пользовательское изображение если было
-                dialog_manager.dialog_data["publication_data"].pop("custom_image_file_id", None)
-                dialog_manager.dialog_data["publication_data"].pop("is_custom_image", None)
-
-                # Добавляем в историю изменений
-                self._add_to_edit_history(
-                    dialog_manager,
-                    "изображение",
-                    "отсутствовало" if not publication_data.get("has_image") else "заменено",
-                    "сгенерировано новое"
-                )
+                dialog_manager.dialog_data["working_publication"].pop("custom_image_file_id", None)
+                dialog_manager.dialog_data["working_publication"].pop("is_custom_image", None)
 
                 await loading_message.edit_text("✅ Изображение сгенерировано!")
                 await asyncio.sleep(2)
@@ -675,9 +663,9 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
 
                 loading_message = await message.answer("🔄 Генерирую изображение по вашему описанию...")
 
-                publication_data = dialog_manager.dialog_data["publication_data"]
-                category_id = publication_data["category_id"]
-                publication_text = publication_data["text"]
+                working_pub = dialog_manager.dialog_data["working_publication"]
+                category_id = working_pub["category_id"]
+                publication_text = working_pub["text"]
 
                 # Генерация с промптом
                 image_url = await self.kontur_publication_client.generate_publication_image(
@@ -687,22 +675,12 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
                     prompt=prompt
                 )
 
-                # Обновляем данные
-                dialog_manager.dialog_data["publication_data"]["image_url"] = image_url
-                dialog_manager.dialog_data["publication_data"]["has_image"] = True
-                dialog_manager.dialog_data["has_changes"] = True
-
+                # Обновляем рабочую версию
+                dialog_manager.dialog_data["working_publication"]["image_url"] = image_url
+                dialog_manager.dialog_data["working_publication"]["has_image"] = True
                 # Удаляем пользовательское изображение если было
-                dialog_manager.dialog_data["publication_data"].pop("custom_image_file_id", None)
-                dialog_manager.dialog_data["publication_data"].pop("is_custom_image", None)
-
-                # Добавляем в историю изменений
-                self._add_to_edit_history(
-                    dialog_manager,
-                    "изображение",
-                    "отсутствовало" if not publication_data.get("has_image") else "заменено",
-                    f"сгенерировано с промптом"
-                )
+                dialog_manager.dialog_data["working_publication"].pop("custom_image_file_id", None)
+                dialog_manager.dialog_data["working_publication"].pop("is_custom_image", None)
 
                 await loading_message.edit_text("✅ Изображение сгенерировано!")
                 await asyncio.sleep(2)
@@ -747,23 +725,12 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
 
                     await message.answer("📸 Загружаю изображение...")
 
-                    # Сохраняем file_id
-                    publication_data = dialog_manager.dialog_data["publication_data"]
-                    dialog_manager.dialog_data["publication_data"]["custom_image_file_id"] = photo.file_id
-                    dialog_manager.dialog_data["publication_data"]["has_image"] = True
-                    dialog_manager.dialog_data["publication_data"]["is_custom_image"] = True
-                    dialog_manager.dialog_data["has_changes"] = True
-
+                    # Обновляем рабочую версию
+                    dialog_manager.dialog_data["working_publication"]["custom_image_file_id"] = photo.file_id
+                    dialog_manager.dialog_data["working_publication"]["has_image"] = True
+                    dialog_manager.dialog_data["working_publication"]["is_custom_image"] = True
                     # Удаляем URL если был
-                    dialog_manager.dialog_data["publication_data"].pop("image_url", None)
-
-                    # Добавляем в историю изменений
-                    self._add_to_edit_history(
-                        dialog_manager,
-                        "изображение",
-                        "отсутствовало" if not publication_data.get("has_image") else "заменено",
-                        "загружено пользовательское"
-                    )
+                    dialog_manager.dialog_data["working_publication"].pop("image_url", None)
 
                     self.logger.info(
                         "Изображение загружено для модерации",
@@ -795,23 +762,14 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                publication_data = dialog_manager.dialog_data["publication_data"]
+                working_pub = dialog_manager.dialog_data["working_publication"]
 
-                if publication_data.get("has_image"):
-                    # Удаляем все данные об изображении
-                    dialog_manager.dialog_data["publication_data"]["has_image"] = False
-                    dialog_manager.dialog_data["publication_data"].pop("image_url", None)
-                    dialog_manager.dialog_data["publication_data"].pop("custom_image_file_id", None)
-                    dialog_manager.dialog_data["publication_data"].pop("is_custom_image", None)
-                    dialog_manager.dialog_data["has_changes"] = True
-
-                    # Добавляем в историю изменений
-                    self._add_to_edit_history(
-                        dialog_manager,
-                        "изображение",
-                        "присутствовало",
-                        "удалено"
-                    )
+                if working_pub.get("has_image"):
+                    # Удаляем все данные об изображении из рабочей версии
+                    dialog_manager.dialog_data["working_publication"]["has_image"] = False
+                    dialog_manager.dialog_data["working_publication"].pop("image_url", None)
+                    dialog_manager.dialog_data["working_publication"].pop("custom_image_file_id", None)
+                    dialog_manager.dialog_data["working_publication"].pop("is_custom_image", None)
 
                     await callback.answer("✅ Изображение удалено", show_alert=True)
                 else:
@@ -838,7 +796,7 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                if not dialog_manager.dialog_data.get("has_changes"):
+                if not self._has_changes(dialog_manager):
                     await callback.answer("ℹ️ Нет изменений для сохранения", show_alert=True)
                     return
 
@@ -848,8 +806,10 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
                 # Сохраняем изменения
                 await self._save_publication_changes(dialog_manager)
 
-                # Сбрасываем флаг изменений
-                dialog_manager.dialog_data["has_changes"] = False
+                # Обновляем оригинальную версию
+                dialog_manager.dialog_data["original_publication"] = dict(
+                    dialog_manager.dialog_data["working_publication"]
+                )
 
                 await loading_message.edit_text("✅ Изменения сохранены!")
                 await asyncio.sleep(2)
@@ -897,9 +857,9 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
             **kwargs
     ) -> dict:
         """Данные для окна редактирования названия"""
-        publication_data = dialog_manager.dialog_data.get("publication_data", {})
+        working_pub = dialog_manager.dialog_data.get("working_publication", {})
         return {
-            "current_title": publication_data.get("name", ""),
+            "current_title": working_pub.get("name", ""),
         }
 
     async def get_edit_tags_data(
@@ -908,8 +868,8 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
             **kwargs
     ) -> dict:
         """Данные для окна редактирования тегов"""
-        publication_data = dialog_manager.dialog_data.get("publication_data", {})
-        tags = publication_data.get("tags", [])
+        working_pub = dialog_manager.dialog_data.get("working_publication", {})
+        tags = working_pub.get("tags", [])
         return {
             "has_tags": bool(tags),
             "current_tags": ", ".join(tags) if tags else "",
@@ -921,8 +881,8 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
             **kwargs
     ) -> dict:
         """Данные для окна редактирования текста"""
-        publication_data = dialog_manager.dialog_data.get("publication_data", {})
-        text = publication_data.get("text", "")
+        working_pub = dialog_manager.dialog_data.get("working_publication", {})
+        text = working_pub.get("text", "")
         return {
             "current_text_length": len(text),
         }
@@ -933,10 +893,10 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
             **kwargs
     ) -> dict:
         """Данные для меню управления изображением"""
-        publication_data = dialog_manager.dialog_data.get("publication_data", {})
+        working_pub = dialog_manager.dialog_data.get("working_publication", {})
         return {
-            "has_image": publication_data.get("has_image", False),
-            "is_custom_image": publication_data.get("is_custom_image", False),
+            "has_image": working_pub.get("has_image", False),
+            "is_custom_image": working_pub.get("is_custom_image", False),
         }
 
     async def get_image_prompt_data(
@@ -952,19 +912,45 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
 
     # Вспомогательные методы
 
+    def _has_changes(self, dialog_manager: DialogManager) -> bool:
+        """Проверка наличия изменений между оригиналом и рабочей версией"""
+        original = dialog_manager.dialog_data.get("original_publication", {})
+        working = dialog_manager.dialog_data.get("working_publication", {})
+
+        if not original or not working:
+            return False
+
+        # Сравниваем ключевые поля
+        fields_to_compare = ["name", "text", "tags", "has_image"]
+
+        for field in fields_to_compare:
+            if original.get(field) != working.get(field):
+                return True
+
+        # Проверяем изменения изображения
+        original_image_url = original.get("image_url")
+        working_image_url = working.get("image_url")
+        original_custom_id = original.get("custom_image_file_id")
+        working_custom_id = working.get("custom_image_file_id")
+
+        if original_image_url != working_image_url or original_custom_id != working_custom_id:
+            return True
+
+        return False
+
     async def _save_publication_changes(self, dialog_manager: DialogManager) -> None:
         """Сохранение изменений публикации через API"""
-        publication_data = dialog_manager.dialog_data["publication_data"]
-        publication_id = publication_data["id"]
+        working_pub = dialog_manager.dialog_data["working_publication"]
+        publication_id = working_pub["id"]
 
         # Подготавливаем изображение если есть
-        image_url = publication_data.get("image_url")
+        image_url = working_pub.get("image_url")
         image_content = None
         image_filename = None
 
         # Если есть пользовательское изображение
-        if publication_data.get("custom_image_file_id"):
-            file_id = publication_data["custom_image_file_id"]
+        if working_pub.get("custom_image_file_id"):
+            file_id = working_pub["custom_image_file_id"]
             file = await self.bot.get_file(file_id)
             file_data = await self.bot.download_file(file.file_path)
             image_content = file_data.read()
@@ -973,9 +959,9 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
         # Обновляем публикацию через API
         await self.kontur_publication_client.change_publication(
             publication_id=publication_id,
-            name=publication_data["name"],
-            text=publication_data["text"],
-            tags=publication_data.get("tags", []),
+            name=working_pub["name"],
+            text=working_pub["text"],
+            tags=working_pub.get("tags", []),
             image_url=image_url,
             image_content=image_content,
             image_filename=image_filename,
@@ -985,49 +971,9 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
             "Изменения публикации сохранены",
             {
                 "publication_id": publication_id,
-                "changes_count": len(dialog_manager.dialog_data.get("edit_history", [])),
+                "has_changes": self._has_changes(dialog_manager),
             }
         )
-
-    def _add_to_edit_history(
-            self,
-            dialog_manager: DialogManager,
-            field: str,
-            old_value: str,
-            new_value: str
-    ) -> None:
-        """Добавление записи в историю изменений"""
-        if "edit_history" not in dialog_manager.dialog_data:
-            dialog_manager.dialog_data["edit_history"] = []
-
-        dialog_manager.dialog_data["edit_history"].append({
-            "field": field,
-            "old": old_value,
-            "new": new_value,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-        })
-
-    def _format_edit_history(self, history: list) -> str:
-        """Форматирование истории изменений для отображения"""
-        if not history:
-            return ""
-
-        lines = []
-        for item in history:
-            lines.append(f"• {item['field']}: {item['old']} → {item['new']}")
-
-        return "\n".join(lines)
-
-    def _get_status_emoji(self, status: str) -> str:
-        """Получение эмодзи для статуса"""
-        status_map = {
-            "moderation": "🔍",
-            "approved": "✅",
-            "rejected": "❌",
-            "published": "🚀",
-            "draft": "📝",
-        }
-        return status_map.get(status, "📄")
 
     def _format_datetime(self, dt: str) -> str:
         """Форматирование даты и времени"""
@@ -1095,12 +1041,6 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
             return "За неделю"
         else:
             return "За месяц"
-
-    def _truncate_text(self, text: str, max_length: int) -> str:
-        """Обрезка текста с многоточием"""
-        if len(text) <= max_length:
-            return text
-        return text[:max_length - 3] + "..."
 
     async def _get_state(self, dialog_manager: DialogManager) -> model.UserState:
         """Получение состояния пользователя"""

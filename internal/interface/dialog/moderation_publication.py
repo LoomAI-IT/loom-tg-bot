@@ -1,4 +1,3 @@
-
 from abc import abstractmethod
 from typing import Protocol, Any
 from aiogram_dialog import DialogManager, Dialog, Window
@@ -16,9 +15,9 @@ class IModerationPublicationDialog(Protocol):
     @abstractmethod
     def get_reject_comment_window(self) -> Window: pass
 
-    # Окна редактирования (переиспользуем логику из GeneratePublication)
+    # Окна редактирования с новым UX
     @abstractmethod
-    def get_edit_text_menu_window(self) -> Window: pass
+    def get_edit_preview_window(self) -> Window: pass
 
     @abstractmethod
     def get_edit_title_window(self) -> Window: pass
@@ -63,7 +62,6 @@ class IModerationPublicationDialogService(Protocol):
             dialog_manager: DialogManager
     ) -> None: pass
 
-
     # Обработчики для комментария отклонения
     @abstractmethod
     async def get_reject_comment_data(
@@ -88,13 +86,14 @@ class IModerationPublicationDialogService(Protocol):
             dialog_manager: DialogManager
     ) -> None: pass
 
-    # Обработчики редактирования (аналогично GeneratePublication)
+    # Обработчики для нового окна редактирования с превью
     @abstractmethod
-    async def get_edit_menu_data(
+    async def get_edit_preview_data(
             self,
             dialog_manager: DialogManager,
     ) -> dict: pass
 
+    # Обработчики редактирования
     @abstractmethod
     async def handle_edit_title_save(
             self,

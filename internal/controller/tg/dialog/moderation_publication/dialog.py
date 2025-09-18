@@ -22,7 +22,7 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
         return Dialog(
             self.get_moderation_list_window(),
             self.get_reject_comment_window(),
-            self.get_edit_text_menu_window(),
+            self.get_edit_preview_window(),
             self.get_edit_title_window(),
             self.get_edit_tags_window(),
             self.get_edit_content_window(),
@@ -63,13 +63,6 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
                                 selector="has_tags"
                             ),
                             Const("\n━━━━━━━━━━━━━━━━━━━━"),
-                            Case(
-                                {
-                                    True: Format("\n\n📋 <b>История изменений:</b>\n{edit_history}"),
-                                    False: Const(""),
-                                },
-                                selector="has_edit_history"
-                            ),
                         ),
                         False: Multi(
                             Const("✅ <b>Нет публикаций на модерации</b>\n\n"),
@@ -115,7 +108,7 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
                     Button(
                         Const("✏️ Редактировать"),
                         id="edit",
-                        on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.edit_text_menu),
+                        on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.edit_preview),
                         when="has_publications",
                     ),
                     Button(
@@ -149,7 +142,6 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
             parse_mode="HTML",
         )
 
-    # Остальные методы остаются без изменений
     def get_reject_comment_window(self) -> Window:
         """Окно ввода комментария при отклонении"""
         return Window(
@@ -196,15 +188,40 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
             parse_mode="HTML",
         )
 
-    def get_edit_text_menu_window(self) -> Window:
-        """Меню редактирования текстовых элементов"""
+    def get_edit_preview_window(self) -> Window:
+        """Окно редактирования с превью публикации"""
         return Window(
             Multi(
                 Const("✏️ <b>Редактирование публикации</b>\n\n"),
-                Format("📄 <b>{publication_name}</b>\n"),
-                Format("👤 Автор: {author_name}\n\n"),
+                # Показываем саму публикацию
+                Format("👤 Автор: <b>{author_name}</b>\n"),
+                Format("🏷 Рубрика: <b>{category_name}</b>\n"),
+                Format("📅 Создано: {created_at}\n\n"),
+                Const("━━━━━━━━━━━━━━━━━━━━\n"),
+                Format("<b>{publication_name}</b>\n\n"),
+                Format("{publication_text}\n\n"),
+                Case(
+                    {
+                        True: Format("🏷 Теги: {publication_tags}"),
+                        False: Const("🏷 Теги: <i>отсутствуют</i>"),
+                    },
+                    selector="has_tags"
+                ),
+                Case(
+                    {
+                        True: Const("\n\n<i>❗️ Есть несохраненные изменения</i>"),
+                        False: Const(""),
+                    },
+                    selector="has_changes"
+                ),
+                Const("\n━━━━━━━━━━━━━━━━━━━━\n\n"),
                 Const("📌 <b>Выберите, что изменить:</b>"),
                 sep="",
+            ),
+
+            DynamicMedia(
+                selector="preview_image_media",
+                when="has_image",
             ),
 
             Column(
@@ -244,8 +261,8 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
                 ),
             ),
 
-            state=model.ModerationPublicationStates.edit_text_menu,
-            getter=self.moderation_publication_service.get_edit_menu_data,
+            state=model.ModerationPublicationStates.edit_preview,
+            getter=self.moderation_publication_service.get_edit_preview_data,
             parse_mode="HTML",
         )
 
@@ -267,8 +284,8 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
 
             Button(
                 Const("Назад"),
-                id="back_to_edit_text_menu",
-                on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.edit_text_menu),
+                id="back_to_edit_preview",
+                on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.edit_preview),
             ),
 
             state=model.ModerationPublicationStates.edit_title,
@@ -301,8 +318,8 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
 
             Button(
                 Const("Назад"),
-                id="back_to_edit_text_menu",
-                on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.edit_text_menu),
+                id="back_to_edit_preview",
+                on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.edit_preview),
             ),
 
             state=model.ModerationPublicationStates.edit_tags,
@@ -329,8 +346,8 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
 
             Button(
                 Const("Назад"),
-                id="back_to_edit_text_menu",
-                on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.edit_text_menu),
+                id="back_to_edit_preview",
+                on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.edit_preview),
             ),
 
             state=model.ModerationPublicationStates.edit_content,
@@ -389,8 +406,8 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
 
             Button(
                 Const("Назад"),
-                id="back_to_edit_text_menu",
-                on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.edit_text_menu),
+                id="back_to_edit_preview",
+                on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.edit_preview),
             ),
 
             state=model.ModerationPublicationStates.edit_image_menu,
