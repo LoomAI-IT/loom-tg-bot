@@ -82,13 +82,6 @@ class IModerationPublicationDialogService(Protocol):
             dialog_manager: DialogManager
     ) -> None: pass
 
-    @abstractmethod
-    async def handle_publish_publication(
-            self,
-            callback: CallbackQuery,
-            button: Any,
-            dialog_manager: DialogManager
-    ) -> None: pass
 
     # Обработчики для комментария отклонения
     @abstractmethod

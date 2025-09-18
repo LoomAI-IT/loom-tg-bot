@@ -176,7 +176,9 @@ class KonturPublicationClient(interface.IKonturPublicationClient):
             text: str = None,
             tags: list[str] = None,
             time_for_publication: datetime = None,
-            image: UploadFile = None,
+            image_url: str = None,
+            image_content: bytes = None,
+            image_filename: str = None,
     ) -> None:
         with self.tracer.start_as_current_span(
                 "PublicationClient.change_publication",
@@ -186,43 +188,39 @@ class KonturPublicationClient(interface.IKonturPublicationClient):
                 }
         ) as span:
             try:
-                # For multipart form data if image is provided
-                if image:
-                    files = {"image": (image.filename, await image.read(), image.content_type)}
-                    data = {}
-                    if vk_source_id is not None:
-                        data["vk_source_id"] = vk_source_id
-                    if tg_source_id is not None:
-                        data["tg_source_id"] = tg_source_id
-                    if name is not None:
-                        data["name"] = name
-                    if text is not None:
-                        data["text"] = text
-                    if tags is not None:
-                        data["tags"] = ",".join(tags)
-                    if time_for_publication is not None:
-                        data["time_for_publication"] = time_for_publication.isoformat()
+                data = {
+                    "vk_source_id": vk_source_id,
+                    "tg_source_id": tg_source_id,
+                    "name": name,
+                    "text": text,
+                    "tags": json.dumps(tags),
+                    "time_for_publication": time_for_publication,
+                }
 
-                    await self.client.put(f"/{publication_id}", data=data, files=files)
+                # Добавляем image_url если есть
+                if image_url:
+                    data["image_url"] = image_url
+
+                files = {}
+
+                # Если есть содержимое файла
+                if image_content and image_filename:
+                    files["image_file"] = (
+                        image_filename,
+                        image_content,
+                        "image/png"  # можно определять по расширению
+                    )
+
+                # Отправляем запрос
+                if files:
+                    response = await self.client.put(f"/{publication_id}", data=data, files=files)
                 else:
-                    # JSON request
-                    body = {}
-                    if vk_source_id is not None:
-                        body["vk_source_id"] = vk_source_id
-                    if tg_source_id is not None:
-                        body["tg_source_id"] = tg_source_id
-                    if name is not None:
-                        body["name"] = name
-                    if text is not None:
-                        body["text"] = text
-                    if tags is not None:
-                        body["tags"] = tags
-                    if time_for_publication is not None:
-                        body["time_for_publication"] = time_for_publication.isoformat()
+                    response = await self.client.put(f"/{publication_id}", data=data)
 
-                    await self.client.put(f"/{publication_id}", json=body)
+                json_response = response.json()
 
                 span.set_status(Status(StatusCode.OK))
+                return json_response
             except Exception as e:
                 span.record_exception(e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))

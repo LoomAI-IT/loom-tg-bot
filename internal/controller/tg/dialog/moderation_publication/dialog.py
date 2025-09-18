@@ -157,12 +157,6 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
                         on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.reject_comment),
                     ),
                 ),
-                Button(
-                    Const("🚀 Принять и опубликовать"),
-                    id="approve_and_publish",
-                    on_click=self.moderation_publication_service.handle_publish_publication,
-                    when="can_publish_directly",
-                ),
             ),
 
             Button(

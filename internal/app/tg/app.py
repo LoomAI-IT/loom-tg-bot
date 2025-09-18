@@ -23,6 +23,7 @@ def NewTg(
         add_employee_dialog: interface.IAddEmployeeDialog,
         content_menu_dialog: interface.IContentMenuDialog,
         generate_publication_dialog: interface.IGeneratePublicationDialog,
+        moderation_publication_dialog: interface.IModerationPublicationDialog,
         prefix: str
 ):
     app = FastAPI(
@@ -48,7 +49,8 @@ def NewTg(
         change_employee_dialog,
         add_employee_dialog,
         content_menu_dialog,
-        generate_publication_dialog
+        generate_publication_dialog,
+        moderation_publication_dialog
     )
     dp.errors.register(
         tg_middleware.on_critical_error,
@@ -119,6 +121,7 @@ def include_dialogs(
         add_employee_dialog: interface.IAddEmployeeDialog,
         content_menu_dialog: interface.IContentMenuDialog,
         generate_publication_dialog: interface.IGeneratePublicationDialog,
+        moderation_publication_dialog: interface.IModerationPublicationDialog,
 ):
     dialog_router = Router()
     dialog_router.include_routers(
@@ -129,7 +132,8 @@ def include_dialogs(
         change_employee_dialog.get_dialog(),
         add_employee_dialog.get_dialog(),
         content_menu_dialog.get_dialog(),
-        generate_publication_dialog.get_dialog()
+        generate_publication_dialog.get_dialog(),
+        moderation_publication_dialog.get_dialog()
     )
 
     dp.include_routers(dialog_router)
