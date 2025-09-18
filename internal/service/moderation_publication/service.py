@@ -828,6 +828,25 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
                 await callback.answer("❌ Ошибка сохранения", show_alert=True)
                 raise
 
+    async def handle_back_to_moderation_list(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        with self.tracer.start_as_current_span(
+                "ModerationPublicationDialogService.handle_back_to_moderation_list",
+                kind=SpanKind.INTERNAL
+        ) as span:
+            try:
+                await dialog_manager.switch_to(model.ModerationPublicationStates.moderation_list)
+
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
+                await callback.answer("❌ Ошибка сохранения", show_alert=True)
+                raise
+
     async def handle_back_to_content_menu(
             self,
             callback: CallbackQuery,
