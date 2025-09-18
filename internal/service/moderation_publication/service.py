@@ -1034,20 +1034,35 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
         if not original or not working:
             return False
 
-        # Сравниваем ключевые поля
-        fields_to_compare = ["name", "text", "tags", "has_image"]
-
+        # Сравниваем текстовые поля
+        fields_to_compare = ["name", "text", "tags"]
         for field in fields_to_compare:
             if original.get(field) != working.get(field):
                 return True
 
-        # Проверяем изменения изображения
-        original_image_url = original.get("image_url")
-        working_image_url = working.get("image_url")
-        original_custom_id = original.get("custom_image_file_id")
-        working_custom_id = working.get("custom_image_file_id")
+        # Проверяем изменения изображения более детально
 
-        if original_image_url != working_image_url or original_custom_id != working_custom_id:
+        # 1. Проверяем, изменилось ли наличие изображения
+        if original.get("has_image", False) != working.get("has_image", False):
+            return True
+
+        # 2. Если есть пользовательское изображение - это всегда изменение
+        if working.get("custom_image_file_id"):
+            # Проверяем, было ли это изображение в оригинале
+            if original.get("custom_image_file_id") != working.get("custom_image_file_id"):
+                return True
+
+        # 3. Проверяем изменение URL (новое сгенерированное изображение)
+        original_url = original.get("image_url", "")
+        working_url = working.get("image_url", "")
+
+        # Игнорируем базовый URL и сравниваем только если оба не пустые
+        if working_url and original_url:
+            # Если URL изменился - это новое изображение
+            if original_url != working_url:
+                return True
+        elif working_url != original_url:
+            # Один пустой, другой нет - есть изменения
             return True
 
         return False
@@ -1055,37 +1070,80 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
     async def _save_publication_changes(self, dialog_manager: DialogManager) -> None:
         """Сохранение изменений публикации через API"""
         working_pub = dialog_manager.dialog_data["working_publication"]
+        original_pub = dialog_manager.dialog_data["original_publication"]
         publication_id = working_pub["id"]
 
-        # Подготавливаем изображение если есть
-        image_url = working_pub.get("image_url")
+        # Определяем, что делать с изображением
+        image_url = None
         image_content = None
         image_filename = None
+        should_delete_image = False
 
-        # Если есть пользовательское изображение
-        if working_pub.get("custom_image_file_id"):
-            file_id = working_pub["custom_image_file_id"]
-            file = await self.bot.get_file(file_id)
-            file_data = await self.bot.download_file(file.file_path)
-            image_content = file_data.read()
-            image_filename = f"moderated_image_{file_id[:8]}.jpg"
+        # Проверяем изменения изображения
+        original_has_image = original_pub.get("has_image", False)
+        working_has_image = working_pub.get("has_image", False)
+
+        if not working_has_image and original_has_image:
+            # Изображение было удалено - нужно удалить из storage
+            should_delete_image = True
+
+        elif working_has_image:
+            # Проверяем, новое ли это изображение
+            if working_pub.get("custom_image_file_id"):
+                # Пользовательское изображение загружено через Telegram
+                file_id = working_pub["custom_image_file_id"]
+                file = await self.bot.get_file(file_id)
+                file_data = await self.bot.download_file(file.file_path)
+                image_content = file_data.read()
+                image_filename = f"moderated_image_{file_id[:8]}.jpg"
+
+            elif working_pub.get("image_url"):
+                # Проверяем, изменился ли URL (новое сгенерированное изображение)
+                original_url = original_pub.get("image_url", "")
+                working_url = working_pub.get("image_url", "")
+
+                if original_url != working_url:
+                    # URL изменился - это новое сгенерированное изображение
+                    image_url = working_url
+
+        # Если нужно удалить изображение
+        if should_delete_image:
+            try:
+                await self.kontur_publication_client.delete_publication_image(
+                    publication_id=publication_id
+                )
+                self.logger.info(f"Deleted image for publication {publication_id}")
+            except Exception as e:
+                self.logger.warning(f"Failed to delete image: {str(e)}")
 
         # Обновляем публикацию через API
-        await self.kontur_publication_client.change_publication(
-            publication_id=publication_id,
-            name=working_pub["name"],
-            text=working_pub["text"],
-            tags=working_pub.get("tags", []),
-            image_url=image_url,
-            image_content=image_content,
-            image_filename=image_filename,
-        )
+        # Передаем изображение только если оно действительно новое
+        if image_url or image_content:
+            await self.kontur_publication_client.change_publication(
+                publication_id=publication_id,
+                name=working_pub["name"],
+                text=working_pub["text"],
+                tags=working_pub.get("tags", []),
+                image_url=image_url,
+                image_content=image_content,
+                image_filename=image_filename,
+            )
+        else:
+            # Обновляем только текстовые поля
+            await self.kontur_publication_client.change_publication(
+                publication_id=publication_id,
+                name=working_pub["name"],
+                text=working_pub["text"],
+                tags=working_pub.get("tags", []),
+            )
 
         self.logger.info(
             "Изменения публикации сохранены",
             {
                 "publication_id": publication_id,
                 "has_changes": self._has_changes(dialog_manager),
+                "image_changed": bool(image_url or image_content),
+                "image_deleted": should_delete_image,
             }
         )
 

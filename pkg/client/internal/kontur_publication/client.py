@@ -188,17 +188,26 @@ class KonturPublicationClient(interface.IKonturPublicationClient):
                 }
         ) as span:
             try:
-                data = {
-                    "vk_source_id": vk_source_id,
-                    "tg_source_id": tg_source_id,
-                    "name": name,
-                    "text": text,
-                    "tags": json.dumps(tags),
-                    "time_for_publication": time_for_publication,
-                }
+                # Формируем data только с непустыми значениями
+                data = {}
 
-                # Добавляем image_url если есть
-                if image_url:
+                if vk_source_id is not None:
+                    data["vk_source_id"] = str(vk_source_id)
+                if tg_source_id is not None:
+                    data["tg_source_id"] = str(tg_source_id)
+                if name is not None:
+                    data["name"] = name
+                if text is not None:
+                    data["text"] = text
+                if tags is not None:
+                    data["tags"] = json.dumps(tags)
+                if time_for_publication is not None:
+                    data["time_for_publication"] = time_for_publication.isoformat() if hasattr(time_for_publication,
+                                                                                               'isoformat') else str(
+                        time_for_publication)
+
+                # ВАЖНО: добавляем image_url только если он действительно передан
+                if image_url is not None:
                     data["image_url"] = image_url
 
                 files = {}
@@ -208,14 +217,18 @@ class KonturPublicationClient(interface.IKonturPublicationClient):
                     files["image_file"] = (
                         image_filename,
                         image_content,
-                        "image/png"  # можно определять по расширению
+                        "image/png"
                     )
 
                 # Отправляем запрос
                 if files:
                     response = await self.client.put(f"/{publication_id}", data=data, files=files)
-                else:
+                elif data:  # Отправляем только если есть данные
                     response = await self.client.put(f"/{publication_id}", data=data)
+                else:
+                    # Если нет данных для обновления, просто возвращаем успех
+                    span.set_status(Status(StatusCode.OK))
+                    return None
 
                 json_response = response.json()
 
