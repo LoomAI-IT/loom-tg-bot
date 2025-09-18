@@ -257,7 +257,7 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
                 Button(
                     Const("Назад"),
                     id="back_to_moderation_list",
-                    on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.moderation_list),
+                    on_click=self.moderation_publication_service.handle_back_to_moderation_list,
                 ),
             ),
 
