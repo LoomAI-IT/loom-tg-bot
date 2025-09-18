@@ -220,6 +220,8 @@ class KonturPublicationClient(interface.IKonturPublicationClient):
                         "image/png"
                     )
 
+                print(data, flush=True)
+
                 # Отправляем запрос
                 if files:
                     response = await self.client.put(f"/{publication_id}", data=data, files=files)
