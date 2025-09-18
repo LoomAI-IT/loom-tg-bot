@@ -70,7 +70,7 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
                     dialog_manager.dialog_data["current_index"] = 0
 
                 current_index = dialog_manager.dialog_data["current_index"]
-                current_pub = moderation_publications[current_index]
+                current_pub = model.Publication(**moderation_publications[current_index])
 
                 # Получаем информацию об авторе
                 author = await self.kontur_employee_client.get_employee_by_account_id(
