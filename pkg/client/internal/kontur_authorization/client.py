@@ -18,7 +18,6 @@ class KonturAuthorizationClient(interface.IKonturAuthorizationClient):
             port,
             prefix="/api/authorization",
             use_tracing=True,
-            logger=logger,
         )
         self.tracer = tel.tracer()
 

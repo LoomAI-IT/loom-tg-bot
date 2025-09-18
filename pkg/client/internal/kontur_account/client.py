@@ -17,7 +17,6 @@ class KonturAccountClient(interface.IKonturAccountClient):
             port,
             prefix="/api/account",
             use_tracing=True,
-            logger=logger,
         )
         self.tracer = tel.tracer()
 

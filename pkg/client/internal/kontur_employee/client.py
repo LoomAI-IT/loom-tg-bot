@@ -18,7 +18,6 @@ class KonturEmployeeClient(interface.IKonturEmployeeClient):
             port,
             prefix="/api/employee",
             use_tracing=True,
-            logger=logger,
         )
         self.tracer = tel.tracer()
 

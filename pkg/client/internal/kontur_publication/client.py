@@ -21,7 +21,6 @@ class KonturPublicationClient(interface.IKonturPublicationClient):
             port,
             prefix="/api/publication",
             use_tracing=True,
-            logger=None,
         )
         self.tracer = tel.tracer()
 
