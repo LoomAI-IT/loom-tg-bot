@@ -34,6 +34,7 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
     async def get_moderation_list_data(
             self,
             dialog_manager: DialogManager,
+            **kwargs
     ) -> dict:
         with self.tracer.start_as_current_span(
                 "ModerationPublicationDialogService.get_moderation_list_data",
@@ -176,6 +177,7 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
     async def get_publication_review_data(
             self,
             dialog_manager: DialogManager,
+            **kwargs
     ) -> dict:
         with self.tracer.start_as_current_span(
                 "ModerationPublicationDialogService.get_publication_review_data",
@@ -388,6 +390,7 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
     async def get_reject_comment_data(
             self,
             dialog_manager: DialogManager,
+            **kwargs
     ) -> dict:
         with self.tracer.start_as_current_span(
                 "ModerationPublicationDialogService.get_reject_comment_data",
@@ -511,6 +514,7 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
     async def get_edit_menu_data(
             self,
             dialog_manager: DialogManager,
+            **kwargs
     ) -> dict:
         """Получение данных для меню редактирования"""
         with self.tracer.start_as_current_span(
@@ -987,6 +991,7 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
     async def get_edit_title_data(
             self,
             dialog_manager: DialogManager,
+             **kwargs
     ) -> dict:
         """Данные для окна редактирования названия"""
         publication_data = dialog_manager.dialog_data.get("publication_data", {})
@@ -997,6 +1002,7 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
     async def get_edit_tags_data(
             self,
             dialog_manager: DialogManager,
+             **kwargs
     ) -> dict:
         """Данные для окна редактирования тегов"""
         publication_data = dialog_manager.dialog_data.get("publication_data", {})
@@ -1009,6 +1015,7 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
     async def get_edit_content_data(
             self,
             dialog_manager: DialogManager,
+             **kwargs
     ) -> dict:
         """Данные для окна редактирования текста"""
         publication_data = dialog_manager.dialog_data.get("publication_data", {})
@@ -1020,6 +1027,7 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
     async def get_image_menu_data(
             self,
             dialog_manager: DialogManager,
+             **kwargs
     ) -> dict:
         """Данные для меню управления изображением"""
         publication_data = dialog_manager.dialog_data.get("publication_data", {})
@@ -1031,6 +1039,7 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
     async def get_image_prompt_data(
             self,
             dialog_manager: DialogManager,
+             **kwargs
     ) -> dict:
         """Данные для окна генерации с промптом"""
         return {
