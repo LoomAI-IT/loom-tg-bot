@@ -352,7 +352,7 @@ class KonturPublicationClient(interface.IKonturPublicationClient):
             try:
                 response = await self.client.get(f"/organization/{organization_id}/publications")
                 json_response = response.json()
-                print(json_response, flush=True)
+
                 span.set_status(Status(StatusCode.OK))
                 return [model.Publication(**pub) for pub in json_response]
             except Exception as e:

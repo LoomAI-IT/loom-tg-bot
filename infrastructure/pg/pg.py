@@ -14,7 +14,6 @@ def NewPool(
         , db_port,
         db_name
 ):
-    print(f"postgresql+asyncpg://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}", flush=True)
     async_engine = create_async_engine(
         f"postgresql+asyncpg://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}",
         echo=False,
