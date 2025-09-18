@@ -28,6 +28,9 @@ class CommandController(interface.ICommandController):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                await dialog_manager.reset_stack()
+                await dialog_manager.update({})
+
                 tg_chat_id = dialog_manager.event.chat.id
 
                 user_state = await self.state_service.state_by_id(tg_chat_id)
