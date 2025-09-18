@@ -375,6 +375,35 @@ class ContentMenuDialogService(interface.IContentMenuDialogService):
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
+    async def handle_go_to_content_menu(
+                self,
+                callback: CallbackQuery,
+                button: Any,
+                dialog_manager: DialogManager
+        ) -> None:
+            with self.tracer.start_as_current_span(
+                    "ContentMenuDialogService.handle_go_to_content_menu",
+                    kind=SpanKind.INTERNAL
+            ) as span:
+                try:
+                    await dialog_manager.start(
+                        model.ContentMenuStates.content_menu,
+                        mode=StartMode.RESET_STACK
+                    )
+
+                    self.logger.info(
+                        "Переход в контент меню",
+                        {
+                            common.TELEGRAM_CHAT_ID_KEY: callback.message.chat.id,
+                        }
+                    )
+
+                    span.set_status(Status(StatusCode.OK))
+                except Exception as err:
+                    span.record_exception(err)
+                    span.set_status(Status(StatusCode.ERROR, str(err)))
+                    raise
+
     # Вспомогательные методы
 
     # Добавить эти методы в класс ContentMenuDialogService

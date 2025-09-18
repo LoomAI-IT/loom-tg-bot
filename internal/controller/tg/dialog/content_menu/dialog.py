@@ -83,7 +83,11 @@ class ContentMenuDialog(interface.IContentMenuDialog):
                 ),
             ),
 
-            Back(Const("◀️ Назад")),
+            Button(
+                Const("🏠 Обратно в меню контента"),
+                id="to_content_menu",
+                on_click=self.content_menu_service.handle_go_to_content_menu,
+            ),
 
             state=model.ContentMenuStates.select_content_type,
             parse_mode="HTML",
@@ -109,7 +113,11 @@ class ContentMenuDialog(interface.IContentMenuDialog):
                 ),
             ),
 
-            Back(Const("◀️ Назад")),
+            Button(
+                Const("🏠 Обратно в меню контента"),
+                id="to_content_menu",
+                on_click=self.content_menu_service.handle_go_to_content_menu,
+            ),
 
             state=model.ContentMenuStates.select_drafts_type,
             getter=self.content_menu_service.get_drafts_type_data,
@@ -136,7 +144,11 @@ class ContentMenuDialog(interface.IContentMenuDialog):
                 ),
             ),
 
-            Back(Const("◀️ Назад")),
+            Button(
+                Const("🏠 Обратно в меню контента"),
+                id="to_content_menu",
+                on_click=self.content_menu_service.handle_go_to_content_menu,
+            ),
 
             state=model.ContentMenuStates.select_moderation_type,
             getter=self.content_menu_service.get_moderation_type_data,
