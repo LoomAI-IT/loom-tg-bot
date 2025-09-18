@@ -573,7 +573,7 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        return {"regenerate_prompt": dialog_manager.dialog_data["regenerate_prompt"]}
+        return {"regenerate_prompt": dialog_manager.dialog_data.get("regenerate_prompt", "")}
 
     async def handle_edit_title_save(
             self,
