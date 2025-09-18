@@ -571,6 +571,7 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
     async def get_regenerate_data(
             self,
             dialog_manager: DialogManager,
+            **kwargs
     ) -> dict:
         return {"regenerate_prompt": dialog_manager.dialog_data["regenerate_prompt"]}
 
