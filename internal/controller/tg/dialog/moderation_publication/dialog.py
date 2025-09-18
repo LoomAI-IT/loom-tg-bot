@@ -184,7 +184,11 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
                     on_click=self.moderation_publication_service.handle_send_rejection,
                     when="has_comment",
                 ),
-                Back(Const("◀️ Назад")),
+                Button(
+                    Const("Назад"),
+                    id="back_to_moderation_list",
+                    on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.moderation_list),
+                ),
             ),
 
             state=model.ModerationPublicationStates.reject_comment,
@@ -233,7 +237,11 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
                     on_click=self.moderation_publication_service.handle_save_edits,
                     when="has_changes",
                 ),
-                Back(Const("◀️ Назад к просмотру")),
+                Button(
+                    Const("Назад"),
+                    id="back_to_moderation_list",
+                    on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.moderation_list),
+                ),
             ),
 
             state=model.ModerationPublicationStates.edit_text_menu,
@@ -257,7 +265,11 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
                 on_success=self.moderation_publication_service.handle_edit_title_save,
             ),
 
-            Back(Const("◀️ Назад")),
+            Button(
+                Const("Назад"),
+                id="back_to_edit_text_menu",
+                on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.edit_text_menu),
+            ),
 
             state=model.ModerationPublicationStates.edit_title,
             getter=self.moderation_publication_service.get_edit_title_data,
@@ -287,7 +299,11 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
                 on_success=self.moderation_publication_service.handle_edit_tags_save,
             ),
 
-            Back(Const("◀️ Назад")),
+            Button(
+                Const("Назад"),
+                id="back_to_edit_text_menu",
+                on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.edit_text_menu),
+            ),
 
             state=model.ModerationPublicationStates.edit_tags,
             getter=self.moderation_publication_service.get_edit_tags_data,
@@ -311,7 +327,11 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
                 on_success=self.moderation_publication_service.handle_edit_content_save,
             ),
 
-            Back(Const("◀️ Назад")),
+            Button(
+                Const("Назад"),
+                id="back_to_edit_text_menu",
+                on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.edit_text_menu),
+            ),
 
             state=model.ModerationPublicationStates.edit_content,
             getter=self.moderation_publication_service.get_edit_content_data,
@@ -367,7 +387,11 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
                 ),
             ),
 
-            Back(Const("◀️ Назад к редактированию")),
+            Button(
+                Const("Назад"),
+                id="back_to_edit_text_menu",
+                on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.edit_text_menu),
+            ),
 
             state=model.ModerationPublicationStates.edit_image_menu,
             getter=self.moderation_publication_service.get_image_menu_data,
@@ -397,7 +421,11 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
                 on_success=self.moderation_publication_service.handle_generate_image_with_prompt,
             ),
 
-            Back(Const("◀️ Назад")),
+            Button(
+                Const("Назад"),
+                id="edit_image_menu",
+                on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.edit_image_menu),
+            ),
 
             state=model.ModerationPublicationStates.generate_image,
             getter=self.moderation_publication_service.get_image_prompt_data,
@@ -422,7 +450,11 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
                 content_types=["photo"],
             ),
 
-            Back(Const("◀️ Назад")),
+            Button(
+                Const("Назад"),
+                id="edit_image_menu",
+                on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.edit_image_menu),
+            ),
 
             state=model.ModerationPublicationStates.upload_image,
             parse_mode="HTML",
