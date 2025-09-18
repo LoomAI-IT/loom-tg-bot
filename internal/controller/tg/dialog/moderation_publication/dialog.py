@@ -226,19 +226,9 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
 
             Column(
                 Button(
-                    Const("📝 Изменить название"),
-                    id="edit_title",
-                    on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.edit_title),
-                ),
-                Button(
-                    Const("🏷 Изменить теги"),
-                    id="edit_tags",
-                    on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.edit_tags),
-                ),
-                Button(
-                    Const("📄 Изменить текст"),
-                    id="edit_content",
-                    on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.edit_content),
+                    Const("✏️ Текст"),
+                    id="edit_text_menu",
+                    on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.edit_text_menu),
                 ),
                 Button(
                     Const("🖼 Управление изображением"),
@@ -263,6 +253,85 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
 
             state=model.ModerationPublicationStates.edit_preview,
             getter=self.moderation_publication_service.get_edit_preview_data,
+            parse_mode="HTML",
+        )
+
+    def get_edit_text_menu_window(self) -> Window:
+        """Новое меню редактирования текстовых элементов"""
+        return Window(
+            Multi(
+                Const("✏️ <b>Редактирование текста</b>\n\n"),
+                Const("📌 <b>Выберите, что изменить:</b>"),
+                sep="",
+            ),
+
+            Column(
+                Button(
+                    Const("🔄 Перегенерировать всё"),
+                    id="regenerate_all",
+                    on_click=self.moderation_publication_service.handle_regenerate_text,
+                ),
+                Button(
+                    Const("🔄 Перегенерировать с промптом"),
+                    id="regenerate_with_prompt",
+                    on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.regenerate_text),
+                ),
+                Button(
+                    Const("📝 Изменить название"),
+                    id="edit_title",
+                    on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.edit_title),
+                ),
+                Button(
+                    Const("🏷 Изменить теги"),
+                    id="edit_tags",
+                    on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.edit_tags),
+                ),
+                Button(
+                    Const("📄 Изменить текст"),
+                    id="edit_content",
+                    on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.edit_content),
+                ),
+            ),
+            Button(
+                Const("📄 ◀️ Назад к превью"),
+                id="edit_preview",
+                on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.edit_preview),
+            ),
+
+            state=model.ModerationPublicationStates.edit_text_menu,
+            parse_mode="HTML",
+        )
+
+    def get_regenerate_text_window(self) -> Window:
+        """Новое окно для ввода дополнительного промпта при перегенерации"""
+        return Window(
+            Multi(
+                Const("🔄 <b>Перегенерация с дополнительными указаниями</b>\n\n"),
+                Const("💡 <b>Введите дополнительные пожелания:</b>\n"),
+                Const(
+                    "<i>Например: сделай текст короче, добавь больше эмоций, убери технические термины и т.д.</i>\n\n"),
+                Case(
+                    {
+                        True: Format("📌 <b>Ваши указания:</b>\n<i>{regenerate_prompt}</i>"),
+                        False: Const("💬 Ожидание ввода..."),
+                    },
+                    selector="has_regenerate_prompt"
+                ),
+                sep="",
+            ),
+
+            TextInput(
+                id="regenerate_prompt_input",
+                on_success=self.moderation_publication_service.handle_regenerate_text_with_prompt,
+            ),
+            Button(
+                Const("📄 ◀️ Назад"),
+                id="edit_text_menu",
+                on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.edit_text_menu),
+            ),
+
+            state=model.ModerationPublicationStates.regenerate_text,
+            getter=self.moderation_publication_service.get_regenerate_data,
             parse_mode="HTML",
         )
 

@@ -478,6 +478,102 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
+    async def handle_regenerate_text(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        with self.tracer.start_as_current_span(
+                "ModerationPublicationDialogService.handle_regenerate_text",
+                kind=SpanKind.INTERNAL
+        ) as span:
+            try:
+                await callback.answer()
+                loading_message = await callback.message.answer("🔄 Перегенерирую текст, это может занять время...")
+
+                working_pub = dialog_manager.dialog_data["working_publication"]
+
+                # Перегенерация через API
+                regenerated_data = await self.kontur_publication_client.regenerate_publication_text(
+                    category_id=working_pub["category_id"],
+                    publication_text=working_pub["text"],
+                    prompt=None
+                )
+
+                # Обновляем данные
+                dialog_manager.dialog_data["working_publication"]["name"] = regenerated_data["name"]
+                dialog_manager.dialog_data["working_publication"]["text"] = regenerated_data["text"]
+                dialog_manager.dialog_data["working_publication"]["tags"] = regenerated_data["tags"]
+
+
+                await loading_message.edit_text("✅ Пост успешно сгенерирован!")
+                await asyncio.sleep(3)
+                try:
+                    await loading_message.delete()
+                except:
+                    pass
+
+                await dialog_manager.switch_to(model.ModerationPublicationStates.edit_preview)
+
+                span.set_status(Status(StatusCode.OK))
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
+                await callback.answer("❌ Ошибка при перегенерации", show_alert=True)
+                raise
+
+    async def handle_regenerate_text_with_prompt(
+            self,
+            message: Message,
+            widget: Any,
+            dialog_manager: DialogManager,
+            prompt: str
+    ) -> None:
+        with self.tracer.start_as_current_span(
+                "ModerationPublicationDialogService.handle_regenerate_text",
+                kind=SpanKind.INTERNAL
+        ) as span:
+            try:
+                loading_message = await message.answer("🔄 Перегенерирую с учетом ваших пожеланий...")
+
+                working_pub = dialog_manager.dialog_data["working_publication"]
+
+                # Перегенерация через API
+                regenerated_data = await self.kontur_publication_client.regenerate_publication_text(
+                    category_id=working_pub["category_id"],
+                    publication_text=working_pub["text"],
+                    prompt=prompt
+                )
+
+                # Обновляем данные
+                dialog_manager.dialog_data["working_publication"]["name"] = regenerated_data["name"]
+                dialog_manager.dialog_data["working_publication"]["text"] = regenerated_data["text"]
+                dialog_manager.dialog_data["working_publication"]["tags"] = regenerated_data["tags"]
+                dialog_manager.dialog_data["regenerate_prompt"] = prompt
+                dialog_manager.dialog_data["has_regenerate_prompt"] = True
+
+                await loading_message.edit_text("✅ Пост успешно сгенерирован!")
+                await asyncio.sleep(3)
+                try:
+                    await loading_message.delete()
+                except:
+                    pass
+
+                await dialog_manager.switch_to(model.ModerationPublicationStates.edit_preview)
+
+                span.set_status(Status(StatusCode.OK))
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
+                raise
+
+    async def get_regenerate_data(
+            self,
+            dialog_manager: DialogManager,
+    ) -> dict:
+        return {"regenerate_prompt": dialog_manager.dialog_data["regenerate_prompt"]}
+
     async def handle_edit_title_save(
             self,
             message: Message,

@@ -19,6 +19,13 @@ class IModerationPublicationDialog(Protocol):
     @abstractmethod
     def get_edit_preview_window(self) -> Window: pass
 
+    # Новое меню редактирования текста
+    @abstractmethod
+    def get_edit_text_menu_window(self) -> Window: pass
+
+    @abstractmethod
+    def get_regenerate_text_window(self) -> Window: pass
+
     @abstractmethod
     def get_edit_title_window(self) -> Window: pass
 
@@ -89,6 +96,30 @@ class IModerationPublicationDialogService(Protocol):
     # Обработчики для нового окна редактирования с превью
     @abstractmethod
     async def get_edit_preview_data(
+            self,
+            dialog_manager: DialogManager,
+    ) -> dict: pass
+
+    # Новые обработчики для перегенерации текста
+    @abstractmethod
+    async def handle_regenerate_text(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
+    @abstractmethod
+    async def handle_regenerate_text_with_prompt(
+            self,
+            message: Message,
+            widget: Any,
+            dialog_manager: DialogManager,
+            prompt: str
+    ) -> None: pass
+
+    @abstractmethod
+    async def get_regenerate_data(
             self,
             dialog_manager: DialogManager,
     ) -> dict: pass
