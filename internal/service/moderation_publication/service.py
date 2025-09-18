@@ -2,6 +2,7 @@ import asyncio
 from datetime import datetime, timezone
 from typing import Any
 
+from aiogram_dialog.api.entities import MediaId, MediaAttachment
 from aiogram_dialog.widgets.input import MessageInput
 
 from aiogram import Bot
@@ -445,12 +446,9 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
                 # Подготавливаем медиа для изображения
                 preview_image_media = None
                 if working_pub.get("has_image"):
-                    from aiogram_dialog.api.entities import MediaAttachment
-
-                    # Если есть пользовательское изображение
                     if working_pub.get("custom_image_file_id"):
                         preview_image_media = MediaAttachment(
-                            file_id=working_pub["custom_image_file_id"],
+                            file_id=MediaId(working_pub["custom_image_file_id"]),
                             type=ContentType.PHOTO
                         )
                     elif working_pub.get("image_url"):
