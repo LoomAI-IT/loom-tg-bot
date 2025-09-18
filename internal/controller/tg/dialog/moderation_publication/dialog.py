@@ -23,6 +23,8 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
             self.get_moderation_list_window(),
             self.get_reject_comment_window(),
             self.get_edit_preview_window(),
+            self.get_regenerate_text_window(),
+            self.get_edit_text_menu_window(),
             self.get_edit_title_window(),
             self.get_edit_tags_window(),
             self.get_edit_content_window(),
