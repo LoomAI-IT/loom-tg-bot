@@ -14,9 +14,6 @@ class IModerationPublicationDialog(Protocol):
     def get_moderation_list_window(self) -> Window: pass
 
     @abstractmethod
-    def get_publication_review_window(self) -> Window: pass
-
-    @abstractmethod
     def get_reject_comment_window(self) -> Window: pass
 
     # Окна редактирования (переиспользуем логику из GeneratePublication)

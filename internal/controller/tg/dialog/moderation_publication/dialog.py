@@ -21,7 +21,6 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
     def get_dialog(self) -> Dialog:
         return Dialog(
             self.get_moderation_list_window(),
-            self.get_publication_review_window(),
             self.get_reject_comment_window(),
             self.get_edit_text_menu_window(),
             self.get_edit_title_window(),
@@ -33,7 +32,7 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
         )
 
     def get_moderation_list_window(self) -> Window:
-        """Окно списка публикаций на модерации"""
+        """Окно списка публикаций на модерации - теперь сразу показывает первую публикацию"""
         return Window(
             Multi(
                 Const("🔍 <b>Модерация публикаций</b>\n\n"),
@@ -42,7 +41,35 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
                         True: Multi(
                             Format("📊 Всего на модерации: <b>{publications_count}</b>\n"),
                             Format("📅 Период: <b>{period_text}</b>\n\n"),
-                            Const("📝 <b>Выберите публикацию для просмотра:</b>"),
+                            # Показываем информацию о текущей публикации
+                            Format("👤 Автор: <b>{author_name}</b>\n"),
+                            Format("🏷 Рубрика: <b>{category_name}</b>\n"),
+                            Format("📅 Создано: {created_at}\n"),
+                            Case(
+                                {
+                                    True: Format("⏰ Ожидает модерации: <b>{waiting_time}</b>\n"),
+                                    False: Const(""),
+                                },
+                                selector="has_waiting_time"
+                            ),
+                            Const("━━━━━━━━━━━━━━━━━━━━\n"),
+                            Format("<b>{publication_name}</b>\n\n"),
+                            Format("{publication_text}\n\n"),
+                            Case(
+                                {
+                                    True: Format("🏷 Теги: {publication_tags}"),
+                                    False: Const(""),
+                                },
+                                selector="has_tags"
+                            ),
+                            Const("\n━━━━━━━━━━━━━━━━━━━━"),
+                            Case(
+                                {
+                                    True: Format("\n\n📋 <b>История изменений:</b>\n{edit_history}"),
+                                    False: Const(""),
+                                },
+                                selector="has_edit_history"
+                            ),
                         ),
                         False: Multi(
                             Const("✅ <b>Нет публикаций на модерации</b>\n\n"),
@@ -54,17 +81,59 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
                 sep="",
             ),
 
-            Column(
-                Select(
-                    Format("{item[emoji]} {item[title]}\n"
-                           "👤 {item[author]} | 🏷 {item[category]}\n"
-                           "📅 {item[created_at]}"),
-                    id="publication_select",
-                    items="publications",
-                    item_id_getter=lambda item: str(item["id"]),
-                    on_click=self.moderation_publication_service.handle_select_publication,
+            DynamicMedia(
+                selector="preview_image_media",
+                when="has_image",
+            ),
+
+            # Навигация со счетчиком в одной строке
+            Row(
+                Button(
+                    Const("⬅️"),
+                    id="prev_publication",
+                    on_click=self.moderation_publication_service.handle_navigate_publication,
+                    when="has_prev",
+                ),
+                Button(
+                    Format("{current_index}/{total_count}"),
+                    id="counter",
+                    on_click=lambda c, b, d: c.answer(),  # Просто показываем позицию
                     when="has_publications",
                 ),
+                Button(
+                    Const("➡️"),
+                    id="next_publication",
+                    on_click=self.moderation_publication_service.handle_navigate_publication,
+                    when="has_next",
+                ),
+                when="has_publications",
+            ),
+
+            # Основные действия
+            Column(
+                Row(
+                    Button(
+                        Const("✏️ Редактировать"),
+                        id="edit",
+                        on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.edit_text_menu),
+                        when="has_publications",
+                    ),
+                    Button(
+                        Const("✅ Принять"),
+                        id="approve",
+                        on_click=self.moderation_publication_service.handle_approve_publication,
+                        when="has_publications",
+                    ),
+                ),
+                Row(
+                    Button(
+                        Const("💬 Отклонить"),
+                        id="reject_with_comment",
+                        on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.reject_comment),
+                        when="has_publications",
+                    ),
+                ),
+                when="has_publications",
             ),
 
             Row(
@@ -80,96 +149,7 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
             parse_mode="HTML",
         )
 
-    def get_publication_review_window(self) -> Window:
-        """Окно просмотра публикации для модерации"""
-        return Window(
-            Multi(
-                Const("🔍 <b>Просмотр публикации</b>\n\n"),
-                Format("👤 Автор: <b>{author_name}</b>\n"),
-                Format("🏷 Рубрика: <b>{category_name}</b>\n"),
-                Format("📅 Создано: {created_at}\n"),
-                Format("{current_index}/{total_count}"),
-                Case(
-                    {
-                        True: Format("⏰ Ожидает модерации: <b>{waiting_time}</b>\n"),
-                        False: Const(""),
-                    },
-                    selector="has_waiting_time"
-                ),
-                Const("━━━━━━━━━━━━━━━━━━━━\n"),
-                Format("<b>{publication_name}</b>\n\n"),
-                Format("{publication_text}\n\n"),
-                Case(
-                    {
-                        True: Format("🏷 Теги: {publication_tags}"),
-                        False: Const(""),
-                    },
-                    selector="has_tags"
-                ),
-                Const("\n━━━━━━━━━━━━━━━━━━━━"),
-                Case(
-                    {
-                        True: Format("\n\n📋 <b>История изменений:</b>\n{edit_history}"),
-                        False: Const(""),
-                    },
-                    selector="has_edit_history"
-                ),
-                sep="",
-            ),
-
-            DynamicMedia(
-                selector="preview_image_media",
-                when="has_image",
-            ),
-
-            Column(
-                Row(
-                    Button(
-                        Const("⬅️"),
-                        id="prev_publication",
-                        on_click=self.moderation_publication_service.handle_navigate_publication,
-                        when="has_prev",
-                    ),
-
-                    Button(
-                        Const("➡️"),
-                        id="next_publication",
-                        on_click=self.moderation_publication_service.handle_navigate_publication,
-                        when="has_next",
-                    ),
-                ),
-                Row(
-                    Button(
-                        Const("✏️ Редактировать"),
-                        id="edit",
-                        on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.edit_text_menu),
-                    ),
-                    Button(
-                        Const("✅ Принять"),
-                        id="approve",
-                        on_click=self.moderation_publication_service.handle_approve_publication,
-                    ),
-                ),
-                Row(
-                    Button(
-                        Const("💬 Отклонить"),
-                        id="reject_with_comment",
-                        on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.reject_comment),
-                    ),
-                ),
-            ),
-
-            Button(
-                Const("◀️ К списку"),
-                id="back_to_list",
-                on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.moderation_list),
-            ),
-
-            state=model.ModerationPublicationStates.publication_review,
-            getter=self.moderation_publication_service.get_publication_review_data,
-            parse_mode="HTML",
-        )
-
+    # Остальные методы остаются без изменений
     def get_reject_comment_window(self) -> Window:
         """Окно ввода комментария при отклонении"""
         return Window(
