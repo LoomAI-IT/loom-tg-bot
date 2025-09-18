@@ -93,7 +93,6 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
                 # Подготавливаем медиа для изображения
                 preview_image_media = None
                 if current_pub.image_fid:
-                    from aiogram_dialog.api.entities import MediaAttachment
                     preview_image_media = MediaAttachment(
                         url=f"https://kontur-media.ru/api/publication/{current_pub.id}/image/download",
                         type=ContentType.PHOTO
@@ -902,9 +901,10 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
                 await self._save_publication_changes(dialog_manager)
 
                 # Обновляем оригинальную версию
-                dialog_manager.dialog_data["original_publication"] = dict(
-                    dialog_manager.dialog_data["working_publication"]
-                )
+                dialog_manager.dialog_data["original_publication"] = dialog_manager.dialog_data["working_publication"]
+
+                del dialog_manager.dialog_data["working_publication"]
+
 
                 await loading_message.edit_text("✅ Изменения сохранены!")
                 await asyncio.sleep(2)
