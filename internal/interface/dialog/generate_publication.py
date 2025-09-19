@@ -50,7 +50,8 @@ class IGeneratePublicationDialog(Protocol):
     def get_upload_image_window(self) -> Window: pass
 
     @abstractmethod
-    def get_select_publish_location_window(self) -> Window: pass
+    def get_social_network_select_window(self) -> Window: pass
+
 
 
 class IGeneratePublicationDialogService(Protocol):
@@ -202,20 +203,18 @@ class IGeneratePublicationDialogService(Protocol):
     ) -> None: pass
 
     @abstractmethod
-    async def handle_publish(
-            self,
-            callback: CallbackQuery,
-            button: Any,
-            dialog_manager: DialogManager
-    ) -> None: pass
-
-    @abstractmethod
-    async def handle_platform_toggle(
+    async def handle_toggle_social_network(
             self,
             callback: CallbackQuery,
             checkbox: ManagedCheckbox,
             dialog_manager: DialogManager
     ) -> None: pass
+
+    @abstractmethod
+    async def get_social_network_select_data(
+            self,
+            dialog_manager: DialogManager,
+    ) -> dict: pass
 
     # Геттеры для окон
     @abstractmethod

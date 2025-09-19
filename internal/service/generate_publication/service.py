@@ -708,11 +708,10 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 text = dialog_manager.dialog_data["publication_text"]
 
                 # Подготавливаем данные об изображении
-                image_url = dialog_manager.dialog_data.get("publication_image_url")  # от OpenAI
+                image_url = dialog_manager.dialog_data.get("publication_image_url")
                 image_content = None
                 image_filename = None
 
-                # Если есть пользовательское изображение из Telegram
                 telegram_file_id = dialog_manager.dialog_data.get("custom_image_file_id")
                 if telegram_file_id:
                     file = await self.bot.get_file(telegram_file_id)
@@ -720,17 +719,8 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                     image_content = file_data.read()
                     image_filename = f"user_image_{telegram_file_id[:8]}.jpg"
 
-                    self.logger.info(
-                        "Подготовлено пользовательское изображение для публикации",
-                        {
-                            common.TELEGRAM_CHAT_ID_KEY: callback.message.chat.id,
-                            "file_id": telegram_file_id,
-                            "image_size": len(image_content),
-                        }
-                    )
-
-                # Вызываем HTTP клиент с подготовленными данными
-                await self.kontur_content_client.create_publication(
+                # Создаем публикацию
+                publication_id = await self.kontur_content_client.create_publication(
                     state.organization_id,
                     category_id,
                     state.account_id,
@@ -744,18 +734,30 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                     image_filename=image_filename,
                 )
 
+                # Если выбраны социальные сети, обновляем публикацию
+                selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
+                if selected_networks:
+                    tg_source = selected_networks.get("telegram_checkbox", False)
+                    vk_source = selected_networks.get("vkontakte_checkbox", False)
+
+                    await self.kontur_content_client.change_publication(
+                        publication_id=publication_id,
+                        tg_source=tg_source,
+                        vk_source=vk_source,
+                    )
+
                 self.logger.info(
                     "Публикация сохранена в черновики",
                     {
                         common.TELEGRAM_CHAT_ID_KEY: callback.message.chat.id,
-                        "has_generated_image": bool(image_url),
-                        "has_user_image": bool(image_content),
+                        "publication_id": publication_id,
+                        "tg_source": selected_networks.get("telegram_checkbox", False),
+                        "vk_source": selected_networks.get("vkontakte_checkbox", False),
                     }
                 )
 
                 await callback.answer("💾 Сохранено в черновики!", show_alert=True)
 
-                # Возвращаемся в меню контента
                 await dialog_manager.start(
                     model.ContentMenuStates.content_menu,
                     mode=StartMode.RESET_STACK
@@ -799,16 +801,8 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                     image_content = file_data.read()
                     image_filename = f"user_image_{telegram_file_id[:8]}.jpg"
 
-                    self.logger.info(
-                        "Подготовлено пользовательское изображение для модерации",
-                        {
-                            common.TELEGRAM_CHAT_ID_KEY: callback.message.chat.id,
-                            "file_id": telegram_file_id,
-                            "image_size": len(image_content),
-                        }
-                    )
-
-                await self.kontur_content_client.create_publication(
+                # Создаем публикацию на модерации
+                publication_id = await self.kontur_content_client.create_publication(
                     state.organization_id,
                     category_id,
                     state.account_id,
@@ -816,18 +810,31 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                     name,
                     text,
                     tags,
-                    "moderation",  # статус модерации
+                    "moderation",
                     image_url=image_url,
                     image_content=image_content,
                     image_filename=image_filename,
                 )
 
+                # Если выбраны социальные сети, обновляем публикацию
+                selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
+                if selected_networks:
+                    tg_source = selected_networks.get("telegram_checkbox", False)
+                    vk_source = selected_networks.get("vkontakte_checkbox", False)
+
+                    await self.kontur_content_client.change_publication(
+                        publication_id=publication_id,
+                        tg_source=tg_source,
+                        vk_source=vk_source,
+                    )
+
                 self.logger.info(
                     "Отправлено на модерацию",
                     {
                         common.TELEGRAM_CHAT_ID_KEY: callback.message.chat.id,
-                        "has_generated_image": bool(image_url),
-                        "has_user_image": bool(image_content),
+                        "publication_id": publication_id,
+                        "tg_source": selected_networks.get("telegram_checkbox", False),
+                        "vk_source": selected_networks.get("vkontakte_checkbox", False),
                     }
                 )
 
@@ -845,52 +852,40 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 await callback.answer("❌ Ошибка отправки", show_alert=True)
                 raise
 
-    async def handle_publish(
-            self,
-            callback: CallbackQuery,
-            button: Any,
-            dialog_manager: DialogManager
-    ) -> None:
-        with self.tracer.start_as_current_span(
-                "GeneratePublicationDialogService.handle_publish",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                # TODO: Реализовать
-                await callback.answer("🚧 Функция в разработке", show_alert=True)
-
-                span.set_status(Status(StatusCode.OK))
-            except Exception as err:
-                span.record_exception(err)
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                await callback.answer("❌ Ошибка публикации", show_alert=True)
-                raise
-
-    async def handle_platform_toggle(
+    async def handle_toggle_social_network(
             self,
             callback: CallbackQuery,
             checkbox: ManagedCheckbox,
             dialog_manager: DialogManager
     ) -> None:
         with self.tracer.start_as_current_span(
-                "GeneratePublicationDialogService.handle_platform_toggle",
+                "GeneratePublicationDialogService.handle_toggle_social_network",
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                # Инициализируем словарь выбранных платформ если его нет
-                if "selected_platforms" not in dialog_manager.dialog_data:
-                    dialog_manager.dialog_data["selected_platforms"] = {}
+                # Инициализируем словарь выбранных соцсетей если его нет
+                if "selected_social_networks" not in dialog_manager.dialog_data:
+                    dialog_manager.dialog_data["selected_social_networks"] = {}
 
-                platform_id = checkbox.widget_id
+                network_id = checkbox.widget_id
                 is_checked = checkbox.is_checked()
 
-                dialog_manager.dialog_data["selected_platforms"][platform_id] = is_checked
+                dialog_manager.dialog_data["selected_social_networks"][network_id] = is_checked
+
+                # Проверяем что хотя бы одна соцсеть выбрана
+                selected_networks = dialog_manager.dialog_data["selected_social_networks"]
+                has_selection = any(selected_networks.values())
+
+                if not has_selection:
+                    await callback.answer("⚠️ Выберите хотя бы одну социальную сеть для публикации", show_alert=True)
+                else:
+                    await callback.answer()
 
                 self.logger.info(
-                    "Платформа переключена",
+                    "Социальная сеть переключена",
                     {
                         common.TELEGRAM_CHAT_ID_KEY: callback.message.chat.id,
-                        "platform": platform_id,
+                        "network": network_id,
                         "selected": is_checked,
                     }
                 )
@@ -900,6 +895,54 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
+
+    async def get_social_network_select_data(
+            self,
+            dialog_manager: DialogManager,
+            **kwargs
+    ) -> dict:
+        """Получение данных для окна выбора социальных сетей"""
+        with self.tracer.start_as_current_span(
+                "GeneratePublicationDialogService.get_social_network_select_data",
+                kind=SpanKind.INTERNAL
+        ) as span:
+            try:
+                state = await self._get_state(dialog_manager)
+
+                # Получаем подключенные социальные сети для организации
+                social_networks = await self.kontur_content_client.get_social_networks_by_organization(
+                    organization_id=state.organization_id
+                )
+
+                # Проверяем подключенные сети (только Telegram и VKontakte для публикаций)
+                telegram_connected = self._is_network_connected(social_networks, "telegram")
+                vkontakte_connected = self._is_network_connected(social_networks, "vkontakte")
+
+                data = {
+                    "telegram_connected": telegram_connected,
+                    "vkontakte_connected": vkontakte_connected,
+                    "all_networks_connected": telegram_connected and vkontakte_connected,
+                    "no_connected_networks": not telegram_connected and not vkontakte_connected,
+                }
+
+                span.set_status(Status(StatusCode.OK))
+                return data
+
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
+                raise
+
+    def _is_network_connected(self, social_networks: dict, network_type: str) -> bool:
+        """Проверка подключения социальной сети"""
+        if not social_networks:
+            return False
+        return network_type in social_networks and len(social_networks[network_type]) > 0
+
+    def _has_selected_social_networks(self, dialog_manager: DialogManager) -> bool:
+        """Проверка что выбрана хотя бы одна социальная сеть"""
+        selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
+        return any(selected_networks.values())
 
     async def handle_go_to_content_menu(
             self,

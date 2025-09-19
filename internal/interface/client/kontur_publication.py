@@ -55,8 +55,8 @@ class IKonturContentClient(Protocol):
     async def change_publication(
             self,
             publication_id: int,
-            vk_source_id: int = None,
-            tg_source_id: int = None,
+            vk_source: bool = None,
+            tg_source: bool = None,
             name: str = None,
             text: str = None,
             tags: list[str] = None,

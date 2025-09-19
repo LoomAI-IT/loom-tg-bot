@@ -22,4 +22,4 @@ class GeneratePublicationStates(StatesGroup):
     upload_image = State()
 
     # Публикация
-    select_publish_location = State()
+    social_network_select = State()

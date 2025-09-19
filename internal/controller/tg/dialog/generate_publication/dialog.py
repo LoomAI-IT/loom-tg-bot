@@ -485,52 +485,87 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             parse_mode="HTML",
         )
 
-    def get_select_publish_location_window(self) -> Window:
-        """Окно выбора платформ для публикации"""
+    def get_social_network_select_window(self) -> Window:
+        """Окно выбора социальных сетей для публикации"""
         return Window(
             Multi(
-                Const("🚀 <b>Публикация контента</b>\n\n"),
-                Const("📍 <b>Выберите платформы для публикации:</b>\n\n"),
+                Const("🌐 <b>Выбор социальных сетей</b>\n\n"),
+                Const("📋 <b>Доступные социальные сети для публикаций:</b>\n"),
                 Case(
                     {
-                        True: Format("✅ Выбрано платформ: <b>{selected_count}</b>"),
-                        False: Const("⚠️ <i>Выберите хотя бы одну платформу</i>"),
+                        True: Multi(
+                            Const("📺 Telegram - <b>подключен</b>\n"),
+                            Const("🔗 VKontakte - <b>подключен</b>\n\n"),
+                            Const("✅ <b>Выберите, где опубликовать:</b>"),
+                        ),
+                        False: Multi(
+                            Case(
+                                {
+                                    True: Const("📺 Telegram - <b>подключен</b>\n"),
+                                    False: Const("📺 Telegram - <b>не подключен</b>\n"),
+                                },
+                                selector="telegram_connected"
+                            ),
+                            Case(
+                                {
+                                    True: Const("🔗 VKontakte - <b>подключен</b>\n\n"),
+                                    False: Const("🔗 VKontakte - <b>не подключен</b>\n\n"),
+                                },
+                                selector="vkontakte_connected"
+                            ),
+                            Case(
+                                {
+                                    True: Const("⚠️ <b>Нет подключенных социальных сетей!</b>\n"),
+                                    False: Const("✅ <b>Выберите, где опубликовать:</b>"),
+                                },
+                                selector="no_connected_networks"
+                            ),
+                        ),
                     },
-                    selector="has_selected_platforms"
+                    selector="all_networks_connected"
                 ),
                 sep="",
             ),
 
+            # Чекбоксы для выбора платформ (только для подключенных)
             Column(
                 Checkbox(
+                    Const("📺 Telegram"),
                     Const("✅ Telegram"),
-                    Const("☐ Telegram"),
-                    id="platform_telegram",
-                    default=False,
-                    on_state_changed=self.generate_publication_service.handle_platform_toggle,
-                    when="telegram_available",
+                    id="telegram_checkbox",
+                    default=True,
+                    on_state_changed=self.generate_publication_service.handle_toggle_social_network,
+                    when="telegram_connected",
                 ),
                 Checkbox(
+                    Const("🔗 VKontakte"),
                     Const("✅ VKontakte"),
-                    Const("☐ VKontakte"),
-                    id="platform_vkontakte",
-                    default=False,
-                    on_state_changed=self.generate_publication_service.handle_platform_toggle,
-                    when="vkontakte_available",
+                    id="vkontakte_checkbox",
+                    default=True,
+                    on_state_changed=self.generate_publication_service.handle_toggle_social_network,
+                    when="vkontakte_connected",
                 ),
             ),
 
-            Row(
-                Button(
-                    Const("🚀 Опубликовать"),
-                    id="confirm_publish",
-                    on_click=self.generate_publication_service.handle_publish,
-                    when="has_selected_platforms",
-                ),
-                Back(Const("◀️ Назад")),
+            # Предупреждение если нет подключенных сетей
+            Case(
+                {
+                    True: Multi(
+                        Const(
+                            "\n🔗 <i>Для публикации постов необходимо подключить хотя бы одну социальную сеть в настройках организации.</i>"),
+                    ),
+                    False: Const(""),
+                },
+                selector="no_connected_networks"
             ),
 
-            state=model.GeneratePublicationStates.select_publish_location,
-            getter=self.generate_publication_service.get_publish_locations_data,
+            Button(
+                Const("◀️ Назад"),
+                id="back_to_preview",
+                on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.preview),
+            ),
+
+            state=model.GeneratePublicationStates.social_network_select,
+            getter=self.generate_publication_service.get_social_network_select_data,
             parse_mode="HTML",
         )
