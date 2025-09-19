@@ -1,3 +1,4 @@
+# internal/service/video_cut_draft_content/service.py
 import asyncio
 from datetime import datetime, timezone
 import time
@@ -40,7 +41,6 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
         ) as span:
             try:
                 state = await self._get_state(dialog_manager)
-
                 employee = await self.kontur_employee_client.get_employee_by_account_id(state.account_id)
 
                 # Получаем черновики видео-нарезок для организации
@@ -50,13 +50,23 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
 
                 if not video_cuts:
                     return {
-                        "has_video_cut": False,
-                        "video_cut_count": 0,
+                        "has_video_cuts": False,
+                        "video_cuts_count": 0,
                         "period_text": "",
                     }
 
+                # Получаем подключенные социальные сети для организации
+                social_networks = await self.kontur_content_client.get_social_networks_by_organization(
+                    organization_id=state.organization_id
+                )
+
+                # Определяем подключенные сети
+                youtube_connected = self._is_network_connected(social_networks, "youtube")
+                instagram_connected = self._is_network_connected(social_networks, "instagram")
+
                 # Сохраняем список для навигации
                 dialog_manager.dialog_data["video_cuts_list"] = [video_cut.to_dict() for video_cut in video_cuts]
+                dialog_manager.dialog_data["social_networks"] = social_networks
 
                 # Устанавливаем текущий индекс (0 если не был установлен)
                 if "current_index" not in dialog_manager.dialog_data:
@@ -72,7 +82,7 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                 # Определяем период
                 period_text = self._get_period_text(video_cuts)
 
-                # Подготавливаем медиа для видео (основное изменение)
+                # Подготавливаем медиа для видео
                 video_media = None
                 if current_video_cut.video_fid:
                     cache_buster = int(time.time())
@@ -83,7 +93,6 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                         type=ContentType.VIDEO
                     )
 
-
                 data = {
                     "has_video_cuts": True,
                     "period_text": period_text,
@@ -93,10 +102,14 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                     "video_tags": tags_text,
                     "youtube_reference_short": current_video_cut.youtube_video_reference,
                     "created_at": self._format_datetime(current_video_cut.created_at),
-                    "youtube_enabled": current_video_cut.youtube_source_id,
-                    "instagram_enabled": current_video_cut.inst_source_id,
+                    # Подключение и выбор для YouTube
+                    "youtube_connected": youtube_connected,
+                    "youtube_selected": bool(current_video_cut.youtube_source_id),
+                    # Подключение и выбор для Instagram
+                    "instagram_connected": instagram_connected,
+                    "instagram_selected": bool(current_video_cut.inst_source_id),
                     "has_video": bool(current_video_cut.video_fid),
-                    "video_media": video_media,  # Новое поле для отображения видео
+                    "video_media": video_media,
                     "current_index": current_index + 1,
                     "video_cuts_count": len(video_cuts),
                     "has_prev": current_index > 0,
@@ -114,6 +127,8 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                     "youtube_reference_url": current_video_cut.youtube_video_reference,
                     "video_fid": current_video_cut.video_fid,
                     "created_at": current_video_cut.created_at,
+                    "youtube_source_id": current_video_cut.youtube_source_id,
+                    "inst_source_id": current_video_cut.inst_source_id,
                 }
 
                 # Копируем в рабочую версию, если ее еще нет
@@ -127,6 +142,8 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                         common.TELEGRAM_CHAT_ID_KEY: self._get_chat_id(dialog_manager),
                         "video_cuts_count": len(video_cuts),
                         "current_index": current_index,
+                        "youtube_connected": youtube_connected,
+                        "instagram_connected": instagram_connected,
                     }
                 )
 
@@ -204,6 +221,11 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                 original_video_cut = dialog_manager.dialog_data["original_video_cut"]
                 video_cut_id = original_video_cut["id"]
 
+                # Проверяем что выбрана хотя бы одна соцсеть
+                if not self._has_selected_networks(dialog_manager):
+                    await callback.answer("❌ Выберите хотя бы одну социальную сеть для публикации", show_alert=True)
+                    return
+
                 # Отправляем на модерацию через API
                 await self.kontur_content_client.send_video_cut_to_moderation(
                     video_cut_id=video_cut_id
@@ -248,10 +270,15 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                 original_video_cut = dialog_manager.dialog_data["original_video_cut"]
                 video_cut_id = original_video_cut["id"]
 
+                # Проверяем что выбрана хотя бы одна соцсеть
+                if not self._has_selected_networks(dialog_manager):
+                    await callback.answer("❌ Выберите хотя бы одну социальную сеть для публикации", show_alert=True)
+                    return
+
                 # Публикуем немедленно через API
-                # await self.kontur_content_client.publish_video_cut_now(
-                #     video_cut_id=video_cut_id
-                # )
+                await self.kontur_content_client.publish_video_cut(
+                    video_cut_id=video_cut_id
+                )
 
                 self.logger.info(
                     "Черновик видео опубликован",
@@ -289,7 +316,7 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                 video_cut_id = original_video_cut["id"]
 
                 # Удаляем черновик через API
-                # await self.kontur_content_client.delete_video_cut_video_cut(
+                # await self.kontur_content_client.delete_video_cut(
                 #     video_cut_id=video_cut_id
                 # )
 
@@ -341,7 +368,7 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                 video_media = None
                 if working_video_cut.get("video_fid"):
                     cache_buster = int(time.time())
-                    video_url = f"https://kontur-media.ru/api/content/video-cut/{working_video_cut.get("id")}/download?v={cache_buster}"
+                    video_url = f"https://kontur-media.ru/api/content/video-cut/{working_video_cut.get('id')}/download?v={cache_buster}"
 
                     video_media = MediaAttachment(
                         url=video_url,
@@ -523,38 +550,55 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                 await message.answer("❌ Ошибка при сохранении тегов")
                 raise
 
-    async def handle_toggle_platform(
+    async def handle_toggle_social_network(
             self,
             callback: CallbackQuery,
             checkbox: Any,
             dialog_manager: DialogManager
     ) -> None:
         with self.tracer.start_as_current_span(
-                "DraftVideoCutsDialogService.handle_toggle_platform",
+                "DraftVideoCutsDialogService.handle_toggle_social_network",
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
                 working_video_cut = dialog_manager.dialog_data["working_video_cut"]
+                social_networks = dialog_manager.dialog_data.get("social_networks", {})
 
                 if checkbox.widget_id == "youtube_checkbox":
+                    if not self._is_network_connected(social_networks, "youtube"):
+                        await callback.answer("❌ YouTube не подключен", show_alert=True)
+                        return
+
                     current_value = working_video_cut.get("youtube_source_id")
                     if current_value:
                         working_video_cut["youtube_source_id"] = None
                     else:
-                        working_video_cut["youtube_source_id"] = 0
+                        # Получаем ID источника для YouTube из подключенных сетей
+                        youtube_source_id = self._get_network_source_id(social_networks, "youtube")
+                        working_video_cut["youtube_source_id"] = youtube_source_id
 
                 elif checkbox.widget_id == "instagram_checkbox":
+                    if not self._is_network_connected(social_networks, "instagram"):
+                        await callback.answer("❌ Instagram не подключен", show_alert=True)
+                        return
+
                     current_value = working_video_cut.get("inst_source_id")
                     if current_value:
                         working_video_cut["inst_source_id"] = None
                     else:
-                        working_video_cut["inst_source_id"] = 0
+                        # Получаем ID источника для Instagram из подключенных сетей
+                        instagram_source_id = self._get_network_source_id(social_networks, "instagram")
+                        working_video_cut["inst_source_id"] = instagram_source_id
 
                 # Проверяем, что хотя бы одна платформа включена
                 youtube_enabled = bool(working_video_cut.get("youtube_source_id"))
                 instagram_enabled = bool(working_video_cut.get("inst_source_id"))
 
-                await callback.answer()
+                if not youtube_enabled and not instagram_enabled:
+                    await callback.answer("⚠️ Выберите хотя бы одну платформу для публикации", show_alert=True)
+                else:
+                    await callback.answer()
+
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
@@ -641,33 +685,44 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
             "current_tags": ", ".join(tags) if tags else "",
         }
 
-    async def get_publication_settings_data(
+    async def get_social_network_select_data(
             self,
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        """Данные для окна настроек публикации"""
-        working_video_cut = dialog_manager.dialog_data.get("working_video_cut", {})
-        settings = working_video_cut.get("publication_settings", {})
-
-        # Проверяем наличие запланированного времени
-        scheduled_time = settings.get("scheduled_time")
-        is_scheduled = bool(scheduled_time)
-        scheduled_time_text = ""
-
-        if is_scheduled:
+        """Данные для окна выбора социальных сетей"""
+        with self.tracer.start_as_current_span(
+                "DraftVideoCutsDialogService.get_social_network_select_data",
+                kind=SpanKind.INTERNAL
+        ) as span:
             try:
-                dt = datetime.fromisoformat(scheduled_time)
-                scheduled_time_text = dt.strftime("%d.%m.%Y %H:%M")
-            except:
-                scheduled_time_text = scheduled_time
+                working_video_cut = dialog_manager.dialog_data.get("working_video_cut", {})
+                social_networks = dialog_manager.dialog_data.get("social_networks", {})
 
-        return {
-            "youtube_enabled": settings.get("youtube_enabled", True),
-            "instagram_enabled": settings.get("instagram_enabled", True),
-            "is_scheduled": is_scheduled,
-            "scheduled_time": scheduled_time_text,
-        }
+                # Проверяем подключенные сети
+                youtube_connected = self._is_network_connected(social_networks, "youtube")
+                instagram_connected = self._is_network_connected(social_networks, "instagram")
+
+                # Проверяем выбранные сети
+                youtube_selected = bool(working_video_cut.get("youtube_source_id"))
+                instagram_selected = bool(working_video_cut.get("inst_source_id"))
+
+                data = {
+                    "youtube_connected": youtube_connected,
+                    "instagram_connected": instagram_connected,
+                    "youtube_selected": youtube_selected,
+                    "instagram_selected": instagram_selected,
+                    "all_networks_connected": youtube_connected and instagram_connected,
+                    "no_connected_networks": not youtube_connected and not instagram_connected,
+                }
+
+                span.set_status(Status(StatusCode.OK))
+                return data
+
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
+                raise
 
     # Вспомогательные методы
 
@@ -686,6 +741,30 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                 return True
 
         return False
+
+    def _has_selected_networks(self, dialog_manager: DialogManager) -> bool:
+        """Проверка что выбрана хотя бы одна социальная сеть"""
+        working_video_cut = dialog_manager.dialog_data.get("working_video_cut", {})
+        youtube_selected = bool(working_video_cut.get("youtube_source_id"))
+        instagram_selected = bool(working_video_cut.get("inst_source_id"))
+        return youtube_selected or instagram_selected
+
+    def _is_network_connected(self, social_networks: dict, network_type: str) -> bool:
+        """Проверка подключения социальной сети"""
+        if not social_networks:
+            return False
+
+        # Предполагаем что API возвращает структуру типа:
+        # {"youtube": [{"id": 1, "name": "Channel1"}], "instagram": [{"id": 2, "name": "Account1"}]}
+        return network_type in social_networks and len(social_networks[network_type]) > 0
+
+    def _get_network_source_id(self, social_networks: dict, network_type: str) -> int:
+        """Получение ID источника для социальной сети"""
+        if not self._is_network_connected(social_networks, network_type):
+            return None
+
+        # Берем первый доступный источник для сети
+        return social_networks[network_type][0].get("id")
 
     async def _save_video_cut_changes(self, dialog_manager: DialogManager) -> None:
         working_video_cut = dialog_manager.dialog_data["working_video_cut"]
@@ -740,14 +819,14 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
         except:
             return str(dt)
 
-    def _get_period_text(self, video_video_cuts: list) -> str:
+    def _get_period_text(self, video_cuts: list) -> str:
         """Определение периода черновиков"""
-        if not video_video_cuts:
+        if not video_cuts:
             return "Нет данных"
 
         # Находим самый старый и новый черновик
         dates = []
-        for video_cut in video_video_cuts:
+        for video_cut in video_cuts:
             if hasattr(video_cut, 'created_at') and video_cut.created_at:
                 dates.append(video_cut.created_at)
 
