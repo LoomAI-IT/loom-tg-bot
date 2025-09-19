@@ -1,9 +1,8 @@
 import asyncio
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 import time
 from typing import Any
 
-from aiogram import Bot
 from aiogram_dialog.api.entities import MediaAttachment
 from aiogram.types import CallbackQuery, Message, ContentType
 from aiogram_dialog import DialogManager, StartMode
@@ -400,7 +399,7 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                 except:
                     pass
 
-                await dialog_manager.switch_to(model.DraftVideoCutsStates.video_cut_list)
+                await dialog_manager.switch_to(model.VideoCutsDraftStates.video_cut_list)
 
                 span.set_status(Status(StatusCode.OK))
 
@@ -437,7 +436,7 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
 
                 await message.delete()
                 await message.answer("✅ Название обновлено!")
-                await dialog_manager.switch_to(model.DraftVideoCutsStates.edit_preview)
+                await dialog_manager.switch_to(model.VideoCutsDraftStates.edit_preview)
 
                 span.set_status(Status(StatusCode.OK))
 
@@ -474,7 +473,7 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
 
                 await message.delete()
                 await message.answer("✅ Описание обновлено!")
-                await dialog_manager.switch_to(model.DraftVideoCutsStates.edit_preview)
+                await dialog_manager.switch_to(model.VideoCutsDraftStates.edit_preview)
 
                 span.set_status(Status(StatusCode.OK))
 
@@ -514,7 +513,7 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
 
                 await message.delete()
                 await message.answer(f"✅ Теги обновлены ({len(new_tags)} шт.)")
-                await dialog_manager.switch_to(model.DraftVideoCutsStates.edit_preview)
+                await dialog_manager.switch_to(model.VideoCutsDraftStates.edit_preview)
 
                 span.set_status(Status(StatusCode.OK))
 
@@ -575,7 +574,7 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                await dialog_manager.switch_to(model.DraftVideoCutsStates.video_cut_list)
+                await dialog_manager.switch_to(model.VideoCutsDraftStates.video_cut_list)
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
