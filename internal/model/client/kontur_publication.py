@@ -9,8 +9,8 @@ class Publication:
     creator_id: int
     moderator_id: int | None
 
-    vk_source_id: int | None
-    tg_source_id: int | None
+    vk_source: bool | None
+    tg_source: bool | None
 
     text_reference: str
     name: str
@@ -35,8 +35,8 @@ class Publication:
             "category_id": self.category_id,
             "creator_id": self.creator_id,
             "moderator_id": self.moderator_id,
-            "vk_source_id": self.vk_source_id,
-            "tg_source_id": self.tg_source_id,
+            "vk_source": self.vk_source,
+            "tg_source": self.tg_source,
             "text_reference": self.text_reference,
             "name": self.name,
             "text": self.text,
@@ -83,8 +83,8 @@ class VideoCut:
     creator_id: int
     moderator_id: int
 
-    inst_source_id: int
-    youtube_source_id: int
+    inst_source: bool
+    youtube_source: bool
 
     youtube_video_reference: str
     name: str
@@ -109,8 +109,8 @@ class VideoCut:
             "organization_id": self.organization_id,
             "creator_id": self.creator_id,
             "moderator_id": self.moderator_id,
-            "inst_source_id": self.inst_source_id,
-            "youtube_source_id": self.youtube_source_id,
+            "inst_source": self.inst_source,
+            "youtube_source": self.youtube_source,
             "youtube_video_reference": self.youtube_video_reference,
             "name": self.name,
             "description": self.description,

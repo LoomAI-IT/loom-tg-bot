@@ -1,10 +1,12 @@
-
 import asyncio
-from datetime import datetime, timezone
 import time
+from datetime import datetime, timezone
 from typing import Any
 
-from aiogram_dialog.api.entities import MediaAttachment
+from aiogram_dialog.api.entities import MediaId, MediaAttachment
+from aiogram_dialog.widgets.input import MessageInput
+
+from aiogram import Bot
 from aiogram.types import CallbackQuery, Message, ContentType
 from aiogram_dialog import DialogManager, StartMode
 
@@ -13,10 +15,11 @@ from opentelemetry.trace import SpanKind, Status, StatusCode
 from internal import interface, model, common
 
 
-class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
+class ModerationPublicationDialogService(interface.IModerationPublicationDialogService):
     def __init__(
             self,
             tel: interface.ITelemetry,
+            bot: Bot,
             state_repo: interface.IStateRepo,
             kontur_employee_client: interface.IKonturEmployeeClient,
             kontur_organization_client: interface.IKonturOrganizationClient,
@@ -24,126 +27,130 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
+        self.bot = bot
         self.state_repo = state_repo
         self.kontur_employee_client = kontur_employee_client
         self.kontur_organization_client = kontur_organization_client
         self.kontur_content_client = kontur_content_client
 
-    async def get_video_cut_list_data(
+    async def get_moderation_list_data(
             self,
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        """Получение данных для основного окна - сразу показываем первую видео-нарезку"""
+        """Получение данных для основного окна - сразу показываем первую публикацию"""
         with self.tracer.start_as_current_span(
-                "DraftVideoCutsDialogService.get_video_cut_list_data",
+                "ModerationPublicationDialogService.get_moderation_list_data",
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
                 state = await self._get_state(dialog_manager)
-                employee = await self.kontur_employee_client.get_employee_by_account_id(state.account_id)
 
-                # Получаем черновики видео-нарезок для организации
-                video_cuts = await self.kontur_content_client.get_video_cuts_by_organization(
+                # Получаем публикации на модерации для организации
+                publications = await self.kontur_content_client.get_publications_by_organization(
                     organization_id=state.organization_id
                 )
 
-                if not video_cuts:
+                # Фильтруем только те, что на модерации
+                moderation_publications = [
+                    pub.to_dict() for pub in publications
+                    if pub.moderation_status == "moderation"
+                ]
+
+                if not moderation_publications:
                     return {
-                        "has_video_cuts": False,
-                        "video_cuts_count": 0,
+                        "has_publications": False,
+                        "publications_count": 0,
                         "period_text": "",
                     }
 
-                # Получаем подключенные социальные сети для организации
-                social_networks = await self.kontur_content_client.get_social_networks_by_organization(
-                    organization_id=state.organization_id
-                )
-
-                # Определяем подключенные сети
-                youtube_connected = self._is_network_connected(social_networks, "youtube")
-                instagram_connected = self._is_network_connected(social_networks, "instagram")
-
                 # Сохраняем список для навигации
-                dialog_manager.dialog_data["video_cuts_list"] = [video_cut.to_dict() for video_cut in video_cuts]
-                dialog_manager.dialog_data["social_networks"] = social_networks
+                dialog_manager.dialog_data["moderation_list"] = moderation_publications
 
                 # Устанавливаем текущий индекс (0 если не был установлен)
                 if "current_index" not in dialog_manager.dialog_data:
                     dialog_manager.dialog_data["current_index"] = 0
 
                 current_index = dialog_manager.dialog_data["current_index"]
-                current_video_cut = model.VideoCut(**dialog_manager.dialog_data["video_cuts_list"][current_index])
+                current_pub = model.Publication(**moderation_publications[current_index])
+
+                # Получаем информацию об авторе
+                author = await self.kontur_employee_client.get_employee_by_account_id(
+                    current_pub.creator_id
+                )
+
+                # Получаем категорию
+                category = await self.kontur_content_client.get_category_by_id(
+                    current_pub.category_id
+                )
 
                 # Форматируем теги
-                tags = current_video_cut.tags or []
+                tags = current_pub.tags or []
                 tags_text = ", ".join(tags) if tags else ""
 
-                # Определяем период
-                period_text = self._get_period_text(video_cuts)
+                # Рассчитываем время ожидания
+                waiting_time = self._calculate_waiting_time_text(current_pub.created_at)
 
-                # Подготавливаем медиа для видео
-                video_media = None
-                if current_video_cut.video_fid:
+                # Подготавливаем медиа для изображения
+                preview_image_media = None
+                if current_pub.image_fid:
                     cache_buster = int(time.time())
-                    video_url = f"https://kontur-media.ru/api/content/video-cut/{current_video_cut.id}/download?v={cache_buster}"
+                    image_url = f"https://kontur-media.ru/api/content/publication/{current_pub.id}/image/download?v={cache_buster}"
 
-                    video_media = MediaAttachment(
-                        url=video_url,
-                        type=ContentType.VIDEO
+                    preview_image_media = MediaAttachment(
+                        url=image_url,
+                        type=ContentType.PHOTO
                     )
 
+                # Определяем период
+                period_text = self._get_period_text(moderation_publications)
+
                 data = {
-                    "has_video_cuts": True,
+                    "has_publications": True,
+                    "publications_count": len(moderation_publications),
                     "period_text": period_text,
-                    "video_name": current_video_cut.name or "Без названия",
-                    "video_description": current_video_cut.description or "Описание отсутствует",
+                    "author_name": author.name,
+                    "category_name": category.name,
+                    "created_at": self._format_datetime(current_pub.created_at),
+                    "has_waiting_time": bool(waiting_time),
+                    "waiting_time": waiting_time,
+                    "publication_name": current_pub.name,
+                    "publication_text": current_pub.text,
                     "has_tags": bool(tags),
-                    "video_tags": tags_text,
-                    "youtube_reference_short": current_video_cut.youtube_video_reference,
-                    "created_at": self._format_datetime(current_video_cut.created_at),
-                    # Подключение и выбор для YouTube
-                    "youtube_connected": youtube_connected,
-                    "youtube_selected": bool(current_video_cut.youtube_source_id),
-                    # Подключение и выбор для Instagram
-                    "instagram_connected": instagram_connected,
-                    "instagram_selected": bool(current_video_cut.inst_source_id),
-                    "has_video": bool(current_video_cut.video_fid),
-                    "video_media": video_media,
+                    "publication_tags": tags_text,
+                    "has_image": bool(current_pub.image_fid),
+                    "preview_image_media": preview_image_media,
                     "current_index": current_index + 1,
-                    "video_cuts_count": len(video_cuts),
+                    "total_count": len(moderation_publications),
                     "has_prev": current_index > 0,
-                    "has_next": current_index < len(video_cuts) - 1,
-                    "can_publish": False if employee.required_moderation else True,
-                    "not_can_publish": True if employee.required_moderation else False
+                    "has_next": current_index < len(moderation_publications) - 1,
                 }
 
-                # Сохраняем данные текущего черновика для редактирования
-                dialog_manager.dialog_data["original_video_cut"] = {
-                    "id": current_video_cut.id,
-                    "name": current_video_cut.name,
-                    "description": current_video_cut.description,
-                    "tags": current_video_cut.tags or [],
-                    "youtube_reference_url": current_video_cut.youtube_video_reference,
-                    "video_fid": current_video_cut.video_fid,
-                    "created_at": current_video_cut.created_at,
-                    "youtube_source_id": current_video_cut.youtube_source_id,
-                    "inst_source_id": current_video_cut.inst_source_id,
+                # Сохраняем данные текущей публикации для редактирования
+                dialog_manager.dialog_data["original_publication"] = {
+                    "id": current_pub.id,
+                    "creator_id": current_pub.creator_id,
+                    "name": current_pub.name,
+                    "text": current_pub.text,
+                    "tags": current_pub.tags or [],
+                    "category_id": current_pub.category_id,
+                    "image_url": f"https://kontur-media.ru/api/publication/{current_pub.id}/image/download" if current_pub.image_fid else None,
+                    "has_image": bool(current_pub.image_fid),
+                    "moderation_status": current_pub.moderation_status,
+                    "created_at": current_pub.created_at,
                 }
 
                 # Копируем в рабочую версию, если ее еще нет
-                if "working_video_cut" not in dialog_manager.dialog_data:
-                    dialog_manager.dialog_data["working_video_cut"] = dict(
-                        dialog_manager.dialog_data["original_video_cut"])
+                if "working_publication" not in dialog_manager.dialog_data:
+                    dialog_manager.dialog_data["working_publication"] = dict(
+                        dialog_manager.dialog_data["original_publication"])
 
                 self.logger.info(
-                    "Список черновиков видео загружен",
+                    "Список модерации загружен",
                     {
                         common.TELEGRAM_CHAT_ID_KEY: self._get_chat_id(dialog_manager),
-                        "video_cuts_count": len(video_cuts),
+                        "publications_count": len(moderation_publications),
                         "current_index": current_index,
-                        "youtube_connected": youtube_connected,
-                        "instagram_connected": instagram_connected,
                     }
                 )
 
@@ -155,25 +162,25 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
-    async def handle_navigate_video_cut(
+    async def handle_navigate_publication(
             self,
             callback: CallbackQuery,
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
         with self.tracer.start_as_current_span(
-                "DraftVideoCutsDialogService.handle_navigate_video_cut",
+                "ModerationPublicationDialogService.handle_navigate_publication",
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
                 current_index = dialog_manager.dialog_data.get("current_index", 0)
-                video_cuts_list = dialog_manager.dialog_data.get("video_cuts_list", [])
+                moderation_list = dialog_manager.dialog_data.get("moderation_list", [])
 
                 # Определяем направление навигации
-                if button.widget_id == "prev_video_cut":
+                if button.widget_id == "prev_publication":
                     new_index = max(0, current_index - 1)
-                else:  # next_video_cut
-                    new_index = min(len(video_cuts_list) - 1, current_index + 1)
+                else:  # next_publication
+                    new_index = min(len(moderation_list) - 1, current_index + 1)
 
                 if new_index == current_index:
                     await callback.answer()
@@ -182,11 +189,11 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                 # Обновляем индекс
                 dialog_manager.dialog_data["current_index"] = new_index
 
-                # Сбрасываем рабочие данные для нового черновика
-                dialog_manager.dialog_data.pop("working_video_cut", None)
+                # Сбрасываем рабочие данные для новой публикации
+                dialog_manager.dialog_data.pop("working_publication", None)
 
                 self.logger.info(
-                    "Навигация по черновикам видео",
+                    "Навигация по публикациям",
                     {
                         common.TELEGRAM_CHAT_ID_KEY: callback.message.chat.id,
                         "from_index": current_index,
@@ -203,142 +210,206 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                 await callback.answer("❌ Ошибка навигации", show_alert=True)
                 raise
 
-    async def handle_send_to_moderation(
+    async def handle_approve_publication(
             self,
             callback: CallbackQuery,
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
         with self.tracer.start_as_current_span(
-                "DraftVideoCutsDialogService.handle_send_to_moderation",
+                "ModerationPublicationDialogService.handle_approve_publication",
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                # Если есть несохраненные изменения, сохраняем их
+                # Если есть несохраненные изменения, сохраняем их перед одобрением
                 if self._has_changes(dialog_manager):
-                    await self._save_video_cut_changes(dialog_manager)
+                    await self._save_publication_changes(dialog_manager)
 
-                original_video_cut = dialog_manager.dialog_data["original_video_cut"]
-                video_cut_id = original_video_cut["id"]
+                original_pub = dialog_manager.dialog_data["original_publication"]
+                publication_id = original_pub["id"]
+                state = await self._get_state(dialog_manager)
 
-                # Проверяем что выбрана хотя бы одна соцсеть
-                if not self._has_selected_networks(dialog_manager):
-                    await callback.answer("❌ Выберите хотя бы одну социальную сеть для публикации", show_alert=True)
-                    return
-
-                # Отправляем на модерацию через API
-                await self.kontur_content_client.send_video_cut_to_moderation(
-                    video_cut_id=video_cut_id
+                # Одобряем публикацию через API
+                await self.kontur_content_client.moderate_publication(
+                    publication_id=publication_id,
+                    moderator_id=state.account_id,
+                    moderation_status="approved",
                 )
 
                 self.logger.info(
-                    "Черновик видео отправлен на модерацию",
+                    "Публикация одобрена",
                     {
                         common.TELEGRAM_CHAT_ID_KEY: callback.message.chat.id,
-                        "video_cut_id": video_cut_id,
+                        "publication_id": publication_id,
                     }
                 )
 
-                await callback.answer("📤 Отправлено на модерацию!", show_alert=True)
+                await callback.answer("✅ Публикация одобрена!", show_alert=True)
 
-                # Удаляем черновик из списка (он больше не черновик)
-                await self._remove_current_video_cut_from_list(dialog_manager)
+                # Удаляем одобренную публикацию из списка
+                moderation_list = dialog_manager.dialog_data.get("moderation_list", [])
+                current_index = dialog_manager.dialog_data.get("current_index", 0)
 
+                if moderation_list and current_index < len(moderation_list):
+                    moderation_list.pop(current_index)
+
+                    # Корректируем индекс если нужно
+                    if current_index >= len(moderation_list) and moderation_list:
+                        dialog_manager.dialog_data["current_index"] = len(moderation_list) - 1
+                    elif not moderation_list:
+                        dialog_manager.dialog_data["current_index"] = 0
+
+                    # Сбрасываем рабочие данные
+                    dialog_manager.dialog_data.pop("working_publication", None)
+
+                # Обновляем экран (останемся в том же состоянии)
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-                await callback.answer("❌ Ошибка отправки", show_alert=True)
+                await callback.answer("❌ Ошибка при одобрении", show_alert=True)
                 raise
 
-    async def handle_publish_now(
+    async def get_reject_comment_data(
             self,
-            callback: CallbackQuery,
-            button: Any,
-            dialog_manager: DialogManager
-    ) -> None:
+            dialog_manager: DialogManager,
+            **kwargs
+    ) -> dict:
         with self.tracer.start_as_current_span(
-                "DraftVideoCutsDialogService.handle_publish_now",
+                "ModerationPublicationDialogService.get_reject_comment_data",
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                # Если есть несохраненные изменения, сохраняем их
-                if self._has_changes(dialog_manager):
-                    await self._save_video_cut_changes(dialog_manager)
+                original_pub = dialog_manager.dialog_data.get("original_publication", {})
 
-                original_video_cut = dialog_manager.dialog_data["original_video_cut"]
-                video_cut_id = original_video_cut["id"]
-
-                # Проверяем что выбрана хотя бы одна соцсеть
-                if not self._has_selected_networks(dialog_manager):
-                    await callback.answer("❌ Выберите хотя бы одну социальную сеть для публикации", show_alert=True)
-                    return
-
-                # Публикуем немедленно через API
-                await self.kontur_content_client.publish_video_cut(
-                    video_cut_id=video_cut_id
+                # Получаем информацию об авторе
+                author = await self.kontur_employee_client.get_employee_by_account_id(
+                    original_pub["creator_id"],
                 )
 
-                self.logger.info(
-                    "Черновик видео опубликован",
-                    {
-                        common.TELEGRAM_CHAT_ID_KEY: callback.message.chat.id,
-                        "video_cut_id": video_cut_id,
-                    }
-                )
-
-                await callback.answer("🚀 Опубликовано!", show_alert=True)
-
-                # Удаляем черновик из списка
-                await self._remove_current_video_cut_from_list(dialog_manager)
+                data = {
+                    "publication_name": original_pub["name"],
+                    "author_name": author.name,
+                    "has_comment": bool(dialog_manager.dialog_data.get("reject_comment")),
+                    "reject_comment": dialog_manager.dialog_data.get("reject_comment", ""),
+                }
 
                 span.set_status(Status(StatusCode.OK))
+                return data
 
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-                await callback.answer("❌ Ошибка публикации", show_alert=True)
                 raise
 
-    async def handle_delete_video_cut(
+    async def handle_reject_comment_input(
             self,
-            callback: CallbackQuery,
-            button: Any,
-            dialog_manager: DialogManager
+            message: Message,
+            widget: Any,
+            dialog_manager: DialogManager,
+            comment: str
     ) -> None:
         with self.tracer.start_as_current_span(
-                "DraftVideoCutsDialogService.handle_delete_video_cut",
+                "ModerationPublicationDialogService.handle_reject_comment_input",
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                original_video_cut = dialog_manager.dialog_data["original_video_cut"]
-                video_cut_id = original_video_cut["id"]
+                comment = comment.strip()
 
-                # Удаляем черновик через API
-                # await self.kontur_content_client.delete_video_cut(
-                #     video_cut_id=video_cut_id
-                # )
+                if not comment:
+                    await message.answer("❌ Комментарий не может быть пустым")
+                    return
+
+                if len(comment) < 10:
+                    await message.answer("❌ Слишком короткий комментарий. Укажите причину подробнее.")
+                    return
+
+                if len(comment) > 500:
+                    await message.answer("❌ Слишком длинный комментарий (макс. 500 символов)")
+                    return
+
+                dialog_manager.dialog_data["reject_comment"] = comment
+
+                # Удаляем сообщение с комментарием
+                await message.delete()
 
                 self.logger.info(
-                    "Черновик видео удален",
+                    "Комментарий отклонения введен",
                     {
-                        common.TELEGRAM_CHAT_ID_KEY: callback.message.chat.id,
-                        "video_cut_id": video_cut_id,
+                        common.TELEGRAM_CHAT_ID_KEY: message.chat.id,
+                        "comment_length": len(comment),
                     }
                 )
-
-                await callback.answer("🗑 Черновик удален", show_alert=True)
-
-                # Удаляем из списка
-                await self._remove_current_video_cut_from_list(dialog_manager)
 
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-                await callback.answer("❌ Ошибка удаления", show_alert=True)
+                await message.answer("❌ Ошибка при сохранении комментария")
+                raise
+
+    async def handle_send_rejection(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        with self.tracer.start_as_current_span(
+                "ModerationPublicationDialogService.handle_send_rejection",
+                kind=SpanKind.INTERNAL
+        ) as span:
+            try:
+                state = await self._get_state(dialog_manager)
+                original_pub = dialog_manager.dialog_data["original_publication"]
+                publication_id = original_pub["id"]
+                reject_comment = dialog_manager.dialog_data.get("reject_comment", "Нет комментария")
+
+                # Отклоняем публикацию через API
+                await self.kontur_content_client.moderate_publication(
+                    publication_id=publication_id,
+                    moderator_id=state.account_id,
+                    moderation_status="rejected",
+                    moderation_comment=reject_comment,
+                )
+
+                self.logger.info(
+                    "Публикация отклонена",
+                    {
+                        common.TELEGRAM_CHAT_ID_KEY: callback.message.chat.id,
+                        "publication_id": publication_id,
+                        "reason": reject_comment,
+                    }
+                )
+
+                await callback.answer("❌ Публикация отклонена", show_alert=True)
+
+                # Удаляем отклоненную публикацию из списка
+                moderation_list = dialog_manager.dialog_data.get("moderation_list", [])
+                current_index = dialog_manager.dialog_data.get("current_index", 0)
+
+                if moderation_list and current_index < len(moderation_list):
+                    moderation_list.pop(current_index)
+
+                    # Корректируем индекс если нужно
+                    if current_index >= len(moderation_list) and moderation_list:
+                        dialog_manager.dialog_data["current_index"] = len(moderation_list) - 1
+                    elif not moderation_list:
+                        dialog_manager.dialog_data["current_index"] = 0
+
+                    # Сбрасываем рабочие данные
+                    dialog_manager.dialog_data.pop("working_publication", None)
+
+                # Возвращаемся к основному окну
+                await dialog_manager.switch_to(model.ModerationPublicationStates.moderation_list)
+
+                span.set_status(Status(StatusCode.OK))
+
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
+                await callback.answer("❌ Ошибка при отклонении", show_alert=True)
                 raise
 
     async def get_edit_preview_data(
@@ -348,42 +419,57 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
     ) -> dict:
         """Получение данных для окна редактирования с превью"""
         with self.tracer.start_as_current_span(
-                "DraftVideoCutsDialogService.get_edit_preview_data",
+                "ModerationPublicationDialogService.get_edit_preview_data",
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
                 # Инициализируем рабочую версию если ее нет
-                if "working_video_cut" not in dialog_manager.dialog_data:
-                    dialog_manager.dialog_data["working_video_cut"] = dict(
-                        dialog_manager.dialog_data["original_video_cut"]
+                if "working_publication" not in dialog_manager.dialog_data:
+                    dialog_manager.dialog_data["working_publication"] = dict(
+                        dialog_manager.dialog_data["original_publication"]
                     )
 
-                working_video_cut = dialog_manager.dialog_data["working_video_cut"]
-                original_video_cut = dialog_manager.dialog_data["original_video_cut"]
+                working_pub = dialog_manager.dialog_data["working_publication"]
+                original_pub = dialog_manager.dialog_data["original_publication"]
+
+                # Получаем информацию об авторе
+                author = await self.kontur_employee_client.get_employee_by_account_id(
+                    working_pub["creator_id"]
+                )
+
+                # Получаем категорию
+                category = await self.kontur_content_client.get_category_by_id(
+                    working_pub["category_id"]
+                )
 
                 # Форматируем теги
-                tags = working_video_cut.get("tags", [])
+                tags = working_pub.get("tags", [])
                 tags_text = ", ".join(tags) if tags else ""
 
-                video_media = None
-                if working_video_cut.get("video_fid"):
-                    cache_buster = int(time.time())
-                    video_url = f"https://kontur-media.ru/api/content/video-cut/{working_video_cut.get('id')}/download?v={cache_buster}"
-
-                    video_media = MediaAttachment(
-                        url=video_url,
-                        type=ContentType.VIDEO
-                    )
+                # Подготавливаем медиа для изображения
+                preview_image_media = None
+                if working_pub.get("has_image"):
+                    if working_pub.get("custom_image_file_id"):
+                        preview_image_media = MediaAttachment(
+                            file_id=MediaId(working_pub["custom_image_file_id"]),
+                            type=ContentType.PHOTO
+                        )
+                    elif working_pub.get("image_url"):
+                        preview_image_media = MediaAttachment(
+                            url=working_pub["image_url"],
+                            type=ContentType.PHOTO
+                        )
 
                 data = {
-                    "created_at": self._format_datetime(original_video_cut["created_at"]),
-                    "youtube_reference": working_video_cut["youtube_reference_url"],
-                    "video_name": working_video_cut["name"] or "Без названия",
-                    "video_description": working_video_cut["description"] or "Описание отсутствует",
+                    "author_name": author.name,
+                    "category_name": category.name,
+                    "created_at": self._format_datetime(original_pub["created_at"]),
+                    "publication_name": working_pub["name"],
+                    "publication_text": working_pub["text"],
                     "has_tags": bool(tags),
-                    "video_tags": tags_text,
-                    "has_video": bool(working_video_cut.get("video_fid")),
-                    "video_media": video_media,
+                    "publication_tags": tags_text,
+                    "has_image": working_pub.get("has_image", False),
+                    "preview_image_media": preview_image_media,
                     "has_changes": self._has_changes(dialog_manager),
                 }
 
@@ -395,46 +481,102 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
-    async def handle_save_changes(
+    async def handle_regenerate_text(
             self,
             callback: CallbackQuery,
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
         with self.tracer.start_as_current_span(
-                "DraftVideoCutsDialogService.handle_save_changes",
+                "ModerationPublicationDialogService.handle_regenerate_text",
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                if not self._has_changes(dialog_manager):
-                    await callback.answer("ℹ️ Нет изменений для сохранения", show_alert=True)
-                    return
-
                 await callback.answer()
-                loading_message = await callback.message.answer("💾 Сохраняю изменения...")
+                loading_message = await callback.message.answer("🔄 Перегенерирую текст, это может занять время...")
 
-                # Сохраняем изменения
-                await self._save_video_cut_changes(dialog_manager)
+                working_pub = dialog_manager.dialog_data["working_publication"]
 
-                # Обновляем оригинальную версию
-                dialog_manager.dialog_data["original_video_cut"] = dict(dialog_manager.dialog_data["working_video_cut"])
+                # Перегенерация через API
+                regenerated_data = await self.kontur_content_client.regenerate_publication_text(
+                    category_id=working_pub["category_id"],
+                    publication_text=working_pub["text"],
+                    prompt=None
+                )
 
-                await loading_message.edit_text("✅ Изменения сохранены!")
-                await asyncio.sleep(2)
+                # Обновляем данные
+                dialog_manager.dialog_data["working_publication"]["name"] = regenerated_data["name"]
+                dialog_manager.dialog_data["working_publication"]["text"] = regenerated_data["text"]
+                dialog_manager.dialog_data["working_publication"]["tags"] = regenerated_data["tags"]
+
+
+                await loading_message.edit_text("✅ Пост успешно сгенерирован!")
+                await asyncio.sleep(3)
                 try:
                     await loading_message.delete()
                 except:
                     pass
 
-                await dialog_manager.switch_to(model.VideoCutsDraftStates.video_cut_list)
+                await dialog_manager.switch_to(model.ModerationPublicationStates.edit_preview)
 
                 span.set_status(Status(StatusCode.OK))
-
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-                await callback.answer("❌ Ошибка сохранения", show_alert=True)
+                await callback.answer("❌ Ошибка при перегенерации", show_alert=True)
                 raise
+
+    async def handle_regenerate_text_with_prompt(
+            self,
+            message: Message,
+            widget: Any,
+            dialog_manager: DialogManager,
+            prompt: str
+    ) -> None:
+        with self.tracer.start_as_current_span(
+                "ModerationPublicationDialogService.handle_regenerate_text",
+                kind=SpanKind.INTERNAL
+        ) as span:
+            try:
+                loading_message = await message.answer("🔄 Перегенерирую с учетом ваших пожеланий...")
+
+                working_pub = dialog_manager.dialog_data["working_publication"]
+
+                # Перегенерация через API
+                regenerated_data = await self.kontur_content_client.regenerate_publication_text(
+                    category_id=working_pub["category_id"],
+                    publication_text=working_pub["text"],
+                    prompt=prompt
+                )
+
+                # Обновляем данные
+                dialog_manager.dialog_data["working_publication"]["name"] = regenerated_data["name"]
+                dialog_manager.dialog_data["working_publication"]["text"] = regenerated_data["text"]
+                dialog_manager.dialog_data["working_publication"]["tags"] = regenerated_data["tags"]
+                dialog_manager.dialog_data["regenerate_prompt"] = prompt
+                dialog_manager.dialog_data["has_regenerate_prompt"] = True
+
+                await loading_message.edit_text("✅ Пост успешно сгенерирован!")
+                await asyncio.sleep(3)
+                try:
+                    await loading_message.delete()
+                except:
+                    pass
+
+                await dialog_manager.switch_to(model.ModerationPublicationStates.edit_preview)
+
+                span.set_status(Status(StatusCode.OK))
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
+                raise
+
+    async def get_regenerate_data(
+            self,
+            dialog_manager: DialogManager,
+            **kwargs
+    ) -> dict:
+        return {"regenerate_prompt": dialog_manager.dialog_data.get("regenerate_prompt", "")}
 
     async def handle_edit_title_save(
             self,
@@ -444,7 +586,7 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
             text: str
     ) -> None:
         with self.tracer.start_as_current_span(
-                "DraftVideoCutsDialogService.handle_edit_title_save",
+                "ModerationPublicationDialogService.handle_edit_title_save",
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
@@ -454,16 +596,15 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                     await message.answer("❌ Название не может быть пустым")
                     return
 
-                if len(new_title) > 100:  # YouTube Shorts лимит
-                    await message.answer("❌ Слишком длинное название (макс. 100 символов для YouTube)")
+                if len(new_title) > 200:
+                    await message.answer("❌ Слишком длинное название (макс. 200 символов)")
                     return
 
                 # Обновляем рабочую версию
-                dialog_manager.dialog_data["working_video_cut"]["name"] = new_title
+                dialog_manager.dialog_data["working_publication"]["name"] = new_title
 
-                await message.delete()
                 await message.answer("✅ Название обновлено!")
-                await dialog_manager.switch_to(model.VideoCutsDraftStates.edit_preview)
+                await dialog_manager.switch_to(model.ModerationPublicationStates.edit_preview)
 
                 span.set_status(Status(StatusCode.OK))
 
@@ -471,43 +612,6 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 await message.answer("❌ Ошибка при сохранении названия")
-                raise
-
-    async def handle_edit_description_save(
-            self,
-            message: Message,
-            widget: Any,
-            dialog_manager: DialogManager,
-            text: str
-    ) -> None:
-        with self.tracer.start_as_current_span(
-                "DraftVideoCutsDialogService.handle_edit_description_save",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                new_description = text.strip()
-
-                if not new_description:
-                    await message.answer("❌ Описание не может быть пустым")
-                    return
-
-                if len(new_description) > 2200:  # Instagram лимит
-                    await message.answer("❌ Слишком длинное описание (макс. 2200 символов для Instagram)")
-                    return
-
-                # Обновляем рабочую версию
-                dialog_manager.dialog_data["working_video_cut"]["description"] = new_description
-
-                await message.delete()
-                await message.answer("✅ Описание обновлено!")
-                await dialog_manager.switch_to(model.VideoCutsDraftStates.edit_preview)
-
-                span.set_status(Status(StatusCode.OK))
-
-            except Exception as err:
-                span.record_exception(err)
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                await message.answer("❌ Ошибка при сохранении описания")
                 raise
 
     async def handle_edit_tags_save(
@@ -518,7 +622,7 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
             text: str
     ) -> None:
         with self.tracer.start_as_current_span(
-                "DraftVideoCutsDialogService.handle_edit_tags_save",
+                "ModerationPublicationDialogService.handle_edit_tags_save",
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
@@ -531,16 +635,15 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                     new_tags = [tag.strip() for tag in tags_raw.split(",")]
                     new_tags = [tag for tag in new_tags if tag]
 
-                    if len(new_tags) > 15:  # YouTube лимит
-                        await message.answer("❌ Слишком много тегов (макс. 15 для YouTube)")
+                    if len(new_tags) > 10:
+                        await message.answer("❌ Слишком много тегов (макс. 10)")
                         return
 
                 # Обновляем рабочую версию
-                dialog_manager.dialog_data["working_video_cut"]["tags"] = new_tags
+                dialog_manager.dialog_data["working_publication"]["tags"] = new_tags
 
-                await message.delete()
                 await message.answer(f"✅ Теги обновлены ({len(new_tags)} шт.)")
-                await dialog_manager.switch_to(model.VideoCutsDraftStates.edit_preview)
+                await dialog_manager.switch_to(model.ModerationPublicationStates.edit_preview)
 
                 span.set_status(Status(StatusCode.OK))
 
@@ -550,80 +653,297 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                 await message.answer("❌ Ошибка при сохранении тегов")
                 raise
 
-    async def handle_toggle_social_network(
+    async def handle_edit_content_save(
             self,
-            callback: CallbackQuery,
-            checkbox: Any,
-            dialog_manager: DialogManager
+            message: Message,
+            widget: Any,
+            dialog_manager: DialogManager,
+            text: str
     ) -> None:
         with self.tracer.start_as_current_span(
-                "DraftVideoCutsDialogService.handle_toggle_social_network",
+                "ModerationPublicationDialogService.handle_edit_content_save",
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                working_video_cut = dialog_manager.dialog_data["working_video_cut"]
-                social_networks = dialog_manager.dialog_data.get("social_networks", {})
+                new_text = text.strip()
 
-                if checkbox.widget_id == "youtube_checkbox":
-                    if not self._is_network_connected(social_networks, "youtube"):
-                        await callback.answer("❌ YouTube не подключен", show_alert=True)
-                        return
+                if not new_text:
+                    await message.answer("❌ Текст не может быть пустым")
+                    return
 
-                    current_value = working_video_cut.get("youtube_source_id")
-                    if current_value:
-                        working_video_cut["youtube_source_id"] = None
-                    else:
-                        # Получаем ID источника для YouTube из подключенных сетей
-                        youtube_source_id = self._get_network_source_id(social_networks, "youtube")
-                        working_video_cut["youtube_source_id"] = youtube_source_id
+                if len(new_text) < 50:
+                    await message.answer("❌ Слишком короткий текст (мин. 50 символов)")
+                    return
 
-                elif checkbox.widget_id == "instagram_checkbox":
-                    if not self._is_network_connected(social_networks, "instagram"):
-                        await callback.answer("❌ Instagram не подключен", show_alert=True)
-                        return
+                if len(new_text) > 4000:
+                    await message.answer("❌ Слишком длинный текст (макс. 4000 символов)")
+                    return
 
-                    current_value = working_video_cut.get("inst_source_id")
-                    if current_value:
-                        working_video_cut["inst_source_id"] = None
-                    else:
-                        # Получаем ID источника для Instagram из подключенных сетей
-                        instagram_source_id = self._get_network_source_id(social_networks, "instagram")
-                        working_video_cut["inst_source_id"] = instagram_source_id
+                # Обновляем рабочую версию
+                dialog_manager.dialog_data["working_publication"]["text"] = new_text
 
-                # Проверяем, что хотя бы одна платформа включена
-                youtube_enabled = bool(working_video_cut.get("youtube_source_id"))
-                instagram_enabled = bool(working_video_cut.get("inst_source_id"))
-
-                if not youtube_enabled and not instagram_enabled:
-                    await callback.answer("⚠️ Выберите хотя бы одну платформу для публикации", show_alert=True)
-                else:
-                    await callback.answer()
+                await message.answer("✅ Текст обновлен!")
+                await dialog_manager.switch_to(model.ModerationPublicationStates.edit_preview)
 
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-                await callback.answer("❌ Ошибка переключения", show_alert=True)
+                await message.answer("❌ Ошибка при сохранении текста")
                 raise
 
-    async def handle_back_to_video_cut_list(
+    async def handle_generate_new_image(
             self,
             callback: CallbackQuery,
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
         with self.tracer.start_as_current_span(
-                "DraftVideoCutsDialogService.handle_back_to_video_cut_list",
+                "ModerationPublicationDialogService.handle_generate_new_image",
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                await dialog_manager.switch_to(model.VideoCutsDraftStates.video_cut_list)
+                await callback.answer()
+                loading_message = await callback.message.answer("🔄 Генерирую изображение...")
+
+                working_pub = dialog_manager.dialog_data["working_publication"]
+                category_id = working_pub["category_id"]
+                publication_text = working_pub["text"]
+
+                # Генерация через API
+                image_url = await self.kontur_content_client.generate_publication_image(
+                    category_id=category_id,
+                    publication_text=publication_text,
+                    text_reference=publication_text[:200],
+                    prompt=None
+                )
+
+                # Обновляем рабочую версию
+                dialog_manager.dialog_data["working_publication"]["image_url"] = image_url
+                dialog_manager.dialog_data["working_publication"]["has_image"] = True
+                # Удаляем пользовательское изображение если было
+                dialog_manager.dialog_data["working_publication"].pop("custom_image_file_id", None)
+                dialog_manager.dialog_data["working_publication"].pop("is_custom_image", None)
+
+                await loading_message.edit_text("✅ Изображение сгенерировано!")
+                await asyncio.sleep(2)
+                try:
+                    await loading_message.delete()
+                except:
+                    pass
+
+                await dialog_manager.switch_to(model.ModerationPublicationStates.edit_preview)
+
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
+                await callback.answer("❌ Ошибка генерации", show_alert=True)
+                raise
+
+    async def handle_generate_image_with_prompt(
+            self,
+            message: Message,
+            widget: Any,
+            dialog_manager: DialogManager,
+            prompt: str
+    ) -> None:
+        with self.tracer.start_as_current_span(
+                "ModerationPublicationDialogService.handle_generate_image_with_prompt",
+                kind=SpanKind.INTERNAL
+        ) as span:
+            try:
+                if not prompt.strip():
+                    await message.answer("❌ Введите описание изображения")
+                    return
+
+                loading_message = await message.answer("🔄 Генерирую изображение по вашему описанию...")
+
+                working_pub = dialog_manager.dialog_data["working_publication"]
+                category_id = working_pub["category_id"]
+                publication_text = working_pub["text"]
+
+                # Генерация с промптом
+                image_url = await self.kontur_content_client.generate_publication_image(
+                    category_id=category_id,
+                    publication_text=publication_text,
+                    text_reference=publication_text[:200],
+                    prompt=prompt
+                )
+
+                # Обновляем рабочую версию
+                dialog_manager.dialog_data["working_publication"]["image_url"] = image_url
+                dialog_manager.dialog_data["working_publication"]["has_image"] = True
+                # Удаляем пользовательское изображение если было
+                dialog_manager.dialog_data["working_publication"].pop("custom_image_file_id", None)
+                dialog_manager.dialog_data["working_publication"].pop("is_custom_image", None)
+
+                await loading_message.edit_text("✅ Изображение сгенерировано!")
+                await asyncio.sleep(2)
+                try:
+                    await loading_message.delete()
+                except:
+                    pass
+
+                await dialog_manager.switch_to(model.ModerationPublicationStates.edit_preview)
+
+                span.set_status(Status(StatusCode.OK))
+
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
+                await message.answer("❌ Ошибка генерации")
+                raise
+
+    async def handle_image_upload(
+            self,
+            message: Message,
+            widget: MessageInput,
+            dialog_manager: DialogManager
+    ) -> None:
+        with self.tracer.start_as_current_span(
+                "ModerationPublicationDialogService.handle_image_upload",
+                kind=SpanKind.INTERNAL
+        ) as span:
+            try:
+                if message.content_type != ContentType.PHOTO:
+                    await message.answer("❌ Пожалуйста, отправьте изображение")
+                    return
+
+                if message.photo:
+                    photo = message.photo[-1]  # Берем наибольшее разрешение
+
+                    # Проверяем размер
+                    if hasattr(photo, 'file_size') and photo.file_size:
+                        if photo.file_size > 10 * 1024 * 1024:  # 10 МБ
+                            await message.answer("❌ Файл слишком большой (макс. 10 МБ)")
+                            return
+
+                    await message.answer("📸 Загружаю изображение...")
+
+                    # Обновляем рабочую версию
+                    dialog_manager.dialog_data["working_publication"]["custom_image_file_id"] = photo.file_id
+                    dialog_manager.dialog_data["working_publication"]["has_image"] = True
+                    dialog_manager.dialog_data["working_publication"]["is_custom_image"] = True
+                    # Удаляем URL если был
+                    dialog_manager.dialog_data["working_publication"].pop("image_url", None)
+
+                    self.logger.info(
+                        "Изображение загружено для модерации",
+                        {
+                            common.TELEGRAM_CHAT_ID_KEY: message.chat.id,
+                            "file_id": photo.file_id,
+                        }
+                    )
+
+                    await message.answer("✅ Изображение загружено!")
+                    await dialog_manager.switch_to(model.ModerationPublicationStates.edit_preview)
+
+                span.set_status(Status(StatusCode.OK))
+
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
+                await message.answer("❌ Ошибка загрузки")
+                raise
+
+    async def handle_remove_image(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        with self.tracer.start_as_current_span(
+                "ModerationPublicationDialogService.handle_remove_image",
+                kind=SpanKind.INTERNAL
+        ) as span:
+            try:
+                working_pub = dialog_manager.dialog_data["working_publication"]
+
+                if working_pub.get("has_image"):
+                    # Удаляем все данные об изображении из рабочей версии
+                    dialog_manager.dialog_data["working_publication"]["has_image"] = False
+                    dialog_manager.dialog_data["working_publication"].pop("image_url", None)
+                    dialog_manager.dialog_data["working_publication"].pop("custom_image_file_id", None)
+                    dialog_manager.dialog_data["working_publication"].pop("is_custom_image", None)
+
+                    await callback.answer("✅ Изображение удалено", show_alert=True)
+                else:
+                    await callback.answer("ℹ️ Изображение отсутствует", show_alert=True)
+
+                await dialog_manager.switch_to(model.ModerationPublicationStates.edit_preview)
+
+                span.set_status(Status(StatusCode.OK))
+
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
+                await callback.answer("❌ Ошибка удаления", show_alert=True)
+                raise
+
+    async def handle_save_edits(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        with self.tracer.start_as_current_span(
+                "ModerationPublicationDialogService.handle_save_edits",
+                kind=SpanKind.INTERNAL
+        ) as span:
+            try:
+                if not self._has_changes(dialog_manager):
+                    await callback.answer("ℹ️ Нет изменений для сохранения", show_alert=True)
+                    return
+
+                await callback.answer()
+                loading_message = await callback.message.answer("💾 Сохраняю изменения...")
+
+                # Сохраняем изменения
+                await self._save_publication_changes(dialog_manager)
+
+                # Обновляем оригинальную версию
+                dialog_manager.dialog_data["original_publication"] = dialog_manager.dialog_data["working_publication"]
+
+                del dialog_manager.dialog_data["working_publication"]
+
+
+                await loading_message.edit_text("✅ Изменения сохранены!")
+                await asyncio.sleep(2)
+                try:
+                    await loading_message.delete()
+                except:
+                    pass
+
+                await dialog_manager.switch_to(model.ModerationPublicationStates.moderation_list)
+
+                span.set_status(Status(StatusCode.OK))
+
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
+                await callback.answer("❌ Ошибка сохранения", show_alert=True)
+                raise
+
+    async def handle_back_to_moderation_list(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        with self.tracer.start_as_current_span(
+                "ModerationPublicationDialogService.handle_back_to_moderation_list",
+                kind=SpanKind.INTERNAL
+        ) as span:
+            try:
+                await dialog_manager.switch_to(model.ModerationPublicationStates.moderation_list)
+
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
+                await callback.answer("❌ Ошибка сохранения", show_alert=True)
                 raise
 
     async def handle_back_to_content_menu(
@@ -633,7 +953,7 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
             dialog_manager: DialogManager
     ) -> None:
         with self.tracer.start_as_current_span(
-                "DraftVideoCutsDialogService.handle_back_to_content_menu",
+                "ModerationPublicationDialogService.handle_back_to_content_menu",
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
@@ -655,21 +975,9 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
             **kwargs
     ) -> dict:
         """Данные для окна редактирования названия"""
-        working_video_cut = dialog_manager.dialog_data.get("working_video_cut", {})
+        working_pub = dialog_manager.dialog_data.get("working_publication", {})
         return {
-            "current_title": working_video_cut.get("name", ""),
-        }
-
-    async def get_edit_description_data(
-            self,
-            dialog_manager: DialogManager,
-            **kwargs
-    ) -> dict:
-        """Данные для окна редактирования описания"""
-        working_video_cut = dialog_manager.dialog_data.get("working_video_cut", {})
-        description = working_video_cut.get("description", "")
-        return {
-            "current_description_length": len(description),
+            "current_title": working_pub.get("name", ""),
         }
 
     async def get_edit_tags_data(
@@ -678,135 +986,170 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
             **kwargs
     ) -> dict:
         """Данные для окна редактирования тегов"""
-        working_video_cut = dialog_manager.dialog_data.get("working_video_cut", {})
-        tags = working_video_cut.get("tags", [])
+        working_pub = dialog_manager.dialog_data.get("working_publication", {})
+        tags = working_pub.get("tags", [])
         return {
             "has_tags": bool(tags),
             "current_tags": ", ".join(tags) if tags else "",
         }
 
-    async def get_social_network_select_data(
+    async def get_edit_content_data(
             self,
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        """Данные для окна выбора социальных сетей"""
-        with self.tracer.start_as_current_span(
-                "DraftVideoCutsDialogService.get_social_network_select_data",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                working_video_cut = dialog_manager.dialog_data.get("working_video_cut", {})
-                social_networks = dialog_manager.dialog_data.get("social_networks", {})
+        """Данные для окна редактирования текста"""
+        working_pub = dialog_manager.dialog_data.get("working_publication", {})
+        text = working_pub.get("text", "")
+        return {
+            "current_text_length": len(text),
+        }
 
-                # Проверяем подключенные сети
-                youtube_connected = self._is_network_connected(social_networks, "youtube")
-                instagram_connected = self._is_network_connected(social_networks, "instagram")
+    async def get_image_menu_data(
+            self,
+            dialog_manager: DialogManager,
+            **kwargs
+    ) -> dict:
+        """Данные для меню управления изображением"""
+        working_pub = dialog_manager.dialog_data.get("working_publication", {})
+        return {
+            "has_image": working_pub.get("has_image", False),
+            "is_custom_image": working_pub.get("is_custom_image", False),
+        }
 
-                # Проверяем выбранные сети
-                youtube_selected = bool(working_video_cut.get("youtube_source_id"))
-                instagram_selected = bool(working_video_cut.get("inst_source_id"))
-
-                data = {
-                    "youtube_connected": youtube_connected,
-                    "instagram_connected": instagram_connected,
-                    "youtube_selected": youtube_selected,
-                    "instagram_selected": instagram_selected,
-                    "all_networks_connected": youtube_connected and instagram_connected,
-                    "no_connected_networks": not youtube_connected and not instagram_connected,
-                }
-
-                span.set_status(Status(StatusCode.OK))
-                return data
-
-            except Exception as err:
-                span.record_exception(err)
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                raise
+    async def get_image_prompt_data(
+            self,
+            dialog_manager: DialogManager,
+            **kwargs
+    ) -> dict:
+        """Данные для окна генерации с промптом"""
+        return {
+            "has_image_prompt": bool(dialog_manager.dialog_data.get("image_prompt")),
+            "image_prompt": dialog_manager.dialog_data.get("image_prompt", ""),
+        }
 
     # Вспомогательные методы
 
     def _has_changes(self, dialog_manager: DialogManager) -> bool:
         """Проверка наличия изменений между оригиналом и рабочей версией"""
-        original = dialog_manager.dialog_data.get("original_video_cut", {})
-        working = dialog_manager.dialog_data.get("working_video_cut", {})
+        original = dialog_manager.dialog_data.get("original_publication", {})
+        working = dialog_manager.dialog_data.get("working_publication", {})
 
         if not original or not working:
             return False
 
-        # Сравниваем основные поля
-        fields_to_compare = ["name", "description", "tags", "youtube_source_id", "inst_source_id"]
+        # Сравниваем текстовые поля
+        fields_to_compare = ["name", "text", "tags"]
         for field in fields_to_compare:
             if original.get(field) != working.get(field):
                 return True
 
+        # Проверяем изменения изображения более детально
+
+        # 1. Проверяем, изменилось ли наличие изображения
+        if original.get("has_image", False) != working.get("has_image", False):
+            return True
+
+        # 2. Если есть пользовательское изображение - это всегда изменение
+        if working.get("custom_image_file_id"):
+            # Проверяем, было ли это изображение в оригинале
+            if original.get("custom_image_file_id") != working.get("custom_image_file_id"):
+                return True
+
+        # 3. Проверяем изменение URL (новое сгенерированное изображение)
+        original_url = original.get("image_url", "")
+        working_url = working.get("image_url", "")
+
+        # Игнорируем базовый URL и сравниваем только если оба не пустые
+        if working_url and original_url:
+            # Если URL изменился - это новое изображение
+            if original_url != working_url:
+                return True
+        elif working_url != original_url:
+            # Один пустой, другой нет - есть изменения
+            return True
+
         return False
 
-    def _has_selected_networks(self, dialog_manager: DialogManager) -> bool:
-        """Проверка что выбрана хотя бы одна социальная сеть"""
-        working_video_cut = dialog_manager.dialog_data.get("working_video_cut", {})
-        youtube_selected = bool(working_video_cut.get("youtube_source_id"))
-        instagram_selected = bool(working_video_cut.get("inst_source_id"))
-        return youtube_selected or instagram_selected
+    async def _save_publication_changes(self, dialog_manager: DialogManager) -> None:
+        """Сохранение изменений публикации через API"""
+        working_pub = dialog_manager.dialog_data["working_publication"]
+        original_pub = dialog_manager.dialog_data["original_publication"]
+        publication_id = working_pub["id"]
 
-    def _is_network_connected(self, social_networks: dict, network_type: str) -> bool:
-        """Проверка подключения социальной сети"""
-        if not social_networks:
-            return False
+        # Определяем, что делать с изображением
+        image_url = None
+        image_content = None
+        image_filename = None
+        should_delete_image = False
 
-        # Предполагаем что API возвращает структуру типа:
-        # {"youtube": [{"id": 1, "name": "Channel1"}], "instagram": [{"id": 2, "name": "Account1"}]}
-        return network_type in social_networks and len(social_networks[network_type]) > 0
+        # Проверяем изменения изображения
+        original_has_image = original_pub.get("has_image", False)
+        working_has_image = working_pub.get("has_image", False)
 
-    def _get_network_source_id(self, social_networks: dict, network_type: str) -> int:
-        """Получение ID источника для социальной сети"""
-        if not self._is_network_connected(social_networks, network_type):
-            return None
+        if not working_has_image and original_has_image:
+            # Изображение было удалено - нужно удалить из storage
+            should_delete_image = True
 
-        # Берем первый доступный источник для сети
-        return social_networks[network_type][0].get("id")
+        elif working_has_image:
+            # Проверяем, новое ли это изображение
+            if working_pub.get("custom_image_file_id"):
+                # Пользовательское изображение загружено через Telegram
+                file_id = working_pub["custom_image_file_id"]
+                file = await self.bot.get_file(file_id)
+                file_data = await self.bot.download_file(file.file_path)
+                image_content = file_data.read()
+                image_filename = f"moderated_image_{file_id[:8]}.jpg"
 
-    async def _save_video_cut_changes(self, dialog_manager: DialogManager) -> None:
-        working_video_cut = dialog_manager.dialog_data["working_video_cut"]
-        video_cut_id = working_video_cut["id"]
-        youtube_source_id = working_video_cut.get("youtube_source_id")
-        inst_source_id = working_video_cut.get("inst_source_id")
+            elif working_pub.get("image_url"):
+                # Проверяем, изменился ли URL (новое сгенерированное изображение)
+                original_url = original_pub.get("image_url", "")
+                working_url = working_pub.get("image_url", "")
 
-        await self.kontur_content_client.change_video_cut(
-            video_cut_id=video_cut_id,
-            name=working_video_cut["name"],
-            description=working_video_cut["description"],
-            tags=working_video_cut.get("tags", []),
-            youtube_source_id=youtube_source_id,
-            inst_source_id=inst_source_id
-        )
+                if original_url != working_url:
+                    # URL изменился - это новое сгенерированное изображение
+                    image_url = working_url
+
+        # Если нужно удалить изображение
+        if should_delete_image:
+            try:
+                await self.kontur_content_client.delete_publication_image(
+                    publication_id=publication_id
+                )
+                self.logger.info(f"Deleted image for publication {publication_id}")
+            except Exception as e:
+                self.logger.warning(f"Failed to delete image: {str(e)}")
+
+        # Обновляем публикацию через API
+        # Передаем изображение только если оно действительно новое
+        if image_url or image_content:
+            await self.kontur_content_client.change_publication(
+                publication_id=publication_id,
+                name=working_pub["name"],
+                text=working_pub["text"],
+                tags=working_pub.get("tags", []),
+                image_url=image_url,
+                image_content=image_content,
+                image_filename=image_filename,
+            )
+        else:
+            # Обновляем только текстовые поля
+            await self.kontur_content_client.change_publication(
+                publication_id=publication_id,
+                name=working_pub["name"],
+                text=working_pub["text"],
+                tags=working_pub.get("tags", []),
+            )
 
         self.logger.info(
-            "Изменения черновика видео сохранены",
+            "Изменения публикации сохранены",
             {
-                "video_cut_id": video_cut_id,
-                "youtube_source_id": youtube_source_id,
-                "inst_source_id": inst_source_id,
+                "publication_id": publication_id,
                 "has_changes": self._has_changes(dialog_manager),
+                "image_changed": bool(image_url or image_content),
+                "image_deleted": should_delete_image,
             }
         )
-
-    async def _remove_current_video_cut_from_list(self, dialog_manager: DialogManager) -> None:
-        video_cuts_list = dialog_manager.dialog_data.get("video_cuts_list", [])
-        current_index = dialog_manager.dialog_data.get("current_index", 0)
-
-        if video_cuts_list and current_index < len(video_cuts_list):
-            video_cuts_list.pop(current_index)
-
-            # Корректируем индекс если нужно
-            if current_index >= len(video_cuts_list) and video_cuts_list:
-                dialog_manager.dialog_data["current_index"] = len(video_cuts_list) - 1
-            elif not video_cuts_list:
-                dialog_manager.dialog_data["current_index"] = 0
-
-            # Сбрасываем рабочие данные
-            dialog_manager.dialog_data.pop("working_video_cut", None)
-            dialog_manager.dialog_data.pop("original_video_cut", None)
 
     def _format_datetime(self, dt: str) -> str:
         """Форматирование даты и времени"""
@@ -817,45 +1160,63 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
             # Форматируем в читаемый вид
             return dt.strftime("%d.%m.%Y %H:%M")
         except:
-            return str(dt)
+            return dt
 
-    def _get_period_text(self, video_cuts: list) -> str:
-        """Определение периода черновиков"""
-        if not video_cuts:
+    def _calculate_waiting_hours(self, created_at: str) -> int:
+        """Расчет количества часов ожидания"""
+        try:
+            if isinstance(created_at, str):
+                created_at = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+
+            now = datetime.now(timezone.utc)
+            delta = now - created_at
+            return int(delta.total_seconds() / 3600)
+        except:
+            return 0
+
+    def _calculate_waiting_time_text(self, created_at: str) -> str:
+        """Расчет и форматирование времени ожидания"""
+        hours = self._calculate_waiting_hours(created_at)
+
+        if hours == 0:
+            return "менее часа"
+        elif hours == 1:
+            return "1 час"
+        elif hours < 24:
+            return f"{hours} часов"
+        else:
+            days = hours // 24
+            if days == 1:
+                return "1 день"
+            else:
+                return f"{days} дней"
+
+    def _get_period_text(self, publications: list) -> str:
+        """Определение периода публикаций"""
+        if not publications:
             return "Нет данных"
 
-        # Находим самый старый и новый черновик
+        # Находим самую старую и новую публикацию
         dates = []
-        for video_cut in video_cuts:
-            if hasattr(video_cut, 'created_at') and video_cut.created_at:
-                dates.append(video_cut.created_at)
+        for pub in publications:
+            if hasattr(pub, 'created_at') and pub.created_at:
+                dates.append(pub.created_at)
 
         if not dates:
             return "Сегодня"
 
-        # Простое определение периода на основе самого старого черновика
+        # Простое определение периода на основе самой старой публикации
         oldest_date = min(dates)
+        waiting_hours = self._calculate_waiting_hours(oldest_date)
 
-        try:
-            if isinstance(oldest_date, str):
-                oldest_dt = datetime.fromisoformat(oldest_date.replace('Z', '+00:00'))
-            else:
-                oldest_dt = oldest_date
-
-            now = datetime.now(timezone.utc)
-            delta = now - oldest_dt
-            hours = delta.total_seconds() / 3600
-
-            if hours < 24:
-                return "За сегодня"
-            elif hours < 48:
-                return "За последние 2 дня"
-            elif hours < 168:  # неделя
-                return "За неделю"
-            else:
-                return "За месяц"
-        except:
+        if waiting_hours < 24:
+            return "За сегодня"
+        elif waiting_hours < 48:
+            return "За последние 2 дня"
+        elif waiting_hours < 168:  # неделя
             return "За неделю"
+        else:
+            return "За месяц"
 
     async def _get_state(self, dialog_manager: DialogManager) -> model.UserState:
         """Получение состояния пользователя"""

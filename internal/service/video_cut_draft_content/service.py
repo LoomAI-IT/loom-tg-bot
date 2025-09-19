@@ -1,4 +1,3 @@
-# internal/service/video_cut_draft_content/service.py
 import asyncio
 from datetime import datetime, timezone
 import time
@@ -104,10 +103,10 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                     "created_at": self._format_datetime(current_video_cut.created_at),
                     # Подключение и выбор для YouTube
                     "youtube_connected": youtube_connected,
-                    "youtube_selected": bool(current_video_cut.youtube_source_id),
+                    "youtube_selected": current_video_cut.youtube_source,
                     # Подключение и выбор для Instagram
                     "instagram_connected": instagram_connected,
-                    "instagram_selected": bool(current_video_cut.inst_source_id),
+                    "instagram_selected": current_video_cut.inst_source,
                     "has_video": bool(current_video_cut.video_fid),
                     "video_media": video_media,
                     "current_index": current_index + 1,
@@ -127,8 +126,8 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                     "youtube_reference_url": current_video_cut.youtube_video_reference,
                     "video_fid": current_video_cut.video_fid,
                     "created_at": current_video_cut.created_at,
-                    "youtube_source_id": current_video_cut.youtube_source_id,
-                    "inst_source_id": current_video_cut.inst_source_id,
+                    "youtube_source": current_video_cut.youtube_source,
+                    "inst_source": current_video_cut.inst_source,
                 }
 
                 # Копируем в рабочую версию, если ее еще нет
