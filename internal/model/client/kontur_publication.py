@@ -89,6 +89,7 @@ class VideoCut:
     youtube_video_reference: str
     name: str
     description: str
+    transcript: str
     tags: list[str]
     video_fid: str
     video_name: str
