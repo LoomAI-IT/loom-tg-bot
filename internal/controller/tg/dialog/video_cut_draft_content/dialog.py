@@ -1,3 +1,4 @@
+# internal/controller/tg/dialog/video_cut_draft_content/dialog.py
 from aiogram_dialog import Window, Dialog
 from aiogram_dialog.widgets.text import Const, Format, Multi, Case
 from aiogram_dialog.widgets.kbd import Button, Column, Row, Checkbox
@@ -25,7 +26,7 @@ class VideoCutsDraftDialog(interface.IVideoCutsDraftDialog):
             self.get_edit_title_window(),
             self.get_edit_description_window(),
             self.get_edit_tags_window(),
-            self.get_publication_settings_window(),
+            self.get_social_network_select_window(),
         )
 
     def get_video_cut_list_window(self) -> Window:
@@ -59,21 +60,33 @@ class VideoCutsDraftDialog(interface.IVideoCutsDraftDialog):
                             ),
                             Format("📹 Источник: {youtube_reference_short}\n"),
                             Format("📅 Создано: {created_at}\n"),
-                            # Информация о настройках публикации
-                            Const("\n🌐 <b>Настройки публикации:</b>\n"),
+                            # Информация о настройках публикации с реальным статусом
+                            Const("\n🌐 <b>Подключенные социальные сети:</b>\n"),
                             Case(
                                 {
-                                    True: Const("📺 YouTube Shorts: ✅\n"),
-                                    False: Const("📺 YouTube Shorts: ❌\n"),
+                                    True: Case(
+                                        {
+                                            True: Const("📺 YouTube Shorts: ✅ (выбрано)\n"),
+                                            False: Const("📺 YouTube Shorts: ✅ (не выбрано)\n"),
+                                        },
+                                        selector="youtube_selected"
+                                    ),
+                                    False: Const("📺 YouTube Shorts: ❌ (не подключен)\n"),
                                 },
-                                selector="youtube_enabled"
+                                selector="youtube_connected"
                             ),
                             Case(
                                 {
-                                    True: Const("📸 Instagram Reels: ✅"),
-                                    False: Const("📸 Instagram Reels: ❌"),
+                                    True: Case(
+                                        {
+                                            True: Const("📸 Instagram Reels: ✅ (выбрано)"),
+                                            False: Const("📸 Instagram Reels: ✅ (не выбрано)"),
+                                        },
+                                        selector="instagram_selected"
+                                    ),
+                                    False: Const("📸 Instagram Reels: ❌ (не подключен)"),
                                 },
-                                selector="instagram_enabled"
+                                selector="instagram_connected"
                             ),
                             Const("\n━━━━━━━━━━━━━━━━━━━━"),
                         ),
@@ -223,9 +236,9 @@ class VideoCutsDraftDialog(interface.IVideoCutsDraftDialog):
                     on_click=lambda c, b, d: d.switch_to(model.VideoCutsDraftStates.edit_tags),
                 ),
                 Button(
-                    Const("⚙️ Настройки публикации"),
-                    id="publication_settings",
-                    on_click=lambda c, b, d: d.switch_to(model.VideoCutsDraftStates.publication_settings),
+                    Const("🌐 Выбрать соцсети"),
+                    id="social_network_select",
+                    on_click=lambda c, b, d: d.switch_to(model.VideoCutsDraftStates.social_network_select),
                 ),
             ),
 
@@ -341,39 +354,87 @@ class VideoCutsDraftDialog(interface.IVideoCutsDraftDialog):
             parse_mode="HTML",
         )
 
-    def get_publication_settings_window(self) -> Window:
-        """Окно настроек публикации видео"""
+    def get_social_network_select_window(self) -> Window:
+        """Окно выбора социальных сетей для публикации"""
         return Window(
             Multi(
-                Const("⚙️ <b>Настройки публикации</b>\n\n"),
-                Const("🌐 <b>Выберите платформы для публикации:</b>\n"),
+                Const("🌐 <b>Выбор социальных сетей</b>\n\n"),
+                Const("📋 <b>Доступные социальные сети для видео-нарезок:</b>\n"),
+                Case(
+                    {
+                        True: Multi(
+                            Const("📺 YouTube Shorts - <b>подключен</b>\n"),
+                            Const("📸 Instagram Reels - <b>подключен</b>\n\n"),
+                            Const("✅ <b>Выберите, где опубликовать:</b>"),
+                        ),
+                        False: Multi(
+                            Case(
+                                {
+                                    True: Const("📺 YouTube Shorts - <b>подключен</b>\n"),
+                                    False: Const("📺 YouTube Shorts - <b>не подключен</b>\n"),
+                                },
+                                selector="youtube_connected"
+                            ),
+                            Case(
+                                {
+                                    True: Const("📸 Instagram Reels - <b>подключен</b>\n\n"),
+                                    False: Const("📸 Instagram Reels - <b>не подключен</b>\n\n"),
+                                },
+                                selector="instagram_connected"
+                            ),
+                            Case(
+                                {
+                                    True: Const("⚠️ <b>Нет подключенных социальных сетей!</b>\n"),
+                                    False: Const("✅ <b>Выберите, где опубликовать:</b>"),
+                                },
+                                selector="no_connected_networks"
+                            ),
+                        ),
+                    },
+                    selector="all_networks_connected"
+                ),
                 sep="",
             ),
 
-            # Чекбоксы для выбора платформ
+            # Чекбоксы для выбора платформ (только для подключенных)
             Column(
                 Checkbox(
                     Const("📺 YouTube Shorts"),
                     Const("✅ YouTube Shorts"),
                     id="youtube_checkbox",
                     default=True,
-                    on_state_changed=self.video_cut_draft_service.handle_toggle_platform,
+                    on_state_changed=self.video_cut_draft_service.handle_toggle_social_network,
+                    when="youtube_connected",
                 ),
                 Checkbox(
                     Const("📸 Instagram Reels"),
                     Const("✅ Instagram Reels"),
                     id="instagram_checkbox",
                     default=True,
-                    on_state_changed=self.video_cut_draft_service.handle_toggle_platform,
+                    on_state_changed=self.video_cut_draft_service.handle_toggle_social_network,
+                    when="instagram_connected",
                 ),
             ),
+
+            # Предупреждение если нет подключенных сетей
+            Case(
+                {
+                    True: Multi(
+                        Const(
+                            "\n🔗 <i>Для публикации видео-нарезок необходимо подключить хотя бы одну социальную сеть в настройках организации.</i>"),
+                    ),
+                    False: Const(""),
+                },
+                selector="no_connected_networks"
+            ),
+
             Button(
                 Const("◀️ Назад"),
                 id="back_to_edit_preview",
                 on_click=lambda c, b, d: d.switch_to(model.VideoCutsDraftStates.edit_preview),
             ),
 
-            state=model.VideoCutsDraftStates.publication_settings,
-            getter=self.video_cut_draft_service.get_publication_settings_data,
+            state=model.VideoCutsDraftStates.social_network_select,
+            getter=self.video_cut_draft_service.get_social_network_select_data,
             parse_mode="HTML",
         )

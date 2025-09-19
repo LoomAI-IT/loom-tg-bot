@@ -1,3 +1,4 @@
+# internal/interface/dialog/video_cut_draft_content.py
 from abc import abstractmethod
 from typing import Protocol, Any
 from aiogram_dialog import DialogManager, Dialog, Window
@@ -25,7 +26,7 @@ class IVideoCutsDraftDialog(Protocol):
     def get_edit_tags_window(self) -> Window: pass
 
     @abstractmethod
-    def get_publication_settings_window(self) -> Window: pass
+    def get_social_network_select_window(self) -> Window: pass
 
 
 class IVideoCutsDraftDialogService(Protocol):
@@ -112,15 +113,14 @@ class IVideoCutsDraftDialogService(Protocol):
             text: str
     ) -> None: pass
 
-    # Обработчики настроек публикации
+    # Обработчики выбора социальных сетей
     @abstractmethod
-    async def handle_toggle_platform(
+    async def handle_toggle_social_network(
             self,
             callback: CallbackQuery,
             checkbox: Any,
             dialog_manager: DialogManager
     ) -> None: pass
-
 
     # Навигация
     @abstractmethod
@@ -159,7 +159,7 @@ class IVideoCutsDraftDialogService(Protocol):
     ) -> dict: pass
 
     @abstractmethod
-    async def get_publication_settings_data(
+    async def get_social_network_select_data(
             self,
             dialog_manager: DialogManager,
     ) -> dict: pass

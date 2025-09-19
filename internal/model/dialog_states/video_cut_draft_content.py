@@ -16,4 +16,4 @@ class VideoCutsDraftStates(StatesGroup):
     edit_tags = State()
 
     # Окно настроек публикации
-    publication_settings = State()
+    social_network_select = State()
