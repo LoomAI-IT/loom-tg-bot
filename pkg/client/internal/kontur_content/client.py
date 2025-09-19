@@ -651,6 +651,8 @@ class KonturContentClient(interface.IKonturContentClient):
             name: str = None,
             description: str = None,
             tags: list[str] = None,
+            inst_source_id: int = None,
+            youtube_source_id: int = None,
     ) -> None:
         with self.tracer.start_as_current_span(
                 "PublicationClient.change_video_cut",
@@ -660,15 +662,19 @@ class KonturContentClient(interface.IKonturContentClient):
                 }
         ) as span:
             try:
-                body = {}
+                body: dict = {"video_cut_id": video_cut_id}
                 if name is not None:
                     body["name"] = name
                 if description is not None:
                     body["description"] = description
                 if tags is not None:
                     body["tags"] = tags
+                if inst_source_id is not None:
+                    body["inst_source_id"] = inst_source_id
+                if youtube_source_id is not None:
+                    body["youtube_source_id"] = youtube_source_id
 
-                await self.client.put(f"/video-cut/{video_cut_id}", json=body)
+                await self.client.put(f"/video-cut", json=body)
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as e:
