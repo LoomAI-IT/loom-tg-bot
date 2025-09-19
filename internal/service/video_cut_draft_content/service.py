@@ -101,7 +101,7 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                     "video_description": current_video_cut.description or "Описание отсутствует",
                     "has_tags": bool(tags),
                     "video_tags": tags_text,
-                    "youtube_reference_short": current_video_cut.youtube_video_reference,
+                    "youtube_video_reference": current_video_cut.youtube_video_reference,
                     "created_at": self._format_datetime(current_video_cut.created_at),
                     # Подключение и выбор для YouTube
                     "youtube_connected": youtube_connected,
@@ -125,7 +125,7 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                     "name": current_video_cut.name,
                     "description": current_video_cut.description,
                     "tags": current_video_cut.tags or [],
-                    "youtube_reference_url": current_video_cut.youtube_video_reference,
+                    "youtube_video_reference": current_video_cut.youtube_video_reference,
                     "video_fid": current_video_cut.video_fid,
                     "created_at": current_video_cut.created_at,
                     "youtube_source": current_video_cut.youtube_source,
