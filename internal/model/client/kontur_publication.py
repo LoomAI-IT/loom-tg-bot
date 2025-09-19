@@ -24,7 +24,6 @@ class Publication:
     moderation_status: str | None
     moderation_comment: str | None
 
-    time_for_publication: str
     publication_at: str | None
     created_at: str
 
@@ -46,7 +45,6 @@ class Publication:
             "openai_rub_cost": self.openai_rub_cost,
             "moderation_status": self.moderation_status,
             "moderation_comment": self.moderation_comment,
-            "time_for_publication": self.time_for_publication,
             "publication_at": self.publication_at,
             "created_at": self.created_at,
         }
