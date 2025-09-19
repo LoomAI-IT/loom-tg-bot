@@ -376,7 +376,7 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
 
                 data = {
                     "created_at": self._format_datetime(original_video_cut["created_at"]),
-                    "youtube_reference": working_video_cut["youtube_reference_url"],
+                    "youtube_reference": working_video_cut["youtube_video_reference"],
                     "video_name": working_video_cut["name"] or "Без названия",
                     "video_description": working_video_cut["description"] or "Описание отсутствует",
                     "has_tags": bool(tags),
@@ -568,30 +568,26 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                         await callback.answer("❌ YouTube не подключен", show_alert=True)
                         return
 
-                    current_value = working_video_cut.get("youtube_source_id")
+                    current_value = working_video_cut.get("youtube_source")
                     if current_value:
-                        working_video_cut["youtube_source_id"] = None
+                        working_video_cut["youtube_source"] = False
                     else:
-                        # Получаем ID источника для YouTube из подключенных сетей
-                        youtube_source_id = self._get_network_source_id(social_networks, "youtube")
-                        working_video_cut["youtube_source_id"] = youtube_source_id
+                        working_video_cut["youtube_source"] = True
 
                 elif checkbox.widget_id == "instagram_checkbox":
                     if not self._is_network_connected(social_networks, "instagram"):
                         await callback.answer("❌ Instagram не подключен", show_alert=True)
                         return
 
-                    current_value = working_video_cut.get("inst_source_id")
+                    current_value = working_video_cut.get("inst_source")
                     if current_value:
-                        working_video_cut["inst_source_id"] = None
+                        working_video_cut["inst_source"] = False
                     else:
-                        # Получаем ID источника для Instagram из подключенных сетей
-                        instagram_source_id = self._get_network_source_id(social_networks, "instagram")
-                        working_video_cut["inst_source_id"] = instagram_source_id
+                        working_video_cut["inst_source"] = True
 
                 # Проверяем, что хотя бы одна платформа включена
-                youtube_enabled = bool(working_video_cut.get("youtube_source_id"))
-                instagram_enabled = bool(working_video_cut.get("inst_source_id"))
+                youtube_enabled = working_video_cut.get("youtube_source")
+                instagram_enabled = working_video_cut.get("inst_source")
 
                 if not youtube_enabled and not instagram_enabled:
                     await callback.answer("⚠️ Выберите хотя бы одну платформу для публикации", show_alert=True)
@@ -703,8 +699,8 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                 instagram_connected = self._is_network_connected(social_networks, "instagram")
 
                 # Проверяем выбранные сети
-                youtube_selected = bool(working_video_cut.get("youtube_source_id"))
-                instagram_selected = bool(working_video_cut.get("inst_source_id"))
+                youtube_selected = working_video_cut.get("youtube_source")
+                instagram_selected = working_video_cut.get("inst_source")
 
                 data = {
                     "youtube_connected": youtube_connected,
@@ -734,7 +730,7 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
             return False
 
         # Сравниваем основные поля
-        fields_to_compare = ["name", "description", "tags", "youtube_source_id", "inst_source_id"]
+        fields_to_compare = ["name", "description", "tags", "youtube_source", "inst_source"]
         for field in fields_to_compare:
             if original.get(field) != working.get(field):
                 return True
@@ -744,8 +740,8 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
     def _has_selected_networks(self, dialog_manager: DialogManager) -> bool:
         """Проверка что выбрана хотя бы одна социальная сеть"""
         working_video_cut = dialog_manager.dialog_data.get("working_video_cut", {})
-        youtube_selected = bool(working_video_cut.get("youtube_source_id"))
-        instagram_selected = bool(working_video_cut.get("inst_source_id"))
+        youtube_selected = working_video_cut.get("youtube_source")
+        instagram_selected = working_video_cut.get("inst_source")
         return youtube_selected or instagram_selected
 
     def _is_network_connected(self, social_networks: dict, network_type: str) -> bool:
@@ -753,39 +749,29 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
         if not social_networks:
             return False
 
-        # Предполагаем что API возвращает структуру типа:
-        # {"youtube": [{"id": 1, "name": "Channel1"}], "instagram": [{"id": 2, "name": "Account1"}]}
         return network_type in social_networks and len(social_networks[network_type]) > 0
-
-    def _get_network_source_id(self, social_networks: dict, network_type: str) -> int:
-        """Получение ID источника для социальной сети"""
-        if not self._is_network_connected(social_networks, network_type):
-            return None
-
-        # Берем первый доступный источник для сети
-        return social_networks[network_type][0].get("id")
 
     async def _save_video_cut_changes(self, dialog_manager: DialogManager) -> None:
         working_video_cut = dialog_manager.dialog_data["working_video_cut"]
         video_cut_id = working_video_cut["id"]
-        youtube_source_id = working_video_cut.get("youtube_source_id")
-        inst_source_id = working_video_cut.get("inst_source_id")
+        youtube_source = working_video_cut.get("youtube_source")
+        inst_source = working_video_cut.get("inst_source")
 
         await self.kontur_content_client.change_video_cut(
             video_cut_id=video_cut_id,
             name=working_video_cut["name"],
             description=working_video_cut["description"],
             tags=working_video_cut.get("tags", []),
-            youtube_source_id=youtube_source_id,
-            inst_source_id=inst_source_id
+            youtube_source=youtube_source,
+            inst_source=inst_source
         )
 
         self.logger.info(
             "Изменения черновика видео сохранены",
             {
                 "video_cut_id": video_cut_id,
-                "youtube_source_id": youtube_source_id,
-                "inst_source_id": inst_source_id,
+                "youtube_source": youtube_source,
+                "inst_source": inst_source,
                 "has_changes": self._has_changes(dialog_manager),
             }
         )

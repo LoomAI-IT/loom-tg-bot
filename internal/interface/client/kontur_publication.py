@@ -160,8 +160,8 @@ class IKonturContentClient(Protocol):
             name: str = None,
             description: str = None,
             tags: list[str] = None,
-            inst_source_id: int = None,
-            youtube_source_id: int = None
+            inst_source: bool = None,
+            youtube_source: bool = None
     ) -> None: pass
 
     @abstractmethod
