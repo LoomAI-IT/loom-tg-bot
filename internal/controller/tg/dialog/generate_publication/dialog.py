@@ -32,6 +32,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             self.get_image_menu_window(),
             self.get_generate_image_window(),
             self.get_upload_image_window(),
+            self.get_social_network_select_window()
         )
 
     def get_select_category_window(self) -> Window:
