@@ -822,3 +822,33 @@ class KonturPublicationClient(interface.IKonturPublicationClient):
                 span.record_exception(e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
+
+    async def transcribe_audio(
+            self,
+            audio_content: bytes = None,
+            audio_filename: str = None,
+    ) -> str:
+        with self.tracer.start_as_current_span(
+                "PublicationClient.create_publication",
+                kind=SpanKind.CLIENT
+        ) as span:
+            try:
+
+                files = {
+                    "audio_file": (
+                        audio_content,
+                        audio_filename,
+                        "audio/mp4"
+                    )
+                }
+                response = await self.client.post("/audio/transcribe", files=files)
+
+                json_response = response.json()
+
+                span.set_status(Status(StatusCode.OK))
+                return json_response["text"]
+
+            except Exception as e:
+                span.record_exception(e)
+                span.set_status(Status(StatusCode.ERROR, str(e)))
+                raise

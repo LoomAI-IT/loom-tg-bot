@@ -184,3 +184,10 @@ class IKonturPublicationClient(Protocol):
 
     @abstractmethod
     async def download_video_cut(self, video_cut_id: int) -> tuple[io.BytesIO, str]: pass
+
+    @abstractmethod
+    async def transcribe_audio(
+            self,
+            audio_content: bytes = None,
+            audio_filename: str = None,
+    ) -> str: pass

@@ -1128,11 +1128,11 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
         }
 
     async def _convert_voice_to_text(self, voice_data: io.BytesIO) -> str:
-        """Конвертация голоса в текст (заглушка)"""
-        # TODO: Интеграция с реальным STT сервисом (Whisper API, Yandex SpeechKit и т.д.)
-        # Пока возвращаем тестовый текст
-        await asyncio.sleep(2)  # Имитация обработки
-        return "Это тестовый текст, распознанный из голосового сообщения. В реальной системе здесь будет результат распознавания речи."
+        text = await self.kontur_publication_client.transcribe_audio(
+            audio_content=voice_data.read(),
+            audio_filename=voice_data.name,
+        )
+        return text
 
     async def _get_state(self, dialog_manager: DialogManager) -> model.UserState:
         chat_id = self._get_chat_id(dialog_manager)
