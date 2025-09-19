@@ -2,14 +2,13 @@ import io
 import json
 from datetime import datetime
 from opentelemetry.trace import Status, StatusCode, SpanKind
-from fastapi import UploadFile
 
 from internal import model
 from internal import interface
 from pkg.client.client import AsyncHTTPClient
 
 
-class KonturPublicationClient(interface.IKonturPublicationClient):
+class KonturContentClient(interface.IKonturContentClient):
     def __init__(
             self,
             tel: interface.ITelemetry,
@@ -19,7 +18,7 @@ class KonturPublicationClient(interface.IKonturPublicationClient):
         self.client = AsyncHTTPClient(
             host,
             port,
-            prefix="/api/publication",
+            prefix="/api/content",
             use_tracing=True,
         )
         self.tracer = tel.tracer()
@@ -39,7 +38,7 @@ class KonturPublicationClient(interface.IKonturPublicationClient):
                     "category_id": category_id,
                     "text_reference": text_reference,
                 }
-                response = await self.client.post("/text/generate", json=body)
+                response = await self.client.post("/publication/text/generate", json=body)
                 json_response = response.json()
 
                 span.set_status(Status(StatusCode.OK))
@@ -66,7 +65,7 @@ class KonturPublicationClient(interface.IKonturPublicationClient):
                     "publication_text": publication_text,
                     "prompt": prompt,
                 }
-                response = await self.client.post("/text/regenerate", json=body)
+                response = await self.client.post("/publication/text/regenerate", json=body)
                 json_response = response.json()
 
                 span.set_status(Status(StatusCode.OK))
@@ -95,7 +94,7 @@ class KonturPublicationClient(interface.IKonturPublicationClient):
                     "text_reference": text_reference,
                     "prompt": prompt,
                 }
-                response = await self.client.post("/image/generate", json=body)
+                response = await self.client.post("/publication/image/generate", json=body)
                 json_response = response.json()
 
                 span.set_status(Status(StatusCode.OK))
@@ -153,9 +152,9 @@ class KonturPublicationClient(interface.IKonturPublicationClient):
 
                 # Отправляем запрос
                 if files:
-                    response = await self.client.post("/create", data=data, files=files)
+                    response = await self.client.post("/publication/create", data=data, files=files)
                 else:
-                    response = await self.client.post("/create", data=data)
+                    response = await self.client.post("/publication/create", data=data)
 
                 json_response = response.json()
 
@@ -224,9 +223,9 @@ class KonturPublicationClient(interface.IKonturPublicationClient):
 
                 # Отправляем запрос
                 if files:
-                    response = await self.client.put(f"/{publication_id}", data=data, files=files)
+                    response = await self.client.put(f"/publication/{publication_id}", data=data, files=files)
                 elif data:  # Отправляем только если есть данные
-                    response = await self.client.put(f"/{publication_id}", data=data)
+                    response = await self.client.put(f"/publication/{publication_id}", data=data)
                 else:
                     # Если нет данных для обновления, просто возвращаем успех
                     span.set_status(Status(StatusCode.OK))
@@ -253,7 +252,7 @@ class KonturPublicationClient(interface.IKonturPublicationClient):
                 }
         ) as span:
             try:
-                await self.client.post(f"/{publication_id}/publish")
+                await self.client.post(f"/publication/{publication_id}/publish")
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as e:
@@ -273,7 +272,7 @@ class KonturPublicationClient(interface.IKonturPublicationClient):
                 }
         ) as span:
             try:
-                await self.client.delete(f"/{publication_id}/image")
+                await self.client.delete(f"/publication/{publication_id}/image")
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as e:
@@ -293,7 +292,7 @@ class KonturPublicationClient(interface.IKonturPublicationClient):
                 }
         ) as span:
             try:
-                await self.client.post(f"/{publication_id}/moderation/send")
+                await self.client.post(f"/publication/{publication_id}/moderation/send")
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as e:
@@ -326,7 +325,7 @@ class KonturPublicationClient(interface.IKonturPublicationClient):
                         moderation_status),
                     "moderation_comment": moderation_comment
                 }
-                await self.client.post("/moderate", json=body)
+                await self.client.post("/publication/moderate", json=body)
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as e:
@@ -343,7 +342,7 @@ class KonturPublicationClient(interface.IKonturPublicationClient):
                 }
         ) as span:
             try:
-                response = await self.client.get(f"/{publication_id}")
+                response = await self.client.get(f"/publication/{publication_id}")
                 json_response = response.json()
 
                 span.set_status(Status(StatusCode.OK))
@@ -362,7 +361,7 @@ class KonturPublicationClient(interface.IKonturPublicationClient):
                 }
         ) as span:
             try:
-                response = await self.client.get(f"/organization/{organization_id}/publications")
+                response = await self.client.get(f"/publication/organization/{organization_id}/publications")
                 json_response = response.json()
 
                 span.set_status(Status(StatusCode.OK))
@@ -384,7 +383,7 @@ class KonturPublicationClient(interface.IKonturPublicationClient):
                 }
         ) as span:
             try:
-                response = await self.client.get(f"/{publication_id}/image/download")
+                response = await self.client.get(f"/publication/{publication_id}/image/download")
 
                 # Extract filename from Content-Disposition header or use default
                 filename = "image.jpg"
@@ -422,7 +421,7 @@ class KonturPublicationClient(interface.IKonturPublicationClient):
                     "prompt_for_image_style": prompt_for_image_style,
                     "prompt_for_text_style": prompt_for_text_style
                 }
-                response = await self.client.post("/category", json=body)
+                response = await self.client.post("/publication/category", json=body)
                 json_response = response.json()
 
                 span.set_status(Status(StatusCode.OK))
@@ -441,7 +440,7 @@ class KonturPublicationClient(interface.IKonturPublicationClient):
                 }
         ) as span:
             try:
-                response = await self.client.get(f"/category/{category_id}")
+                response = await self.client.get(f"/publication/category/{category_id}")
                 json_response = response.json()
 
                 span.set_status(Status(StatusCode.OK))
@@ -460,7 +459,7 @@ class KonturPublicationClient(interface.IKonturPublicationClient):
                 }
         ) as span:
             try:
-                response = await self.client.get(f"/organization/{organization_id}/categories")
+                response = await self.client.get(f"/publication/organization/{organization_id}/categories")
                 json_response = response.json()
 
                 span.set_status(Status(StatusCode.OK))
@@ -490,7 +489,7 @@ class KonturPublicationClient(interface.IKonturPublicationClient):
                 if prompt_for_text_style is not None:
                     body["prompt_for_text_style"] = prompt_for_text_style
 
-                await self.client.put(f"/category/{category_id}", json=body)
+                await self.client.put(f"/publication/category/{category_id}", json=body)
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as e:
@@ -507,7 +506,7 @@ class KonturPublicationClient(interface.IKonturPublicationClient):
                 }
         ) as span:
             try:
-                await self.client.delete(f"/category/{category_id}")
+                await self.client.delete(f"/publication/category/{category_id}")
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as e:
@@ -539,7 +538,7 @@ class KonturPublicationClient(interface.IKonturPublicationClient):
                 if tg_channels is not None:
                     body["tg_channels"] = tg_channels
 
-                response = await self.client.post("/autoposting", json=body)
+                response = await self.client.post("/publication/autoposting", json=body)
                 json_response = response.json()
 
                 span.set_status(Status(StatusCode.OK))
@@ -558,7 +557,7 @@ class KonturPublicationClient(interface.IKonturPublicationClient):
                 }
         ) as span:
             try:
-                response = await self.client.get(f"/organization/{organization_id}/autopostings")
+                response = await self.client.get(f"/publication/organization/{organization_id}/autopostings")
                 json_response = response.json()
 
                 span.set_status(Status(StatusCode.OK))
@@ -591,7 +590,7 @@ class KonturPublicationClient(interface.IKonturPublicationClient):
                 if tg_channels is not None:
                     body["tg_channels"] = tg_channels
 
-                await self.client.put(f"/autoposting/{autoposting_id}", json=body)
+                await self.client.put(f"/publication/autoposting/{autoposting_id}", json=body)
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as e:
@@ -608,7 +607,7 @@ class KonturPublicationClient(interface.IKonturPublicationClient):
                 }
         ) as span:
             try:
-                await self.client.delete(f"/autoposting/{autoposting_id}")
+                await self.client.delete(f"/publication/autoposting/{autoposting_id}")
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as e:
@@ -622,7 +621,6 @@ class KonturPublicationClient(interface.IKonturPublicationClient):
             organization_id: int,
             creator_id: int,
             youtube_video_reference: str,
-            time_for_publication: datetime = None
     ) -> None:
         with self.tracer.start_as_current_span(
                 "PublicationClient.generate_video_cut",
@@ -638,10 +636,8 @@ class KonturPublicationClient(interface.IKonturPublicationClient):
                     "creator_id": creator_id,
                     "youtube_video_reference": youtube_video_reference
                 }
-                if time_for_publication:
-                    body["time_for_publication"] = time_for_publication.isoformat()
 
-                await self.client.post("/video-cut/generate", json=body)
+                await self.client.post("/video-cut/vizard/generate", json=body)
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as e:

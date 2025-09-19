@@ -6,7 +6,7 @@ from fastapi import UploadFile
 
 from internal import model
 
-class IKonturPublicationClient(Protocol):
+class IKonturContentClient(Protocol):
     # ПУБЛИКАЦИИ
     @abstractmethod
     async def generate_publication_text(
@@ -148,7 +148,6 @@ class IKonturPublicationClient(Protocol):
             organization_id: int,
             creator_id: int,
             youtube_video_reference: str,
-            time_for_publication: datetime = None
     ) -> None: pass
 
     @abstractmethod
