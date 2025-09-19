@@ -122,24 +122,21 @@ class VideoCutsDraftDialog(interface.IVideoCutsDraftDialog):
                     Button(
                         Const("✏️ Редактировать"),
                         id="edit",
-                        on_click=lambda c, b, d: d.switch_to(model.DraftVideoCutsStates.edit_preview),
+                        on_click=lambda c, b, d: d.switch_to(model.VideoCutsDraftStates.edit_preview),
                         when="has_video_cuts",
                     ),
                 ),
-                Case(
-                    {
-                        False: Button(
-                            Const("📤 На модерацию"),
-                            id="send_to_moderation",
-                            on_click=self.video_cut_draft_service.handle_send_to_moderation,
-                        ),
-                        True: Button(
-                            Const("🚀 Опубликовать"),
-                            id="publish_now",
-                            on_click=self.video_cut_draft_service.handle_publish_now,
-                        ),
-                    },
-                    selector="can_publish"
+                Button(
+                    Const("📤 На модерацию"),
+                    id="send_to_moderation",
+                    on_click=self.video_cut_draft_service.handle_send_to_moderation,
+                    when="not_can_publish",  # инвертированное условие
+                ),
+                Button(
+                    Const("🚀 Опубликовать"),
+                    id="publish_now",
+                    on_click=self.video_cut_draft_service.handle_publish_now,
+                    when="can_publish",
                 ),
                 Row(
                     Button(
@@ -160,7 +157,7 @@ class VideoCutsDraftDialog(interface.IVideoCutsDraftDialog):
                 ),
             ),
 
-            state=model.DraftVideoCutsStates.video_cut_list,
+            state=model.VideoCutsDraftStates.video_cut_list,
             getter=self.video_cut_draft_service.get_video_cut_list_data,
             parse_mode="HTML",
         )
@@ -213,22 +210,22 @@ class VideoCutsDraftDialog(interface.IVideoCutsDraftDialog):
                 Button(
                     Const("📝 Изменить название"),
                     id="edit_title",
-                    on_click=lambda c, b, d: d.switch_to(model.DraftVideoCutsStates.edit_title),
+                    on_click=lambda c, b, d: d.switch_to(model.VideoCutsDraftStates.edit_title),
                 ),
                 Button(
                     Const("📄 Изменить описание"),
                     id="edit_description",
-                    on_click=lambda c, b, d: d.switch_to(model.DraftVideoCutsStates.edit_description),
+                    on_click=lambda c, b, d: d.switch_to(model.VideoCutsDraftStates.edit_description),
                 ),
                 Button(
                     Const("🏷 Изменить теги"),
                     id="edit_tags",
-                    on_click=lambda c, b, d: d.switch_to(model.DraftVideoCutsStates.edit_tags),
+                    on_click=lambda c, b, d: d.switch_to(model.VideoCutsDraftStates.edit_tags),
                 ),
                 Button(
                     Const("⚙️ Настройки публикации"),
                     id="publication_settings",
-                    on_click=lambda c, b, d: d.switch_to(model.DraftVideoCutsStates.publication_settings),
+                    on_click=lambda c, b, d: d.switch_to(model.VideoCutsDraftStates.publication_settings),
                 ),
             ),
 
@@ -246,7 +243,7 @@ class VideoCutsDraftDialog(interface.IVideoCutsDraftDialog):
                 ),
             ),
 
-            state=model.DraftVideoCutsStates.edit_preview,
+            state=model.VideoCutsDraftStates.edit_preview,
             getter=self.video_cut_draft_service.get_edit_preview_data,
             parse_mode="HTML",
         )
@@ -271,10 +268,10 @@ class VideoCutsDraftDialog(interface.IVideoCutsDraftDialog):
             Button(
                 Const("◀️ Назад"),
                 id="back_to_edit_preview",
-                on_click=lambda c, b, d: d.switch_to(model.DraftVideoCutsStates.edit_preview),
+                on_click=lambda c, b, d: d.switch_to(model.VideoCutsDraftStates.edit_preview),
             ),
 
-            state=model.DraftVideoCutsStates.edit_title,
+            state=model.VideoCutsDraftStates.edit_title,
             getter=self.video_cut_draft_service.get_edit_title_data,
             parse_mode="HTML",
         )
@@ -300,10 +297,10 @@ class VideoCutsDraftDialog(interface.IVideoCutsDraftDialog):
             Button(
                 Const("◀️ Назад"),
                 id="back_to_edit_preview",
-                on_click=lambda c, b, d: d.switch_to(model.DraftVideoCutsStates.edit_preview),
+                on_click=lambda c, b, d: d.switch_to(model.VideoCutsDraftStates.edit_preview),
             ),
 
-            state=model.DraftVideoCutsStates.edit_description,
+            state=model.VideoCutsDraftStates.edit_description,
             getter=self.video_cut_draft_service.get_edit_description_data,
             parse_mode="HTML",
         )
@@ -336,10 +333,10 @@ class VideoCutsDraftDialog(interface.IVideoCutsDraftDialog):
             Button(
                 Const("◀️ Назад"),
                 id="back_to_edit_preview",
-                on_click=lambda c, b, d: d.switch_to(model.DraftVideoCutsStates.edit_preview),
+                on_click=lambda c, b, d: d.switch_to(model.VideoCutsDraftStates.edit_preview),
             ),
 
-            state=model.DraftVideoCutsStates.edit_tags,
+            state=model.VideoCutsDraftStates.edit_tags,
             getter=self.video_cut_draft_service.get_edit_tags_data,
             parse_mode="HTML",
         )
@@ -373,10 +370,10 @@ class VideoCutsDraftDialog(interface.IVideoCutsDraftDialog):
             Button(
                 Const("◀️ Назад"),
                 id="back_to_edit_preview",
-                on_click=lambda c, b, d: d.switch_to(model.DraftVideoCutsStates.edit_preview),
+                on_click=lambda c, b, d: d.switch_to(model.VideoCutsDraftStates.edit_preview),
             ),
 
-            state=model.DraftVideoCutsStates.publication_settings,
+            state=model.VideoCutsDraftStates.publication_settings,
             getter=self.video_cut_draft_service.get_publication_settings_data,
             parse_mode="HTML",
         )

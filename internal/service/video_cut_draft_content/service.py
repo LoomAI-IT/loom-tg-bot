@@ -102,7 +102,8 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                     "video_cuts_count": len(video_cuts),
                     "has_prev": current_index > 0,
                     "has_next": current_index < len(video_cuts) - 1,
-                    "can_publish": False if employee.required_moderation else True
+                    "can_publish": False if employee.required_moderation else True,
+                    "not_can_publish": True if employee.required_moderation else False
                 }
 
                 # Сохраняем данные текущего черновика для редактирования
