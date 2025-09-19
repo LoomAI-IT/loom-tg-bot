@@ -1,4 +1,3 @@
-from aiogram_dialog.api.exceptions import UnknownIntent
 from fastapi import FastAPI
 
 from aiogram.filters import Command, ExceptionTypeFilter

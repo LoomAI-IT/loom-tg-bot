@@ -23,7 +23,7 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
             state_repo: interface.IStateRepo,
             kontur_employee_client: interface.IKonturEmployeeClient,
             kontur_organization_client: interface.IKonturOrganizationClient,
-            kontur_publication_client: interface.IKonturPublicationClient,
+            kontur_content_client: interface.IKonturContentClient,
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
@@ -31,7 +31,7 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
         self.state_repo = state_repo
         self.kontur_employee_client = kontur_employee_client
         self.kontur_organization_client = kontur_organization_client
-        self.kontur_publication_client = kontur_publication_client
+        self.kontur_content_client = kontur_content_client
 
     async def get_moderation_list_data(
             self,
@@ -47,7 +47,7 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
                 state = await self._get_state(dialog_manager)
 
                 # Получаем публикации на модерации для организации
-                publications = await self.kontur_publication_client.get_publications_by_organization(
+                publications = await self.kontur_content_client.get_publications_by_organization(
                     organization_id=state.organization_id
                 )
 
@@ -80,7 +80,7 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
                 )
 
                 # Получаем категорию
-                category = await self.kontur_publication_client.get_category_by_id(
+                category = await self.kontur_content_client.get_category_by_id(
                     current_pub.category_id
                 )
 
@@ -230,7 +230,7 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
                 state = await self._get_state(dialog_manager)
 
                 # Одобряем публикацию через API
-                await self.kontur_publication_client.moderate_publication(
+                await self.kontur_content_client.moderate_publication(
                     publication_id=publication_id,
                     moderator_id=state.account_id,
                     moderation_status="approved",
@@ -367,7 +367,7 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
                 reject_comment = dialog_manager.dialog_data.get("reject_comment", "Нет комментария")
 
                 # Отклоняем публикацию через API
-                await self.kontur_publication_client.moderate_publication(
+                await self.kontur_content_client.moderate_publication(
                     publication_id=publication_id,
                     moderator_id=state.account_id,
                     moderation_status="rejected",
@@ -438,7 +438,7 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
                 )
 
                 # Получаем категорию
-                category = await self.kontur_publication_client.get_category_by_id(
+                category = await self.kontur_content_client.get_category_by_id(
                     working_pub["category_id"]
                 )
 
@@ -498,7 +498,7 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
                 working_pub = dialog_manager.dialog_data["working_publication"]
 
                 # Перегенерация через API
-                regenerated_data = await self.kontur_publication_client.regenerate_publication_text(
+                regenerated_data = await self.kontur_content_client.regenerate_publication_text(
                     category_id=working_pub["category_id"],
                     publication_text=working_pub["text"],
                     prompt=None
@@ -543,7 +543,7 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
                 working_pub = dialog_manager.dialog_data["working_publication"]
 
                 # Перегенерация через API
-                regenerated_data = await self.kontur_publication_client.regenerate_publication_text(
+                regenerated_data = await self.kontur_content_client.regenerate_publication_text(
                     category_id=working_pub["category_id"],
                     publication_text=working_pub["text"],
                     prompt=prompt
@@ -712,7 +712,7 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
                 publication_text = working_pub["text"]
 
                 # Генерация через API
-                image_url = await self.kontur_publication_client.generate_publication_image(
+                image_url = await self.kontur_content_client.generate_publication_image(
                     category_id=category_id,
                     publication_text=publication_text,
                     text_reference=publication_text[:200],
@@ -766,7 +766,7 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
                 publication_text = working_pub["text"]
 
                 # Генерация с промптом
-                image_url = await self.kontur_publication_client.generate_publication_image(
+                image_url = await self.kontur_content_client.generate_publication_image(
                     category_id=category_id,
                     publication_text=publication_text,
                     text_reference=publication_text[:200],
@@ -1113,7 +1113,7 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
         # Если нужно удалить изображение
         if should_delete_image:
             try:
-                await self.kontur_publication_client.delete_publication_image(
+                await self.kontur_content_client.delete_publication_image(
                     publication_id=publication_id
                 )
                 self.logger.info(f"Deleted image for publication {publication_id}")
@@ -1123,7 +1123,7 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
         # Обновляем публикацию через API
         # Передаем изображение только если оно действительно новое
         if image_url or image_content:
-            await self.kontur_publication_client.change_publication(
+            await self.kontur_content_client.change_publication(
                 publication_id=publication_id,
                 name=working_pub["name"],
                 text=working_pub["text"],
@@ -1134,7 +1134,7 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
             )
         else:
             # Обновляем только текстовые поля
-            await self.kontur_publication_client.change_publication(
+            await self.kontur_content_client.change_publication(
                 publication_id=publication_id,
                 name=working_pub["name"],
                 text=working_pub["text"],

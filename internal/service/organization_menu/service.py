@@ -14,14 +14,14 @@ class OrganizationMenuDialogService(interface.IOrganizationMenuDialogService):
             state_repo: interface.IStateRepo,
             kontur_organization_client: interface.IKonturOrganizationClient,
             kontur_employee_client: interface.IKonturEmployeeClient,
-            kontur_publication_client: interface.IKonturPublicationClient,
+            kontur_content_client: interface.IKonturContentClient,
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
         self.state_repo = state_repo
         self.kontur_organization_client = kontur_organization_client
         self.kontur_employee_client = kontur_employee_client
-        self.kontur_publication_client = kontur_publication_client
+        self.kontur_content_client = kontur_content_client
 
     async def get_organization_menu_data(
             self,
@@ -46,7 +46,7 @@ class OrganizationMenuDialogService(interface.IOrganizationMenuDialogService):
                 )
 
                 # Получаем категории организации
-                # categories = await self.kontur_publication_client.get_categories_by_organization(
+                # categories = await self.kontur_content_client.get_categories_by_organization(
                 #     organization.id
                 # )
 

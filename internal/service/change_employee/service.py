@@ -18,7 +18,7 @@ class ChangeEmployeeDialogService(interface.IChangeEmployeeDialogService):
             state_repo: interface.IStateRepo,
             kontur_employee_client: interface.IKonturEmployeeClient,
             kontur_organization_client: interface.IKonturOrganizationClient,
-            kontur_publication_client: interface.IKonturPublicationClient,
+            kontur_content_client: interface.IKonturContentClient,
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
@@ -26,7 +26,7 @@ class ChangeEmployeeDialogService(interface.IChangeEmployeeDialogService):
         self.state_repo = state_repo
         self.kontur_employee_client = kontur_employee_client
         self.kontur_organization_client = kontur_organization_client
-        self.kontur_publication_client = kontur_publication_client
+        self.kontur_content_client = kontur_content_client
 
     async def get_employee_list_data(
             self,
@@ -129,8 +129,8 @@ class ChangeEmployeeDialogService(interface.IChangeEmployeeDialogService):
                 )
 
                 # Получаем статистику (заглушка, замените на реальные вызовы API)
-                publications_count = 0  # TODO: await self.kontur_publication_client.get_publications_count(selected_account_id)
-                generations_count = 0  # TODO: await self.kontur_publication_client.get_generations_count(selected_account_id)
+                publications_count = 0  # TODO: await self.kontur_content_client.get_publications_count(selected_account_id)
+                generations_count = 0  # TODO: await self.kontur_content_client.get_generations_count(selected_account_id)
 
                 # Формируем список разрешений
                 permissions_list = []

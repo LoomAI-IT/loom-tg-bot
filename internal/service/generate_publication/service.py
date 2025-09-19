@@ -23,7 +23,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
             state_repo: interface.IStateRepo,
             kontur_employee_client: interface.IKonturEmployeeClient,
             kontur_organization_client: interface.IKonturOrganizationClient,
-            kontur_publication_client: interface.IKonturPublicationClient,
+            kontur_content_client: interface.IKonturContentClient,
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
@@ -31,7 +31,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
         self.state_repo = state_repo
         self.kontur_employee_client = kontur_employee_client
         self.kontur_organization_client = kontur_organization_client
-        self.kontur_publication_client = kontur_publication_client
+        self.kontur_content_client = kontur_content_client
 
     async def handle_select_category(
             self,
@@ -46,7 +46,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
         ) as span:
             try:
                 # Получаем информацию о категории
-                category = await self.kontur_publication_client.get_category_by_id(
+                category = await self.kontur_content_client.get_category_by_id(
                     int(category_id)
                 )
 
@@ -203,7 +203,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 category_id = dialog_manager.dialog_data["category_id"]
                 input_text = dialog_manager.dialog_data["input_text"]
 
-                publication_data = await self.kontur_publication_client.generate_publication_text(
+                publication_data = await self.kontur_content_client.generate_publication_text(
                     category_id=category_id,
                     text_reference=input_text,
                 )
@@ -248,7 +248,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 input_text = dialog_manager.dialog_data["input_text"]
 
                 # Генерируем текст
-                publication_data = await self.kontur_publication_client.generate_publication_text(
+                publication_data = await self.kontur_content_client.generate_publication_text(
                     category_id=category_id,
                     text_reference=input_text,
                 )
@@ -258,7 +258,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 dialog_manager.dialog_data["publication_text"] = publication_data["text"]
 
                 # Генерируем изображение
-                image_url = await self.kontur_publication_client.generate_publication_image(
+                image_url = await self.kontur_content_client.generate_publication_image(
                     category_id,
                     publication_data["text"],
                     input_text,
@@ -303,7 +303,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 current_text = dialog_manager.dialog_data["publication_text"]
 
                 # Перегенерация через API
-                regenerated_data = await self.kontur_publication_client.regenerate_publication_text(
+                regenerated_data = await self.kontur_content_client.regenerate_publication_text(
                     category_id=category_id,
                     publication_text=current_text,
                     prompt=None
@@ -351,7 +351,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 category_id = dialog_manager.dialog_data["category_id"]
                 current_text = dialog_manager.dialog_data["publication_text"]
 
-                regenerated_data = await self.kontur_publication_client.regenerate_publication_text(
+                regenerated_data = await self.kontur_content_client.regenerate_publication_text(
                     category_id=category_id,
                     publication_text=current_text,
                     prompt=prompt
@@ -522,7 +522,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 text_reference = dialog_manager.dialog_data["input_text"]
 
                 # Генерация через API
-                image_url = await self.kontur_publication_client.generate_publication_image(
+                image_url = await self.kontur_content_client.generate_publication_image(
                     category_id=category_id,
                     publication_text=publication_text,
                     text_reference=text_reference,
@@ -570,7 +570,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 publication_text = dialog_manager.dialog_data["publication_text"]
                 text_reference = dialog_manager.dialog_data["input_text"]
 
-                image_url = await self.kontur_publication_client.generate_publication_image(
+                image_url = await self.kontur_content_client.generate_publication_image(
                     category_id=category_id,
                     publication_text=publication_text,
                     text_reference=text_reference,
@@ -730,7 +730,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                     )
 
                 # Вызываем HTTP клиент с подготовленными данными
-                await self.kontur_publication_client.create_publication(
+                await self.kontur_content_client.create_publication(
                     state.organization_id,
                     category_id,
                     state.account_id,
@@ -808,7 +808,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                         }
                     )
 
-                await self.kontur_publication_client.create_publication(
+                await self.kontur_content_client.create_publication(
                     state.organization_id,
                     category_id,
                     state.account_id,
@@ -939,7 +939,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 )
 
                 # Получаем категории организации
-                categories = await self.kontur_publication_client.get_categories_by_organization(
+                categories = await self.kontur_content_client.get_categories_by_organization(
                     employee.organization_id
                 )
 
@@ -1128,7 +1128,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
         }
 
     async def _convert_voice_to_text(self, voice_data: io.BytesIO) -> str:
-        text = await self.kontur_publication_client.transcribe_audio(
+        text = await self.kontur_content_client.transcribe_audio(
             audio_content=voice_data.read(),
             audio_filename=voice_data.name,
         )

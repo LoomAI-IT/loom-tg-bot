@@ -45,10 +45,10 @@ class Config:
         self.kontur_authorization_host = os.getenv("KONTUR_AUTHORIZATION_CONTAINER_NAME", "kontur-authorization")
         self.kontur_employee_host = os.getenv("KONTUR_EMPLOYEE_CONTAINER_NAME", "kontur-employee")
         self.kontur_organization_host = os.getenv("KONTUR_ORGANIZATION_CONTAINER_NAME", "kontur-organization")
-        self.kontur_publication_host = os.getenv("KONTUR_PUBLICATION_CONTAINER_NAME", "kontur-publication")
+        self.kontur_content_host = os.getenv("KONTUR_CONTENT_CONTAINER_NAME", "kontur-content")
 
         self.kontur_account_port = int(os.getenv("KONTUR_ACCOUNT_PORT", 8000))
         self.kontur_authorization_port = int(os.getenv("KONTUR_AUTHORIZATION_PORT", 8000))
         self.kontur_employee_port = int(os.getenv("KONTUR_EMPLOYEE_PORT", 8000))
         self.kontur_organization_port = int(os.getenv("KONTUR_ORGANIZATION_PORT", 8000))
-        self.kontur_publication_port = int(os.getenv("KONTUR_PUBLICATION_PORT", 8000))
+        self.kontur_content_port = int(os.getenv("KONTUR_CONTENT_PORT", 8000))

@@ -12,7 +12,7 @@ from pkg.client.internal.kontur_account.client import KonturAccountClient
 from pkg.client.internal.kontur_authorization.client import KonturAuthorizationClient
 from pkg.client.internal.kontur_employee.client import KonturEmployeeClient
 from pkg.client.internal.kontur_organization.client import KonturOrganizationClient
-from pkg.client.internal.kontur_publication.client import KonturPublicationClient
+from pkg.client.internal.kontur_content.client import KonturContentClient
 
 from internal.controller.http.middlerware.middleware import HttpMiddleware
 from internal.controller.tg.middleware.middleware import TgMiddleware
@@ -97,7 +97,7 @@ kontur_authorization_client = KonturAuthorizationClient(tel, cfg.kontur_authoriz
                                                         cfg.kontur_authorization_port)
 kontur_employee_client = KonturEmployeeClient(tel, cfg.kontur_employee_host, cfg.kontur_employee_port)
 kontur_organization_client = KonturOrganizationClient(tel, cfg.kontur_organization_host, cfg.kontur_organization_port)
-kontur_publication_client = KonturPublicationClient(tel, cfg.kontur_publication_host, cfg.kontur_publication_port)
+kontur_content_client = KonturContentClient(tel, cfg.kontur_content_host, cfg.kontur_content_port)
 
 state_repo = StateRepo(tel, db)
 
@@ -127,7 +127,7 @@ organization_menu_service = OrganizationMenuDialogService(
     state_repo,
     kontur_organization_client,
     kontur_employee_client,
-    kontur_publication_client,
+    kontur_content_client,
 )
 change_employee_service = ChangeEmployeeDialogService(
     tel,
@@ -135,7 +135,7 @@ change_employee_service = ChangeEmployeeDialogService(
     state_repo,
     kontur_employee_client,
     kontur_organization_client,
-    kontur_publication_client
+    kontur_content_client
 )
 
 add_employee_service = AddEmployeeDialogService(
@@ -150,7 +150,7 @@ content_menu_service = ContentMenuDialogService(
     state_repo,
     kontur_employee_client,
     kontur_organization_client,
-    kontur_publication_client,
+    kontur_content_client,
 )
 
 generate_publication_service = GeneratePublicationDialogService(
@@ -159,7 +159,7 @@ generate_publication_service = GeneratePublicationDialogService(
     state_repo,
     kontur_employee_client,
     kontur_organization_client,
-    kontur_publication_client,
+    kontur_content_client,
 )
 
 moderation_publication_service = ModerationPublicationDialogService(
@@ -168,7 +168,7 @@ moderation_publication_service = ModerationPublicationDialogService(
     state_repo,
     kontur_employee_client,
     kontur_organization_client,
-    kontur_publication_client,
+    kontur_content_client,
 )
 
 auth_dialog = AuthDialog(
