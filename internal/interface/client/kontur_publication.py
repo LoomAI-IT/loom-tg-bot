@@ -67,6 +67,12 @@ class IKonturContentClient(Protocol):
     ) -> None: pass
 
     @abstractmethod
+    async def delete_publication(
+            self,
+            publication_id: int,
+    ) -> None: pass
+
+    @abstractmethod
     async def publish_publication(self, publication_id: int) -> None: pass
 
     @abstractmethod

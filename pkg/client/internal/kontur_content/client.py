@@ -257,6 +257,26 @@ class KonturContentClient(interface.IKonturContentClient):
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
+    async def delete_publication(
+            self,
+            publication_id: int,
+    ) -> None:
+        with self.tracer.start_as_current_span(
+                "KonturContentClient.delete_publication",
+                kind=SpanKind.CLIENT,
+                attributes={
+                    "publication_id": publication_id
+                }
+        ) as span:
+            try:
+                await self.client.delete(f"/publication/{publication_id}")
+
+                span.set_status(Status(StatusCode.OK))
+            except Exception as e:
+                span.record_exception(e)
+                span.set_status(Status(StatusCode.ERROR, str(e)))
+                raise
+
     async def publish_publication(
             self,
             publication_id: int,
