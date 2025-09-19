@@ -58,7 +58,7 @@ class VideoCutsDraftDialog(interface.IVideoCutsDraftDialog):
                                 },
                                 selector="has_tags"
                             ),
-                            Format("📹 Источник: {youtube_video_reference}\n"),
+
                             Format("📅 Создано: {created_at}\n"),
                             # Информация о настройках публикации с реальным статусом
                             Const("\n🌐 <b>Подключенные социальные сети:</b>\n"),
