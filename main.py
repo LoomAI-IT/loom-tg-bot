@@ -30,6 +30,7 @@ from internal.controller.tg.dialog.content_menu.dialog import ContentMenuDialog
 from internal.controller.tg.dialog.generate_publication.dialog import GeneratePublicationDialog
 from internal.controller.tg.dialog.generate_video_cut.dialog import GenerateVideoCutDialog
 from internal.controller.tg.dialog.moderation_publication.dialog import ModerationPublicationDialog
+from internal.controller.tg.dialog.video_cut_draft_content.dialog import VideoCutsDraftDialog
 
 from internal.service.state.service import StateService
 from internal.service.auth.service import AuthDialogService
@@ -42,6 +43,7 @@ from internal.service.content_menu.service import ContentMenuDialogService
 from internal.service.generate_publication.service import GeneratePublicationDialogService
 from internal.service.generate_video_cut.service import GenerateVideoCutDialogService
 from internal.service.moderation_publication.service import ModerationPublicationDialogService
+from internal.service.video_cut_draft_content.service import VideoCutsDraftDialogService
 
 from internal.repo.state.repo import StateRepo
 
@@ -180,6 +182,14 @@ moderation_publication_service = ModerationPublicationDialogService(
     kontur_content_client,
 )
 
+video_cuts_draft_service = VideoCutsDraftDialogService(
+    tel,
+    state_repo,
+    kontur_employee_client,
+    kontur_organization_client,
+    kontur_content_client,
+)
+
 auth_dialog = AuthDialog(
     tel,
     auth_dialog_service,
@@ -226,6 +236,11 @@ moderation_publication_dialog = ModerationPublicationDialog(
     moderation_publication_service
 )
 
+video_cuts_draft_dialog= VideoCutsDraftDialog(
+    tel,
+    video_cuts_draft_service
+)
+
 # Инициализация middleware
 tg_middleware = TgMiddleware(
     tel,
@@ -266,6 +281,7 @@ if __name__ == "__main__":
         generate_publication_dialog,
         generate_video_cut_dialog,
         moderation_publication_dialog,
+        video_cuts_draft_dialog,
         cfg.prefix,
     )
     uvicorn.run(app, host="0.0.0.0", port=int(cfg.http_port), access_log=False)

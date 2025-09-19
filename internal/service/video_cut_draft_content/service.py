@@ -4,7 +4,7 @@ import time
 from typing import Any
 
 from aiogram import Bot
-from aiogram_dialog.api.entities import MediaId, MediaAttachment
+from aiogram_dialog.api.entities import MediaAttachment
 from aiogram.types import CallbackQuery, Message, ContentType
 from aiogram_dialog import DialogManager, StartMode
 
@@ -13,11 +13,10 @@ from opentelemetry.trace import SpanKind, Status, StatusCode
 from internal import interface, model, common
 
 
-class VideoCutsDraftDialogService(interface.IDraftVideoCutsDialogService):
+class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
     def __init__(
             self,
             tel: interface.ITelemetry,
-            bot: Bot,
             state_repo: interface.IStateRepo,
             kontur_employee_client: interface.IKonturEmployeeClient,
             kontur_organization_client: interface.IKonturOrganizationClient,
@@ -25,7 +24,6 @@ class VideoCutsDraftDialogService(interface.IDraftVideoCutsDialogService):
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
-        self.bot = bot
         self.state_repo = state_repo
         self.kontur_employee_client = kontur_employee_client
         self.kontur_organization_client = kontur_organization_client
