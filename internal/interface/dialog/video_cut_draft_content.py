@@ -121,13 +121,6 @@ class IVideoCutsDraftDialogService(Protocol):
             dialog_manager: DialogManager
     ) -> None: pass
 
-    @abstractmethod
-    async def handle_schedule_publication(
-            self,
-            callback: CallbackQuery,
-            button: Any,
-            dialog_manager: DialogManager
-    ) -> None: pass
 
     # Навигация
     @abstractmethod

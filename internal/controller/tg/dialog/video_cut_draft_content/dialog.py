@@ -370,36 +370,6 @@ class VideoCutsDraftDialog(interface.IVideoCutsDraftDialog):
                     on_state_changed=self.video_cut_draft_service.handle_toggle_platform,
                 ),
             ),
-
-            Multi(
-                Const("\n⏰ <b>Время публикации:</b>\n"),
-                Case(
-                    {
-                        True: Multi(
-                            Const("Запланированная публикация: "),
-                            Format("<b>{scheduled_time}</b>"),
-                        ),
-                        False: Const("Публикация: <b>немедленно</b>"),
-                    },
-                    selector="is_scheduled"
-                ),
-                sep="",
-            ),
-
-            Column(
-                Button(
-                    Const("📅 Запланировать публикацию"),
-                    id="schedule_publication",
-                    on_click=self.video_cut_draft_service.handle_schedule_publication,
-                ),
-                Button(
-                    Const("🗑 Убрать расписание"),
-                    id="remove_schedule",
-                    on_click=self.video_cut_draft_service.handle_schedule_publication,
-                    when="is_scheduled",
-                ),
-            ),
-
             Button(
                 Const("◀️ Назад"),
                 id="back_to_edit_preview",

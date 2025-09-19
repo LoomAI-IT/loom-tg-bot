@@ -535,20 +535,33 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
         ) as span:
             try:
                 working_video_cut = dialog_manager.dialog_data["working_video_cut"]
-                settings = working_video_cut.get("publication_settings", {})
 
-                # Переключаем платформу
                 if checkbox.widget_id == "youtube_checkbox":
-                    settings["youtube_enabled"] = not settings.get("youtube_enabled", True)
+                    current_value = working_video_cut.get("youtube_source_id")
+                    if current_value:
+                        working_video_cut["youtube_source_id"] = None
+                    else:
+                        working_video_cut["youtube_source_id"] = 0
+
                 elif checkbox.widget_id == "instagram_checkbox":
-                    settings["instagram_enabled"] = not settings.get("instagram_enabled", True)
+                    current_value = working_video_cut.get("inst_source_id")
+                    if current_value:
+                        working_video_cut["inst_source_id"] = None
+                    else:
+                        working_video_cut["inst_source_id"] = 0
 
                 # Проверяем, что хотя бы одна платформа включена
-                if not settings.get("youtube_enabled", True) and not settings.get("instagram_enabled", True):
-                    await callback.answer("❌ Должна быть выбрана хотя бы одна платформа", show_alert=True)
-                    return
+                youtube_enabled = bool(working_video_cut.get("youtube_source_id"))
+                instagram_enabled = bool(working_video_cut.get("inst_source_id"))
 
-                dialog_manager.dialog_data["working_video_cut"]["publication_settings"] = settings
+                if not youtube_enabled and not instagram_enabled:
+                    await callback.answer("❌ Должна быть выбрана хотя бы одна платформа", show_alert=True)
+                    # Возвращаем предыдущее значение
+                    if checkbox.widget_id == "youtube_checkbox":
+                        working_video_cut["youtube_source_id"] = 1
+                    elif checkbox.widget_id == "instagram_checkbox":
+                        working_video_cut["inst_source_id"] = 1
+                    return
 
                 await callback.answer()
                 span.set_status(Status(StatusCode.OK))
@@ -557,41 +570,6 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 await callback.answer("❌ Ошибка переключения", show_alert=True)
-                raise
-
-    async def handle_schedule_publication(
-            self,
-            callback: CallbackQuery,
-            button: Any,
-            dialog_manager: DialogManager
-    ) -> None:
-        with self.tracer.start_as_current_span(
-                "DraftVideoCutsDialogService.handle_schedule_publication",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                working_video_cut = dialog_manager.dialog_data["working_video_cut"]
-                settings = working_video_cut.get("publication_settings", {})
-
-                if button.widget_id == "remove_schedule":
-                    # Убираем расписание
-                    settings.pop("scheduled_time", None)
-                    await callback.answer("⏰ Расписание убрано", show_alert=True)
-                else:
-                    # Устанавливаем расписание на завтра в 10:00 (простая реализация)
-                    tomorrow = datetime.now() + timedelta(days=1)
-                    scheduled_time = tomorrow.replace(hour=10, minute=0, second=0, microsecond=0)
-                    settings["scheduled_time"] = scheduled_time.isoformat()
-                    await callback.answer("📅 Публикация запланирована на завтра 10:00", show_alert=True)
-
-                dialog_manager.dialog_data["working_video_cut"]["publication_settings"] = settings
-
-                span.set_status(Status(StatusCode.OK))
-
-            except Exception as err:
-                span.record_exception(err)
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                await callback.answer("❌ Ошибка планирования", show_alert=True)
                 raise
 
     async def handle_back_to_video_cut_list(
@@ -711,17 +689,10 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
             return False
 
         # Сравниваем основные поля
-        fields_to_compare = ["name", "description", "tags"]
+        fields_to_compare = ["name", "description", "tags", "youtube_source_id", "inst_source_id"]
         for field in fields_to_compare:
             if original.get(field) != working.get(field):
                 return True
-
-        # Сравниваем настройки публикации
-        original_settings = original.get("publication_settings", {})
-        working_settings = working.get("publication_settings", {})
-
-        if original_settings != working_settings:
-            return True
 
         return False
 
@@ -729,18 +700,32 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
         working_video_cut = dialog_manager.dialog_data["working_video_cut"]
         video_cut_id = working_video_cut["id"]
 
+        # Подготавливаем значения для социальных сетей
+        # Если 0 - передаем None, иначе передаем значение
+        youtube_source_id = working_video_cut.get("youtube_source_id")
+        if youtube_source_id == 0:
+            youtube_source_id = None
+
+        inst_source_id = working_video_cut.get("inst_source_id")
+        if inst_source_id == 0:
+            inst_source_id = None
+
         # Обновляем черновик через API
         await self.kontur_content_client.change_video_cut(
             video_cut_id=video_cut_id,
             name=working_video_cut["name"],
             description=working_video_cut["description"],
             tags=working_video_cut.get("tags", []),
+            youtube_source_id=youtube_source_id,
+            inst_source_id=inst_source_id
         )
 
         self.logger.info(
             "Изменения черновика видео сохранены",
             {
                 "video_cut_id": video_cut_id,
+                "youtube_source_id": youtube_source_id,
+                "inst_source_id": inst_source_id,
                 "has_changes": self._has_changes(dialog_manager),
             }
         )
