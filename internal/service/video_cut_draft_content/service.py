@@ -47,7 +47,7 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                     organization_id=state.organization_id
                 )
 
-                video_cuts = [video_cut for video_cut in video_cuts if video_cut.video_fid and video_cut.moderation_status == "draft"]
+                video_cuts = [video_cut for video_cut in video_cuts if video_cut.video_fid != "" and video_cut.moderation_status == "draft"]
 
                 if not video_cuts:
                     return {
@@ -75,6 +75,7 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
 
                 current_index = dialog_manager.dialog_data["current_index"]
                 current_video_cut = model.VideoCut(**dialog_manager.dialog_data["video_cuts_list"][current_index])
+                print(f"{current_video_cut=}")
 
                 # Форматируем теги
                 tags = current_video_cut.tags or []
