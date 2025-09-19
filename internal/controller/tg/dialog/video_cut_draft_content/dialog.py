@@ -102,7 +102,7 @@ class VideoCutsDraftDialog(interface.IVideoCutsDraftDialog):
                     when="has_prev",
                 ),
                 Button(
-                    Format("{current_index}/{total_count}"),
+                    Format("{current_index}/{video_cuts_count}"),
                     id="counter",
                     on_click=lambda c, b, d: c.answer("📊 Навигация по черновикам"),
                     when="has_video_cuts",
