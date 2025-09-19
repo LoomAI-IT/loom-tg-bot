@@ -203,7 +203,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                 Button(
                     Const("🚀 Опубликовать"),
                     id="publish_now",
-                    on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.select_publish_location),
+                    on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.social_network_select),
                     when="can_publish_directly",
                 ),
             ),
