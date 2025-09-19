@@ -79,13 +79,13 @@ class ContentMenuDialogService(interface.IContentMenuDialogService):
                     total_generations += 1
                     video_cut_count += 1
 
-                    if pub.moderation_status == "draft":
+                    if video.moderation_status == "draft":
                         drafts_count += 1
-                    elif pub.moderation_status == "moderation":
+                    elif video.moderation_status == "moderation":
                         moderation_count += 1
-                    elif pub.moderation_status == "approved":
+                    elif video.moderation_status == "approved":
                         approved_count += 1
-                    elif pub.moderation_status == "published":
+                    elif video.moderation_status == "published":
                         published_count += 1
 
                 data = {
