@@ -69,6 +69,12 @@ class ITelegramWebhookController(Protocol):
             body: EmployeeNotificationBody,
     ) -> JSONResponse: pass
 
+    @abstractmethod
+    async def notify_vizard_video_cut_generated(
+            self,
+            body: NotifyVizardVideoCutGenerated,
+    ) -> JSONResponse: pass
+
 
 class IHttpMiddleware(Protocol):
     @abstractmethod

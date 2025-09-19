@@ -99,6 +99,12 @@ def include_tg_webhook(
         methods=["POST"]
     )
 
+    app.add_api_route(
+        prefix + "/video-cut/vizard/notify/generated",
+        tg_webhook_controller.notify_vizard_video_cut_generated,
+        methods=["POST"]
+    )
+
 
 def include_command_handlers(
         dp: Dispatcher,

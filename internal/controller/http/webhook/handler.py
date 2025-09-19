@@ -134,6 +134,71 @@ class TelegramWebhookController(interface.ITelegramWebhookController):
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise err
 
+    async def notify_vizard_video_cut_generated(
+            self,
+            body: NotifyVizardVideoCutGenerated,
+    ) -> JSONResponse:
+        with self.tracer.start_as_current_span(
+                "NotificationWebhookController.notify_vizard_video_cut_generated",
+                kind=SpanKind.INTERNAL
+        ) as span:
+            try:
+                # Проверяем секретный ключ
+                if body.interserver_secret_key != self.interserver_secret_key:
+                    return JSONResponse(
+                        content={"status": "error", "message": "Wrong secret token !"},
+                        status_code=401
+                    )
+
+                # Получаем состояние пользователя по account_id
+                user_state = (await self.state_service.state_by_account_id(
+                    body.account_id
+                ))[0]
+
+                # Формируем сообщение для уведомления о генерации видео
+                message_text = self._format_vizard_notification_message(body)
+
+                # Отправляем уведомление
+                await self.bot.send_message(
+                    chat_id=user_state.tg_chat_id,
+                    text=message_text,
+                    parse_mode="HTML"
+                )
+
+                self.logger.info(
+                    "Уведомление о генерации видео отправлено",
+                    {
+                        common.TELEGRAM_CHAT_ID_KEY: user_state.tg_chat_id,
+                        "account_id": body.account_id,
+                        "youtube_video_reference": body.youtube_video_reference,
+                        "video_count": body.video_count,
+                    }
+                )
+
+                span.set_status(Status(StatusCode.OK))
+                return JSONResponse(
+                    content={"status": "ok"},
+                    status_code=200
+                )
+
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
+                raise err
+
+    def _format_vizard_notification_message(self, body: NotifyVizardVideoCutGenerated) -> str:
+        """Форматирует сообщение для уведомления о генерации видео"""
+        video_word = "видео" if body.video_count == 1 else "видеороликов"
+
+        message_text = (
+            f"🎬 <b>Ваше видео готово!</b>\n\n"
+            f"Успешно сгенерировано {body.video_count} {video_word} из видео:\n"
+            f"📺 <a href='{body.youtube_video_reference}'>Исходное видео</a>\n\n"
+            f"Перейдите в черновики, чтобы посмотреть результат!"
+        )
+
+        return message_text
+
     def _format_notification_message(self, body: EmployeeNotificationBody) -> str:
         role_names = {
             "employee": "Сотрудник",
