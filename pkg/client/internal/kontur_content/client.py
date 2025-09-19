@@ -137,7 +137,7 @@ class KonturContentClient(interface.IKonturContentClient):
             image_url: str = None,
             image_content: bytes = None,
             image_filename: str = None,
-    ) -> int:
+    ) -> dict:
         with self.tracer.start_as_current_span(
                 "KonturContentClient.create_publication",
                 kind=SpanKind.CLIENT
