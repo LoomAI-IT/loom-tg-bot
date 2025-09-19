@@ -42,6 +42,8 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
             try:
                 state = await self._get_state(dialog_manager)
 
+                employee = await self.kontur_employee_client.get_employee_by_account_id(state.account_id)
+
                 # Получаем черновики видео-нарезок для организации
                 video_cuts = await self.kontur_content_client.get_video_cuts_by_organization(
                     organization_id=state.organization_id
@@ -97,9 +99,10 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                     "has_video": bool(current_video_cut.video_fid),
                     "video_media": video_media,  # Новое поле для отображения видео
                     "current_index": current_index + 1,
-                    "total_count": len(video_cuts),
+                    "video_cuts_count": len(video_cuts),
                     "has_prev": current_index > 0,
                     "has_next": current_index < len(video_cuts) - 1,
+                    "can_publish": False if employee.required_moderation else True
                 }
 
                 # Сохраняем данные текущего черновика для редактирования
@@ -352,7 +355,7 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                     "video_description": working_video_cut["description"] or "Описание отсутствует",
                     "has_tags": bool(tags),
                     "video_tags": tags_text,
-                    "has_video": bool(working_video_cut.get("video_file_id") or working_video_cut.get("video_url")),
+                    "has_video": bool(working_video_cut.get("video_fid")),
                     "video_media": video_media,
                     "has_changes": self._has_changes(dialog_manager),
                 }

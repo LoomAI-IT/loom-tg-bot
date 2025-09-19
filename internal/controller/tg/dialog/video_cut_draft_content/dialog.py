@@ -128,18 +128,18 @@ class VideoCutsDraftDialog(interface.IVideoCutsDraftDialog):
                 ),
                 Case(
                     {
-                        True: Button(
+                        False: Button(
                             Const("📤 На модерацию"),
                             id="send_to_moderation",
                             on_click=self.video_cut_draft_service.handle_send_to_moderation,
                         ),
-                        False: Button(
+                        True: Button(
                             Const("🚀 Опубликовать"),
                             id="publish_now",
                             on_click=self.video_cut_draft_service.handle_publish_now,
                         ),
                     },
-                    selector="needs_moderation"
+                    selector="can_publish"
                 ),
                 Row(
                     Button(
