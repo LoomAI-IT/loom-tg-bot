@@ -64,7 +64,7 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                 instagram_connected = self._is_network_connected(social_networks, "instagram")
 
                 # Сохраняем список для навигации
-                dialog_manager.dialog_data["video_cuts_list"] = [video_cut.to_dict() for video_cut in video_cuts]
+                dialog_manager.dialog_data["video_cuts_list"] = [video_cut.to_dict() for video_cut in video_cuts if video_cut.video_fid]
                 dialog_manager.dialog_data["social_networks"] = social_networks
 
                 # Устанавливаем текущий индекс (0 если не был установлен)
