@@ -87,8 +87,7 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                 # Подготавливаем медиа для видео
                 video_media = None
                 if current_video_cut.video_fid:
-                    cache_buster = int(time.time())
-                    video_url = f"https://kontur-media.ru/api/content/video-cut/{current_video_cut.id}/download?v={cache_buster}"
+                    video_url = f"https://kontur-media.ru/api/content/video-cut/{current_video_cut.id}/download"
 
                     video_media = MediaAttachment(
                         url=video_url,
