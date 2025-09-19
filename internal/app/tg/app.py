@@ -22,6 +22,7 @@ def NewTg(
         add_employee_dialog: interface.IAddEmployeeDialog,
         content_menu_dialog: interface.IContentMenuDialog,
         generate_publication_dialog: interface.IGeneratePublicationDialog,
+        generate_video_cut_dialog: interface.IGenerateVideoCutDialog,
         moderation_publication_dialog: interface.IModerationPublicationDialog,
         prefix: str
 ):
@@ -49,6 +50,7 @@ def NewTg(
         add_employee_dialog,
         content_menu_dialog,
         generate_publication_dialog,
+        generate_video_cut_dialog,
         moderation_publication_dialog
     )
     dp.errors.register(
@@ -126,6 +128,7 @@ def include_dialogs(
         add_employee_dialog: interface.IAddEmployeeDialog,
         content_menu_dialog: interface.IContentMenuDialog,
         generate_publication_dialog: interface.IGeneratePublicationDialog,
+        generate_video_cut_dialog: interface.IGenerateVideoCutDialog,
         moderation_publication_dialog: interface.IModerationPublicationDialog,
 ):
     dialog_router = Router()
@@ -138,7 +141,8 @@ def include_dialogs(
         add_employee_dialog.get_dialog(),
         content_menu_dialog.get_dialog(),
         generate_publication_dialog.get_dialog(),
-        moderation_publication_dialog.get_dialog()
+        moderation_publication_dialog.get_dialog(),
+        generate_video_cut_dialog.get_dialog()
     )
 
     dp.include_routers(dialog_router)

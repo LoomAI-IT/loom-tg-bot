@@ -3,7 +3,7 @@ from aiogram import Bot, Dispatcher
 import redis.asyncio as redis
 from aiogram.fsm.storage.base import DefaultKeyBuilder
 from aiogram.fsm.storage.redis import RedisStorage
-from aiohttp import ClientTimeout, ClientSession
+from aiohttp import ClientTimeout
 
 from infrastructure.pg.pg import PG
 from infrastructure.telemetry.telemetry import Telemetry, AlertManager
@@ -28,6 +28,7 @@ from internal.controller.tg.dialog.change_employee.dialog import ChangeEmployeeD
 from internal.controller.tg.dialog.add_employee.dialog import AddEmployeeDialog
 from internal.controller.tg.dialog.content_menu.dialog import ContentMenuDialog
 from internal.controller.tg.dialog.generate_publication.dialog import GeneratePublicationDialog
+from internal.controller.tg.dialog.generate_video_cut.dialog import GenerateVideoCutDialog
 from internal.controller.tg.dialog.moderation_publication.dialog import ModerationPublicationDialog
 
 from internal.service.state.service import StateService
@@ -39,6 +40,7 @@ from internal.service.change_employee.service import ChangeEmployeeDialogService
 from internal.service.add_employee.service import AddEmployeeDialogService
 from internal.service.content_menu.service import ContentMenuDialogService
 from internal.service.generate_publication.service import GeneratePublicationDialogService
+from internal.service.generate_video_cut.service import GenerateVideoCutDialogService
 from internal.service.moderation_publication.service import ModerationPublicationDialogService
 
 from internal.repo.state.repo import StateRepo
@@ -162,6 +164,13 @@ generate_publication_service = GeneratePublicationDialogService(
     kontur_content_client,
 )
 
+generate_video_cut_service = GenerateVideoCutDialogService(
+    tel,
+    state_repo,
+    kontur_employee_client,
+    kontur_content_client,
+)
+
 moderation_publication_service = ModerationPublicationDialogService(
     tel,
     bot,
@@ -207,6 +216,11 @@ generate_publication_dialog = GeneratePublicationDialog(
     generate_publication_service
 )
 
+generate_video_cut_dialog = GenerateVideoCutDialog(
+    tel,
+    generate_video_cut_service
+)
+
 moderation_publication_dialog = ModerationPublicationDialog(
     tel,
     moderation_publication_service
@@ -250,6 +264,7 @@ if __name__ == "__main__":
         add_employee_dialog,
         content_menu_dialog,
         generate_publication_dialog,
+        generate_video_cut_dialog,
         moderation_publication_dialog,
         cfg.prefix,
     )
