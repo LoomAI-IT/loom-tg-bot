@@ -165,6 +165,9 @@ class IKonturContentClient(Protocol):
     ) -> None: pass
 
     @abstractmethod
+    async def delete_video_cut(self, video_cut_id: int) -> None: pass
+
+    @abstractmethod
     async def send_video_cut_to_moderation(self, video_cut_id: int) -> None: pass
 
     @abstractmethod

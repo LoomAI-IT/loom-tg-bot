@@ -47,6 +47,8 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                     organization_id=state.organization_id
                 )
 
+                video_cuts = [video_cut for video_cut in video_cuts if video_cut.video_fid and video_cut.moderation_status == "draft"]
+
                 if not video_cuts:
                     return {
                         "has_video_cuts": False,
@@ -64,7 +66,7 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                 instagram_connected = self._is_network_connected(social_networks, "instagram")
 
                 # Сохраняем список для навигации
-                dialog_manager.dialog_data["video_cuts_list"] = [video_cut.to_dict() for video_cut in video_cuts if video_cut.video_fid]
+                dialog_manager.dialog_data["video_cuts_list"] = [video_cut.to_dict() for video_cut in video_cuts]
                 dialog_manager.dialog_data["social_networks"] = social_networks
 
                 # Устанавливаем текущий индекс (0 если не был установлен)
@@ -314,10 +316,10 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                 original_video_cut = dialog_manager.dialog_data["original_video_cut"]
                 video_cut_id = original_video_cut["id"]
 
-                # Удаляем черновик через API
-                # await self.kontur_content_client.delete_video_cut(
-                #     video_cut_id=video_cut_id
-                # )
+
+                await self.kontur_content_client.delete_video_cut(
+                    video_cut_id=video_cut_id
+                )
 
                 self.logger.info(
                     "Черновик видео удален",
