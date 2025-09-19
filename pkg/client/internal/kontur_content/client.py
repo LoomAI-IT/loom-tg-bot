@@ -188,8 +188,8 @@ class KonturContentClient(interface.IKonturContentClient):
     async def change_publication(
             self,
             publication_id: int,
-            vk_source_id: int = None,
-            tg_source_id: int = None,
+            vk_source: bool = None,
+            tg_source: bool = None,
             name: str = None,
             text: str = None,
             tags: list[str] = None,
@@ -209,10 +209,10 @@ class KonturContentClient(interface.IKonturContentClient):
                 # Формируем data только с непустыми значениями
                 data = {}
 
-                if vk_source_id is not None:
-                    data["vk_source_id"] = str(vk_source_id)
-                if tg_source_id is not None:
-                    data["tg_source_id"] = str(tg_source_id)
+                if vk_source is not None:
+                    data["vk_source"] = vk_source
+                if tg_source is not None:
+                    data["tg_source"] = tg_source
                 if name is not None:
                     data["name"] = name
                 if text is not None:
@@ -237,8 +237,6 @@ class KonturContentClient(interface.IKonturContentClient):
                         image_content,
                         "image/png"
                     )
-
-                print(data, flush=True)
 
                 # Отправляем запрос
                 if files:
@@ -670,8 +668,8 @@ class KonturContentClient(interface.IKonturContentClient):
             name: str = None,
             description: str = None,
             tags: list[str] = None,
-            inst_source_id: int = None,
-            youtube_source_id: int = None,
+            inst_source: bool = None,
+            youtube_source: bool = None,
     ) -> None:
         with self.tracer.start_as_current_span(
                 "PublicationClient.change_video_cut",
@@ -688,10 +686,10 @@ class KonturContentClient(interface.IKonturContentClient):
                     body["description"] = description
                 if tags is not None:
                     body["tags"] = tags
-                if inst_source_id is not None:
-                    body["inst_source_id"] = inst_source_id
-                if youtube_source_id is not None:
-                    body["youtube_source_id"] = youtube_source_id
+                if inst_source is not None:
+                    body["inst_source"] = inst_source
+                if youtube_source is not None:
+                    body["youtube_source"] = youtube_source
 
                 await self.client.put(f"/video-cut", json=body)
 
