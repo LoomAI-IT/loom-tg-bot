@@ -1,7 +1,7 @@
 from aiogram.fsm.state import StatesGroup, State
 
 
-class DraftVideoCutsStates(StatesGroup):
+class VideoCutsDraftStates(StatesGroup):
     """Стейты для диалога управления черновиками видеонарезок"""
 
     # Основное окно со списком черновиков и отображением видео

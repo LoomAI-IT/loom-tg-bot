@@ -226,7 +226,7 @@ class ContentMenuDialogService(interface.IContentMenuDialogService):
             try:
                 # Запускаем диалог черновиков видео-нарезок
                 await dialog_manager.start(
-                    model.VideoCutDraftContentStates.video_drafts_list,
+                    model.VideoCutsDraftStates.video_cut_list,
                     mode=StartMode.RESET_STACK
                 )
 
