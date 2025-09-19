@@ -554,15 +554,6 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                 youtube_enabled = bool(working_video_cut.get("youtube_source_id"))
                 instagram_enabled = bool(working_video_cut.get("inst_source_id"))
 
-                if not youtube_enabled and not instagram_enabled:
-                    await callback.answer("❌ Должна быть выбрана хотя бы одна платформа", show_alert=True)
-                    # Возвращаем предыдущее значение
-                    if checkbox.widget_id == "youtube_checkbox":
-                        working_video_cut["youtube_source_id"] = 1
-                    elif checkbox.widget_id == "instagram_checkbox":
-                        working_video_cut["inst_source_id"] = 1
-                    return
-
                 await callback.answer()
                 span.set_status(Status(StatusCode.OK))
 
@@ -699,18 +690,9 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
     async def _save_video_cut_changes(self, dialog_manager: DialogManager) -> None:
         working_video_cut = dialog_manager.dialog_data["working_video_cut"]
         video_cut_id = working_video_cut["id"]
-
-        # Подготавливаем значения для социальных сетей
-        # Если 0 - передаем None, иначе передаем значение
         youtube_source_id = working_video_cut.get("youtube_source_id")
-        if youtube_source_id == 0:
-            youtube_source_id = None
-
         inst_source_id = working_video_cut.get("inst_source_id")
-        if inst_source_id == 0:
-            inst_source_id = None
 
-        # Обновляем черновик через API
         await self.kontur_content_client.change_video_cut(
             video_cut_id=video_cut_id,
             name=working_video_cut["name"],
