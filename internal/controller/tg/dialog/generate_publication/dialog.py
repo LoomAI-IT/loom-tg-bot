@@ -202,7 +202,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                 Button(
                     Const("🚀 Опубликовать"),
                     id="publish_now",
-                    on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.social_network_select),
+                    on_click=self.generate_publication_service.handle_publish_now,  # Изменено!
                     when="can_publish_directly",
                 ),
             ),
@@ -558,10 +558,18 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                 selector="no_connected_networks"
             ),
 
-            Button(
-                Const("◀️ Назад"),
-                id="back_to_preview",
-                on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.preview),
+            Row(
+                Button(
+                    Const("🚀 Опубликовать"),
+                    id="publish_with_networks",
+                    on_click=self.generate_publication_service.handle_publish_with_selected_networks,  # Новый метод!
+                    when="has_available_networks",
+                ),
+                Button(
+                    Const("◀️ Назад"),
+                    id="back_to_preview",
+                    on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.preview),
+                ),
             ),
 
             state=model.GeneratePublicationStates.social_network_select,

@@ -896,6 +896,173 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
+    async def handle_publish_now(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        """Обработка нажатия кнопки 'Опубликовать' в превью"""
+        with self.tracer.start_as_current_span(
+                "GeneratePublicationDialogService.handle_publish_now",
+                kind=SpanKind.INTERNAL
+        ) as span:
+            try:
+                # Проверяем, выбраны ли социальные сети
+                selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
+                has_selected_networks = any(selected_networks.values())
+
+                if not has_selected_networks:
+                    # Если не выбраны соцсети, показываем сообщение и переходим к выбору
+                    await callback.answer(
+                        "⚠️ Выберите социальные сети для публикации",
+                        show_alert=True
+                    )
+                    await dialog_manager.switch_to(model.GeneratePublicationStates.social_network_select)
+                else:
+                    # Если соцсети выбраны, публикуем сразу
+                    await self._publish_immediately(callback, dialog_manager)
+
+                span.set_status(Status(StatusCode.OK))
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
+                await callback.answer("❌ Ошибка при публикации", show_alert=True)
+                raise
+
+    async def handle_publish_with_selected_networks(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        """Публикация с выбранными социальными сетями"""
+        with self.tracer.start_as_current_span(
+                "GeneratePublicationDialogService.handle_publish_with_selected_networks",
+                kind=SpanKind.INTERNAL
+        ) as span:
+            try:
+                # Проверяем, что выбрана хотя бы одна соцсеть
+                selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
+                has_selected_networks = any(selected_networks.values())
+
+                if not has_selected_networks:
+                    await callback.answer(
+                        "⚠️ Выберите хотя бы одну социальную сеть для публикации",
+                        show_alert=True
+                    )
+                    return
+
+                await self._publish_immediately(callback, dialog_manager)
+
+                span.set_status(Status(StatusCode.OK))
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
+                await callback.answer("❌ Ошибка при публикации", show_alert=True)
+                raise
+
+    async def _publish_immediately(
+            self,
+            callback: CallbackQuery,
+            dialog_manager: DialogManager
+    ) -> None:
+        """Немедленная публикация с выбранными соцсетями"""
+        with self.tracer.start_as_current_span(
+                "GeneratePublicationDialogService._publish_immediately",
+                kind=SpanKind.INTERNAL
+        ) as span:
+            try:
+                await callback.answer()
+                loading_message = await callback.message.answer("🚀 Публикую пост...")
+
+                state = await self._get_state(dialog_manager)
+
+                category_id = dialog_manager.dialog_data["category_id"]
+                text_reference = dialog_manager.dialog_data["input_text"]
+                tags = dialog_manager.dialog_data["publication_tags"]
+                name = dialog_manager.dialog_data["publication_name"]
+                text = dialog_manager.dialog_data["publication_text"]
+
+                # Подготавливаем данные об изображении
+                image_url = dialog_manager.dialog_data.get("publication_image_url")
+                image_content = None
+                image_filename = None
+
+                telegram_file_id = dialog_manager.dialog_data.get("custom_image_file_id")
+                if telegram_file_id:
+                    file = await self.bot.get_file(telegram_file_id)
+                    file_data = await self.bot.download_file(file.file_path)
+                    image_content = file_data.read()
+                    image_filename = f"user_image_{telegram_file_id[:8]}.jpg"
+
+                # Создаем публикацию со статусом "published"
+                publication_id = await self.kontur_content_client.create_publication(
+                    state.organization_id,
+                    category_id,
+                    state.account_id,
+                    text_reference,
+                    name,
+                    text,
+                    tags,
+                    "published",  # Статус published для немедленной публикации
+                    image_url=image_url,
+                    image_content=image_content,
+                    image_filename=image_filename,
+                )
+
+                # Обновляем публикацию с выбранными социальными сетями
+                selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
+                tg_source = selected_networks.get("telegram_checkbox", False)
+                vk_source = selected_networks.get("vkontakte_checkbox", False)
+
+                await self.kontur_content_client.change_publication(
+                    publication_id=publication_id,
+                    tg_source=tg_source,
+                    vk_source=vk_source,
+                )
+
+                # Формируем сообщение о публикации
+                published_networks = []
+                if tg_source:
+                    published_networks.append("📺 Telegram")
+                if vk_source:
+                    published_networks.append("🔗 VKontakte")
+
+                networks_text = ", ".join(published_networks)
+
+                self.logger.info(
+                    "Публикация опубликована",
+                    {
+                        common.TELEGRAM_CHAT_ID_KEY: callback.message.chat.id,
+                        "publication_id": publication_id,
+                        "tg_source": tg_source,
+                        "vk_source": vk_source,
+                    }
+                )
+
+                await loading_message.edit_text(
+                    f"🚀 Публикация успешно опубликована!\n\n"
+                    f"📋 Опубликовано в: {networks_text}"
+                )
+
+                await asyncio.sleep(3)
+                try:
+                    await loading_message.delete()
+                except:
+                    pass
+
+                await dialog_manager.start(
+                    model.ContentMenuStates.content_menu,
+                    mode=StartMode.RESET_STACK
+                )
+
+                span.set_status(Status(StatusCode.OK))
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
+                raise
+
     async def get_social_network_select_data(
             self,
             dialog_manager: DialogManager,
@@ -923,6 +1090,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                     "vkontakte_connected": vkontakte_connected,
                     "all_networks_connected": telegram_connected and vkontakte_connected,
                     "no_connected_networks": not telegram_connected and not vkontakte_connected,
+                    "has_available_networks": telegram_connected or vkontakte_connected,  # Новое поле!
                 }
 
                 span.set_status(Status(StatusCode.OK))
@@ -938,11 +1106,6 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
         if not social_networks:
             return False
         return network_type in social_networks and len(social_networks[network_type]) > 0
-
-    def _has_selected_social_networks(self, dialog_manager: DialogManager) -> bool:
-        """Проверка что выбрана хотя бы одна социальная сеть"""
-        selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
-        return any(selected_networks.values())
 
     async def handle_go_to_content_menu(
             self,

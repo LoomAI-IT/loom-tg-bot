@@ -203,6 +203,22 @@ class IGeneratePublicationDialogService(Protocol):
     ) -> None: pass
 
     @abstractmethod
+    async def handle_publish_now(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
+    @abstractmethod
+    async def handle_publish_with_selected_networks(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
+    @abstractmethod
     async def handle_toggle_social_network(
             self,
             callback: CallbackQuery,
@@ -223,11 +239,6 @@ class IGeneratePublicationDialogService(Protocol):
             dialog_manager: DialogManager,
     ) -> dict: pass
 
-    @abstractmethod
-    async def get_publish_locations_data(
-            self,
-            dialog_manager: DialogManager,
-    ) -> dict: pass
 
     @abstractmethod
     async def get_input_text_data(
