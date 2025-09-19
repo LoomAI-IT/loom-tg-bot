@@ -155,9 +155,8 @@ class IKonturContentClient(Protocol):
             self,
             video_cut_id: int,
             name: str = None,
-            text: str = None,
+            description: str = None,
             tags: list[str] = None,
-            time_for_publication: datetime = None
     ) -> None: pass
 
     @abstractmethod

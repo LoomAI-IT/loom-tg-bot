@@ -95,7 +95,7 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
                 preview_image_media = None
                 if current_pub.image_fid:
                     cache_buster = int(time.time())
-                    image_url = f"https://kontur-media.ru/api/publication/{current_pub.id}/image/download?v={cache_buster}"
+                    image_url = f"https://kontur-media.ru/api/content/publication/{current_pub.id}/image/download?v={cache_buster}"
 
                     preview_image_media = MediaAttachment(
                         url=image_url,

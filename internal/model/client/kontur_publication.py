@@ -101,3 +101,27 @@ class VideoCut:
     time_for_publication: str
     publication_at: str
     created_at: str
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "project_id": self.project_id,
+            "organization_id": self.organization_id,
+            "creator_id": self.creator_id,
+            "moderator_id": self.moderator_id,
+            "inst_source_id": self.inst_source_id,
+            "youtube_source_id": self.youtube_source_id,
+            "youtube_video_reference": self.youtube_video_reference,
+            "name": self.name,
+            "description": self.description,
+            "transcript": self.transcript,
+            "tags": self.tags,
+            "video_fid": self.video_fid,
+            "video_name": self.video_name,
+            "vizard_rub_cost": self.vizard_rub_cost,
+            "moderation_status": self.moderation_status,
+            "moderation_comment": self.moderation_comment,
+            "time_for_publication": self.time_for_publication,
+            "publication_at": self.publication_at,
+            "created_at": self.created_at
+        }

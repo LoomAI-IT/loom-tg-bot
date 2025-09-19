@@ -649,9 +649,8 @@ class KonturContentClient(interface.IKonturContentClient):
             self,
             video_cut_id: int,
             name: str = None,
-            text: str = None,
+            description: str = None,
             tags: list[str] = None,
-            time_for_publication: datetime = None
     ) -> None:
         with self.tracer.start_as_current_span(
                 "PublicationClient.change_video_cut",
@@ -664,12 +663,10 @@ class KonturContentClient(interface.IKonturContentClient):
                 body = {}
                 if name is not None:
                     body["name"] = name
-                if text is not None:
-                    body["text"] = text
+                if description is not None:
+                    body["description"] = description
                 if tags is not None:
                     body["tags"] = tags
-                if time_for_publication is not None:
-                    body["time_for_publication"] = time_for_publication.isoformat()
 
                 await self.client.put(f"/video-cut/{video_cut_id}", json=body)
 
