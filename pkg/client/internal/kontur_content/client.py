@@ -23,6 +23,25 @@ class KonturContentClient(interface.IKonturContentClient):
         )
         self.tracer = tel.tracer()
 
+    async def get_social_networks_by_organization(self, organization_id: int) -> dict:
+        with self.tracer.start_as_current_span(
+                "KonturContentClient.get_social_networks_by_organization",
+                kind=SpanKind.CLIENT,
+                attributes={
+                    "organization_id": organization_id
+                }
+        ) as span:
+            try:
+                response = await self.client.get(f"/social-network/organization/{organization_id}")
+                json_response = response.json()
+
+                span.set_status(Status(StatusCode.OK))
+                return json_response["data"]
+            except Exception as e:
+                span.record_exception(e)
+                span.set_status(Status(StatusCode.ERROR, str(e)))
+                raise
+
     # ПУБЛИКАЦИИ
     async def generate_publication_text(
             self,

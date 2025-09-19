@@ -7,6 +7,9 @@ from fastapi import UploadFile
 from internal import model
 
 class IKonturContentClient(Protocol):
+    @abstractmethod
+    async def get_social_networks_by_organization(self, organization_id: int) -> dict: pass
+
     # ПУБЛИКАЦИИ
     @abstractmethod
     async def generate_publication_text(
