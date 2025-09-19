@@ -720,7 +720,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                     image_filename = f"user_image_{telegram_file_id[:8]}.jpg"
 
                 # Создаем публикацию
-                publication_id = await self.kontur_content_client.create_publication(
+                publication_data = await self.kontur_content_client.create_publication(
                     state.organization_id,
                     category_id,
                     state.account_id,
@@ -741,7 +741,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                     vk_source = selected_networks.get("vkontakte_checkbox", False)
 
                     await self.kontur_content_client.change_publication(
-                        publication_id=publication_id,
+                        publication_id=publication_data["publication_id"],
                         tg_source=tg_source,
                         vk_source=vk_source,
                     )
@@ -750,7 +750,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                     "Публикация сохранена в черновики",
                     {
                         common.TELEGRAM_CHAT_ID_KEY: callback.message.chat.id,
-                        "publication_id": publication_id,
+                        "publication_id": publication_data["publication_id"],
                         "tg_source": selected_networks.get("telegram_checkbox", False),
                         "vk_source": selected_networks.get("vkontakte_checkbox", False),
                     }
@@ -802,7 +802,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                     image_filename = f"user_image_{telegram_file_id[:8]}.jpg"
 
                 # Создаем публикацию на модерации
-                publication_id = await self.kontur_content_client.create_publication(
+                publication_data = await self.kontur_content_client.create_publication(
                     state.organization_id,
                     category_id,
                     state.account_id,
@@ -823,7 +823,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                     vk_source = selected_networks.get("vkontakte_checkbox", False)
 
                     await self.kontur_content_client.change_publication(
-                        publication_id=publication_id,
+                        publication_id=publication_data["publication_id"],
                         tg_source=tg_source,
                         vk_source=vk_source,
                     )
@@ -832,7 +832,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                     "Отправлено на модерацию",
                     {
                         common.TELEGRAM_CHAT_ID_KEY: callback.message.chat.id,
-                        "publication_id": publication_id,
+                        "publication_id": publication_data["publication_id"],
                         "tg_source": selected_networks.get("telegram_checkbox", False),
                         "vk_source": selected_networks.get("vkontakte_checkbox", False),
                     }
@@ -997,7 +997,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                     image_filename = f"user_image_{telegram_file_id[:8]}.jpg"
 
                 # Создаем публикацию со статусом "published"
-                publication_id = await self.kontur_content_client.create_publication(
+                publication_data = await self.kontur_content_client.create_publication(
                     state.organization_id,
                     category_id,
                     state.account_id,
@@ -1017,7 +1017,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 vk_source = selected_networks.get("vkontakte_checkbox", False)
 
                 await self.kontur_content_client.change_publication(
-                    publication_id=publication_id,
+                    publication_id=publication_data["publication_id"],
                     tg_source=tg_source,
                     vk_source=vk_source,
                 )
@@ -1035,7 +1035,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                     "Публикация опубликована",
                     {
                         common.TELEGRAM_CHAT_ID_KEY: callback.message.chat.id,
-                        "publication_id": publication_id,
+                        "publication_id": publication_data["publication_id"],
                         "tg_source": tg_source,
                         "vk_source": vk_source,
                     }

@@ -49,7 +49,7 @@ class IKonturContentClient(Protocol):
             image_url: str = None,
             image_content: bytes = None,
             image_filename: str = None,
-    ) -> int: pass
+    ) -> dict: pass
 
     @abstractmethod
     async def change_publication(
