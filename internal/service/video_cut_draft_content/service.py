@@ -86,8 +86,8 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                 # Подготавливаем медиа для видео
                 video_media = None
                 if current_video_cut.video_fid:
-                    # video_url = f"https://kontur-media.ru/api/content/video-cut/{current_video_cut.id}/download"
-                    video_url = current_video_cut.original_url
+                    video_url = f"https://kontur-media.ru/api/content/video-cut/{current_video_cut.id}/download"
+                    # video_url = current_video_cut.original_url
                     video_media = MediaAttachment(
                         url=video_url,
                         type=ContentType.VIDEO

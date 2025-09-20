@@ -1246,45 +1246,6 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise err
 
-    async def get_publish_locations_data(
-            self,
-            dialog_manager: DialogManager,
-            **kwargs
-    ) -> dict:
-        """Получение данных для окна выбора платформ"""
-        with self.tracer.start_as_current_span(
-                "GeneratePublicationDialogService.get_publish_locations_data",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                state = await self._get_state(dialog_manager)
-                employee = await self.kontur_employee_client.get_employee_by_account_id(
-                    state.account_id
-                )
-
-                # TODO: Получить реальные подключенные платформы из API организации
-                # organization_platforms = await self.kontur_organization_client.get_connected_platforms(
-                #     employee.organization_id
-                # )
-
-                # Пока используем статичные данные
-                platforms_data = dialog_manager.dialog_data.get("selected_platforms", {})
-                selected_count = sum(1 for selected in platforms_data.values() if selected)
-
-                data = {
-                    "telegram_available": True,
-                    "vkontakte_available": True,
-                    "has_selected_platforms": selected_count > 0,
-                    "selected_count": selected_count,
-                }
-
-                span.set_status(Status(StatusCode.OK))
-                return data
-            except Exception as err:
-                span.record_exception(err)
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                raise err
-
     async def get_regenerate_data(
             self,
             dialog_manager: DialogManager,
@@ -1343,24 +1304,3 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
             return dialog_manager.event.chat.id
         else:
             raise ValueError("Cannot extract chat_id from dialog_manager")
-
-    async def _download_image_from_url(
-            self,
-            image_url: str
-    ) -> bytes:
-        with self.tracer.start_as_current_span(
-                "GeneratePublicationDialogService._download_image_from_url",
-                kind=SpanKind.CLIENT,
-        ) as span:
-            try:
-                async with httpx.AsyncClient() as client:
-                    response = await client.get(image_url)
-                    response.raise_for_status()
-
-                span.set_status(Status(StatusCode.OK))
-                return response.content
-
-            except Exception as err:
-                span.record_exception(err)
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                raise
