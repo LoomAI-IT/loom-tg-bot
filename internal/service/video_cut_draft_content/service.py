@@ -99,6 +99,7 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                             video=BufferedInputFile(content, filename=current_video_cut.video_name)
                         )
                         file_id = resp.video.file_id
+                        await self.state_repo.set_cache_file(current_video_cut.video_name, file_id)
                     else:
                         file_id = cached_file[0].file_id
 

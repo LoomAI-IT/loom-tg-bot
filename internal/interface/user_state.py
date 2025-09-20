@@ -41,7 +41,7 @@ class IStateRepo(Protocol):
     async def state_by_account_id(self, account_id: int) -> list[model.UserState]: pass
 
     @abstractmethod
-    async def set_cache_file(self, filename: str, file_id: int): pass
+    async def set_cache_file(self, filename: str, file_id: str): pass
 
     @abstractmethod
     async def get_cache_file(self, filename: str) -> list[model.CachedFile]: pass

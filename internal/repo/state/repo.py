@@ -73,7 +73,7 @@ class StateRepo(interface.IStateRepo):
                 span.set_status(StatusCode.ERROR, str(err))
                 raise
 
-    async def set_cache_file(self, filename: str, file_id: int):
+    async def set_cache_file(self, filename: str, file_id: str):
         with self.tracer.start_as_current_span(
                 "StateRepo.set_cache_file",
                 kind=SpanKind.INTERNAL
