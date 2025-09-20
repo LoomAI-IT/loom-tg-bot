@@ -5,7 +5,6 @@ from aiogram.client.session.aiohttp import AiohttpSession
 from aiogram.client.telegram import TelegramAPIServer
 from aiogram.fsm.storage.base import DefaultKeyBuilder
 from aiogram.fsm.storage.redis import RedisStorage
-from aiohttp import ClientTimeout
 
 from infrastructure.pg.pg import PG
 from infrastructure.telemetry.telemetry import Telemetry, AlertManager
