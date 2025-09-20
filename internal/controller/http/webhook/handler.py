@@ -211,7 +211,6 @@ class TelegramWebhookController(interface.ITelegramWebhookController):
                 self.logger.info(
                     "Файл сохранен в кеш",
                     {
-                        "filename": body.filename,
                         "file_id": body.file_id,
                     }
                 )
