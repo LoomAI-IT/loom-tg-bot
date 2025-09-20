@@ -507,6 +507,8 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                 # Удаляем черновик из списка (он больше не черновик)
                 await self._remove_current_video_cut_from_list(dialog_manager)
 
+                await dialog_manager.switch_to(model.VideoCutsDraftStates.video_cut_list)
+
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
