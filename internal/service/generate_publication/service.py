@@ -2,6 +2,7 @@ import io
 import asyncio
 from typing import Any
 
+import aiohttp
 from aiogram_dialog.widgets.input import MessageInput
 
 from aiogram import Bot
@@ -23,6 +24,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
             kontur_employee_client: interface.IKonturEmployeeClient,
             kontur_organization_client: interface.IKonturOrganizationClient,
             kontur_content_client: interface.IKonturContentClient,
+            kontur_domain: str
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
@@ -31,6 +33,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
         self.kontur_employee_client = kontur_employee_client
         self.kontur_organization_client = kontur_organization_client
         self.kontur_content_client = kontur_content_client
+        self.kontur_domain = kontur_domain
 
     async def handle_select_category(
             self,
@@ -715,8 +718,8 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 if telegram_file_id:
                     file = await self.bot.get_file(telegram_file_id)
                     file_path = file.file_path.replace("/var/lib/telegram-bot-api/", "")
-                    file_data = await self.bot.download_file(file_path)
-                    image_content = file_data.read()
+                    image_url = f"https://{self.kontur_domain}/telegram-bot-files/{file_path}"
+                    image_content, content_type = await self._download_image_from_url(image_url)
                     image_filename = f"user_image_{telegram_file_id[:8]}.jpg"
 
                 # Создаем публикацию
@@ -1295,3 +1298,16 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
             return dialog_manager.event.chat.id
         else:
             raise ValueError("Cannot extract chat_id from dialog_manager")
+
+    async def _download_image_from_url(self, image_url: str) -> tuple[bytes, str]:
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(image_url) as response:
+                    if response.status == 200:
+                        content_type = response.headers.get('content-type', 'image/jpeg')
+                        content = await response.read()
+                        return content, content_type
+                    else:
+                        raise Exception(f"Failed to download video: HTTP {response.status}")
+        except Exception as err:
+            raise err
