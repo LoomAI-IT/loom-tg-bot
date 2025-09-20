@@ -73,6 +73,12 @@ class StateRepo(interface.IStateRepo):
                 span.set_status(StatusCode.ERROR, str(err))
                 raise
 
+    async def set_cache_file(self, filename: str, file_id: int):
+        pass
+
+    async def get_cache_file(self, filename: str) -> list[model.CachedFile]:
+        pass
+
     async def change_user_state(
             self,
             state_id: int,

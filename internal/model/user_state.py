@@ -28,3 +28,26 @@ class UserState:
             )
             for row in rows
         ]
+
+@dataclass
+class CachedFile:
+    id: int
+    filename: str
+
+    file_id: str
+
+    created_at: datetime
+
+    @classmethod
+    def serialize(cls, rows) -> list:
+        return [
+            cls(
+                id=row.id,
+                filename=row.filename,
+                file_id=row.file_id,
+                created_at=row.created_at,
+            )
+            for row in rows
+        ]
+
+

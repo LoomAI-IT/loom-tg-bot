@@ -94,7 +94,7 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
 
                     resp = await bot.send_video(
                         252166008,
-                        video=BufferedInputFile(content, filename="fff.mp4")
+                        video=BufferedInputFile(content, filename=current_video_cut.video_name)
                     )
                     video_media = MediaAttachment(
                         file_id=MediaId(resp.video.file_id),
