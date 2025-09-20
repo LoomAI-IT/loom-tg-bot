@@ -95,7 +95,7 @@ class StateRepo(interface.IStateRepo):
         ) as span:
             try:
                 args = {'filename': filename}
-                rows = await self.db.select(set_cache_file, args)
+                rows = await self.db.select(get_cache_file, args)
                 if rows:
                     rows = model.CachedFile.serialize(rows)
                 span.set_status(StatusCode.OK)
