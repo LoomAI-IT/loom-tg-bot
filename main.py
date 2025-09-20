@@ -1,6 +1,8 @@
 import uvicorn
 from aiogram import Bot, Dispatcher
 import redis.asyncio as redis
+from aiogram.client.session.aiohttp import AiohttpSession
+from aiogram.client.telegram import TelegramAPIServer
 from aiogram.fsm.storage.base import DefaultKeyBuilder
 from aiogram.fsm.storage.redis import RedisStorage
 from aiohttp import ClientTimeout
@@ -76,10 +78,8 @@ tel = Telemetry(
     cfg.otlp_port,
     alert_manager
 )
-bot = Bot(
-    cfg.tg_bot_token,
-    timeout=ClientTimeout(total=120),
-)
+session = AiohttpSession(api=TelegramAPIServer.from_base('https://kontur-media.ru/telegram-bot-api'))
+bot = Bot(token=cfg.tg_bot_token, session=session)
 
 redis_client = redis.Redis(
     host=cfg.monitoring_redis_host,
