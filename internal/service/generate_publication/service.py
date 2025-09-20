@@ -2,7 +2,6 @@ import io
 import asyncio
 from typing import Any
 
-import httpx
 from aiogram_dialog.widgets.input import MessageInput
 
 from aiogram import Bot
@@ -896,7 +895,6 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        """Обработка нажатия кнопки 'Опубликовать' в превью"""
         with self.tracer.start_as_current_span(
                 "GeneratePublicationDialogService.handle_publish_now",
                 kind=SpanKind.INTERNAL
@@ -917,7 +915,6 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        """Публикация с выбранными социальными сетями"""
         with self.tracer.start_as_current_span(
                 "GeneratePublicationDialogService.handle_publish_with_selected_networks",
                 kind=SpanKind.INTERNAL
@@ -947,7 +944,6 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
             callback: CallbackQuery,
             dialog_manager: DialogManager
     ) -> None:
-        """Немедленная публикация с выбранными соцсетями"""
         with self.tracer.start_as_current_span(
                 "GeneratePublicationDialogService._publish_immediately",
                 kind=SpanKind.INTERNAL
@@ -1048,7 +1044,6 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        """Получение данных для окна выбора социальных сетей"""
         with self.tracer.start_as_current_span(
                 "GeneratePublicationDialogService.get_social_network_select_data",
                 kind=SpanKind.INTERNAL
@@ -1087,7 +1082,6 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 raise
 
     def _is_network_connected(self, social_networks: dict, network_type: str) -> bool:
-        """Проверка подключения социальной сети"""
         if not social_networks:
             return False
         return network_type in social_networks and len(social_networks[network_type]) > 0
@@ -1251,7 +1245,6 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        """Данные для окна перегенерации с промптом"""
         return {
             "has_regenerate_prompt": dialog_manager.dialog_data.get("regenerate_prompt", "") != "",
             "regenerate_prompt": dialog_manager.dialog_data.get("regenerate_prompt", ""),
@@ -1262,7 +1255,6 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        """Данные для меню управления изображением"""
         return {
             "has_image": dialog_manager.dialog_data.get("has_image", False),
             "is_custom_image": dialog_manager.dialog_data.get("is_custom_image", False),
@@ -1273,7 +1265,6 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        """Данные для окна генерации изображения с промптом"""
         return {
             "has_image_prompt": dialog_manager.dialog_data.get("image_prompt", "") != "",
             "image_prompt": dialog_manager.dialog_data.get("image_prompt", ""),
@@ -1297,7 +1288,6 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
         return state[0]
 
     def _get_chat_id(self, dialog_manager: DialogManager) -> int:
-        """Получить chat_id из dialog_manager"""
         if hasattr(dialog_manager.event, 'message') and dialog_manager.event.message:
             return dialog_manager.event.message.chat.id
         elif hasattr(dialog_manager.event, 'chat'):

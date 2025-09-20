@@ -139,7 +139,6 @@ class PersonalProfileDialogService(interface.IPersonalProfileDialogService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        """Возврат к основному окну личного профиля"""
         with self.tracer.start_as_current_span(
                 "PersonalProfileDialogService.handle_back_to_profile",
                 kind=SpanKind.INTERNAL

@@ -78,6 +78,7 @@ class IVideoCutsDraftDialogService(Protocol):
     async def get_edit_preview_data(
             self,
             dialog_manager: DialogManager,
+            bot: Bot
     ) -> dict: pass
 
     @abstractmethod

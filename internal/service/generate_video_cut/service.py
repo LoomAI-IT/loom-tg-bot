@@ -124,7 +124,6 @@ class GenerateVideoCutDialogService(interface.IGenerateVideoCutDialogService):
                 raise err
 
     def _is_valid_youtube_url(self, url: str) -> bool:
-        """Проверяет, является ли URL корректной ссылкой на YouTube."""
         youtube_regex = re.compile(
             r'(https?://)?(www\.)?(youtube|youtu|youtube-nocookie)\.(com|be)/'
             r'(watch\?v=|embed/|v/|.+\?v=)?([^&=%\?]{11})'
@@ -132,7 +131,6 @@ class GenerateVideoCutDialogService(interface.IGenerateVideoCutDialogService):
         return bool(youtube_regex.match(url))
 
     async def _get_state(self, dialog_manager: DialogManager) -> model.UserState:
-        """Получить состояние текущего пользователя."""
         chat_id = self._get_chat_id(dialog_manager)
         state = await self.state_repo.state_by_id(chat_id)
         if not state:
@@ -140,7 +138,6 @@ class GenerateVideoCutDialogService(interface.IGenerateVideoCutDialogService):
         return state[0]
 
     def _get_chat_id(self, dialog_manager: DialogManager) -> int:
-        """Получить chat_id из dialog_manager."""
         if hasattr(dialog_manager.event, 'message') and dialog_manager.event.message:
             return dialog_manager.event.message.chat.id
         elif hasattr(dialog_manager.event, 'chat'):

@@ -22,6 +22,7 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
             kontur_employee_client: interface.IKonturEmployeeClient,
             kontur_organization_client: interface.IKonturOrganizationClient,
             kontur_content_client: interface.IKonturContentClient,
+            kontur_domain: str
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
@@ -29,6 +30,7 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
         self.kontur_employee_client = kontur_employee_client
         self.kontur_organization_client = kontur_organization_client
         self.kontur_content_client = kontur_content_client
+        self.kontur_domain = kontur_domain
 
     async def get_video_cut_list_data(
             self,
@@ -44,13 +46,11 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                 state = await self._get_state(dialog_manager)
                 employee = await self.kontur_employee_client.get_employee_by_account_id(state.account_id)
 
-                # Получаем черновики видео-нарезок для организации
-                video_cuts = await self.kontur_content_client.get_video_cuts_by_organization(
-                    organization_id=state.organization_id
-                )
-
-                video_cuts = [video_cut for video_cut in video_cuts if
-                              video_cut.video_fid != "" and video_cut.moderation_status == "draft"]
+                video_cuts = await self.kontur_content_client.get_video_cuts_by_organization(state.organization_id)
+                video_cuts = [
+                    video_cut for video_cut in video_cuts if
+                    video_cut.video_fid != "" and video_cut.moderation_status == "draft"
+                ]
 
                 if not video_cuts:
                     return {
@@ -61,7 +61,7 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
 
                 # Получаем подключенные социальные сети для организации
                 social_networks = await self.kontur_content_client.get_social_networks_by_organization(
-                    organization_id=state.organization_id
+                    state.organization_id
                 )
 
                 # Определяем подключенные сети
@@ -87,26 +87,15 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                 period_text = self._get_period_text(video_cuts)
 
                 # Подготавливаем медиа для видео
-                video_media = None
-                if current_video_cut.video_fid:
-                    video_url = f"https://kontur-media.ru/api/content/video-cut/{current_video_cut.id}/download/file.mp4"
+                video_media = await self._get_video_media(bot, current_video_cut)
 
-                    cached_file = await self.state_repo.get_cache_file(current_video_cut.video_name)
-                    if not cached_file:
-                        content, content_type = await self._download_video_from_url(video_url)
-                        resp = await bot.send_video(
-                            252166008,
-                            video=BufferedInputFile(content, filename=current_video_cut.video_name)
-                        )
-                        file_id = resp.video.file_id
-                        await self.state_repo.set_cache_file(current_video_cut.video_name, file_id)
-                    else:
-                        file_id = cached_file[0].file_id
+                # Сохраняем данные текущего черновика для редактирования
+                dialog_manager.dialog_data["original_video_cut"] = current_video_cut.to_dict()
 
-                    video_media = MediaAttachment(
-                        file_id=MediaId(file_id),
-                        type=ContentType.VIDEO,
-                    )
+                # Копируем в рабочую версию, если ее еще нет
+                if "working_video_cut" not in dialog_manager.dialog_data:
+                    dialog_manager.dialog_data["working_video_cut"] = dict(
+                        dialog_manager.dialog_data["original_video_cut"])
 
                 data = {
                     "has_video_cuts": True,
@@ -132,24 +121,6 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                     "can_publish": False if employee.required_moderation else True,
                     "not_can_publish": True if employee.required_moderation else False
                 }
-
-                # Сохраняем данные текущего черновика для редактирования
-                dialog_manager.dialog_data["original_video_cut"] = {
-                    "id": current_video_cut.id,
-                    "name": current_video_cut.name,
-                    "description": current_video_cut.description,
-                    "tags": current_video_cut.tags or [],
-                    "youtube_video_reference": current_video_cut.youtube_video_reference,
-                    "video_fid": current_video_cut.video_fid,
-                    "created_at": current_video_cut.created_at,
-                    "youtube_source": current_video_cut.youtube_source,
-                    "inst_source": current_video_cut.inst_source,
-                }
-
-                # Копируем в рабочую версию, если ее еще нет
-                if "working_video_cut" not in dialog_manager.dialog_data:
-                    dialog_manager.dialog_data["working_video_cut"] = dict(
-                        dialog_manager.dialog_data["original_video_cut"])
 
                 self.logger.info(
                     "Список черновиков видео загружен",
@@ -358,9 +329,9 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
     async def get_edit_preview_data(
             self,
             dialog_manager: DialogManager,
+            bot: Bot,
             **kwargs
     ) -> dict:
-        """Получение данных для окна редактирования с превью"""
         with self.tracer.start_as_current_span(
                 "DraftVideoCutsDialogService.get_edit_preview_data",
                 kind=SpanKind.INTERNAL
@@ -379,15 +350,7 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                 tags = working_video_cut.get("tags", [])
                 tags_text = ", ".join(tags) if tags else ""
 
-                video_media = None
-                if working_video_cut.get("video_fid"):
-                    cache_buster = int(time.time())
-                    video_url = f"https://kontur-media.ru/api/content/video-cut/{working_video_cut.get('id')}/download?v={cache_buster}"
-
-                    video_media = MediaAttachment(
-                        url=video_url,
-                        type=ContentType.VIDEO
-                    )
+                video_media = await self._get_video_media(bot, model.VideoCut(**working_video_cut))
 
                 data = {
                     "created_at": self._format_datetime(original_video_cut["created_at"]),
@@ -664,7 +627,6 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        """Данные для окна редактирования названия"""
         working_video_cut = dialog_manager.dialog_data.get("working_video_cut", {})
         return {
             "current_title": working_video_cut.get("name", ""),
@@ -675,7 +637,6 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        """Данные для окна редактирования описания"""
         working_video_cut = dialog_manager.dialog_data.get("working_video_cut", {})
         description = working_video_cut.get("description", "")
         return {
@@ -687,7 +648,6 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        """Данные для окна редактирования тегов"""
         working_video_cut = dialog_manager.dialog_data.get("working_video_cut", {})
         tags = working_video_cut.get("tags", [])
         return {
@@ -700,7 +660,6 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        """Данные для окна выбора социальных сетей"""
         with self.tracer.start_as_current_span(
                 "DraftVideoCutsDialogService.get_social_network_select_data",
                 kind=SpanKind.INTERNAL
@@ -737,7 +696,6 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
     # Вспомогательные методы
 
     def _has_changes(self, dialog_manager: DialogManager) -> bool:
-        """Проверка наличия изменений между оригиналом и рабочей версией"""
         original = dialog_manager.dialog_data.get("original_video_cut", {})
         working = dialog_manager.dialog_data.get("working_video_cut", {})
 
@@ -753,14 +711,12 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
         return False
 
     def _has_selected_networks(self, dialog_manager: DialogManager) -> bool:
-        """Проверка что выбрана хотя бы одна социальная сеть"""
         working_video_cut = dialog_manager.dialog_data.get("working_video_cut", {})
         youtube_selected = working_video_cut.get("youtube_source")
         instagram_selected = working_video_cut.get("inst_source")
         return youtube_selected or instagram_selected
 
     def _is_network_connected(self, social_networks: dict, network_type: str) -> bool:
-        """Проверка подключения социальной сети"""
         if not social_networks:
             return False
 
@@ -822,7 +778,6 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
             raise err
 
     def _format_datetime(self, dt: str) -> str:
-        """Форматирование даты и времени"""
         try:
             if isinstance(dt, str):
                 dt = datetime.fromisoformat(dt.replace('Z', '+00:00'))
@@ -833,7 +788,6 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
             return str(dt)
 
     def _get_period_text(self, video_cuts: list) -> str:
-        """Определение периода черновиков"""
         if not video_cuts:
             return "Нет данных"
 
@@ -871,22 +825,42 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
             return "За неделю"
 
     async def _get_state(self, dialog_manager: DialogManager) -> model.UserState:
-        """Получение состояния пользователя"""
         chat_id = self._get_chat_id(dialog_manager)
         return await self._get_state_by_chat_id(chat_id)
 
     async def _get_state_by_chat_id(self, chat_id: int) -> model.UserState:
-        """Получение состояния по chat_id"""
         state = await self.state_repo.state_by_id(chat_id)
         if not state:
             raise ValueError(f"State not found for chat_id: {chat_id}")
         return state[0]
 
     def _get_chat_id(self, dialog_manager: DialogManager) -> int:
-        """Получение chat_id из dialog_manager"""
         if hasattr(dialog_manager.event, 'message') and dialog_manager.event.message:
             return dialog_manager.event.message.chat.id
         elif hasattr(dialog_manager.event, 'chat'):
             return dialog_manager.event.chat.id
         else:
             raise ValueError("Cannot extract chat_id from dialog_manager")
+
+    async def _get_video_media(self, bot: Bot, current_video_cut: model.VideoCut) -> MediaAttachment | None:
+        video_media = None
+        if current_video_cut.video_fid:
+            cached_file = await self.state_repo.get_cache_file(current_video_cut.video_name)
+            if not cached_file:
+                video_url = f"https://{self.kontur_domain}/api/content/video-cut/{current_video_cut.id}/download/file"
+                content, content_type = await self._download_video_from_url(video_url)
+                resp = await bot.send_video(
+                    252166008,
+                    video=BufferedInputFile(content, filename=current_video_cut.video_name)
+                )
+                file_id = resp.video.file_id
+                await self.state_repo.set_cache_file(current_video_cut.video_name, file_id)
+            else:
+                file_id = cached_file[0].file_id
+
+            video_media = MediaAttachment(
+                file_id=MediaId(file_id),
+                type=ContentType.VIDEO,
+            )
+
+        return video_media

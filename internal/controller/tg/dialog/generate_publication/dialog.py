@@ -526,7 +526,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             Column(
                 Checkbox(
                     Const("✅ Telegram"),
-                    Const("⚪ Telegram"),
+                    Const("❌ Telegram"),
                     id="telegram_checkbox",
                     default=False,
                     on_state_changed=self.generate_publication_service.handle_toggle_social_network,
@@ -534,7 +534,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                 ),
                 Checkbox(
                     Const("✅ VKontakte"),
-                    Const("⚪ VKontakte"),
+                    Const("❌ VKontakte"),
                     id="vkontakte_checkbox",
                     default=False,
                     on_state_changed=self.generate_publication_service.handle_toggle_social_network,
