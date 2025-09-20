@@ -5,8 +5,8 @@ from typing import Any
 
 import aiohttp
 from aiogram import Bot
-from aiogram_dialog.api.entities import MediaAttachment
-from aiogram.types import CallbackQuery, Message, ContentType
+from aiogram_dialog.api.entities import MediaAttachment, MediaId
+from aiogram.types import CallbackQuery, Message, ContentType, BufferedInputFile
 from aiogram_dialog import DialogManager, StartMode
 
 from opentelemetry.trace import SpanKind, Status, StatusCode
@@ -92,11 +92,13 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                     video_url = f"https://kontur-media.ru/api/content/video-cut/{current_video_cut.id}/download/file.mp4"
                     content, content_type = await self._download_video_from_url(video_url)
 
+                    resp = await bot.send_video(
+                        252166008,
+                        video=BufferedInputFile(content, filename="fff.mp4")
+                    )
                     video_media = MediaAttachment(
-                        url=video_url,
+                        file_id=MediaId(resp.video.file_id),
                         type=ContentType.VIDEO,
-                        data=content,
-                        filename=current_video_cut.video_name
                     )
 
                 data = {
