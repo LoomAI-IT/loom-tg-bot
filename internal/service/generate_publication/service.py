@@ -2,7 +2,6 @@ import io
 import asyncio
 from typing import Any
 
-import aiohttp
 from aiogram_dialog.widgets.input import MessageInput
 
 from aiogram import Bot
@@ -716,7 +715,8 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
 
                 telegram_file_id = dialog_manager.dialog_data.get("custom_image_file_id")
                 if telegram_file_id:
-                    image_content, image_filename = await self._download_image_from_tg_file_id(telegram_file_id)
+                    image_content = await self.bot.download(telegram_file_id)
+                    image_filename = f"{telegram_file_id}.jpg"
 
                 # Создаем публикацию
                 publication_data = await self.kontur_content_client.create_publication(
@@ -795,7 +795,8 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
 
                 telegram_file_id = dialog_manager.dialog_data.get("custom_image_file_id")
                 if telegram_file_id:
-                    image_content, image_filename = await self._download_image_from_tg_file_id(telegram_file_id)
+                    image_content = await self.bot.download(telegram_file_id)
+                    image_filename = f"{telegram_file_id}.jpg"
 
                 # Создаем публикацию на модерации
                 publication_data = await self.kontur_content_client.create_publication(
@@ -964,7 +965,8 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
 
                 telegram_file_id = dialog_manager.dialog_data.get("custom_image_file_id")
                 if telegram_file_id:
-                    image_content, image_filename = await self._download_image_from_tg_file_id(telegram_file_id)
+                    image_content = await self.bot.download(telegram_file_id)
+                    image_filename = f"{telegram_file_id}.jpg"
 
                 # Создаем публикацию со статусом "published"
                 publication_data = await self.kontur_content_client.create_publication(
@@ -1288,32 +1290,3 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
             return dialog_manager.event.chat.id
         else:
             raise ValueError("Cannot extract chat_id from dialog_manager")
-
-    async def _download_image_from_tg_file_id(self, telegram_file_id: str) -> tuple[bytes, str]:
-        try:
-            file_path = await self._get_file_path_from_tg_file_id(telegram_file_id)
-            image_url = f"https://{self.kontur_domain}/telegram-bot-files/{self.bot.token}/{file_path}.jpg"
-
-            image_filename = file_path.split("/")[-1]
-            async with aiohttp.ClientSession() as session:
-                async with session.get(image_url) as response:
-                    if response.status == 200:
-                        content = await response.read()
-                        return content, image_filename
-                    else:
-                        raise Exception(f"Failed to download video: HTTP {response.status}")
-        except Exception as err:
-            raise err
-
-    async def _get_file_path_from_tg_file_id(self, telegram_file_id: str) -> str:
-        try:
-            url = f"https://api.telegram.org/bot{self.bot.token}/getFile?file_id={telegram_file_id}"
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url) as response:
-                    if response.status == 200:
-                        json_response = await response.json()
-                        return json_response["result"]["file_path"]
-                    else:
-                        raise Exception(f"Failed to download video: HTTP {response.status}")
-        except Exception as err:
-            raise err

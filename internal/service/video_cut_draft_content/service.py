@@ -5,7 +5,7 @@ from typing import Any
 import aiohttp
 from aiogram import Bot
 from aiogram_dialog.api.entities import MediaAttachment, MediaId
-from aiogram.types import CallbackQuery, Message, ContentType, BufferedInputFile
+from aiogram.types import CallbackQuery, Message, ContentType
 from aiogram_dialog import DialogManager, StartMode
 
 from opentelemetry.trace import SpanKind, Status, StatusCode
@@ -86,7 +86,7 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                 period_text = self._get_period_text(video_cuts)
 
                 # Подготавливаем медиа для видео
-                video_media = await self._get_video_media(bot, current_video_cut)
+                video_media = await self._get_video_media(current_video_cut)
 
                 # Сохраняем данные текущего черновика для редактирования
                 dialog_manager.dialog_data["original_video_cut"] = current_video_cut.to_dict()
@@ -251,7 +251,7 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                 tags = working_video_cut.get("tags", [])
                 tags_text = ", ".join(tags) if tags else ""
 
-                video_media = await self._get_video_media(bot, model.VideoCut(**working_video_cut))
+                video_media = await self._get_video_media(model.VideoCut(**working_video_cut))
 
                 data = {
                     "created_at": self._format_datetime(original_video_cut["created_at"]),
@@ -902,24 +902,13 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
         else:
             raise ValueError("Cannot extract chat_id from dialog_manager")
 
-    async def _get_video_media(self, bot: Bot, current_video_cut: model.VideoCut) -> MediaAttachment | None:
+    async def _get_video_media(self, current_video_cut: model.VideoCut) -> MediaAttachment | None:
         video_media = None
         if current_video_cut.video_fid:
             cached_file = await self.state_repo.get_cache_file(current_video_cut.video_name)
-            if not cached_file:
-                video_url = f"https://{self.kontur_domain}/api/content/video-cut/{current_video_cut.id}/download/file"
-                content, content_type = await self._download_video_from_url(video_url)
-                resp = await bot.send_video(
-                    252166008,
-                    video=BufferedInputFile(content, filename=current_video_cut.video_name)
-                )
-                file_id = resp.video.file_id
-                await self.state_repo.set_cache_file(current_video_cut.video_name, file_id)
-            else:
-                file_id = cached_file[0].file_id
 
             video_media = MediaAttachment(
-                file_id=MediaId(file_id),
+                file_id=MediaId(cached_file[0].file_id),
                 type=ContentType.VIDEO,
             )
 

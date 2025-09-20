@@ -1,8 +1,6 @@
 import uvicorn
 from aiogram import Bot, Dispatcher
 import redis.asyncio as redis
-from aiogram.client.session.aiohttp import AiohttpSession
-from aiogram.client.telegram import TelegramAPIServer
 from aiogram.fsm.storage.base import DefaultKeyBuilder
 from aiogram.fsm.storage.redis import RedisStorage
 
@@ -77,14 +75,7 @@ tel = Telemetry(
     cfg.otlp_port,
     alert_manager
 )
-session = AiohttpSession(
-    api=TelegramAPIServer(
-        base=f"https://{cfg.domain}/telegram-bot-api/bot{{token}}/{{method}}",
-        file=f"https://{cfg.domain}/telegram-bot-api/file/bot{{token}}/{{path}}",
-        is_local=True
-    )
-)
-bot = Bot(token=cfg.tg_bot_token, session=session)
+bot = Bot(token=cfg.tg_bot_token)
 
 redis_client = redis.Redis(
     host=cfg.monitoring_redis_host,
