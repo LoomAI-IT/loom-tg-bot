@@ -87,7 +87,7 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                 video_media = None
                 if current_video_cut.video_fid:
                     cache_booster = int(time.time())
-                    video_url = f"https://kontur-media.ru//api//content//video-cut//{current_video_cut.id}//download?v={cache_booster}"
+                    video_url = f"https://kontur-media.ru/api/content/video-cut/{current_video_cut.id}/download?v={cache_booster}"
                     print(video_url, flush=True)
                     # video_url = current_video_cut.original_url
                     video_media = MediaAttachment(
