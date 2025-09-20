@@ -3,7 +3,6 @@ import time
 from datetime import datetime, timezone
 from typing import Any
 
-import aiohttp
 from aiogram_dialog.api.entities import MediaId, MediaAttachment
 from aiogram_dialog.widgets.input import MessageInput
 
@@ -1309,7 +1308,8 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
         elif working_has_image:
             # Проверяем, новое ли это изображение
             if working_pub.get("custom_image_file_id"):
-                image_content, image_filename = await self._download_image_from_tg_file_id(working_pub["custom_image_file_id"])
+                image_content = await self.bot.download(working_pub["custom_image_file_id"])
+                image_filename = working_pub["custom_image_file_id"] + ".jpg"
 
             elif working_pub.get("image_url"):
                 # Проверяем, изменился ли URL (новое сгенерированное изображение)
@@ -1448,22 +1448,3 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
             return dialog_manager.event.chat.id
         else:
             raise ValueError("Cannot extract chat_id from dialog_manager")
-
-    async def _download_image_from_tg_file_id(self, telegram_file_id: str) -> tuple[bytes, str]:
-        try:
-            file = await self.bot.get_file(telegram_file_id)
-            file_path = file.file_path.replace("/var/lib/telegram-bot-api/", "")
-
-            print(file.file_path, flush=True)
-            image_url = f"https://{self.kontur_domain}/telegram-bot-files/{file_path}"
-
-            image_filename = file_path.split("/")[-1]
-            async with aiohttp.ClientSession() as session:
-                async with session.get(image_url) as response:
-                    if response.status == 200:
-                        content = await response.read()
-                        return content, image_filename
-                    else:
-                        raise Exception(f"Failed to download video: HTTP {response.status}")
-        except Exception as err:
-            raise err
