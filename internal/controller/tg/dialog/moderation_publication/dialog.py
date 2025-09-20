@@ -114,7 +114,7 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
                         on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.edit_preview),
                         when="has_publications",
                     ),
-                    utton(
+                    Button(
                         Const("✅ Опубликовать"),
                         id="approve",
                         on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.social_network_select),
