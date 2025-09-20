@@ -76,7 +76,7 @@ tel = Telemetry(
     cfg.otlp_port,
     alert_manager
 )
-local_bot = Bot(
+bot = Bot(
     cfg.tg_bot_token,
     base_url="https://kontur-media.ru/telegram-bot-api/bot{token}/{method}",
     timeout=ClientTimeout(total=120),
