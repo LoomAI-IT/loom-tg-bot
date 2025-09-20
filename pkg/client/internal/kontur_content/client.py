@@ -736,25 +736,6 @@ class KonturContentClient(interface.IKonturContentClient):
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
-    async def publish_video_cut(
-            self,
-            video_cut_id: int,
-    ) -> None:
-        with self.tracer.start_as_current_span(
-                "KonturContentClient.publish_video_cut",
-                kind=SpanKind.CLIENT,
-                attributes={
-                    "video_cut_id": video_cut_id
-                }
-        ) as span:
-            try:
-                await self.client.post(f"/video-cut/{video_cut_id}/publish")
-
-                span.set_status(Status(StatusCode.OK))
-            except Exception as e:
-                span.record_exception(e)
-                span.set_status(Status(StatusCode.ERROR, str(e)))
-                raise
 
     async def get_video_cut_by_id(self, video_cut_id: int) -> model.VideoCut:
         with self.tracer.start_as_current_span(
@@ -818,7 +799,7 @@ class KonturContentClient(interface.IKonturContentClient):
                         moderation_status),
                     "moderation_comment": moderation_comment
                 }
-                await self.client.post(f"/video-cut/{video_cut_id}/moderation/moderate", json=body)
+                await self.client.post(f"/video-cut/moderate", json=body)
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as e:
