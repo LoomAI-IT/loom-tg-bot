@@ -1,6 +1,8 @@
 # internal/interface/dialog/video_cut_draft_content.py
 from abc import abstractmethod
 from typing import Protocol, Any
+
+from aiogram import Bot
 from aiogram_dialog import DialogManager, Dialog, Window
 from aiogram.types import CallbackQuery, Message
 from aiogram_dialog.widgets.input import MessageInput
@@ -35,6 +37,7 @@ class IVideoCutsDraftDialogService(Protocol):
     async def get_video_cut_list_data(
             self,
             dialog_manager: DialogManager,
+            bot: Bot
     ) -> dict: pass
 
     @abstractmethod

@@ -33,6 +33,7 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
     async def get_video_cut_list_data(
             self,
             dialog_manager: DialogManager,
+            bot: Bot,
             **kwargs
     ) -> dict:
         """Получение данных для основного окна - сразу показываем первую видео-нарезку"""
@@ -92,7 +93,7 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                     print(video_url, flush=True)
 
                     # Загружаем видео на сервер Telegram
-                    file_id = await self._upload_video_to_telegram(video_url, dialog_manager)
+                    file_id = await self._upload_video_to_telegram(bot, video_url, dialog_manager)
 
                     if file_id:
                         video_media = MediaAttachment(
@@ -784,11 +785,11 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
             }
         )
 
-    async def _upload_video_to_telegram(self, video_url: str, dialog_manager: DialogManager) -> str:
+    async def _upload_video_to_telegram(self, bot: Bot, video_url: str) -> str:
         """Загружает видео на сервер Telegram и возвращает file_id"""
         try:
             # Получаем bot из dialog_manager или из вашего DI контейнера
-            bot: Bot = dialog_manager.middleware_data.get("bot")
+
 
             # Скачиваем видео
             async with aiohttp.ClientSession() as session:
@@ -811,9 +812,7 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                         return message.video.file_id
 
         except Exception as e:
-            self.logger.error(f"Ошибка при загрузке видео в Telegram: {e}")
-            return None
-
+            raise e
     async def _remove_current_video_cut_from_list(self, dialog_manager: DialogManager) -> None:
         video_cuts_list = dialog_manager.dialog_data.get("video_cuts_list", [])
         current_index = dialog_manager.dialog_data.get("current_index", 0)
