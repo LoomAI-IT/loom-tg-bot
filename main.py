@@ -78,7 +78,7 @@ tel = Telemetry(
     alert_manager
 )
 session = AiohttpSession(api=TelegramAPIServer(
-    base=f'https://{cfg.domain}/telegram-bot-api',
+    base=f'https://{cfg.domain}/telegram-bot-api/bot{{token}}/{{method}}',
     file=f'https://{cfg.domain}/telegram-bot-files',
 ))
 bot = Bot(token=cfg.tg_bot_token, session=session)
