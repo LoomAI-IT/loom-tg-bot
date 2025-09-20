@@ -187,6 +187,7 @@ video_cuts_draft_service = VideoCutsDraftDialogService(
     kontur_employee_client,
     kontur_organization_client,
     kontur_content_client,
+    cfg.domain
 )
 
 auth_dialog = AuthDialog(
