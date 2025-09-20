@@ -2,7 +2,6 @@ import io
 import asyncio
 from typing import Any
 
-import aiohttp
 from aiogram_dialog.widgets.input import MessageInput
 
 from aiogram import Bot
@@ -715,9 +714,8 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 telegram_file_id = dialog_manager.dialog_data.get("custom_image_file_id")
                 if telegram_file_id:
                     file = await self.bot.get_file(telegram_file_id)
-                    print(file.file_path, flush=True)
-                    image_url = f"https://api.telegram.org/file/bot{self.bot.token}/{file.file_path}"
-                    image_content, content_type = await self._download_video_from_url(image_url)
+                    file_data = await self.bot.download_file(file.file_path)
+                    image_content = file_data.read()
                     image_filename = f"user_image_{telegram_file_id[:8]}.jpg"
 
                 # Создаем публикацию
@@ -1296,16 +1294,3 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
             return dialog_manager.event.chat.id
         else:
             raise ValueError("Cannot extract chat_id from dialog_manager")
-
-    async def _download_video_from_url(self, video_url: str) -> tuple[bytes, str]:
-        try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(video_url) as response:
-                    if response.status == 200:
-                        content_type = response.headers.get('content-type', 'video/mp4')
-                        content = await response.read()
-                        return content, content_type
-                    else:
-                        raise Exception(f"Failed to download video: HTTP {response.status}")
-        except Exception as err:
-            raise err
