@@ -9,6 +9,7 @@ from aiogram_dialog.widgets.input import MessageInput
 from aiogram import Bot
 from aiogram.types import CallbackQuery, Message, ContentType
 from aiogram_dialog import DialogManager, StartMode
+from aiogram_dialog.widgets.kbd import ManagedCheckbox
 
 from opentelemetry.trace import SpanKind, Status, StatusCode
 
@@ -964,6 +965,217 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
 
                 span.set_status(Status(StatusCode.OK))
 
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
+                raise
+
+    async def handle_toggle_social_network(
+            self,
+            callback: CallbackQuery,
+            checkbox: ManagedCheckbox,
+            dialog_manager: DialogManager
+    ) -> None:
+        with self.tracer.start_as_current_span(
+                "ModerationPublicationDialogService.handle_toggle_social_network",
+                kind=SpanKind.INTERNAL
+        ) as span:
+            try:
+                # Инициализируем словарь выбранных соцсетей если его нет
+                if "selected_social_networks" not in dialog_manager.dialog_data:
+                    dialog_manager.dialog_data["selected_social_networks"] = {}
+
+                network_id = checkbox.widget_id
+                is_checked = checkbox.is_checked()
+
+                # Сохраняем состояние чекбокса
+                dialog_manager.dialog_data["selected_social_networks"][network_id] = is_checked
+
+                self.logger.info(
+                    "Социальная сеть переключена в модерации",
+                    {
+                        common.TELEGRAM_CHAT_ID_KEY: callback.message.chat.id,
+                        "network": network_id,
+                        "selected": is_checked,
+                        "all_selected": dialog_manager.dialog_data["selected_social_networks"]
+                    }
+                )
+
+                await callback.answer()
+                span.set_status(Status(StatusCode.OK))
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
+                raise
+
+    async def handle_publish_with_selected_networks(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        with self.tracer.start_as_current_span(
+                "ModerationPublicationDialogService.handle_publish_with_selected_networks",
+                kind=SpanKind.INTERNAL
+        ) as span:
+            try:
+                # Проверяем, что выбрана хотя бы одна соцсеть
+                selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
+                has_selected_networks = any(selected_networks.values())
+
+                if not has_selected_networks:
+                    await callback.answer(
+                        "⚠️ Выберите хотя бы одну социальную сеть для публикации",
+                        show_alert=True
+                    )
+                    return
+
+                await self._publish_moderated_publication(callback, dialog_manager)
+                span.set_status(Status(StatusCode.OK))
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
+                await callback.answer("❌ Ошибка при публикации", show_alert=True)
+                raise
+
+    async def get_social_network_select_data(
+            self,
+            dialog_manager: DialogManager,
+            **kwargs
+    ) -> dict:
+        with self.tracer.start_as_current_span(
+                "ModerationPublicationDialogService.get_social_network_select_data",
+                kind=SpanKind.INTERNAL
+        ) as span:
+            try:
+                state = await self._get_state(dialog_manager)
+
+                # Получаем подключенные социальные сети для организации
+                social_networks = await self.kontur_content_client.get_social_networks_by_organization(
+                    organization_id=state.organization_id
+                )
+
+                # Проверяем подключенные сети
+                telegram_connected = self._is_network_connected(social_networks, "telegram")
+                vkontakte_connected = self._is_network_connected(social_networks, "vkontakte")
+
+                # Получаем текущие выбранные сети
+                selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
+                has_selected_networks = any(selected_networks.values())
+
+                data = {
+                    "telegram_connected": telegram_connected,
+                    "vkontakte_connected": vkontakte_connected,
+                    "all_networks_connected": telegram_connected and vkontakte_connected,
+                    "no_connected_networks": not telegram_connected and not vkontakte_connected,
+                    "has_available_networks": telegram_connected or vkontakte_connected,
+                    "has_selected_networks": has_selected_networks,
+                }
+
+                span.set_status(Status(StatusCode.OK))
+                return data
+
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
+                raise
+
+    def _is_network_connected(self, social_networks: dict, network_type: str) -> bool:
+        if not social_networks:
+            return False
+        return network_type in social_networks and len(social_networks[network_type]) > 0
+
+    async def _publish_moderated_publication(
+            self,
+            callback: CallbackQuery,
+            dialog_manager: DialogManager
+    ) -> None:
+        with self.tracer.start_as_current_span(
+                "ModerationPublicationDialogService._publish_moderated_publication",
+                kind=SpanKind.INTERNAL
+        ) as span:
+            try:
+                await callback.answer()
+                loading_message = await callback.message.answer("🚀 Публикую пост...")
+
+                # Если есть несохраненные изменения, сохраняем их перед публикацией
+                if self._has_changes(dialog_manager):
+                    await self._save_publication_changes(dialog_manager)
+
+                original_pub = dialog_manager.dialog_data["original_publication"]
+                publication_id = original_pub["id"]
+                state = await self._get_state(dialog_manager)
+
+                # Получаем выбранные социальные сети
+                selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
+                tg_source = selected_networks.get("telegram_checkbox", False)
+                vk_source = selected_networks.get("vkontakte_checkbox", False)
+
+                # Обновляем публикацию с выбранными соцсетями
+                await self.kontur_content_client.change_publication(
+                    publication_id=publication_id,
+                    tg_source=tg_source,
+                    vk_source=vk_source,
+                )
+
+                # Одобряем публикацию
+                await self.kontur_content_client.moderate_publication(
+                    publication_id=publication_id,
+                    moderator_id=state.account_id,
+                    moderation_status="approved",
+                )
+
+                # Формируем сообщение о публикации
+                published_networks = []
+                if tg_source:
+                    published_networks.append("📺 Telegram")
+                if vk_source:
+                    published_networks.append("🔗 VKontakte")
+
+                networks_text = ", ".join(published_networks)
+
+                self.logger.info(
+                    "Публикация одобрена и опубликована",
+                    {
+                        common.TELEGRAM_CHAT_ID_KEY: callback.message.chat.id,
+                        "publication_id": publication_id,
+                        "tg_source": tg_source,
+                        "vk_source": vk_source,
+                    }
+                )
+
+                await loading_message.edit_text(
+                    f"🚀 Публикация успешно опубликована!\n\n"
+                    f"📋 Опубликовано в: {networks_text}"
+                )
+
+                await asyncio.sleep(3)
+                try:
+                    await loading_message.delete()
+                except:
+                    pass
+
+                # Удаляем опубликованную публикацию из списка
+                moderation_list = dialog_manager.dialog_data.get("moderation_list", [])
+                current_index = dialog_manager.dialog_data.get("current_index", 0)
+
+                if moderation_list and current_index < len(moderation_list):
+                    moderation_list.pop(current_index)
+
+                    # Корректируем индекс если нужно
+                    if current_index >= len(moderation_list) and moderation_list:
+                        dialog_manager.dialog_data["current_index"] = len(moderation_list) - 1
+                    elif not moderation_list:
+                        dialog_manager.dialog_data["current_index"] = 0
+
+                    # Сбрасываем рабочие данные
+                    dialog_manager.dialog_data.pop("working_publication", None)
+                    dialog_manager.dialog_data.pop("selected_social_networks", None)
+
+                # Возвращаемся к списку модерации
+                await dialog_manager.switch_to(model.ModerationPublicationStates.moderation_list)
+
+                span.set_status(Status(StatusCode.OK))
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))

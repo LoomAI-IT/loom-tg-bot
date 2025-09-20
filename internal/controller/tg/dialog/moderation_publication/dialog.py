@@ -1,6 +1,6 @@
 from aiogram_dialog import Window, Dialog
 from aiogram_dialog.widgets.text import Const, Format, Multi, Case
-from aiogram_dialog.widgets.kbd import Button, Column, Row, Back, Select
+from aiogram_dialog.widgets.kbd import Button, Column, Row, Back, Select, Checkbox
 from aiogram_dialog.widgets.input import TextInput, MessageInput
 from aiogram_dialog.widgets.media import DynamicMedia
 
@@ -31,6 +31,7 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
             self.get_edit_image_menu_window(),
             self.get_generate_image_window(),
             self.get_upload_image_window(),
+            self.get_social_network_select_window(),
         )
 
     def get_moderation_list_window(self) -> Window:
@@ -113,10 +114,10 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
                         on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.edit_preview),
                         when="has_publications",
                     ),
-                    Button(
+                    utton(
                         Const("✅ Опубликовать"),
                         id="approve",
-                        on_click=self.moderation_publication_service.handle_publish_publication,
+                        on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.social_network_select),
                         when="has_publications",
                     ),
                 ),
@@ -539,5 +540,91 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
             ),
 
             state=model.ModerationPublicationStates.upload_image,
+            parse_mode="HTML",
+        )
+
+    def get_social_network_select_window(self) -> Window:
+        """Окно выбора социальных сетей для публикации"""
+        return Window(
+            Multi(
+                Const("🌐 <b>Выбор социальных сетей</b>\n\n"),
+                Case(
+                    {
+                        True: Multi(
+                            Const("⚠️ <b>Нет подключенных социальных сетей!</b>\n\n"),
+                            Const(
+                                "🔗 <i>Для публикации постов необходимо подключить хотя бы одну социальную сеть в настройках организации.</i>\n\n"),
+                            Const("Обратитесь к администратору для подключения социальных сетей."),
+                        ),
+                        False: Multi(
+                            Const("📋 <b>Доступные социальные сети:</b>\n\n"),
+                            Case(
+                                {
+                                    True: Const("📺 Telegram - <b>подключен</b>\n"),
+                                    False: Const("📺 Telegram - <b>не подключен</b>\n"),
+                                },
+                                selector="telegram_connected"
+                            ),
+                            Case(
+                                {
+                                    True: Const("🔗 VKontakte - <b>подключен</b>\n\n"),
+                                    False: Const("🔗 VKontakte - <b>не подключен</b>\n\n"),
+                                },
+                                selector="vkontakte_connected"
+                            ),
+                            Const("✅ <b>Выберите, где опубликовать:</b>"),
+                        ),
+                    },
+                    selector="no_connected_networks"
+                ),
+                sep="",
+            ),
+
+            # Чекбоксы для выбора платформ (только для подключенных)
+            Column(
+                Checkbox(
+                    Const("✅ Telegram"),
+                    Const("❌ Telegram"),
+                    id="telegram_checkbox",
+                    default=False,
+                    on_state_changed=self.moderation_publication_service.handle_toggle_social_network,
+                    when="telegram_connected",
+                ),
+                Checkbox(
+                    Const("✅ VKontakte"),
+                    Const("❌ VKontakte"),
+                    id="vkontakte_checkbox",
+                    default=False,
+                    on_state_changed=self.moderation_publication_service.handle_toggle_social_network,
+                    when="vkontakte_connected",
+                ),
+                when="has_available_networks",
+            ),
+
+            # Кнопки действий
+            Row(
+                Button(
+                    Const("🚀 Опубликовать"),
+                    id="publish_with_networks",
+                    on_click=self.moderation_publication_service.handle_publish_with_selected_networks,
+                    when="has_available_networks",
+                ),
+                Button(
+                    Const("◀️ Назад"),
+                    id="back_to_moderation_list",
+                    on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.moderation_list),
+                ),
+            ),
+
+            # Кнопка назад для случая когда нет доступных сетей
+            Button(
+                Const("◀️ Назад к списку"),
+                id="back_to_moderation_list_no_networks",
+                on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.moderation_list),
+                when="no_connected_networks",
+            ),
+
+            state=model.ModerationPublicationStates.social_network_select,
+            getter=self.moderation_publication_service.get_social_network_select_data,
             parse_mode="HTML",
         )

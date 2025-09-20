@@ -3,6 +3,7 @@ from typing import Protocol, Any
 from aiogram_dialog import DialogManager, Dialog, Window
 from aiogram.types import CallbackQuery, Message
 from aiogram_dialog.widgets.input import MessageInput
+from aiogram_dialog.widgets.kbd import ManagedCheckbox
 
 
 class IModerationPublicationDialog(Protocol):
@@ -44,6 +45,9 @@ class IModerationPublicationDialog(Protocol):
     @abstractmethod
     def get_upload_image_window(self) -> Window: pass
 
+    @abstractmethod
+    def get_social_network_select_window(self) -> Window: pass
+
 
 class IModerationPublicationDialogService(Protocol):
     # Обработчики для списка публикаций
@@ -60,6 +64,28 @@ class IModerationPublicationDialogService(Protocol):
             button: Any,
             dialog_manager: DialogManager
     ) -> None: pass
+
+    @abstractmethod
+    async def handle_toggle_social_network(
+            self,
+            callback: CallbackQuery,
+            checkbox: ManagedCheckbox,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
+    @abstractmethod
+    async def handle_publish_with_selected_networks(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
+    @abstractmethod
+    async def get_social_network_select_data(
+            self,
+            dialog_manager: DialogManager,
+    ) -> dict: pass
 
     @abstractmethod
     async def handle_publish_publication(

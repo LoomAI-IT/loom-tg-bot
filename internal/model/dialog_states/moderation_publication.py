@@ -15,3 +15,4 @@ class ModerationPublicationStates(StatesGroup):
     edit_image_menu = State()
     generate_image = State()
     upload_image = State()
+    social_network_select = State()
