@@ -101,10 +101,10 @@ class VideoCutsDraftDialog(interface.IVideoCutsDraftDialog):
             ),
 
             # Добавляем динамическое медиа для отображения видео
-            DynamicMedia(
-                "video_media",
-                when="has_video"
-            ),
+            # DynamicMedia(
+            #     "video_media",
+            #     when="has_video"
+            # ),
 
             # Навигация со счетчиком
             Row(

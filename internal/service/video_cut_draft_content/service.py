@@ -87,17 +87,17 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                 period_text = self._get_period_text(video_cuts)
 
                 # Подготавливаем медиа для видео
-                video_media = None
                 if current_video_cut.video_fid:
                     video_url = f"https://kontur-media.ru/api/content/video-cut/{current_video_cut.id}/download/file.mp4"
                     encoded_url = quote(video_url, safe=':/?#[]@!$&\'()*+,;=')
                     print(encoded_url, flush=True)
-
-                    video_media = MediaAttachment(
-                        url=encoded_url,
-                        type=ContentType.VIDEO,
-                        filename=current_video_cut.video_name
+                    await bot.send_video(
+                        chat_id=self._get_chat_id(dialog_manager),
+                        video=video_url,
+                        caption=f"🎬 {current_video_cut.name}",
+                        parse_mode="HTML"
                     )
+
 
                 data = {
                     "has_video_cuts": True,
@@ -114,8 +114,6 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                     # Подключение и выбор для Instagram
                     "instagram_connected": instagram_connected,
                     "instagram_selected": current_video_cut.inst_source,
-                    "has_video": bool(current_video_cut.video_fid),
-                    "video_media": video_media,
                     "current_index": current_index + 1,
                     "video_cuts_count": len(video_cuts),
                     "has_prev": current_index > 0,
