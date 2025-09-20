@@ -530,18 +530,18 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             # Чекбоксы для выбора платформ (только для подключенных)
             Column(
                 Checkbox(
-                    Const("📺 Telegram"),
                     Const("✅ Telegram"),
+                    Const(" Telegram"),
                     id="telegram_checkbox",
-                    default=True,
+                    default=False,
                     on_state_changed=self.generate_publication_service.handle_toggle_social_network,
                     when="telegram_connected",
                 ),
                 Checkbox(
-                    Const("🔗 VKontakte"),
                     Const("✅ VKontakte"),
+                    Const("⚠️ VKontakte"),
                     id="vkontakte_checkbox",
-                    default=True,
+                    default=False,
                     on_state_changed=self.generate_publication_service.handle_toggle_social_network,
                     when="vkontakte_connected",
                 ),
