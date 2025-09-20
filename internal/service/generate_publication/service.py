@@ -714,7 +714,8 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 telegram_file_id = dialog_manager.dialog_data.get("custom_image_file_id")
                 if telegram_file_id:
                     file = await self.bot.get_file(telegram_file_id)
-                    file_data = await self.bot.download_file(file.file_path)
+                    file_path = file.file_path.replace("/var/lib/telegram-bot-api/", "")
+                    file_data = await self.bot.download_file(file_path)
                     image_content = file_data.read()
                     image_filename = f"user_image_{telegram_file_id[:8]}.jpg"
 
