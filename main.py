@@ -166,6 +166,7 @@ generate_publication_service = GeneratePublicationDialogService(
     kontur_employee_client,
     kontur_organization_client,
     kontur_content_client,
+    cfg.domain
 )
 
 generate_video_cut_service = GenerateVideoCutDialogService(
