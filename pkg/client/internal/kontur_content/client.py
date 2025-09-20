@@ -794,6 +794,7 @@ class KonturContentClient(interface.IKonturContentClient):
         ) as span:
             try:
                 body = {
+                    "video_cut_id": video_cut_id,
                     "moderator_id": moderator_id,
                     "moderation_status": moderation_status.value if hasattr(moderation_status, 'value') else str(
                         moderation_status),
