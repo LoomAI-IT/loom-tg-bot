@@ -1453,6 +1453,8 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
         try:
             file = await self.bot.get_file(telegram_file_id)
             file_path = file.file_path.replace("/var/lib/telegram-bot-api/", "")
+
+            print(file.file_path, flush=True)
             image_url = f"https://{self.kontur_domain}/telegram-bot-files/{file_path}"
 
             image_filename = file_path.split("/")[-1]
