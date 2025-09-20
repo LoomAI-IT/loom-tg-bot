@@ -187,6 +187,12 @@ class TgMiddleware(interface.ITelegramMiddleware):
                         common.TELEGRAM_CHAT_ID_KEY: self._get_chat_id(event),
                     }
                 )
+                extra_log = {
+                    **extra_log,
+                    common.TELEGRAM_MESSAGE_DURATION_KEY: int((time.time() - start_time) * 1000),
+                    common.TRACEBACK_KEY: traceback.format_exc()
+                }
+                self.logger.error(f"TelegramBadRequest в dialog middleware {event_type}:", extra_log)
                 pass
 
             except UnknownIntent as err:

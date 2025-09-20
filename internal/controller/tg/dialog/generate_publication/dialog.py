@@ -203,7 +203,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                 Button(
                     Const("🚀 Опубликовать"),
                     id="publish_now",
-                    on_click=self.generate_publication_service.handle_publish_now,  # Изменено!
+                    on_click=self.generate_publication_service.handle_publish_now,
                     when="can_publish_directly",
                 ),
             ),
@@ -490,15 +490,16 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
         return Window(
             Multi(
                 Const("🌐 <b>Выбор социальных сетей</b>\n\n"),
-                Const("📋 <b>Доступные социальные сети для публикаций:</b>\n"),
                 Case(
                     {
                         True: Multi(
-                            Const("📺 Telegram - <b>подключен</b>\n"),
-                            Const("🔗 VKontakte - <b>подключен</b>\n\n"),
-                            Const("✅ <b>Выберите, где опубликовать:</b>"),
+                            Const("⚠️ <b>Нет подключенных социальных сетей!</b>\n\n"),
+                            Const(
+                                "🔗 <i>Для публикации постов необходимо подключить хотя бы одну социальную сеть в настройках организации.</i>\n\n"),
+                            Const("Обратитесь к администратору для подключения социальных сетей."),
                         ),
                         False: Multi(
+                            Const("📋 <b>Доступные социальные сети:</b>\n\n"),
                             Case(
                                 {
                                     True: Const("📺 Telegram - <b>подключен</b>\n"),
@@ -513,16 +514,10 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                                 },
                                 selector="vkontakte_connected"
                             ),
-                            Case(
-                                {
-                                    True: Const("⚠️ <b>Нет подключенных социальных сетей!</b>\n"),
-                                    False: Const("✅ <b>Выберите, где опубликовать:</b>"),
-                                },
-                                selector="no_connected_networks"
-                            ),
+                            Const("✅ <b>Выберите, где опубликовать:</b>"),
                         ),
                     },
-                    selector="all_networks_connected"
+                    selector="no_connected_networks"
                 ),
                 sep="",
             ),
@@ -531,7 +526,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             Column(
                 Checkbox(
                     Const("✅ Telegram"),
-                    Const(" Telegram"),
+                    Const("⚪ Telegram"),
                     id="telegram_checkbox",
                     default=False,
                     on_state_changed=self.generate_publication_service.handle_toggle_social_network,
@@ -539,31 +534,21 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                 ),
                 Checkbox(
                     Const("✅ VKontakte"),
-                    Const("⚠️ VKontakte"),
+                    Const("⚪ VKontakte"),
                     id="vkontakte_checkbox",
                     default=False,
                     on_state_changed=self.generate_publication_service.handle_toggle_social_network,
                     when="vkontakte_connected",
                 ),
+                when="has_available_networks",
             ),
 
-            # Предупреждение если нет подключенных сетей
-            Case(
-                {
-                    True: Multi(
-                        Const(
-                            "\n🔗 <i>Для публикации постов необходимо подключить хотя бы одну социальную сеть в настройках организации.</i>"),
-                    ),
-                    False: Const(""),
-                },
-                selector="no_connected_networks"
-            ),
-
+            # Кнопки действий
             Row(
                 Button(
                     Const("🚀 Опубликовать"),
                     id="publish_with_networks",
-                    on_click=self.generate_publication_service.handle_publish_with_selected_networks,  # Новый метод!
+                    on_click=self.generate_publication_service.handle_publish_with_selected_networks,
                     when="has_available_networks",
                 ),
                 Button(
@@ -571,6 +556,14 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                     id="back_to_preview",
                     on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.preview),
                 ),
+            ),
+
+            # Кнопка назад для случая когда нет доступных сетей
+            Button(
+                Const("◀️ Назад к превью"),
+                id="back_to_preview_no_networks",
+                on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.preview),
+                when="no_connected_networks",
             ),
 
             state=model.GeneratePublicationStates.social_network_select,

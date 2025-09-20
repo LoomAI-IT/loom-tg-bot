@@ -870,16 +870,8 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 network_id = checkbox.widget_id
                 is_checked = checkbox.is_checked()
 
+                # Сохраняем состояние чекбокса
                 dialog_manager.dialog_data["selected_social_networks"][network_id] = is_checked
-
-                # Проверяем что хотя бы одна соцсеть выбрана
-                selected_networks = dialog_manager.dialog_data["selected_social_networks"]
-                has_selection = any(selected_networks.values())
-
-                if not has_selection:
-                    await callback.answer("⚠️ Выберите хотя бы одну социальную сеть для публикации", show_alert=True)
-                else:
-                    await callback.answer()
 
                 self.logger.info(
                     "Социальная сеть переключена",
@@ -887,9 +879,11 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                         common.TELEGRAM_CHAT_ID_KEY: callback.message.chat.id,
                         "network": network_id,
                         "selected": is_checked,
+                        "all_selected": dialog_manager.dialog_data["selected_social_networks"]
                     }
                 )
 
+                await callback.answer()
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
                 span.record_exception(err)
@@ -908,26 +902,13 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                # Проверяем, выбраны ли социальные сети
-                selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
-                has_selected_networks = any(selected_networks.values())
-
-                if not has_selected_networks:
-                    # Если не выбраны соцсети, показываем сообщение и переходим к выбору
-                    await callback.answer(
-                        "⚠️ Выберите социальные сети для публикации",
-                        show_alert=True
-                    )
-                    await dialog_manager.switch_to(model.GeneratePublicationStates.social_network_select)
-                else:
-                    # Если соцсети выбраны, публикуем сразу
-                    await self._publish_immediately(callback, dialog_manager)
-
+                # Переходим к выбору социальных сетей
+                await dialog_manager.switch_to(model.GeneratePublicationStates.social_network_select)
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-                await callback.answer("❌ Ошибка при публикации", show_alert=True)
+                await callback.answer("❌ Ошибка при переходе к выбору соцсетей", show_alert=True)
                 raise
 
     async def handle_publish_with_selected_networks(
@@ -954,7 +935,6 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                     return
 
                 await self._publish_immediately(callback, dialog_manager)
-
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
                 span.record_exception(err)
@@ -1081,16 +1061,21 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                     organization_id=state.organization_id
                 )
 
-                # Проверяем подключенные сети (только Telegram и VKontakte для публикаций)
+                # Проверяем подключенные сети
                 telegram_connected = self._is_network_connected(social_networks, "telegram")
                 vkontakte_connected = self._is_network_connected(social_networks, "vkontakte")
+
+                # Получаем текущие выбранные сети
+                selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
+                has_selected_networks = any(selected_networks.values())
 
                 data = {
                     "telegram_connected": telegram_connected,
                     "vkontakte_connected": vkontakte_connected,
                     "all_networks_connected": telegram_connected and vkontakte_connected,
                     "no_connected_networks": not telegram_connected and not vkontakte_connected,
-                    "has_available_networks": telegram_connected or vkontakte_connected,  # Новое поле!
+                    "has_available_networks": telegram_connected or vkontakte_connected,
+                    "has_selected_networks": has_selected_networks,
                 }
 
                 span.set_status(Status(StatusCode.OK))
