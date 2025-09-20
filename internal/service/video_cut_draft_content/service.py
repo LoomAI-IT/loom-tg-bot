@@ -88,17 +88,20 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
 
                 # Подготавливаем медиа для видео
                 if current_video_cut.video_fid:
-                    video_url = f"https://kontur-media.ru/api/content/video-cut/{current_video_cut.id}/download/file.mp4"
+                    cache_booster = int(time.time())
+                    video_url = f"https://kontur-media.ru/api/content/video-cut/{current_video_cut.id}/download/file.mp4?v={cache_booster}"
                     encoded_url = quote(video_url, safe=':/?#[]@!$&\'()*+,;=')
                     print(encoded_url, flush=True)
-                    await bot.send_video(
-                        chat_id=self._get_chat_id(dialog_manager),
-                        video=video_url,
-                        caption=f"🎬 {current_video_cut.name}",
-                        parse_mode="HTML"
-                    )
-
-
+                    for i in range(15):
+                        try:
+                            await bot.send_video(
+                                chat_id=self._get_chat_id(dialog_manager),
+                                video=video_url,
+                                caption=f"🎬 {current_video_cut.name}",
+                                parse_mode="HTML"
+                            )
+                        except:
+                            pass
                 data = {
                     "has_video_cuts": True,
                     "period_text": period_text,
