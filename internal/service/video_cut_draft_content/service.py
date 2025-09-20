@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 import time
 from typing import Any
 
+import aiohttp
 from aiogram import Bot
 from aiogram_dialog.api.entities import MediaAttachment
 from aiogram.types import CallbackQuery, Message, ContentType
@@ -89,10 +90,12 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                 video_media = None
                 if current_video_cut.video_fid:
                     video_url = f"https://kontur-media.ru/api/content/video-cut/{current_video_cut.id}/download/file.mp4"
+                    content, content_type = await self._download_video_from_url(video_url)
 
                     video_media = MediaAttachment(
                         url=video_url,
                         type=ContentType.VIDEO,
+                        data=content,
                         filename=current_video_cut.video_name
                     )
 
@@ -795,6 +798,19 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
             # Сбрасываем рабочие данные
             dialog_manager.dialog_data.pop("working_video_cut", None)
             dialog_manager.dialog_data.pop("original_video_cut", None)
+
+    async def _download_video_from_url(self, video_url: str) -> tuple[bytes, str]:
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(video_url) as response:
+                    if response.status == 200:
+                        content_type = response.headers.get('content-type', 'video/mp4')
+                        content = await response.read()
+                        return content, content_type
+                    else:
+                        raise Exception(f"Failed to download video: HTTP {response.status}")
+        except Exception as err:
+            raise err
 
     def _format_datetime(self, dt: str) -> str:
         """Форматирование даты и времени"""
