@@ -180,6 +180,7 @@ moderation_publication_service = ModerationPublicationDialogService(
     kontur_employee_client,
     kontur_organization_client,
     kontur_content_client,
+    cfg.domain
 )
 
 video_cuts_draft_service = VideoCutsDraftDialogService(
