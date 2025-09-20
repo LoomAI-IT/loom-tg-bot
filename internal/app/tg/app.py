@@ -109,6 +109,12 @@ def include_tg_webhook(
         methods=["POST"]
     )
 
+    app.add_api_route(
+        prefix + "/file/cache",
+        tg_webhook_controller.set_cache_file,
+        methods=["POST"]
+    )
+
 
 def include_command_handlers(
         dp: Dispatcher,

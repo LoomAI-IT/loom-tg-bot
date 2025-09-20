@@ -75,6 +75,12 @@ class ITelegramWebhookController(Protocol):
             body: NotifyVizardVideoCutGenerated,
     ) -> JSONResponse: pass
 
+    @abstractmethod
+    async def set_cache_file(
+            self,
+            body: SetCacheFileBody,
+    ) -> JSONResponse: pass
+
 
 class IHttpMiddleware(Protocol):
     @abstractmethod

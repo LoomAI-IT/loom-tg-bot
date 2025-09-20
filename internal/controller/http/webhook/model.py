@@ -8,6 +8,10 @@ class EmployeeNotificationBody(BaseModel):
     role: str
     interserver_secret_key: str
 
+class SetCacheFileBody(BaseModel):
+    interserver_secret_key: str
+    filename: str
+    file_id: str
 
 class NotifyVizardVideoCutGenerated(BaseModel):
     account_id: int

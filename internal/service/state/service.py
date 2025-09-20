@@ -108,3 +108,20 @@ class StateService(interface.IStateService):
                 span.record_exception(err)
                 span.set_status(StatusCode.ERROR, str(err))
                 raise
+
+    async def set_cache_file(self, filename: str, file_id: str) -> None:
+        with self.tracer.start_as_current_span(
+                "StateService.set_cache_file",
+                kind=SpanKind.INTERNAL,
+                attributes={
+                    "filename": filename,
+                    "file_id": file_id
+                }
+        ) as span:
+            try:
+                await self.state_repo.set_cache_file(filename, file_id)
+                span.set_status(StatusCode.OK)
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(StatusCode.ERROR, str(err))
+                raise

@@ -186,6 +186,58 @@ class TelegramWebhookController(interface.ITelegramWebhookController):
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise err
 
+    async def set_cache_file(
+            self,
+            body: SetCacheFileBody,
+    ) -> JSONResponse:
+        with self.tracer.start_as_current_span(
+                "TelegramWebhookController.set_cache_file",
+                kind=SpanKind.INTERNAL
+        ) as span:
+            try:
+                # Проверяем секретный ключ
+                if body.interserver_secret_key != self.interserver_secret_key:
+                    return JSONResponse(
+                        content={"status": "error", "message": "Wrong secret token !"},
+                        status_code=401
+                    )
+
+                # Сохраняем файл в кеш
+                await self.state_service.set_cache_file(
+                    filename=body.filename,
+                    file_id=body.file_id
+                )
+
+                self.logger.info(
+                    "Файл сохранен в кеш",
+                    {
+                        "filename": body.filename,
+                        "file_id": body.file_id,
+                    }
+                )
+
+                span.set_status(Status(StatusCode.OK))
+                return JSONResponse(
+                    content={"status": "ok", "message": "File cached successfully"},
+                    status_code=200
+                )
+
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
+                self.logger.error(
+                    "Ошибка при сохранении файла в кеш",
+                    {
+                        "filename": body.filename,
+                        "file_id": body.file_id,
+                        "error": str(err)
+                    }
+                )
+                return JSONResponse(
+                    content={"status": "error", "message": "Failed to cache file"},
+                    status_code=500
+                )
+
     def _format_vizard_notification_message(self, body: NotifyVizardVideoCutGenerated) -> str:
         """Форматирует сообщение для уведомления о генерации видео"""
         video_word = "видео" if body.video_count == 1 else "видеороликов"

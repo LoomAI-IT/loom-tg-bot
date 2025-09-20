@@ -28,6 +28,11 @@ class IStateService(Protocol):
     @abstractmethod
     async def delete_state_by_tg_chat_id(self, tg_chat_id: int) -> None: pass
 
+    @abstractmethod
+    async def set_cache_file(self, filename: str, file_id: str) -> None:
+        pass
+
+
 
 class IStateRepo(Protocol):
 
