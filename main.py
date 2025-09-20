@@ -78,9 +78,7 @@ tel = Telemetry(
 )
 bot = Bot(
     cfg.tg_bot_token,
-    base_url="https://kontur-media.ru/telegram-bot-api/bot{token}/{method}",
     timeout=ClientTimeout(total=120),
-    local_mode=True
 )
 
 redis_client = redis.Redis(

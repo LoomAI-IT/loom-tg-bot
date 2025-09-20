@@ -2,8 +2,8 @@ import asyncio
 from datetime import datetime, timezone
 import time
 from typing import Any
+from urllib.parse import quote
 
-import aiohttp
 from aiogram import Bot
 from aiogram_dialog.api.entities import MediaAttachment
 from aiogram.types import CallbackQuery, Message, ContentType
@@ -36,7 +36,6 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
             bot: Bot,
             **kwargs
     ) -> dict:
-        """Получение данных для основного окна - сразу показываем первую видео-нарезку"""
         with self.tracer.start_as_current_span(
                 "DraftVideoCutsDialogService.get_video_cut_list_data",
                 kind=SpanKind.INTERNAL
@@ -90,11 +89,14 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                 # Подготавливаем медиа для видео
                 video_media = None
                 if current_video_cut.video_fid:
-                    video_url = f"https://kontur-media.ru/api/content/video-cut/{current_video_cut.id}/download"
+                    video_url = f"https://kontur-media.ru/api/content/video-cut/{current_video_cut.id}/download/file.mp4"
+                    encoded_url = quote(video_url, safe=':/?#[]@!$&\'()*+,;=')
+                    print(encoded_url, flush=True)
 
                     video_media = MediaAttachment(
-                        url=video_url,
-                        type=ContentType.VIDEO
+                        url=encoded_url,
+                        type=ContentType.VIDEO,
+                        filename=current_video_cut.video_name
                     )
 
                 data = {
