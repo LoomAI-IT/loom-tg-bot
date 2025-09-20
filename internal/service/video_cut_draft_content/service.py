@@ -248,6 +248,7 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                state = await self._get_state(dialog_manager)
                 # Если есть несохраненные изменения, сохраняем их
                 if self._has_changes(dialog_manager):
                     await self._save_video_cut_changes(dialog_manager)
@@ -261,8 +262,11 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                     return
 
                 # Публикуем немедленно через API
-                await self.kontur_content_client.publish_video_cut(
-                    video_cut_id=video_cut_id
+                await self.kontur_content_client.moderate_video_cut(
+                    video_cut_id=video_cut_id,
+                    moderator_id=state.account_id,
+                    moderation_status="approved",
+
                 )
 
                 self.logger.info(

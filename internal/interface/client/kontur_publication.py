@@ -73,9 +73,6 @@ class IKonturContentClient(Protocol):
     ) -> None: pass
 
     @abstractmethod
-    async def publish_publication(self, publication_id: int) -> None: pass
-
-    @abstractmethod
     async def delete_publication_image(self, publication_id: int) -> None: pass
 
     @abstractmethod
@@ -175,9 +172,6 @@ class IKonturContentClient(Protocol):
 
     @abstractmethod
     async def send_video_cut_to_moderation(self, video_cut_id: int) -> None: pass
-
-    @abstractmethod
-    async def publish_video_cut(self, video_cut_id: int) -> None: pass
 
     @abstractmethod
     async def get_video_cut_by_id(self, video_cut_id: int) -> model.VideoCut: pass

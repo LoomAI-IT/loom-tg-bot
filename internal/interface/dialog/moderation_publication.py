@@ -62,7 +62,7 @@ class IModerationPublicationDialogService(Protocol):
     ) -> None: pass
 
     @abstractmethod
-    async def handle_approve_publication(
+    async def handle_publish_publication(
             self,
             callback: CallbackQuery,
             button: Any,

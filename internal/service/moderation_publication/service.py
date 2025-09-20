@@ -210,14 +210,14 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
                 await callback.answer("❌ Ошибка навигации", show_alert=True)
                 raise
 
-    async def handle_approve_publication(
+    async def handle_publish_publication(
             self,
             callback: CallbackQuery,
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
         with self.tracer.start_as_current_span(
-                "ModerationPublicationDialogService.handle_approve_publication",
+                "ModerationPublicationDialogService.handle_publish_publication",
                 kind=SpanKind.INTERNAL
         ) as span:
             try:

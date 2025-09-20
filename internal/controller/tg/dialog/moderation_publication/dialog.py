@@ -114,9 +114,9 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
                         when="has_publications",
                     ),
                     Button(
-                        Const("✅ Принять"),
+                        Const("✅ Опубликовать"),
                         id="approve",
-                        on_click=self.moderation_publication_service.handle_approve_publication,
+                        on_click=self.moderation_publication_service.handle_publish_publication,
                         when="has_publications",
                     ),
                 ),
