@@ -90,14 +90,20 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                 video_media = None
                 if current_video_cut.video_fid:
                     video_url = f"https://kontur-media.ru/api/content/video-cut/{current_video_cut.id}/download/file.mp4"
-                    content, content_type = await self._download_video_from_url(video_url)
 
-                    resp = await bot.send_video(
-                        252166008,
-                        video=BufferedInputFile(content, filename=current_video_cut.video_name)
-                    )
+                    cached_file = await self.state_repo.get_cache_file(current_video_cut.video_name)
+                    if not cached_file:
+                        content, content_type = await self._download_video_from_url(video_url)
+                        resp = await bot.send_video(
+                            252166008,
+                            video=BufferedInputFile(content, filename=current_video_cut.video_name)
+                        )
+                        file_id = resp.video.file_id
+                    else:
+                        file_id = cached_file[0].file_id
+
                     video_media = MediaAttachment(
-                        file_id=MediaId(resp.video.file_id),
+                        file_id=MediaId(file_id),
                         type=ContentType.VIDEO,
                     )
 

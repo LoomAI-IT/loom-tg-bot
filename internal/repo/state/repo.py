@@ -74,10 +74,36 @@ class StateRepo(interface.IStateRepo):
                 raise
 
     async def set_cache_file(self, filename: str, file_id: int):
-        pass
+        with self.tracer.start_as_current_span(
+                "StateRepo.set_cache_file",
+                kind=SpanKind.INTERNAL
+        ) as span:
+            try:
+                args = {'filename': filename, "file_id": file_id}
+                _ = await self.db.insert(set_cache_file, args)
+
+                span.set_status(StatusCode.OK)
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(StatusCode.ERROR, str(err))
+                raise
 
     async def get_cache_file(self, filename: str) -> list[model.CachedFile]:
-        pass
+        with self.tracer.start_as_current_span(
+                "StateRepo.set_cache_file",
+                kind=SpanKind.INTERNAL
+        ) as span:
+            try:
+                args = {'filename': filename}
+                rows = await self.db.select(set_cache_file, args)
+                if rows:
+                    rows = model.CachedFile.serialize(rows)
+                span.set_status(StatusCode.OK)
+                return rows
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(StatusCode.ERROR, str(err))
+                raise
 
     async def change_user_state(
             self,

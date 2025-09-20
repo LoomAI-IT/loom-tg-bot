@@ -44,7 +44,7 @@ class IStateRepo(Protocol):
     async def set_cache_file(self, filename: str, file_id: int): pass
 
     @abstractmethod
-    async def get_cache_file(self, filename: str, file_id: int): pass
+    async def get_cache_file(self, filename: str) -> list[model.CachedFile]: pass
 
     @abstractmethod
     async def change_user_state(
