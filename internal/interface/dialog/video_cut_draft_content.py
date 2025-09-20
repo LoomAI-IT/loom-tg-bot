@@ -48,23 +48,6 @@ class IVideoCutsDraftDialogService(Protocol):
             dialog_manager: DialogManager
     ) -> None: pass
 
-    # Основные действия с черновиками
-    @abstractmethod
-    async def handle_send_to_moderation(
-            self,
-            callback: CallbackQuery,
-            button: Any,
-            dialog_manager: DialogManager
-    ) -> None: pass
-
-    @abstractmethod
-    async def handle_publish_now(
-            self,
-            callback: CallbackQuery,
-            button: Any,
-            dialog_manager: DialogManager
-    ) -> None: pass
-
     @abstractmethod
     async def handle_delete_video_cut(
             self,
@@ -137,6 +120,22 @@ class IVideoCutsDraftDialogService(Protocol):
 
     @abstractmethod
     async def handle_back_to_content_menu(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
+    @abstractmethod
+    async def handle_send_to_moderation_with_networks(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
+    @abstractmethod
+    async def handle_publish_with_selected_networks(
             self,
             callback: CallbackQuery,
             button: Any,

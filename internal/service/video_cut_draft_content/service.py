@@ -188,108 +188,6 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                 await callback.answer("❌ Ошибка навигации", show_alert=True)
                 raise
 
-    async def handle_send_to_moderation(
-            self,
-            callback: CallbackQuery,
-            button: Any,
-            dialog_manager: DialogManager
-    ) -> None:
-        with self.tracer.start_as_current_span(
-                "DraftVideoCutsDialogService.handle_send_to_moderation",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                # Если есть несохраненные изменения, сохраняем их
-                if self._has_changes(dialog_manager):
-                    await self._save_video_cut_changes(dialog_manager)
-
-                original_video_cut = dialog_manager.dialog_data["original_video_cut"]
-                video_cut_id = original_video_cut["id"]
-
-                # Проверяем что выбрана хотя бы одна соцсеть
-                if not self._has_selected_networks(dialog_manager):
-                    await callback.answer("❌ Выберите хотя бы одну социальную сеть для публикации", show_alert=True)
-                    return
-
-                # Отправляем на модерацию через API
-                await self.kontur_content_client.send_video_cut_to_moderation(
-                    video_cut_id=video_cut_id
-                )
-
-                self.logger.info(
-                    "Черновик видео отправлен на модерацию",
-                    {
-                        common.TELEGRAM_CHAT_ID_KEY: callback.message.chat.id,
-                        "video_cut_id": video_cut_id,
-                    }
-                )
-
-                await callback.answer("📤 Отправлено на модерацию!", show_alert=True)
-
-                # Удаляем черновик из списка (он больше не черновик)
-                await self._remove_current_video_cut_from_list(dialog_manager)
-
-                span.set_status(Status(StatusCode.OK))
-
-            except Exception as err:
-                span.record_exception(err)
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                await callback.answer("❌ Ошибка отправки", show_alert=True)
-                raise
-
-    async def handle_publish_now(
-            self,
-            callback: CallbackQuery,
-            button: Any,
-            dialog_manager: DialogManager
-    ) -> None:
-        with self.tracer.start_as_current_span(
-                "DraftVideoCutsDialogService.handle_publish_now",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                state = await self._get_state(dialog_manager)
-                # Если есть несохраненные изменения, сохраняем их
-                if self._has_changes(dialog_manager):
-                    await self._save_video_cut_changes(dialog_manager)
-
-                original_video_cut = dialog_manager.dialog_data["original_video_cut"]
-                video_cut_id = original_video_cut["id"]
-
-                # Проверяем что выбрана хотя бы одна соцсеть
-                if not self._has_selected_networks(dialog_manager):
-                    await callback.answer("❌ Выберите хотя бы одну социальную сеть для публикации", show_alert=True)
-                    return
-
-                # Публикуем немедленно через API
-                await self.kontur_content_client.moderate_video_cut(
-                    video_cut_id=video_cut_id,
-                    moderator_id=state.account_id,
-                    moderation_status="approved",
-
-                )
-
-                self.logger.info(
-                    "Черновик видео опубликован",
-                    {
-                        common.TELEGRAM_CHAT_ID_KEY: callback.message.chat.id,
-                        "video_cut_id": video_cut_id,
-                    }
-                )
-
-                await callback.answer("🚀 Опубликовано!", show_alert=True)
-
-                # Удаляем черновик из списка
-                await self._remove_current_video_cut_from_list(dialog_manager)
-
-                span.set_status(Status(StatusCode.OK))
-
-            except Exception as err:
-                span.record_exception(err)
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                await callback.answer("❌ Ошибка публикации", show_alert=True)
-                raise
-
     async def handle_delete_video_cut(
             self,
             callback: CallbackQuery,
@@ -530,59 +428,6 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                 await message.answer("❌ Ошибка при сохранении тегов")
                 raise
 
-    async def handle_toggle_social_network(
-            self,
-            callback: CallbackQuery,
-            checkbox: Any,
-            dialog_manager: DialogManager
-    ) -> None:
-        with self.tracer.start_as_current_span(
-                "DraftVideoCutsDialogService.handle_toggle_social_network",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                working_video_cut = dialog_manager.dialog_data["working_video_cut"]
-                social_networks = dialog_manager.dialog_data.get("social_networks", {})
-
-                if checkbox.widget_id == "youtube_checkbox":
-                    if not self._is_network_connected(social_networks, "youtube"):
-                        await callback.answer("❌ YouTube не подключен", show_alert=True)
-                        return
-
-                    current_value = working_video_cut.get("youtube_source")
-                    if current_value:
-                        working_video_cut["youtube_source"] = False
-                    else:
-                        working_video_cut["youtube_source"] = True
-
-                elif checkbox.widget_id == "instagram_checkbox":
-                    if not self._is_network_connected(social_networks, "instagram"):
-                        await callback.answer("❌ Instagram не подключен", show_alert=True)
-                        return
-
-                    current_value = working_video_cut.get("inst_source")
-                    if current_value:
-                        working_video_cut["inst_source"] = False
-                    else:
-                        working_video_cut["inst_source"] = True
-
-                # Проверяем, что хотя бы одна платформа включена
-                youtube_enabled = working_video_cut.get("youtube_source")
-                instagram_enabled = working_video_cut.get("inst_source")
-
-                if not youtube_enabled and not instagram_enabled:
-                    await callback.answer("⚠️ Выберите хотя бы одну платформу для публикации", show_alert=True)
-                else:
-                    await callback.answer()
-
-                span.set_status(Status(StatusCode.OK))
-
-            except Exception as err:
-                span.record_exception(err)
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                await callback.answer("❌ Ошибка переключения", show_alert=True)
-                raise
-
     async def handle_back_to_video_cut_list(
             self,
             callback: CallbackQuery,
@@ -597,6 +442,213 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                 await dialog_manager.switch_to(model.VideoCutsDraftStates.video_cut_list)
                 span.set_status(Status(StatusCode.OK))
 
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
+                raise
+
+    async def handle_send_to_moderation_with_networks(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        with self.tracer.start_as_current_span(
+                "DraftVideoCutsDialogService.handle_send_to_moderation_with_networks",
+                kind=SpanKind.INTERNAL
+        ) as span:
+            try:
+                # Проверяем, что выбрана хотя бы одна соцсеть
+                selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
+                has_selected_networks = any(selected_networks.values())
+
+                if not has_selected_networks:
+                    await callback.answer(
+                        "⚠️ Выберите хотя бы одну социальную сеть для публикации",
+                        show_alert=True
+                    )
+                    return
+
+                # Если есть несохраненные изменения, сохраняем их
+                if self._has_changes(dialog_manager):
+                    await self._save_video_cut_changes(dialog_manager)
+
+                # Сохраняем выбранные соцсети в видео-нарезку
+                await self._save_selected_networks(dialog_manager)
+
+                original_video_cut = dialog_manager.dialog_data["original_video_cut"]
+                video_cut_id = original_video_cut["id"]
+
+                # Отправляем на модерацию через API
+                await self.kontur_content_client.send_video_cut_to_moderation(
+                    video_cut_id=video_cut_id
+                )
+
+                # Формируем сообщение о выбранных сетях
+                published_networks = []
+                if selected_networks.get("youtube_checkbox", False):
+                    published_networks.append("📺 YouTube Shorts")
+                if selected_networks.get("instagram_checkbox", False):
+                    published_networks.append("📸 Instagram Reels")
+
+                networks_text = ", ".join(published_networks)
+
+                self.logger.info(
+                    "Черновик видео отправлен на модерацию с выбранными соцсетями",
+                    {
+                        common.TELEGRAM_CHAT_ID_KEY: callback.message.chat.id,
+                        "video_cut_id": video_cut_id,
+                        "networks": networks_text,
+                    }
+                )
+
+                await callback.answer(f"📤 Отправлено на модерацию!\n\nВыбранные сети: {networks_text}", show_alert=True)
+
+                # Удаляем черновик из списка (он больше не черновик)
+                await self._remove_current_video_cut_from_list(dialog_manager)
+
+                span.set_status(Status(StatusCode.OK))
+
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
+                await callback.answer("❌ Ошибка отправки", show_alert=True)
+                raise
+
+    async def handle_publish_with_selected_networks(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        with self.tracer.start_as_current_span(
+                "DraftVideoCutsDialogService.handle_publish_with_selected_networks",
+                kind=SpanKind.INTERNAL
+        ) as span:
+            try:
+                # Проверяем, что выбрана хотя бы одна соцсеть
+                selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
+                has_selected_networks = any(selected_networks.values())
+
+                if not has_selected_networks:
+                    await callback.answer(
+                        "⚠️ Выберите хотя бы одну социальную сеть для публикации",
+                        show_alert=True
+                    )
+                    return
+
+                await callback.answer()
+                loading_message = await callback.message.answer("🚀 Публикую видео...")
+
+                # Если есть несохраненные изменения, сохраняем их
+                if self._has_changes(dialog_manager):
+                    await self._save_video_cut_changes(dialog_manager)
+
+                # Сохраняем выбранные соцсети в видео-нарезку
+                await self._save_selected_networks(dialog_manager)
+
+                state = await self._get_state(dialog_manager)
+                original_video_cut = dialog_manager.dialog_data["original_video_cut"]
+                video_cut_id = original_video_cut["id"]
+
+                # Публикуем немедленно через API
+                await self.kontur_content_client.moderate_video_cut(
+                    video_cut_id=video_cut_id,
+                    moderator_id=state.account_id,
+                    moderation_status="approved",
+                )
+
+                # Формируем сообщение о публикации
+                published_networks = []
+                if selected_networks.get("youtube_checkbox", False):
+                    published_networks.append("📺 YouTube Shorts")
+                if selected_networks.get("instagram_checkbox", False):
+                    published_networks.append("📸 Instagram Reels")
+
+                networks_text = ", ".join(published_networks)
+
+                self.logger.info(
+                    "Черновик видео опубликован с выбранными соцсетями",
+                    {
+                        common.TELEGRAM_CHAT_ID_KEY: callback.message.chat.id,
+                        "video_cut_id": video_cut_id,
+                        "networks": networks_text,
+                    }
+                )
+
+                await loading_message.edit_text(
+                    f"🚀 Видео успешно опубликовано!\n\n"
+                    f"📋 Опубликовано в: {networks_text}"
+                )
+
+                await asyncio.sleep(3)
+                try:
+                    await loading_message.delete()
+                except:
+                    pass
+
+                # Удаляем черновик из списка
+                await self._remove_current_video_cut_from_list(dialog_manager)
+
+                # Возвращаемся к списку черновиков
+                await dialog_manager.switch_to(model.VideoCutsDraftStates.video_cut_list)
+
+                span.set_status(Status(StatusCode.OK))
+
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
+                await callback.answer("❌ Ошибка публикации", show_alert=True)
+                raise
+
+    async def _save_selected_networks(self, dialog_manager: DialogManager) -> None:
+        """Сохранение выбранных социальных сетей в видео-нарезку"""
+        working_video_cut = dialog_manager.dialog_data["working_video_cut"]
+        selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
+
+        # Обновляем выбранные платформы
+        youtube_selected = selected_networks.get("youtube_checkbox", False)
+        instagram_selected = selected_networks.get("instagram_checkbox", False)
+
+        working_video_cut["youtube_source"] = youtube_selected
+        working_video_cut["inst_source"] = instagram_selected
+
+        # Сохраняем изменения через API
+        await self._save_video_cut_changes(dialog_manager)
+
+    async def handle_toggle_social_network(
+            self,
+            callback: CallbackQuery,
+            checkbox: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        with self.tracer.start_as_current_span(
+                "DraftVideoCutsDialogService.handle_toggle_social_network",
+                kind=SpanKind.INTERNAL
+        ) as span:
+            try:
+                # Инициализируем словарь выбранных соцсетей если его нет
+                if "selected_social_networks" not in dialog_manager.dialog_data:
+                    dialog_manager.dialog_data["selected_social_networks"] = {}
+
+                network_id = checkbox.widget_id
+                is_checked = checkbox.is_checked()
+
+                # Сохраняем состояние чекбокса
+                dialog_manager.dialog_data["selected_social_networks"][network_id] = is_checked
+
+                self.logger.info(
+                    "Социальная сеть переключена в черновиках видео",
+                    {
+                        common.TELEGRAM_CHAT_ID_KEY: callback.message.chat.id,
+                        "network": network_id,
+                        "selected": is_checked,
+                        "all_selected": dialog_manager.dialog_data["selected_social_networks"]
+                    }
+                )
+
+                await callback.answer()
+                span.set_status(Status(StatusCode.OK))
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
@@ -668,24 +720,33 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                working_video_cut = dialog_manager.dialog_data.get("working_video_cut", {})
-                social_networks = dialog_manager.dialog_data.get("social_networks", {})
+                state = await self._get_state(dialog_manager)
+
+                # Получаем подключенные социальные сети для организации
+                social_networks = await self.kontur_content_client.get_social_networks_by_organization(
+                    organization_id=state.organization_id
+                )
 
                 # Проверяем подключенные сети
                 youtube_connected = self._is_network_connected(social_networks, "youtube")
                 instagram_connected = self._is_network_connected(social_networks, "instagram")
 
-                # Проверяем выбранные сети
-                youtube_selected = working_video_cut.get("youtube_source")
-                instagram_selected = working_video_cut.get("inst_source")
+                # Проверяем есть ли права на публикацию
+                employee = await self.kontur_employee_client.get_employee_by_account_id(state.account_id)
+                can_publish = not employee.required_moderation
+
+                # Получаем текущие выбранные сети
+                selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
+                has_selected_networks = any(selected_networks.values())
 
                 data = {
                     "youtube_connected": youtube_connected,
                     "instagram_connected": instagram_connected,
-                    "youtube_selected": youtube_selected,
-                    "instagram_selected": instagram_selected,
-                    "all_networks_connected": youtube_connected and instagram_connected,
                     "no_connected_networks": not youtube_connected and not instagram_connected,
+                    "has_available_networks": youtube_connected or instagram_connected,
+                    "has_selected_networks": has_selected_networks,
+                    "can_publish": can_publish,
+                    "not_can_publish": not can_publish,
                 }
 
                 span.set_status(Status(StatusCode.OK))
@@ -712,12 +773,6 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                 return True
 
         return False
-
-    def _has_selected_networks(self, dialog_manager: DialogManager) -> bool:
-        working_video_cut = dialog_manager.dialog_data.get("working_video_cut", {})
-        youtube_selected = working_video_cut.get("youtube_source")
-        instagram_selected = working_video_cut.get("inst_source")
-        return youtube_selected or instagram_selected
 
     def _is_network_connected(self, social_networks: dict, network_type: str) -> bool:
         if not social_networks:

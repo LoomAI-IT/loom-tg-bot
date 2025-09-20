@@ -142,13 +142,13 @@ class VideoCutsDraftDialog(interface.IVideoCutsDraftDialog):
                 Button(
                     Const("📤 На модерацию"),
                     id="send_to_moderation",
-                    on_click=self.video_cut_draft_service.handle_send_to_moderation,
-                    when="not_can_publish",  # инвертированное условие
+                    on_click=lambda c, b, d: d.switch_to(model.VideoCutsDraftStates.social_network_select),
+                    when="not_can_publish",
                 ),
                 Button(
                     Const("🚀 Опубликовать"),
                     id="publish_now",
-                    on_click=self.video_cut_draft_service.handle_publish_now,
+                    on_click=lambda c, b, d: d.switch_to(model.VideoCutsDraftStates.social_network_select),
                     when="can_publish",
                 ),
                 Row(
@@ -234,11 +234,6 @@ class VideoCutsDraftDialog(interface.IVideoCutsDraftDialog):
                     Const("🏷 Изменить теги"),
                     id="edit_tags",
                     on_click=lambda c, b, d: d.switch_to(model.VideoCutsDraftStates.edit_tags),
-                ),
-                Button(
-                    Const("🌐 Выбрать соцсети"),
-                    id="social_network_select",
-                    on_click=lambda c, b, d: d.switch_to(model.VideoCutsDraftStates.social_network_select),
                 ),
             ),
 
@@ -354,20 +349,22 @@ class VideoCutsDraftDialog(interface.IVideoCutsDraftDialog):
             parse_mode="HTML",
         )
 
+
     def get_social_network_select_window(self) -> Window:
         """Окно выбора социальных сетей для публикации"""
         return Window(
             Multi(
                 Const("🌐 <b>Выбор социальных сетей</b>\n\n"),
-                Const("📋 <b>Доступные социальные сети для видео-нарезок:</b>\n"),
                 Case(
                     {
                         True: Multi(
-                            Const("📺 YouTube Shorts - <b>подключен</b>\n"),
-                            Const("📸 Instagram Reels - <b>подключен</b>\n\n"),
-                            Const("✅ <b>Выберите, где опубликовать:</b>"),
+                            Const("⚠️ <b>Нет подключенных социальных сетей!</b>\n\n"),
+                            Const(
+                                "🔗 <i>Для публикации видео-нарезок необходимо подключить хотя бы одну социальную сеть в настройках организации.</i>\n\n"),
+                            Const("Обратитесь к администратору для подключения социальных сетей."),
                         ),
                         False: Multi(
+                            Const("📋 <b>Доступные социальные сети:</b>\n\n"),
                             Case(
                                 {
                                     True: Const("📺 YouTube Shorts - <b>подключен</b>\n"),
@@ -382,16 +379,10 @@ class VideoCutsDraftDialog(interface.IVideoCutsDraftDialog):
                                 },
                                 selector="instagram_connected"
                             ),
-                            Case(
-                                {
-                                    True: Const("⚠️ <b>Нет подключенных социальных сетей!</b>\n"),
-                                    False: Const("✅ <b>Выберите, где опубликовать:</b>"),
-                                },
-                                selector="no_connected_networks"
-                            ),
+                            Const("✅ <b>Выберите, где опубликовать:</b>"),
                         ),
                     },
-                    selector="all_networks_connected"
+                    selector="no_connected_networks"
                 ),
                 sep="",
             ),
@@ -399,39 +390,52 @@ class VideoCutsDraftDialog(interface.IVideoCutsDraftDialog):
             # Чекбоксы для выбора платформ (только для подключенных)
             Column(
                 Checkbox(
-                    Const("📺 YouTube Shorts"),
                     Const("✅ YouTube Shorts"),
+                    Const("❌ YouTube Shorts"),
                     id="youtube_checkbox",
-                    default=True,
+                    default=False,
                     on_state_changed=self.video_cut_draft_service.handle_toggle_social_network,
                     when="youtube_connected",
                 ),
                 Checkbox(
-                    Const("📸 Instagram Reels"),
                     Const("✅ Instagram Reels"),
+                    Const("❌ Instagram Reels"),
                     id="instagram_checkbox",
-                    default=True,
+                    default=False,
                     on_state_changed=self.video_cut_draft_service.handle_toggle_social_network,
                     when="instagram_connected",
                 ),
+                when="has_available_networks",
             ),
 
-            # Предупреждение если нет подключенных сетей
-            Case(
-                {
-                    True: Multi(
-                        Const(
-                            "\n🔗 <i>Для публикации видео-нарезок необходимо подключить хотя бы одну социальную сеть в настройках организации.</i>"),
-                    ),
-                    False: Const(""),
-                },
-                selector="no_connected_networks"
+            # Кнопки действий
+            Row(
+                Button(
+                    Const("📤 На модерацию"),
+                    id="send_to_moderation_with_networks",
+                    on_click=self.video_cut_draft_service.handle_send_to_moderation_with_networks,
+                    when="not_can_publish",
+                ),
+                Button(
+                    Const("🚀 Опубликовать"),
+                    id="publish_with_networks",
+                    on_click=self.video_cut_draft_service.handle_publish_with_selected_networks,
+                    when="can_publish",
+                ),
+                Button(
+                    Const("◀️ Назад"),
+                    id="back_to_video_cut_list",
+                    on_click=lambda c, b, d: d.switch_to(model.VideoCutsDraftStates.video_cut_list),
+                ),
+                when="has_available_networks",
             ),
 
+            # Кнопка назад для случая когда нет доступных сетей
             Button(
-                Const("◀️ Назад"),
-                id="back_to_edit_preview",
-                on_click=lambda c, b, d: d.switch_to(model.VideoCutsDraftStates.edit_preview),
+                Const("◀️ Назад к списку"),
+                id="back_to_video_cut_list_no_networks",
+                on_click=lambda c, b, d: d.switch_to(model.VideoCutsDraftStates.video_cut_list),
+                when="no_connected_networks",
             ),
 
             state=model.VideoCutsDraftStates.social_network_select,
