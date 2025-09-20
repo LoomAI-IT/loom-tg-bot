@@ -76,11 +76,13 @@ tel = Telemetry(
     cfg.otlp_port,
     alert_manager
 )
-
-bot = Bot(
+local_bot = Bot(
     cfg.tg_bot_token,
-    timeout=ClientTimeout(total=120)
+    base_url="https://kontur-media.ru/telegram-bot-api/bot{token}/{method}",
+    timeout=ClientTimeout(total=120),
+    local_mode=True
 )
+
 redis_client = redis.Redis(
     host=cfg.monitoring_redis_host,
     port=cfg.monitoring_redis_port,
@@ -236,7 +238,7 @@ moderation_publication_dialog = ModerationPublicationDialog(
     moderation_publication_service
 )
 
-video_cuts_draft_dialog= VideoCutsDraftDialog(
+video_cuts_draft_dialog = VideoCutsDraftDialog(
     tel,
     video_cuts_draft_service
 )

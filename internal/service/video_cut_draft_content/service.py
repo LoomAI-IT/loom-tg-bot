@@ -5,8 +5,8 @@ from typing import Any
 
 import aiohttp
 from aiogram import Bot
-from aiogram_dialog.api.entities import MediaAttachment, MediaId
-from aiogram.types import CallbackQuery, Message, ContentType, BufferedInputFile
+from aiogram_dialog.api.entities import MediaAttachment
+from aiogram.types import CallbackQuery, Message, ContentType
 from aiogram_dialog import DialogManager, StartMode
 
 from opentelemetry.trace import SpanKind, Status, StatusCode
@@ -50,7 +50,8 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                     organization_id=state.organization_id
                 )
 
-                video_cuts = [video_cut for video_cut in video_cuts if video_cut.video_fid != "" and video_cut.moderation_status == "draft"]
+                video_cuts = [video_cut for video_cut in video_cuts if
+                              video_cut.video_fid != "" and video_cut.moderation_status == "draft"]
 
                 if not video_cuts:
                     return {
@@ -89,17 +90,12 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                 # Подготавливаем медиа для видео
                 video_media = None
                 if current_video_cut.video_fid:
-                    video_url = f"https://kontur-media.ru/api/content/video-cut/{current_video_cut.id}/download.mp4"
-                    print(video_url, flush=True)
+                    video_url = f"https://kontur-media.ru/api/content/video-cut/{current_video_cut.id}/download"
 
-                    # Загружаем видео на сервер Telegram
-                    file_id = await self._upload_video_to_telegram(bot, video_url)
-
-                    if file_id:
-                        video_media = MediaAttachment(
-                            file_id=MediaId(file_id),
-                            type=ContentType.VIDEO
-                        )
+                    video_media = MediaAttachment(
+                        url=video_url,
+                        type=ContentType.VIDEO
+                    )
 
                 data = {
                     "has_video_cuts": True,
@@ -322,7 +318,6 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
             try:
                 original_video_cut = dialog_manager.dialog_data["original_video_cut"]
                 video_cut_id = original_video_cut["id"]
-
 
                 await self.kontur_content_client.delete_video_cut(
                     video_cut_id=video_cut_id
@@ -785,34 +780,6 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
             }
         )
 
-    async def _upload_video_to_telegram(self, bot: Bot, video_url: str) -> str:
-        """Загружает видео на сервер Telegram и возвращает file_id"""
-        try:
-            # Получаем bot из dialog_manager или из вашего DI контейнера
-
-
-            # Скачиваем видео
-            async with aiohttp.ClientSession() as session:
-                async with session.get(video_url) as response:
-                    if response.status == 200:
-                        video_data = await response.read()
-
-                        # Создаем BufferedInputFile
-                        video_file = BufferedInputFile(
-                            file=video_data,
-                            filename="video.mp4"
-                        )
-
-                        # Загружаем в Telegram (отправляем боту самому себе)
-                        message = await bot.send_video(
-                            chat_id=bot.id,  # отправляем боту самому себе
-                            video=video_file
-                        )
-
-                        return message.video.file_id
-
-        except Exception as e:
-            raise e
     async def _remove_current_video_cut_from_list(self, dialog_manager: DialogManager) -> None:
         video_cuts_list = dialog_manager.dialog_data.get("video_cuts_list", [])
         current_index = dialog_manager.dialog_data.get("current_index", 0)
