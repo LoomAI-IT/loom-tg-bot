@@ -93,7 +93,7 @@ class VideoCutsDraftDialogService(interface.IVideoCutsDraftDialogService):
                     print(video_url, flush=True)
 
                     # Загружаем видео на сервер Telegram
-                    file_id = await self._upload_video_to_telegram(bot, video_ur)
+                    file_id = await self._upload_video_to_telegram(bot, video_url)
 
                     if file_id:
                         video_media = MediaAttachment(
