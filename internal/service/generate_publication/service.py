@@ -1291,6 +1291,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
 
     async def _download_image_from_tg_file_id(self, telegram_file_id: str) -> tuple[bytes, str]:
         try:
+            print(telegram_file_id, flush=True)
             file = await self.bot.get_file(telegram_file_id)
             file_path = file.file_path.replace("/var/lib/telegram-bot-api/", "")
             image_url = f"https://{self.kontur_domain}/telegram-bot-files/{file_path}"
