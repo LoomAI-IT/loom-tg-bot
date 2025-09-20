@@ -77,10 +77,7 @@ tel = Telemetry(
     cfg.otlp_port,
     alert_manager
 )
-session = AiohttpSession(api=TelegramAPIServer(
-    base=f'https://{cfg.domain}/telegram-bot-api/bot{{token}}/{{method}}',
-    file=f'https://{cfg.domain}/telegram-bot-files',
-))
+session = AiohttpSession(api=TelegramAPIServer.from_base(f'https://{cfg.domain}/telegram-bot-api'))
 bot = Bot(token=cfg.tg_bot_token, session=session)
 
 redis_client = redis.Redis(
