@@ -3,6 +3,7 @@ import time
 from datetime import datetime, timezone
 from typing import Any
 
+import aiohttp
 from aiogram_dialog.api.entities import MediaId, MediaAttachment
 from aiogram_dialog.widgets.input import MessageInput
 
@@ -25,6 +26,7 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
             kontur_employee_client: interface.IKonturEmployeeClient,
             kontur_organization_client: interface.IKonturOrganizationClient,
             kontur_content_client: interface.IKonturContentClient,
+            kontur_domain: str
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
@@ -33,6 +35,7 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
         self.kontur_employee_client = kontur_employee_client
         self.kontur_organization_client = kontur_organization_client
         self.kontur_content_client = kontur_content_client
+        self.kontur_domain = kontur_domain
 
     async def get_moderation_list_data(
             self,
@@ -1306,12 +1309,7 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
         elif working_has_image:
             # Проверяем, новое ли это изображение
             if working_pub.get("custom_image_file_id"):
-                # Пользовательское изображение загружено через Telegram
-                file_id = working_pub["custom_image_file_id"]
-                file = await self.bot.get_file(file_id)
-                file_data = await self.bot.download_file(file.file_path)
-                image_content = file_data.read()
-                image_filename = f"moderated_image_{file_id[:8]}.jpg"
+                image_content, image_filename = await self._download_image_from_tg_file_id(working_pub["custom_image_file_id"])
 
             elif working_pub.get("image_url"):
                 # Проверяем, изменился ли URL (новое сгенерированное изображение)
@@ -1450,3 +1448,20 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
             return dialog_manager.event.chat.id
         else:
             raise ValueError("Cannot extract chat_id from dialog_manager")
+
+    async def _download_image_from_tg_file_id(self, telegram_file_id: str) -> tuple[bytes, str]:
+        try:
+            file = await self.bot.get_file(telegram_file_id)
+            file_path = file.file_path.replace("/var/lib/telegram-bot-api/", "")
+            image_url = f"https://{self.kontur_domain}/telegram-bot-files/{file_path}"
+
+            image_filename = file_path.split("/")[-1]
+            async with aiohttp.ClientSession() as session:
+                async with session.get(image_url) as response:
+                    if response.status == 200:
+                        content = await response.read()
+                        return content, image_filename
+                    else:
+                        raise Exception(f"Failed to download video: HTTP {response.status}")
+        except Exception as err:
+            raise err
