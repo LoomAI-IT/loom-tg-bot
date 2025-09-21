@@ -495,6 +495,46 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
+    async def _get_current_image_data_for_moderation(self, dialog_manager: DialogManager) -> tuple[bytes, str] | None:
+        """Получает данные текущего изображения для передачи в API при модерации"""
+        try:
+            working_pub = dialog_manager.dialog_data.get("working_publication", {})
+
+            # Проверяем пользовательское изображение
+            if working_pub.get("custom_image_file_id"):
+                file_id = working_pub["custom_image_file_id"]
+                image_content = await self.bot.download(file_id)
+                return image_content.read(), f"{file_id}.jpg"
+
+            # Проверяем сгенерированные изображения
+            elif working_pub.get("generated_images_url"):
+                images_url = working_pub["generated_images_url"]
+                current_index = working_pub.get("current_image_index", 0)
+
+                if current_index < len(images_url):
+                    current_url = images_url[current_index]
+                    # Загружаем изображение по URL
+                    import aiohttp
+                    async with aiohttp.ClientSession() as session:
+                        async with session.get(current_url) as response:
+                            response.raise_for_status()
+                            content = await response.read()
+                            return content, f"generated_image_{current_index}.jpg"
+
+            # Проверяем исходное изображение
+            elif working_pub.get("image_url"):
+                import aiohttp
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(working_pub["image_url"]) as response:
+                        response.raise_for_status()
+                        content = await response.read()
+                        return content, "original_image.jpg"
+
+            return None
+        except Exception as err:
+            self.logger.error(f"Ошибка получения данных изображения для модерации: {err}")
+            return None
+
     async def handle_regenerate_text(
             self,
             callback: CallbackQuery,
@@ -719,28 +759,39 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
         ) as span:
             try:
                 await callback.answer()
-                loading_message = await callback.message.answer("🔄 Генерирую изображение...")
+                loading_message = await callback.message.answer("🔄 Генерирую изображения, это может занять время...")
 
                 working_pub = dialog_manager.dialog_data["working_publication"]
                 category_id = working_pub["category_id"]
                 publication_text = working_pub["text"]
 
-                # Генерация через API
-                image_url = await self.kontur_content_client.generate_publication_image(
+                # Передаем текущее изображение если есть
+                current_image_content = None
+                current_image_filename = None
+
+                if await self._get_current_image_data_for_moderation(dialog_manager):
+                    current_image_content, current_image_filename = await self._get_current_image_data_for_moderation(
+                        dialog_manager)
+
+                # Генерация через API - возвращает массив из 3 URL
+                images_url = await self.kontur_content_client.generate_publication_image(
                     category_id=category_id,
                     publication_text=publication_text,
                     text_reference=publication_text[:200],
-                    prompt=None
+                    image_content=current_image_content,
+                    image_filename=current_image_filename,
                 )
 
-                # Обновляем рабочую версию
-                dialog_manager.dialog_data["working_publication"]["image_url"] = image_url
+                # Обновляем рабочую версию с множественными изображениями
+                dialog_manager.dialog_data["working_publication"]["generated_images_url"] = images_url
                 dialog_manager.dialog_data["working_publication"]["has_image"] = True
-                # Удаляем пользовательское изображение если было
+                dialog_manager.dialog_data["working_publication"]["current_image_index"] = 0
+                # Удаляем старые данные изображения
                 dialog_manager.dialog_data["working_publication"].pop("custom_image_file_id", None)
                 dialog_manager.dialog_data["working_publication"].pop("is_custom_image", None)
+                dialog_manager.dialog_data["working_publication"].pop("image_url", None)
 
-                await loading_message.edit_text("✅ Изображение сгенерировано!")
+                await loading_message.edit_text("✅ Изображения успешно сгенерированы!")
                 await asyncio.sleep(2)
                 try:
                     await loading_message.delete()
@@ -773,28 +824,40 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
                     await message.answer("❌ Введите описание изображения")
                     return
 
-                loading_message = await message.answer("🔄 Генерирую изображение по вашему описанию...")
+                loading_message = await message.answer("🔄 Генерирую изображения по вашему описанию...")
 
                 working_pub = dialog_manager.dialog_data["working_publication"]
                 category_id = working_pub["category_id"]
                 publication_text = working_pub["text"]
 
-                # Генерация с промптом
-                image_url = await self.kontur_content_client.generate_publication_image(
+                # Передаем текущее изображение если есть
+                current_image_content = None
+                current_image_filename = None
+
+                if await self._get_current_image_data_for_moderation(dialog_manager):
+                    current_image_content, current_image_filename = await self._get_current_image_data_for_moderation(
+                        dialog_manager)
+
+                # Генерация с промптом - возвращает массив из 3 URL
+                images_url = await self.kontur_content_client.generate_publication_image(
                     category_id=category_id,
                     publication_text=publication_text,
                     text_reference=publication_text[:200],
-                    prompt=prompt
+                    prompt=prompt,
+                    image_content=current_image_content,
+                    image_filename=current_image_filename,
                 )
 
-                # Обновляем рабочую версию
-                dialog_manager.dialog_data["working_publication"]["image_url"] = image_url
+                # Обновляем рабочую версию с множественными изображениями
+                dialog_manager.dialog_data["working_publication"]["generated_images_url"] = images_url
                 dialog_manager.dialog_data["working_publication"]["has_image"] = True
-                # Удаляем пользовательское изображение если было
+                dialog_manager.dialog_data["working_publication"]["current_image_index"] = 0
+                # Удаляем старые данные изображения
                 dialog_manager.dialog_data["working_publication"].pop("custom_image_file_id", None)
                 dialog_manager.dialog_data["working_publication"].pop("is_custom_image", None)
+                dialog_manager.dialog_data["working_publication"].pop("image_url", None)
 
-                await loading_message.edit_text("✅ Изображение сгенерировано!")
+                await loading_message.edit_text("✅ Изображения успешно сгенерированы!")
                 await asyncio.sleep(2)
                 try:
                     await loading_message.delete()
@@ -1013,6 +1076,60 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
                         "all_selected": dialog_manager.dialog_data["selected_social_networks"]
                     }
                 )
+
+                await callback.answer()
+                span.set_status(Status(StatusCode.OK))
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
+                raise
+
+    async def handle_prev_image(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        with self.tracer.start_as_current_span(
+                "ModerationPublicationDialogService.handle_prev_image",
+                kind=SpanKind.INTERNAL
+        ) as span:
+            try:
+                working_pub = dialog_manager.dialog_data.get("working_publication", {})
+                images_url = working_pub.get("generated_images_url", [])
+                current_index = working_pub.get("current_image_index", 0)
+
+                if current_index > 0:
+                    dialog_manager.dialog_data["working_publication"]["current_image_index"] = current_index - 1
+                else:
+                    dialog_manager.dialog_data["working_publication"]["current_image_index"] = len(images_url) - 1
+
+                await callback.answer()
+                span.set_status(Status(StatusCode.OK))
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
+                raise
+
+    async def handle_next_image(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        with self.tracer.start_as_current_span(
+                "ModerationPublicationDialogService.handle_next_image",
+                kind=SpanKind.INTERNAL
+        ) as span:
+            try:
+                working_pub = dialog_manager.dialog_data.get("working_publication", {})
+                images_url = working_pub.get("generated_images_url", [])
+                current_index = working_pub.get("current_image_index", 0)
+
+                if current_index < len(images_url) - 1:
+                    dialog_manager.dialog_data["working_publication"]["current_image_index"] = current_index + 1
+                else:
+                    dialog_manager.dialog_data["working_publication"]["current_image_index"] = 0
 
                 await callback.answer()
                 span.set_status(Status(StatusCode.OK))
@@ -1306,22 +1423,34 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
         working_has_image = working_pub.get("has_image", False)
 
         if not working_has_image and original_has_image:
-            # Изображение было удалено - нужно удалить из storage
+            # Изображение было удалено
             should_delete_image = True
 
         elif working_has_image:
-            # Проверяем, новое ли это изображение
+            # Проверяем тип изображения и получаем выбранное
             if working_pub.get("custom_image_file_id"):
+                # Пользовательское изображение
                 image_content = await self.bot.download(working_pub["custom_image_file_id"])
                 image_filename = working_pub["custom_image_file_id"] + ".jpg"
 
+            elif working_pub.get("generated_images_url"):
+                # Выбранное из множественных сгенерированных
+                images_url = working_pub["generated_images_url"]
+                current_index = working_pub.get("current_image_index", 0)
+
+                if current_index < len(images_url):
+                    selected_url = images_url[current_index]
+                    # Проверяем, изменилось ли изображение
+                    original_url = original_pub.get("image_url", "")
+                    if original_url != selected_url:
+                        image_url = selected_url
+
             elif working_pub.get("image_url"):
-                # Проверяем, изменился ли URL (новое сгенерированное изображение)
+                # Одиночное изображение
                 original_url = original_pub.get("image_url", "")
                 working_url = working_pub.get("image_url", "")
 
                 if original_url != working_url:
-                    # URL изменился - это новое сгенерированное изображение
                     image_url = working_url
 
         # Если нужно удалить изображение
@@ -1335,7 +1464,6 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
                 self.logger.warning(f"Failed to delete image: {str(e)}")
 
         # Обновляем публикацию через API
-        # Передаем изображение только если оно действительно новое
         if image_url or image_content:
             await self.kontur_content_client.change_publication(
                 publication_id=publication_id,
@@ -1362,6 +1490,8 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
                 "has_changes": self._has_changes(dialog_manager),
                 "image_changed": bool(image_url or image_content),
                 "image_deleted": should_delete_image,
+                "selected_image_index": working_pub.get("current_image_index", 0) if working_pub.get(
+                    "generated_images_url") else None,
             }
         )
 

@@ -210,6 +210,14 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
                     },
                     selector="has_tags"
                 ),
+                # Добавляем информацию о множественных изображениях
+                Case(
+                    {
+                        True: Format("\n\n🖼 Изображение {current_image_index} из {total_images}"),
+                        False: Const(""),
+                    },
+                    selector="has_multiple_images"
+                ),
                 Case(
                     {
                         True: Const("\n\n<i>❗️ Есть несохраненные изменения</i>"),
@@ -225,6 +233,23 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
             DynamicMedia(
                 selector="preview_image_media",
                 when="has_image",
+            ),
+
+            # Добавляем кнопки навигации по изображениям
+            Row(
+                Button(
+                    Const("⬅️"),
+                    id="prev_image",
+                    on_click=self.moderation_publication_service.handle_prev_image,
+                    when="has_multiple_images",
+                ),
+                Button(
+                    Const("➡️"),
+                    id="next_image",
+                    on_click=self.moderation_publication_service.handle_next_image,
+                    when="has_multiple_images",
+                ),
+                when="has_multiple_images",
             ),
 
             Column(
