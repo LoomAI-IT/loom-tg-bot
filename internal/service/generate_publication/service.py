@@ -135,6 +135,8 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+
+                state = await self._get_state(dialog_manager)
                 if message.content_type not in [ContentType.VOICE, ContentType.AUDIO]:
                     return
 
@@ -156,7 +158,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 file_data = await self.bot.download_file(file.file_path)
                 file_data = io.BytesIO(file_data.read())
 
-                text = await self._convert_voice_to_text(file_data)
+                text = await self._convert_voice_to_text(state.organization_id, file_data)
 
                 if not text:
                     await message.answer(
@@ -1362,8 +1364,9 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
             "image_prompt": dialog_manager.dialog_data.get("image_prompt", ""),
         }
 
-    async def _convert_voice_to_text(self, voice_data: io.BytesIO) -> str:
+    async def _convert_voice_to_text(self, organization_id: int, voice_data: io.BytesIO) -> str:
         text = await self.kontur_content_client.transcribe_audio(
+            organization_id,
             audio_content=voice_data.read(),
             audio_filename="audio.mp3",
         )

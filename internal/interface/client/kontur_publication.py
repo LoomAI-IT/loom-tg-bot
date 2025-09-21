@@ -196,6 +196,7 @@ class IKonturContentClient(Protocol):
     @abstractmethod
     async def transcribe_audio(
             self,
+            organization_id: int,
             audio_content: bytes = None,
             audio_filename: str = None,
     ) -> str: pass
