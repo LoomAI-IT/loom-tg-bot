@@ -24,6 +24,7 @@ def NewTg(
         generate_publication_dialog: interface.IGeneratePublicationDialog,
         generate_video_cut_dialog: interface.IGenerateVideoCutDialog,
         moderation_publication_dialog: interface.IModerationPublicationDialog,
+        moderation_video_cut_dialog: interface.IVideoCutModerationDialog,
         video_cuts_draft_dialog: interface.IVideoCutsDraftDialog,
         prefix: str
 ):
@@ -53,6 +54,7 @@ def NewTg(
         generate_publication_dialog,
         generate_video_cut_dialog,
         moderation_publication_dialog,
+        moderation_video_cut_dialog,
         video_cuts_draft_dialog
     )
     dp.errors.register(
@@ -138,6 +140,7 @@ def include_dialogs(
         generate_publication_dialog: interface.IGeneratePublicationDialog,
         generate_video_cut_dialog: interface.IGenerateVideoCutDialog,
         moderation_publication_dialog: interface.IModerationPublicationDialog,
+        moderation_video_cut_dialog: interface.IVideoCutModerationDialog,
         video_cuts_draft_dialog: interface.IVideoCutsDraftDialog,
 ):
     dialog_router = Router()
@@ -152,6 +155,7 @@ def include_dialogs(
         generate_publication_dialog.get_dialog(),
         moderation_publication_dialog.get_dialog(),
         generate_video_cut_dialog.get_dialog(),
+        moderation_video_cut_dialog.get_dialog(),
         video_cuts_draft_dialog.get_dialog()
     )
 

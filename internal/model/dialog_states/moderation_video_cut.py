@@ -1,7 +1,14 @@
-# internal/model/dialog_states/moderation_video_cut.py
 from aiogram.fsm.state import StatesGroup, State
 
-class ModerationVideoCutStates(StatesGroup):
-    video_moderation_list = State()
-    video_review = State()
+class VideoCutModerationStates(StatesGroup):
+    moderation_list = State()
+
     reject_comment = State()
+
+    edit_preview = State()
+
+    edit_title = State()
+    edit_description = State()
+    edit_tags = State()
+
+    social_network_select = State()
