@@ -856,7 +856,7 @@ class KonturContentClient(interface.IKonturContentClient):
                         "audio/mp4"
                     )
                 }
-                response = await self.client.post("/publication/audio/transcribe", files=files)
+                response = await self.client.get("/publication/audio/transcribe", files=files)
 
                 json_response = response.json()
 
