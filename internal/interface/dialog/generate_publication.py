@@ -185,6 +185,23 @@ class IGeneratePublicationDialogService(Protocol):
             dialog_manager: DialogManager
     ) -> None: pass
 
+    # НОВЫЕ методы для навигации по изображениям
+    @abstractmethod
+    async def handle_prev_image(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
+    @abstractmethod
+    async def handle_next_image(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
     # Существующие методы для публикации
     @abstractmethod
     async def handle_add_to_drafts(
