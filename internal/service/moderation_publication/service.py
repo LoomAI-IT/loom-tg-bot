@@ -3,6 +3,7 @@ import time
 from datetime import datetime, timezone
 from typing import Any
 
+from aiogram.enums import ParseMode
 from aiogram_dialog.api.entities import MediaId, MediaAttachment
 from aiogram_dialog.widgets.input import MessageInput
 
@@ -375,6 +376,13 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
                     moderator_id=state.account_id,
                     moderation_status="rejected",
                     moderation_comment=reject_comment,
+                )
+
+                await self.bot.send_message(
+                    chat_id=original_pub["creator_id"],
+                    text=f"Ваша публикация: <b>{original_pub["name"]}</b> была отклонена с комментарием:\n<b>{reject_comment}</b>",
+                    parse_mode=ParseMode.HTML,
+
                 )
 
                 self.logger.info(
