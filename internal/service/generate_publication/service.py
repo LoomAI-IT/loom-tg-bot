@@ -1269,7 +1269,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
     async def _convert_voice_to_text(self, voice_data: io.BytesIO) -> str:
         text = await self.kontur_content_client.transcribe_audio(
             audio_content=voice_data.read(),
-            audio_filename=voice_data.name,
+            audio_filename="audio.mp3",
         )
         return text
 
