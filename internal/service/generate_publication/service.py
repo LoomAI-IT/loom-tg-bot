@@ -260,13 +260,13 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 dialog_manager.dialog_data["publication_text"] = publication_data["text"]
 
                 # Генерируем изображение
-                image_url = await self.kontur_content_client.generate_publication_image(
+                images_url = await self.kontur_content_client.generate_publication_image(
                     category_id,
                     publication_data["text"],
                     input_text,
                 )
 
-                dialog_manager.dialog_data["publication_image_url"] = image_url
+                dialog_manager.dialog_data["publication_images_url"] = images_url
                 dialog_manager.dialog_data["has_image"] = True
                 dialog_manager.dialog_data["is_custom_image"] = False
 
@@ -524,13 +524,13 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 text_reference = dialog_manager.dialog_data["input_text"]
 
                 # Генерация через API
-                image_url = await self.kontur_content_client.generate_publication_image(
+                images_url = await self.kontur_content_client.generate_publication_image(
                     category_id=category_id,
                     publication_text=publication_text,
                     text_reference=text_reference,
                 )
 
-                dialog_manager.dialog_data["publication_image_url"] = image_url
+                dialog_manager.dialog_data["publication_images_url"] = images_url
                 dialog_manager.dialog_data["has_image"] = True
 
                 await loading_message.edit_text("✅ Текст успешно обновлен!")
@@ -571,14 +571,14 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 publication_text = dialog_manager.dialog_data["publication_text"]
                 text_reference = dialog_manager.dialog_data["input_text"]
 
-                image_url = await self.kontur_content_client.generate_publication_image(
+                images_url = await self.kontur_content_client.generate_publication_image(
                     category_id=category_id,
                     publication_text=publication_text,
                     text_reference=text_reference,
                     prompt=prompt
                 )
 
-                dialog_manager.dialog_data["publication_image_url"] = image_url
+                dialog_manager.dialog_data["publication_images_url"] = images_url
                 dialog_manager.dialog_data["has_image"] = True
 
                 await loading_message.edit_text("✅ Изображение успешно сгенерирован!")
@@ -630,7 +630,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                     dialog_manager.dialog_data["is_custom_image"] = True
 
                     # Удаляем сгенерированное изображение если было
-                    dialog_manager.dialog_data.pop("publication_image_url", None)
+                    dialog_manager.dialog_data.pop("publication_images_url", None)
 
                     self.logger.info(
                         "Пользовательское изображение загружено",
@@ -668,7 +668,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
             try:
                 # Удаляем все данные об изображении
                 dialog_manager.dialog_data["has_image"] = False
-                dialog_manager.dialog_data.pop("publication_image_url", None)
+                dialog_manager.dialog_data.pop("publication_images_url", None)
                 dialog_manager.dialog_data.pop("custom_image_file_id", None)
                 dialog_manager.dialog_data.pop("is_custom_image", None)
 
@@ -709,7 +709,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 text = dialog_manager.dialog_data["publication_text"]
 
                 # Подготавливаем данные об изображении
-                image_url = dialog_manager.dialog_data.get("publication_image_url")
+                images_url = dialog_manager.dialog_data.get("publication_images_url")
                 image_content = None
                 image_filename = None
 
@@ -728,7 +728,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                     text,
                     tags,
                     "draft",
-                    image_url=image_url,
+                    image_url=images_url[0],
                     image_content=image_content,
                     image_filename=image_filename,
                 )
@@ -789,7 +789,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 text = dialog_manager.dialog_data["publication_text"]
 
                 # Подготавливаем изображение
-                image_url = dialog_manager.dialog_data.get("publication_image_url")
+                images_url = dialog_manager.dialog_data.get("publication_images_url")
                 image_content = None
                 image_filename = None
 
@@ -808,7 +808,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                     text,
                     tags,
                     "moderation",
-                    image_url=image_url,
+                    image_url=images_url[0],
                     image_content=image_content,
                     image_filename=image_filename,
                 )
@@ -959,7 +959,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 text = dialog_manager.dialog_data["publication_text"]
 
                 # Подготавливаем данные об изображении
-                image_url = dialog_manager.dialog_data.get("publication_image_url")
+                images_url = dialog_manager.dialog_data.get("publication_images_url")
                 image_content = None
                 image_filename = None
 
@@ -978,7 +978,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                     text,
                     tags,
                     "published",  # Статус published для немедленной публикации
-                    image_url=image_url,
+                    image_url=images_url[0],
                     image_content=image_content,
                     image_filename=image_filename,
                 )
@@ -1199,14 +1199,14 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                         file_id=MediaId(file_id),
                         type=ContentType.PHOTO
                     )
-                elif dialog_manager.dialog_data.get("publication_image_url"):
+                elif dialog_manager.dialog_data.get("publication_images_url"):
                     # Сгенерированное изображение
                     has_image = True
                     from aiogram_dialog.api.entities import MediaAttachment
 
-                    image_url = dialog_manager.dialog_data["publication_image_url"]
+                    images_url = dialog_manager.dialog_data["publication_images_url"]
                     preview_image_media = MediaAttachment(
-                        url=image_url,
+                        url=images_url[0],
                         type=ContentType.PHOTO
                     )
 
