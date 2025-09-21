@@ -30,6 +30,7 @@ from internal.controller.tg.dialog.generate_publication.dialog import GeneratePu
 from internal.controller.tg.dialog.generate_video_cut.dialog import GenerateVideoCutDialog
 from internal.controller.tg.dialog.moderation_publication.dialog import ModerationPublicationDialog
 from internal.controller.tg.dialog.video_cut_draft_content.dialog import VideoCutsDraftDialog
+from internal.controller.tg.dialog.moderation_video_cut.dialog import VideoCutModerationDialog
 
 from internal.service.state.service import StateService
 from internal.service.auth.service import AuthDialogService
@@ -43,6 +44,7 @@ from internal.service.generate_publication.service import GeneratePublicationDia
 from internal.service.generate_video_cut.service import GenerateVideoCutDialogService
 from internal.service.moderation_publication.service import ModerationPublicationDialogService
 from internal.service.video_cut_draft_content.service import VideoCutsDraftDialogService
+from internal.service.moderation_video_cut.service import VideoCutModerationDialogService
 
 from internal.repo.state.repo import StateRepo
 
@@ -101,6 +103,7 @@ kontur_content_client = KonturContentClient(tel, cfg.kontur_content_host, cfg.ko
 
 state_repo = StateRepo(tel, db)
 
+# Инициализация сервисов
 state_service = StateService(tel, state_repo)
 auth_dialog_service = AuthDialogService(
     tel,
@@ -189,6 +192,16 @@ video_cuts_draft_service = VideoCutsDraftDialogService(
     cfg.domain
 )
 
+video_cut_moderation_service = VideoCutModerationDialogService(
+    tel,
+    bot,
+    state_repo,
+    kontur_employee_client,
+    kontur_organization_client,
+    kontur_content_client,
+)
+
+# Инициализация диалогов
 auth_dialog = AuthDialog(
     tel,
     auth_dialog_service,
@@ -240,6 +253,11 @@ video_cuts_draft_dialog = VideoCutsDraftDialog(
     video_cuts_draft_service
 )
 
+video_cut_moderation_dialog = VideoCutModerationDialog(
+    tel,
+    video_cut_moderation_service
+)
+
 # Инициализация middleware
 tg_middleware = TgMiddleware(
     tel,
@@ -280,6 +298,7 @@ if __name__ == "__main__":
         generate_publication_dialog,
         generate_video_cut_dialog,
         moderation_publication_dialog,
+        video_cut_moderation_dialog,
         video_cuts_draft_dialog,
         cfg.prefix,
     )
