@@ -379,12 +379,14 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
                     moderation_comment=reject_comment,
                 )
 
-                await self.bot.send_message(
-                    chat_id=original_pub["creator_id"],
-                    text=f"Ваша публикация: <b>{original_pub["name"]}</b> была отклонена с комментарием:\n<b>{reject_comment}</b>",
-                    parse_mode=ParseMode.HTML,
+                creator_state = await self.state_repo.state_by_account_id(original_pub["creator_id"])
+                if creator_state:
+                    await self.bot.send_message(
+                        chat_id=creator_state[0].tg_chat_id,
+                        text=f"Ваша публикация: <b>{original_pub["name"]}</b> была отклонена с комментарием:\n<b>{reject_comment}</b>",
+                        parse_mode=ParseMode.HTML,
 
-                )
+                    )
 
                 self.logger.info(
                     "Публикация отклонена",
