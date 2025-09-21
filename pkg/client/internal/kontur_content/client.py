@@ -844,7 +844,7 @@ class KonturContentClient(interface.IKonturContentClient):
             audio_filename: str = None,
     ) -> str:
         with self.tracer.start_as_current_span(
-                "KonturContentClient.create_publication",
+                "KonturContentClient.transcribe_audio",
                 kind=SpanKind.CLIENT
         ) as span:
             try:
@@ -856,7 +856,7 @@ class KonturContentClient(interface.IKonturContentClient):
                         "audio/mp4"
                     )
                 }
-                response = await self.client.post("/audio/transcribe", files=files)
+                response = await self.client.post("/publication/audio/transcribe", files=files)
 
                 json_response = response.json()
 
