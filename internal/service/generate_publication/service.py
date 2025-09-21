@@ -2,6 +2,7 @@ import io
 import asyncio
 from typing import Any
 
+import aiohttp
 from aiogram_dialog.widgets.input import MessageInput
 
 from aiogram import Bot
@@ -1289,3 +1290,11 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
             return dialog_manager.event.chat.id
         else:
             raise ValueError("Cannot extract chat_id from dialog_manager")
+
+    async def download_image(self, image_url: str) -> tuple[bytes, str]:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(image_url) as response:
+                response.raise_for_status()
+                content = await response.read()
+                content_type = response.headers.get('content-type', 'image/png')
+                return content, content_type
