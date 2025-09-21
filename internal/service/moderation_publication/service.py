@@ -97,9 +97,10 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
 
                 # Подготавливаем медиа для изображения
                 preview_image_media = None
+                image_url = None
                 if current_pub.image_fid:
                     cache_buster = int(time.time())
-                    image_url = f"https://kontur-media.ru/api/content/publication/{current_pub.id}/image/download?v={cache_buster}"
+                    image_url = f"https://{self.kontur_domain}/api/content/publication/{current_pub.id}/image/download?v={cache_buster}"
 
                     preview_image_media = MediaAttachment(
                         url=image_url,
@@ -138,7 +139,7 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
                     "text": current_pub.text,
                     "tags": current_pub.tags or [],
                     "category_id": current_pub.category_id,
-                    "image_url": f"https://kontur-media.ru/api/publication/{current_pub.id}/image/download" if current_pub.image_fid else None,
+                    "image_url": image_url,
                     "has_image": bool(current_pub.image_fid),
                     "moderation_status": current_pub.moderation_status,
                     "created_at": current_pub.created_at,
@@ -1196,7 +1197,6 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        """Данные для окна редактирования названия"""
         working_pub = dialog_manager.dialog_data.get("working_publication", {})
         return {
             "current_title": working_pub.get("name", ""),
@@ -1207,7 +1207,6 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        """Данные для окна редактирования тегов"""
         working_pub = dialog_manager.dialog_data.get("working_publication", {})
         tags = working_pub.get("tags", [])
         return {
@@ -1220,7 +1219,6 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        """Данные для окна редактирования текста"""
         working_pub = dialog_manager.dialog_data.get("working_publication", {})
         text = working_pub.get("text", "")
         return {
@@ -1232,7 +1230,6 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        """Данные для меню управления изображением"""
         working_pub = dialog_manager.dialog_data.get("working_publication", {})
         return {
             "has_image": working_pub.get("has_image", False),
@@ -1244,7 +1241,6 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        """Данные для окна генерации с промптом"""
         return {
             "has_image_prompt": bool(dialog_manager.dialog_data.get("image_prompt")),
             "image_prompt": dialog_manager.dialog_data.get("image_prompt", ""),
@@ -1253,7 +1249,6 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
     # Вспомогательные методы
 
     def _has_changes(self, dialog_manager: DialogManager) -> bool:
-        """Проверка наличия изменений между оригиналом и рабочей версией"""
         original = dialog_manager.dialog_data.get("original_publication", {})
         working = dialog_manager.dialog_data.get("working_publication", {})
 
@@ -1294,7 +1289,6 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
         return False
 
     async def _save_publication_changes(self, dialog_manager: DialogManager) -> None:
-        """Сохранение изменений публикации через API"""
         working_pub = dialog_manager.dialog_data["working_publication"]
         original_pub = dialog_manager.dialog_data["original_publication"]
         publication_id = working_pub["id"]
@@ -1370,7 +1364,6 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
         )
 
     def _format_datetime(self, dt: str) -> str:
-        """Форматирование даты и времени"""
         try:
             if isinstance(dt, str):
                 dt = datetime.fromisoformat(dt.replace('Z', '+00:00'))
@@ -1381,7 +1374,6 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
             return dt
 
     def _calculate_waiting_hours(self, created_at: str) -> int:
-        """Расчет количества часов ожидания"""
         try:
             if isinstance(created_at, str):
                 created_at = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
@@ -1393,7 +1385,6 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
             return 0
 
     def _calculate_waiting_time_text(self, created_at: str) -> str:
-        """Расчет и форматирование времени ожидания"""
         hours = self._calculate_waiting_hours(created_at)
 
         if hours == 0:
@@ -1410,7 +1401,6 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
                 return f"{days} дней"
 
     def _get_period_text(self, publications: list) -> str:
-        """Определение периода публикаций"""
         if not publications:
             return "Нет данных"
 
@@ -1437,19 +1427,16 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
             return "За месяц"
 
     async def _get_state(self, dialog_manager: DialogManager) -> model.UserState:
-        """Получение состояния пользователя"""
         chat_id = self._get_chat_id(dialog_manager)
         return await self._get_state_by_chat_id(chat_id)
 
     async def _get_state_by_chat_id(self, chat_id: int) -> model.UserState:
-        """Получение состояния по chat_id"""
         state = await self.state_repo.state_by_id(chat_id)
         if not state:
             raise ValueError(f"State not found for chat_id: {chat_id}")
         return state[0]
 
     def _get_chat_id(self, dialog_manager: DialogManager) -> int:
-        """Получение chat_id из dialog_manager"""
         if hasattr(dialog_manager.event, 'message') and dialog_manager.event.message:
             return dialog_manager.event.message.chat.id
         elif hasattr(dialog_manager.event, 'chat'):
