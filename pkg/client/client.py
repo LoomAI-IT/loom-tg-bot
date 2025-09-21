@@ -395,11 +395,7 @@ class AsyncHTTPClient:
                             f"Ошибка: {err.__class__.__name__}: {str(err)}"
                         )
                     else:
-                        self.logger.error(
-                            f"Запрос {method} {url} окончательно провален "
-                            f"после {retry_count + 1} попыток за {elapsed:.2f}с. "
-                            f"Ошибка: {err.__class__.__name__}: {str(err)}"
-                        )
+                        raise err
 
                     raise
         return None
