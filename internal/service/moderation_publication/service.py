@@ -431,7 +431,6 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        """Получение данных для окна редактирования с превью"""
         with self.tracer.start_as_current_span(
                 "ModerationPublicationDialogService.get_edit_preview_data",
                 kind=SpanKind.INTERNAL
@@ -462,12 +461,29 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
 
                 # Подготавливаем медиа для изображения
                 preview_image_media = None
+                has_multiple_images = False
+                current_image_index = 0
+                total_images = 0
+
                 if working_pub.get("has_image"):
+                    # Приоритет: пользовательское > сгенерированные множественные > одиночное
                     if working_pub.get("custom_image_file_id"):
                         preview_image_media = MediaAttachment(
                             file_id=MediaId(working_pub["custom_image_file_id"]),
                             type=ContentType.PHOTO
                         )
+                    elif working_pub.get("generated_images_url"):
+                        # Множественные сгенерированные изображения
+                        images_url = working_pub["generated_images_url"]
+                        current_image_index = working_pub.get("current_image_index", 0)
+                        total_images = len(images_url)
+                        has_multiple_images = total_images > 1
+
+                        if current_image_index < len(images_url):
+                            preview_image_media = MediaAttachment(
+                                url=images_url[current_image_index],
+                                type=ContentType.PHOTO
+                            )
                     elif working_pub.get("image_url"):
                         preview_image_media = MediaAttachment(
                             url=working_pub["image_url"],
@@ -485,6 +501,9 @@ class ModerationPublicationDialogService(interface.IModerationPublicationDialogS
                     "has_image": working_pub.get("has_image", False),
                     "preview_image_media": preview_image_media,
                     "has_changes": self._has_changes(dialog_manager),
+                    "has_multiple_images": has_multiple_images,
+                    "current_image_index": current_image_index + 1,  # Показываем с 1
+                    "total_images": total_images,
                 }
 
                 span.set_status(Status(StatusCode.OK))
