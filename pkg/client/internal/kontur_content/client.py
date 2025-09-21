@@ -869,6 +869,7 @@ class KonturContentClient(interface.IKonturContentClient):
         ) as span:
             try:
 
+                data = {"organization_id": organization_id}
                 files = {
                     "audio_file": (
                         audio_filename,
@@ -876,7 +877,7 @@ class KonturContentClient(interface.IKonturContentClient):
                         "audio/mp4"
                     )
                 }
-                response = await self.client.get("/publication/audio/transcribe", files=files)
+                response = await self.client.get("/publication/audio/transcribe", data=data, files=files)
 
                 json_response = response.json()
 
