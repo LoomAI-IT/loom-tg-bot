@@ -851,8 +851,8 @@ class KonturContentClient(interface.IKonturContentClient):
 
                 files = {
                     "audio_file": (
-                        audio_content,
                         audio_filename,
+                        audio_content,
                         "audio/mp4"
                     )
                 }
