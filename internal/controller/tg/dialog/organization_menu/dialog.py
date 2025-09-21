@@ -26,7 +26,6 @@ class OrganizationMenuDialog(interface.IOrganizationMenuDialog):
             Const("🏢 <b>Профиль организации</b>\n\n"),
             Format("• Название: <b>{organization_name}</b>\n"),
             Format("• Баланс: <b>{balance}</b> руб.\n"),
-            Format("• Доступно для генерации контента: <b>{content_available}</b>\n\n"),
             Format("📍 <b>Доступные платформы для публикаций:</b>\n"),
             Format("{platforms_list}\n\n"),
             Format("📊 <b>Рубрики:</b>\n"),
