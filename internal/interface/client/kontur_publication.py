@@ -32,8 +32,10 @@ class IKonturContentClient(Protocol):
             category_id: int,
             publication_text: str,
             text_reference: str,
-            prompt: str = None
-    ) -> str: pass
+            prompt: str = None,
+            image_content: bytes = None,
+            image_filename: str = None,
+    ) -> list[str]: pass
 
     @abstractmethod
     async def create_publication(

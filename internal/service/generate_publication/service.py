@@ -527,7 +527,6 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                     category_id=category_id,
                     publication_text=publication_text,
                     text_reference=text_reference,
-                    prompt=None
                 )
 
                 dialog_manager.dialog_data["publication_image_url"] = image_url

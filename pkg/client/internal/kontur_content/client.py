@@ -100,24 +100,43 @@ class KonturContentClient(interface.IKonturContentClient):
             category_id: int,
             publication_text: str,
             text_reference: str,
-            prompt: str = None
-    ) -> str:
+            prompt: str = None,
+            image_content: bytes = None,
+            image_filename: str = None,
+    ) -> list[str]:
         with self.tracer.start_as_current_span(
                 "KonturContentClient.generate_publication_image",
                 kind=SpanKind.CLIENT
         ) as span:
             try:
-                body = {
+                data = {
                     "category_id": category_id,
                     "publication_text": publication_text,
                     "text_reference": text_reference,
                     "prompt": prompt,
                 }
-                response = await self.client.post("/publication/image/generate", json=body)
+                if prompt is not None:
+                    data["prompt"] = prompt
+
+                files = {}
+
+                # Если есть содержимое файла
+                if image_content and image_filename:
+                    files["image_file"] = (
+                        image_filename,
+                        image_content,
+                        "image/png"  # можно определять по расширению
+                    )
+
+                # Отправляем запрос
+                if files:
+                    response = await self.client.post("/publication/image/generate", data=data, files=files)
+                else:
+                    response = await self.client.post("/publication/image/generate", data=data)
                 json_response = response.json()
 
                 span.set_status(Status(StatusCode.OK))
-                return json_response["image_url"]
+                return json_response
 
             except Exception as e:
                 span.record_exception(e)
