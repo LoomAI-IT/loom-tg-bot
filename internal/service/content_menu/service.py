@@ -327,7 +327,7 @@ class ContentMenuDialogService(interface.IContentMenuDialogService):
 
                 # Запускаем диалог модерации видео-нарезок
                 await dialog_manager.start(
-                    model.ModerationVideoCutStates.video_moderation_list,
+                    model.VideoCutModerationStates.moderation_list,
                     mode=StartMode.RESET_STACK
                 )
 
