@@ -65,6 +65,7 @@ jobs:
                     if [ "$CURRENT_BRANCH" != "main" ] && [ "$CURRENT_BRANCH" != "master" ]; then
                         echo "🧹 Очищаем старые ветки (текущая ветка: $CURRENT_BRANCH)"
                         
+                        
                         # Переключаемся на main для безопасного удаления веток
                         git checkout main 2>/dev/null || git checkout master 2>/dev/null || echo "⚠️ Не удалось переключиться на main/master"
                         
