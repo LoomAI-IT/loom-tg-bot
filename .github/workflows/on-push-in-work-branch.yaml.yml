@@ -20,14 +20,14 @@ jobs:
 
             -   name: Load server configuration and check assignment
                 run: |
-                    if [ ! -f "/home/runner/.env.servers" ]; then
+                    if [ ! -f "/root/.env.servers" ]; then
                       echo "❌ Файл конфигурации серверов .env.servers не найден!"
                       exit 1
                     fi
                     
                     # Загружаем переменные окружения из .env.servers
                     set -a
-                    source /home/runner/.env.servers
+                    source /root/.env.servers
                     set +a
                     
                     # Формируем имена переменных для текущего автора
