@@ -1,7 +1,7 @@
 from typing import Any
 
 from aiogram.types import CallbackQuery, Message
-from aiogram_dialog import DialogManager, StartMode
+from aiogram_dialog import DialogManager, StartMode, ShowMode
 
 from opentelemetry.trace import SpanKind, Status, StatusCode
 
@@ -33,11 +33,12 @@ class AddEmployeeDialogService(interface.IAddEmployeeDialogService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                await message.delete()
                 account_id = utils.Validator.validate_account_id(account_id)
 
                 dialog_manager.dialog_data["account_id"] = str(account_id)
 
-                await dialog_manager.switch_to(model.AddEmployeeStates.enter_name)
+                await dialog_manager.switch_to(model.AddEmployeeStates.enter_name, ShowMode.EDIT)
                 span.set_status(Status(StatusCode.OK))
 
             except common.ValidationError as e:
@@ -59,11 +60,13 @@ class AddEmployeeDialogService(interface.IAddEmployeeDialogService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+
+                await message.delete()
                 validated_name = utils.Validator.validate_name(name)
 
                 dialog_manager.dialog_data["name"] = validated_name
 
-                await dialog_manager.switch_to(model.AddEmployeeStates.enter_role)
+                await dialog_manager.switch_to(model.AddEmployeeStates.enter_role, ShowMode.EDIT)
                 span.set_status(Status(StatusCode.OK))
 
             except common.ValidationError as e:
