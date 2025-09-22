@@ -69,7 +69,7 @@ jobs:
                     cd ../kontur-system
                     
                     export $(cat env/dev/.env.app env/dev/.env.db env/dev/.env.monitoring | xargs)
-                    docker compose -f ./docker-compose/app.yaml up --build kontur-tg-bot
+                    docker compose -f ./docker-compose/app.yaml up -d --build kontur-tg-bot
                     
                     echo "✅ Ветка ${{ env.BRANCH_NAME }} успешно обновлена на сервере ${{ env.SERVER_HOST }}!"
                     EOF
