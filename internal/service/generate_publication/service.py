@@ -117,7 +117,6 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                     }
                 )
                 await dialog_manager.switch_to(model.GeneratePublicationStates.input_text, show_mode=ShowMode.EDIT)
-                await message.delete()
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
