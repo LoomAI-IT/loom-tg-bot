@@ -1512,6 +1512,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
             "has_small_regenerate_prompt": dialog_manager.dialog_data.get("has_small_regenerate_prompt", False),
             "has_big_regenerate_prompt": dialog_manager.dialog_data.get("has_big_regenerate_prompt", False),
             "has_regenerate_api_error": dialog_manager.dialog_data.get("has_regenerate_api_error", False),
+            "is_regenerating_text": dialog_manager.dialog_data.get("is_regenerating_text", False),
         }
 
     async def get_image_menu_data(
