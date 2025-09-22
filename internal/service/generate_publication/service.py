@@ -92,18 +92,25 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 await message.delete()
                 text = text.strip()
 
-
                 if not text:
-                    await message.answer("❌ Текст не может быть пустым. Попробуйте снова.")
+                    dialog_manager.dialog_data["has_void_input_text"] = True
+                    await dialog_manager.switch_to(model.GeneratePublicationStates.input_text, show_mode=ShowMode.EDIT)
                     return
 
                 if len(text) < 10:
-                    await message.answer("❌ Слишком короткое описание. Напишите подробнее.")
+                    dialog_manager.dialog_data["has_small_input_text"] = True
+                    await dialog_manager.switch_to(model.GeneratePublicationStates.input_text, show_mode=ShowMode.EDIT)
                     return
 
                 if len(text) > 2000:
-                    await message.answer("❌ Слишком длинное описание (макс. 2000 символов).")
+                    dialog_manager.dialog_data["has_big_input_text"] = True
+                    await dialog_manager.switch_to(model.GeneratePublicationStates.input_text, show_mode=ShowMode.EDIT)
                     return
+
+                # Clear error flags on successful input
+                dialog_manager.dialog_data.pop("has_void_input_text", None)
+                dialog_manager.dialog_data.pop("has_small_input_text", None)
+                dialog_manager.dialog_data.pop("has_big_input_text", None)
 
                 # Сохраняем текст
                 dialog_manager.dialog_data["input_text"] = text
@@ -1227,6 +1234,10 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
             "category_name": dialog_manager.dialog_data.get("category_name", ""),
             "input_text": dialog_manager.dialog_data.get("input_text", ""),
             "has_input_text": dialog_manager.dialog_data.get("has_input_text", False),
+            # Add these error flags
+            "has_void_input_text": dialog_manager.dialog_data.get("has_void_input_text", False),
+            "has_small_input_text": dialog_manager.dialog_data.get("has_small_input_text", False),
+            "has_big_input_text": dialog_manager.dialog_data.get("has_big_input_text", False),
         }
 
     async def get_preview_data(
