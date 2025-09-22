@@ -58,8 +58,28 @@ jobs:
                     cd kontur/kontur-tg-bot
                     git fetch origin
                     
+                    # Сохраняем текущую ветку для проверки
+                    CURRENT_BRANCH=$(git branch --show-current)
+                    
+                    # Очищаем старые ветки если текущая не main
+                    if [ "$CURRENT_BRANCH" != "main" ] && [ "$CURRENT_BRANCH" != "master" ]; then
+                        echo "🧹 Очищаем старые ветки (текущая ветка: $CURRENT_BRANCH)"
+                        
+                        # Переключаемся на main для безопасного удаления веток
+                        git checkout main 2>/dev/null || git checkout master 2>/dev/null || echo "⚠️ Не удалось переключиться на main/master"
+                        
+                        # Удаляем все локальные ветки кроме main/master и текущей целевой ветки
+                        git branch | grep -v -E "(main|master|\*|${{ env.BRANCH_NAME }})" | xargs -r git branch -D
+                        
+                        # Очищаем удаленные ветки
+                        git remote prune origin
+                        
+                        echo "✅ Очистка веток завершена"
+                    fi
+                    
                     if git show-ref --verify --quiet refs/heads/${{ env.BRANCH_NAME }}; then
                         echo "Ветка существует локально, делаем pull"
+                        git checkout ${{ env.BRANCH_NAME }}
                         git pull origin ${{ env.BRANCH_NAME }}
                     else
                         echo "Первый деплой ветки, создаем и переключаемся"
