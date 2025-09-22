@@ -794,6 +794,8 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                await message.delete()
+
                 if message.content_type != ContentType.PHOTO:
                     dialog_manager.dialog_data["has_invalid_image_type"] = True
                     await dialog_manager.switch_to(
@@ -801,8 +803,6 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                         show_mode=ShowMode.EDIT
                     )
                     return
-
-                await message.delete()
 
                 # Проверяем размер файла (если доступно)
                 if message.photo:
@@ -853,8 +853,6 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-                dialog_manager.dialog_data["has_image_processing_error"] = True
-                await dialog_manager.switch_to(model.GeneratePublicationStates.upload_image, show_mode=ShowMode.EDIT)
                 raise
 
     async def handle_remove_image(
