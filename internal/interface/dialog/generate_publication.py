@@ -53,7 +53,6 @@ class IGeneratePublicationDialog(Protocol):
     def get_social_network_select_window(self) -> Window: pass
 
 
-
 class IGeneratePublicationDialogService(Protocol):
     # Существующие методы
     @abstractmethod
@@ -256,7 +255,6 @@ class IGeneratePublicationDialogService(Protocol):
             dialog_manager: DialogManager,
     ) -> dict: pass
 
-
     @abstractmethod
     async def get_input_text_data(
             self,
@@ -276,7 +274,31 @@ class IGeneratePublicationDialogService(Protocol):
     ) -> dict: pass
 
     @abstractmethod
+    async def get_edit_title_data(
+            self,
+            dialog_manager: DialogManager,
+    ) -> dict: pass
+
+    @abstractmethod
+    async def get_edit_tags_data(
+            self,
+            dialog_manager: DialogManager,
+    ) -> dict: pass
+
+    @abstractmethod
+    async def get_edit_content_data(
+            self,
+            dialog_manager: DialogManager,
+    ) -> dict: pass
+
+    @abstractmethod
     async def get_image_menu_data(
+            self,
+            dialog_manager: DialogManager,
+    ) -> dict: pass
+
+    @abstractmethod
+    async def get_upload_image_data(
             self,
             dialog_manager: DialogManager,
     ) -> dict: pass
