@@ -1115,7 +1115,13 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                     )
                     return
 
-                await self._publish_immediately(callback, dialog_manager)
+                await callback.answer()
+
+                await self._publish_immediately(dialog_manager)
+                await dialog_manager.start(
+                    model.ContentMenuStates.content_menu,
+                    mode=StartMode.RESET_STACK
+                )
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
                 span.record_exception(err)
@@ -1125,7 +1131,6 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
 
     async def _publish_immediately(
             self,
-            callback: CallbackQuery,
             dialog_manager: DialogManager
     ) -> None:
         with self.tracer.start_as_current_span(
@@ -1133,9 +1138,6 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                await callback.answer()
-                loading_message = await callback.message.answer("🚀 Публикую пост...")
-
                 state = await self._get_state(dialog_manager)
 
                 category_id = dialog_manager.dialog_data["category_id"]
@@ -1171,42 +1173,6 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                     publication_id=publication_data["publication_id"],
                     tg_source=tg_source,
                     vk_source=vk_source,
-                )
-
-                # Формируем сообщение о публикации
-                published_networks = []
-                if tg_source:
-                    published_networks.append("📺 Telegram")
-                if vk_source:
-                    published_networks.append("🔗 VKontakte")
-
-                networks_text = ", ".join(published_networks)
-
-                self.logger.info(
-                    "Публикация опубликована",
-                    {
-                        common.TELEGRAM_CHAT_ID_KEY: callback.message.chat.id,
-                        "publication_id": publication_data["publication_id"],
-                        "selected_image_index": dialog_manager.dialog_data.get("current_image_index", 0),
-                        "tg_source": tg_source,
-                        "vk_source": vk_source,
-                    }
-                )
-
-                await loading_message.edit_text(
-                    f"🚀 Публикация успешно опубликована!\n\n"
-                    f"📋 Опубликовано в: {networks_text}"
-                )
-
-                await asyncio.sleep(3)
-                try:
-                    await loading_message.delete()
-                except:
-                    pass
-
-                await dialog_manager.start(
-                    model.ContentMenuStates.content_menu,
-                    mode=StartMode.RESET_STACK
                 )
 
                 span.set_status(Status(StatusCode.OK))

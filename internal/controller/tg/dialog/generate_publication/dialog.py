@@ -694,7 +694,6 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
 
             MessageInput(
                 func=self.generate_publication_service.handle_image_upload,
-                content_types=["photo"],
             ),
 
             Button(
