@@ -350,6 +350,21 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             Multi(
                 Const("📝 <b>Изменение названия</b>\n\n"),
                 Format("Текущее: <b>{publication_name}</b>\n\n"),
+                # Add error messages
+                Case(
+                    {
+                        True: Const("⚠️ <b>Ошибка:</b> Название не может быть пустым\n\n"),
+                        False: Const(""),
+                    },
+                    selector="has_void_title"
+                ),
+                Case(
+                    {
+                        True: Const("⚠️ <b>Ошибка:</b> Название слишком длинное (максимум 200 символов)\n\n"),
+                        False: Const(""),
+                    },
+                    selector="has_big_title"
+                ),
                 Const("✍️ <b>Введите новое название:</b>"),
                 sep="",
             ),
@@ -366,7 +381,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             ),
 
             state=model.GeneratePublicationStates.edit_title,
-            getter=self.generate_publication_service.get_preview_data,
+            getter=self.generate_publication_service.get_edit_title_data,
             parse_mode="HTML",
         )
 
@@ -376,6 +391,14 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             Multi(
                 Const("🏷 <b>Изменение тегов</b>\n\n"),
                 Format("Текущие теги: <b>{publication_tags}</b>\n\n"),
+                # Add error messages
+                Case(
+                    {
+                        True: Const("⚠️ <b>Ошибка:</b> Слишком много тегов (максимум 10)\n\n"),
+                        False: Const(""),
+                    },
+                    selector="has_too_many_tags"
+                ),
                 Const("✍️ <b>Введите теги через запятую:</b>\n"),
                 Const("<i>Например: маркетинг, продажи, SMM</i>"),
                 sep="",
@@ -393,7 +416,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             ),
 
             state=model.GeneratePublicationStates.edit_tags,
-            getter=self.generate_publication_service.get_preview_data,
+            getter=self.generate_publication_service.get_edit_tags_data,
             parse_mode="HTML",
         )
 
@@ -402,6 +425,28 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
         return Window(
             Multi(
                 Const("📄 <b>Изменение текста публикации</b>\n\n"),
+                # Add error messages
+                Case(
+                    {
+                        True: Const("⚠️ <b>Ошибка:</b> Текст не может быть пустым\n\n"),
+                        False: Const(""),
+                    },
+                    selector="has_void_content"
+                ),
+                Case(
+                    {
+                        True: Const("⚠️ <b>Ошибка:</b> Текст слишком короткий (минимум 50 символов)\n\n"),
+                        False: Const(""),
+                    },
+                    selector="has_small_content"
+                ),
+                Case(
+                    {
+                        True: Const("⚠️ <b>Ошибка:</b> Текст слишком длинный (максимум 4000 символов)\n\n"),
+                        False: Const(""),
+                    },
+                    selector="has_big_content"
+                ),
                 Const("✍️ <b>Введите новый текст:</b>\n"),
                 Const("<i>Текущий текст показан в предыдущем окне</i>"),
                 sep="",
@@ -419,6 +464,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             ),
 
             state=model.GeneratePublicationStates.edit_content,
+            getter=self.generate_publication_service.get_edit_content_data,
             parse_mode="HTML",
         )
 
@@ -478,6 +524,28 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
         return Window(
             Multi(
                 Const("🎨 <b>Генерация изображения</b>\n\n"),
+                # Add error messages
+                Case(
+                    {
+                        True: Const("⚠️ <b>Ошибка:</b> Описание изображения не может быть пустым\n\n"),
+                        False: Const(""),
+                    },
+                    selector="has_void_image_prompt"
+                ),
+                Case(
+                    {
+                        True: Const("⚠️ <b>Ошибка:</b> Описание слишком короткое (минимум 5 символов)\n\n"),
+                        False: Const(""),
+                    },
+                    selector="has_small_image_prompt"
+                ),
+                Case(
+                    {
+                        True: Const("⚠️ <b>Ошибка:</b> Описание слишком длинное (максимум 500 символов)\n\n"),
+                        False: Const(""),
+                    },
+                    selector="has_big_image_prompt"
+                ),
                 Const("💡 <b>Опишите желаемое изображение:</b>\n"),
                 Const("<i>Например: минималистичная иллюстрация в синих тонах, деловой стиль</i>\n\n"),
                 Case(
@@ -511,6 +579,28 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
         return Window(
             Multi(
                 Const("📤 <b>Загрузка изображения</b>\n\n"),
+                # Add error messages
+                Case(
+                    {
+                        True: Const("⚠️ <b>Ошибка:</b> Пожалуйста, отправьте изображение (не другой тип файла)\n\n"),
+                        False: Const(""),
+                    },
+                    selector="has_invalid_image_type"
+                ),
+                Case(
+                    {
+                        True: Const("⚠️ <b>Ошибка:</b> Файл слишком большой (максимум 10 МБ)\n\n"),
+                        False: Const(""),
+                    },
+                    selector="has_big_image_size"
+                ),
+                Case(
+                    {
+                        True: Const("⚠️ <b>Ошибка:</b> Не удалось обработать изображение, попробуйте другое\n\n"),
+                        False: Const(""),
+                    },
+                    selector="has_image_processing_error"
+                ),
                 Const("📸 <b>Отправьте изображение:</b>\n"),
                 Const("<i>Поддерживаются форматы: JPG, PNG, GIF</i>\n"),
                 Const("<i>Максимальный размер: 10 МБ</i>"),
@@ -529,6 +619,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             ),
 
             state=model.GeneratePublicationStates.upload_image,
+            getter=self.generate_publication_service.get_upload_image_data,
             parse_mode="HTML",
         )
 
