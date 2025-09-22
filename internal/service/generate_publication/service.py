@@ -169,68 +169,57 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 dialog_manager.dialog_data.pop("has_voice_recognition_error", None)
                 dialog_manager.dialog_data.pop("has_empty_voice_text", None)
 
-                loading_message = await message.answer("🎤 Обрабатываю голосовое сообщение...")
+                file = await self.bot.get_file(file_id)
+                file_data = await self.bot.download_file(file.file_path)
+                file_data = io.BytesIO(file_data.read())
 
-                try:
-                    file = await self.bot.get_file(file_id)
-                    file_data = await self.bot.download_file(file.file_path)
-                    file_data = io.BytesIO(file_data.read())
+                await message.delete()
 
-                    text = await self._convert_voice_to_text(state.organization_id, file_data)
+                text = await self._convert_voice_to_text(state.organization_id, file_data)
 
-                    if not text or not text.strip():
-                        dialog_manager.dialog_data["has_empty_voice_text"] = True
-                        await loading_message.delete()
-                        await dialog_manager.switch_to(
-                            model.GeneratePublicationStates.input_text,
-                            show_mode=ShowMode.EDIT
-                        )
-                        return
-
-                    text = text.strip()
-
-                    # Apply same text validation as text input
-                    if len(text) < 10:
-                        dialog_manager.dialog_data["has_small_input_text"] = True
-                        await loading_message.delete()
-                        await dialog_manager.switch_to(
-                            model.GeneratePublicationStates.input_text,
-                            show_mode=ShowMode.EDIT
-                        )
-                        return
-
-                    if len(text) > 2000:
-                        dialog_manager.dialog_data["has_big_input_text"] = True
-                        await loading_message.delete()
-                        await dialog_manager.switch_to(
-                            model.GeneratePublicationStates.input_text,
-                            show_mode=ShowMode.EDIT
-                        )
-                        return
-
-                    # Successful processing
-                    dialog_manager.dialog_data["input_text"] = text
-                    dialog_manager.dialog_data["has_input_text"] = True
-
-                    self.logger.info(
-                        "Голосовое сообщение обработано",
-                        {
-                            common.TELEGRAM_CHAT_ID_KEY: message.chat.id,
-                            "voice_duration": duration,
-                            "text_length": len(text),
-                        }
+                if not text or not text.strip():
+                    dialog_manager.dialog_data["has_empty_voice_text"] = True
+                    await dialog_manager.switch_to(
+                        model.GeneratePublicationStates.input_text,
+                        show_mode=ShowMode.EDIT
                     )
-
-                    await loading_message.delete()
-                    # Update the window to show the recognized text
-                    await dialog_manager.switch_to(model.GeneratePublicationStates.input_text, show_mode=ShowMode.EDIT)
-
-                except Exception as voice_err:
-                    self.logger.error(f"Voice processing error: {voice_err}")
-                    dialog_manager.dialog_data["has_voice_recognition_error"] = True
-                    await loading_message.delete()
-                    await dialog_manager.switch_to(model.GeneratePublicationStates.input_text, show_mode=ShowMode.EDIT)
                     return
+
+                text = text.strip()
+
+                # Apply same text validation as text input
+                if len(text) < 10:
+                    dialog_manager.dialog_data["has_small_input_text"] = True
+                    await dialog_manager.switch_to(
+                        model.GeneratePublicationStates.input_text,
+                        show_mode=ShowMode.EDIT
+                    )
+                    return
+
+                if len(text) > 2000:
+                    dialog_manager.dialog_data["has_big_input_text"] = True
+
+                    await dialog_manager.switch_to(
+                        model.GeneratePublicationStates.input_text,
+                        show_mode=ShowMode.EDIT
+                    )
+                    return
+
+                # Successful processing
+                dialog_manager.dialog_data["input_text"] = text
+                dialog_manager.dialog_data["has_input_text"] = True
+
+                self.logger.info(
+                    "Голосовое сообщение обработано",
+                    {
+                        common.TELEGRAM_CHAT_ID_KEY: message.chat.id,
+                        "voice_duration": duration,
+                        "text_length": len(text),
+                    }
+                )
+
+                # Update the window to show the recognized text
+                await dialog_manager.switch_to(model.GeneratePublicationStates.input_text, show_mode=ShowMode.EDIT)
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
@@ -442,20 +431,26 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
 
                 if not prompt:
                     dialog_manager.dialog_data["has_void_regenerate_prompt"] = True
-                    await dialog_manager.switch_to(model.GeneratePublicationStates.regenerate_text,
-                                                   show_mode=ShowMode.EDIT)
+                    await dialog_manager.switch_to(
+                        model.GeneratePublicationStates.regenerate_text,
+                        show_mode=ShowMode.EDIT
+                    )
                     return
 
                 if len(prompt) < 5:
                     dialog_manager.dialog_data["has_small_regenerate_prompt"] = True
-                    await dialog_manager.switch_to(model.GeneratePublicationStates.regenerate_text,
-                                                   show_mode=ShowMode.EDIT)
+                    await dialog_manager.switch_to(
+                        model.GeneratePublicationStates.regenerate_text,
+                        show_mode=ShowMode.EDIT
+                    )
                     return
 
                 if len(prompt) > 500:
                     dialog_manager.dialog_data["has_big_regenerate_prompt"] = True
-                    await dialog_manager.switch_to(model.GeneratePublicationStates.regenerate_text,
-                                                   show_mode=ShowMode.EDIT)
+                    await dialog_manager.switch_to(
+                        model.GeneratePublicationStates.regenerate_text,
+                        show_mode=ShowMode.EDIT
+                    )
                     return
 
                 # Clear error flags on successful input
@@ -467,38 +462,30 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 dialog_manager.dialog_data["regenerate_prompt"] = prompt
 
                 # Переключаемся на состояние ожидания
-                await dialog_manager.switch_to(model.GeneratePublicationStates.regenerate_loading,
-                                               show_mode=ShowMode.EDIT)
+                await dialog_manager.switch_to(
+                    model.GeneratePublicationStates.regenerate_loading,
+                    show_mode=ShowMode.EDIT
+                )
 
-                try:
-                    category_id = dialog_manager.dialog_data["category_id"]
-                    current_text = dialog_manager.dialog_data["publication_text"]
+                category_id = dialog_manager.dialog_data["category_id"]
+                current_text = dialog_manager.dialog_data["publication_text"]
 
-                    regenerated_data = await self.kontur_content_client.regenerate_publication_text(
-                        category_id=category_id,
-                        publication_text=current_text,
-                        prompt=prompt
-                    )
+                regenerated_data = await self.kontur_content_client.regenerate_publication_text(
+                    category_id=category_id,
+                    publication_text=current_text,
+                    prompt=prompt
+                )
 
-                    dialog_manager.dialog_data["publication_name"] = regenerated_data["name"]
-                    dialog_manager.dialog_data["publication_text"] = regenerated_data["text"]
-                    dialog_manager.dialog_data["publication_tags"] = regenerated_data["tags"]
+                dialog_manager.dialog_data["publication_name"] = regenerated_data["name"]
+                dialog_manager.dialog_data["publication_text"] = regenerated_data["text"]
+                dialog_manager.dialog_data["publication_tags"] = regenerated_data["tags"]
 
-                    await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
-
-                except Exception as regenerate_err:
-                    self.logger.error(f"Regeneration error: {regenerate_err}")
-                    dialog_manager.dialog_data["has_regenerate_api_error"] = True
-                    await dialog_manager.switch_to(model.GeneratePublicationStates.regenerate_text,
-                                                   show_mode=ShowMode.EDIT)
-                    return
+                await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-                dialog_manager.dialog_data["has_regenerate_api_error"] = True
-                await dialog_manager.switch_to(model.GeneratePublicationStates.regenerate_text, show_mode=ShowMode.EDIT)
                 raise
 
     async def handle_edit_title_save(
