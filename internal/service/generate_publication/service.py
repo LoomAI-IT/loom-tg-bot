@@ -484,7 +484,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 dialog_manager.dialog_data["is_regenerating_text"] = False
 
                 # Переходим к предпросмотру
-                await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
+                await dialog_manager.switch_to(model.GeneratePublicationStates.preview, ShowMode.EDIT)
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
@@ -776,7 +776,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 dialog_manager.dialog_data.pop("custom_image_file_id", None)
                 dialog_manager.dialog_data["is_generating_image"] = False
 
-                await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
+                await dialog_manager.switch_to(model.GeneratePublicationStates.preview, ShowMode.EDIT)
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
                 span.record_exception(err)
@@ -801,6 +801,8 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                         show_mode=ShowMode.EDIT
                     )
                     return
+
+                await message.delete()
 
                 # Проверяем размер файла (если доступно)
                 if message.photo:
