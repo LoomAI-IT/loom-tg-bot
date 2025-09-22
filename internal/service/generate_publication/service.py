@@ -1113,11 +1113,13 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                         "⚠️ Выберите хотя бы одну социальную сеть для публикации",
                         show_alert=True
                     )
-                    return
 
-                await callback.answer()
 
                 await self._publish_immediately(dialog_manager)
+
+                await callback.answer("💾 Опубликовано!")
+
+
                 await dialog_manager.start(
                     model.ContentMenuStates.content_menu,
                     mode=StartMode.RESET_STACK
