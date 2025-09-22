@@ -7,7 +7,7 @@ from aiogram_dialog.widgets.input import MessageInput
 
 from aiogram import Bot
 from aiogram.types import CallbackQuery, Message, ContentType
-from aiogram_dialog import DialogManager, StartMode
+from aiogram_dialog import DialogManager, StartMode, ShowMode
 from aiogram_dialog.widgets.kbd import ManagedCheckbox
 
 from opentelemetry.trace import SpanKind, Status, StatusCode
@@ -89,6 +89,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                await message.delete()
                 text = text.strip()
 
 
@@ -115,6 +116,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                         "text_length": len(text),
                     }
                 )
+                await dialog_manager.switch_to(model.GeneratePublicationStates.input_text, show_mode=ShowMode.EDIT)
                 await message.delete()
 
                 span.set_status(Status(StatusCode.OK))
