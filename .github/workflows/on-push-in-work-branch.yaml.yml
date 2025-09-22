@@ -88,6 +88,7 @@ jobs:
                     
                     cd ../kontur-system
                     
+                    
                     export $(cat env/dev/.env.app env/dev/.env.db env/dev/.env.monitoring | xargs)
                     docker compose -f ./docker-compose/app.yaml up -d --build kontur-tg-bot
                     
