@@ -1,0 +1,62 @@
+name: Branch Create - Deploy to Dev Server
+
+on:
+    create:
+        # Срабатывает только при создании веток (не тегов)
+        branches:
+            - '**'
+
+jobs:
+    deploy-new-branch:
+        runs-on: self-hosted
+
+        steps:
+            -   name: Get branch and author info
+                run: |
+                    echo "BRANCH_NAME=${GITHUB_REF#refs/heads/}" >> $GITHUB_ENV
+                    echo "AUTHOR_NAME=${{ github.event.sender.login }}" >> $GITHUB_ENV
+
+            -   name: Load server configuration and check assignment
+                run: |
+                    if [ ! -f "/home/runner/.env.servers" ]; then
+                      echo "❌ Файл конфигурации серверов .env.servers не найден!"
+                      exit 1
+                    fi
+                    
+                    # Загружаем переменные окружения из .env.servers
+                    set -a
+                    source /home/runner/.env.servers
+                    set +a
+                    
+                    # Формируем имена переменных для текущего автора
+                    HOST_VAR="${AUTHOR_NAME}_HOST"
+                    PASSWORD_VAR="${AUTHOR_NAME}_PASSWORD"
+                    
+                    # Получаем значения переменных
+                    eval "SERVER_HOST=\$$HOST_VAR"
+                    eval "SERVER_PASSWORD=\$$PASSWORD_VAR"
+                    
+                    if [ -z "$SERVER_HOST" ] || [ -z "$SERVER_PASSWORD" ]; then
+                      echo "❌ Конфигурация сервера для разработчика $AUTHOR_NAME не найдена!"
+                      echo "   Убедитесь, что в .env.servers есть переменные: ${HOST_VAR} и ${PASSWORD_VAR}"
+                      exit 1
+                    fi
+                    
+                    echo "✅ Найдена конфигурация сервера для $AUTHOR_NAME: $SERVER_HOST"
+
+            -   name: Deploy branch to developer server
+                run: |
+                    # Используем sshpass для аутентификации по паролю
+                    sshpass -p "${{ env.SERVER_PASSWORD }}" ssh -o StrictHostKeyChecking=no root@${{ env.SERVER_HOST }} -p 22 << 'EOF'
+                    echo "🚀 Деплоим ветку ${{ env.BRANCH_NAME }} для ${{ env.AUTHOR_NAME }}"
+                    
+                    cd kontur/kontur-tg-bot
+                    
+                    # Обновляем репозиторий
+                    git fetch origin
+                    
+                    # Переключаемся на новую ветку
+                    git checkout ${{ env.BRANCH_NAME }}
+                    
+                    echo "✅ Ветка ${{ env.BRANCH_NAME }} успешно развернута на сервере ${{ env.SERVER_HOST }}!"
+                    EOF

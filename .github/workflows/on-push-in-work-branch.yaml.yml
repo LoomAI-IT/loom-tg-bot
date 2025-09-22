@@ -1,0 +1,68 @@
+name: Branch Push - Update Dev Server
+
+on:
+    push:
+        branches:
+            - '**'
+            - '!main'
+            - '!master'
+            - '!develop'
+
+jobs:
+    update-branch:
+        runs-on: self-hosted
+
+        steps:
+            -   name: Get branch and author info
+                run: |
+                    echo "BRANCH_NAME=${GITHUB_REF#refs/heads/}" >> $GITHUB_ENV
+                    echo "AUTHOR_NAME=${{ github.actor }}" >> $GITHUB_ENV
+
+            -   name: Load server configuration and check assignment
+                run: |
+                    if [ ! -f "/home/runner/.env.servers" ]; then
+                      echo "❌ Файл конфигурации серверов .env.servers не найден!"
+                      exit 1
+                    fi
+                    
+                    # Загружаем переменные окружения из .env.servers
+                    set -a
+                    source /home/runner/.env.servers
+                    set +a
+                    
+                    # Формируем имена переменных для текущего автора
+                    HOST_VAR="${AUTHOR_NAME}_HOST"
+                    PASSWORD_VAR="${AUTHOR_NAME}_PASSWORD"
+                    
+                    # Получаем значения переменных
+                    eval "SERVER_HOST=\$$HOST_VAR"
+                    eval "SERVER_PASSWORD=\$$PASSWORD_VAR"
+                    
+                    if [ -z "$SERVER_HOST" ] || [ -z "$SERVER_PASSWORD" ]; then
+                      echo "❌ Конфигурация сервера для разработчика $AUTHOR_NAME не найдена!"
+                      echo "   Убедитесь, что в .env.servers есть переменные: ${HOST_VAR} и ${PASSWORD_VAR}"
+                      exit 1
+                    fi
+                    
+                    echo "SERVER_HOST=$SERVER_HOST" >> $GITHUB_ENV
+                    echo "SERVER_PASSWORD=$SERVER_PASSWORD" >> $GITHUB_ENV
+                    echo "✅ Найдена конфигурация сервера для $AUTHOR_NAME: $SERVER_HOST"
+
+            -   name: Update branch on developer server
+                run: |
+                    # Используем sshpass для аутентификации по паролю
+                    sshpass -p "${{ env.SERVER_PASSWORD }}" ssh -o StrictHostKeyChecking=no root@${{ env.SERVER_HOST }} -p 22 << 'EOF'
+                    echo "🔄 Обновляем ветку ${{ env.BRANCH_NAME }} для ${{ env.AUTHOR_NAME }}"
+                    
+                    cd kontur/kontur-tg-bot
+                    
+                    # Получаем последние изменения
+                    git pull origin ${{ env.BRANCH_NAME }}
+                    
+                    cd ../kontur-system
+                    
+                    export $(cat env/dev/.env.app env/dev/.env.db env/dev/.env.monitoring | xargs)
+                    docker compose -f ./docker-compose/app.yaml up --build kontur-tg-bot
+                    
+                    echo "✅ Ветка ${{ env.BRANCH_NAME }} успешно обновлена на сервере ${{ env.SERVER_HOST }}!"
+                    EOF
