@@ -143,7 +143,6 @@ change_employee_service = ChangeEmployeeDialogService(
 
 add_employee_service = AddEmployeeDialogService(
     tel,
-    bot,
     state_repo,
     kontur_employee_client,
 )

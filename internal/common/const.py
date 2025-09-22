@@ -1,4 +1,12 @@
 from dataclasses import dataclass
+from enum import Enum
+
+
+class Role(Enum):
+    EMPLOYEE = "employee"
+    MODERATOR = "moderator"
+    ADMIN = "admin"
+
 
 TRACE_ID_KEY = "trace_id"
 SPAN_ID_KEY = "span_id"

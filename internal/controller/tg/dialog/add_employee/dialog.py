@@ -118,8 +118,8 @@ class AddEmployeeDialog(interface.IAddEmployeeDialog):
             Column(
                 # Публикации без одобрения
                 Button(
-                    Format("{no_moderation_icon} Публикации без одобрения"),
-                    id="toggle_no_moderation",
+                    Format("{required_moderation_icon} Публикации без одобрения"),
+                    id="toggle_required_moderation",
                     on_click=self.add_employee_service.handle_toggle_permission,
                 ),
 
@@ -153,8 +153,8 @@ class AddEmployeeDialog(interface.IAddEmployeeDialog):
 
                 # Подключать социальные сети
                 Button(
-                    Format("{social_networks_icon} Подключать социальные сети"),
-                    id="toggle_social_networks",
+                    Format("{sign_up_social_networks_icon} Подключать социальные сети"),
+                    id="toggle_sign_up_social_networks",
                     on_click=self.add_employee_service.handle_toggle_permission,
                 ),
                 Button(
