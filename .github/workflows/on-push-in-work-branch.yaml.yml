@@ -90,6 +90,7 @@ jobs:
                     
                     
                     export $(cat env/.env.app env/.env.db env/.env.monitoring | xargs)
+                    
                     docker compose -f ./docker-compose/app.yaml up -d --build kontur-tg-bot
                     
                     python3 script/tg_bot_alert.py "✅ Ветка kontur-tg-bot/${{ env.BRANCH_NAME }} успешно обновлена на сервере ${{ env.SERVER_HOST }}!"
