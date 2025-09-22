@@ -40,11 +40,13 @@ from internal.service.organization_menu.service import OrganizationMenuDialogSer
 from internal.service.change_employee.service import ChangeEmployeeDialogService
 from internal.service.add_employee.service import AddEmployeeDialogService
 from internal.service.content_menu.service import ContentMenuDialogService
-from internal.service.generate_publication.service import GeneratePublicationDialogService
+from internal.service.generate_publication.service import GeneratePublicationService
 from internal.service.generate_video_cut.service import GenerateVideoCutDialogService
 from internal.service.moderation_publication.service import ModerationPublicationDialogService
 from internal.service.video_cut_draft_content.service import VideoCutsDraftDialogService
 from internal.service.moderation_video_cut.service import VideoCutModerationDialogService
+
+from internal.service.generate_publication.getter import GeneratePublicationDataGetter
 
 from internal.repo.state.repo import StateRepo
 
@@ -103,6 +105,14 @@ kontur_content_client = KonturContentClient(tel, cfg.kontur_content_host, cfg.ko
 
 state_repo = StateRepo(tel, db)
 
+# Инициализация геттеров
+generate_publication_getter = GeneratePublicationDataGetter(
+    tel,
+    state_repo,
+    kontur_employee_client,
+    kontur_content_client,
+)
+
 # Инициализация сервисов
 state_service = StateService(tel, state_repo)
 auth_dialog_service = AuthDialogService(
@@ -155,14 +165,11 @@ content_menu_service = ContentMenuDialogService(
     kontur_content_client,
 )
 
-generate_publication_service = GeneratePublicationDialogService(
+generate_publication_service = GeneratePublicationService(
     tel,
     bot,
     state_repo,
-    kontur_employee_client,
-    kontur_organization_client,
     kontur_content_client,
-    cfg.domain
 )
 
 generate_video_cut_service = GenerateVideoCutDialogService(
@@ -234,7 +241,8 @@ content_menu_dialog = ContentMenuDialog(
 
 generate_publication_dialog = GeneratePublicationDialog(
     tel,
-    generate_publication_service
+    generate_publication_service,
+    generate_publication_getter
 )
 
 generate_video_cut_dialog = GenerateVideoCutDialog(
