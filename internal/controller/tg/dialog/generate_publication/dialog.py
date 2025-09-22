@@ -83,7 +83,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                 Const("📝 <b>Создание новой публикации</b>\n\n"),
                 Const("✍️ <b>Опишите тему публикации</b>\n\n"),
                 Format("🏷 Рубрика: <b>{category_name}</b>\n\n"),
-                # Add error messages
+                # Text input error messages
                 Case(
                     {
                         True: Const("⚠️ <b>Ошибка:</b> Текст не может быть пустым\n\n"),
@@ -104,6 +104,37 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                         False: Const(""),
                     },
                     selector="has_big_input_text"
+                ),
+                # Voice input error messages
+                Case(
+                    {
+                        True: Const("⚠️ <b>Ошибка:</b> Отправьте голосовое сообщение или аудиофайл\n\n"),
+                        False: Const(""),
+                    },
+                    selector="has_invalid_voice_type"
+                ),
+                Case(
+                    {
+                        True: Const("⚠️ <b>Ошибка:</b> Голосовое сообщение слишком длинное (максимум 5 минут)\n\n"),
+                        False: Const(""),
+                    },
+                    selector="has_long_voice_duration"
+                ),
+                Case(
+                    {
+                        True: Const(
+                            "⚠️ <b>Ошибка:</b> Не удалось распознать речь. Попробуйте записать заново или введите текст\n\n"),
+                        False: Const(""),
+                    },
+                    selector="has_voice_recognition_error"
+                ),
+                Case(
+                    {
+                        True: Const(
+                            "⚠️ <b>Ошибка:</b> В голосовом сообщении не распознан текст. Попробуйте говорить четче\n\n"),
+                        False: Const(""),
+                    },
+                    selector="has_empty_voice_text"
                 ),
                 Const("💡 <b>Введите тему или описание публикации:</b>\n"),
                 Const("<i>• Можете описать своими словами о чем должен быть пост\n"),

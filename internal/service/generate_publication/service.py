@@ -143,14 +143,14 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-
                 state = await self._get_state(dialog_manager)
+
                 if message.content_type not in [ContentType.VOICE, ContentType.AUDIO]:
+                    dialog_manager.dialog_data["has_invalid_voice_type"] = True
+                    await dialog_manager.switch_to(model.GeneratePublicationStates.input_text, show_mode=ShowMode.EDIT)
                     return
 
-                await message.answer("🎤 Обрабатываю голосовое сообщение...")
-
-                # Загружаем файл
+                # Определяем продолжительность и file_id
                 if message.voice:
                     file_id = message.voice.file_id
                     duration = message.voice.duration
@@ -159,43 +159,85 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                     duration = message.audio.duration
 
                 if duration > 300:  # 5 минут макс
-                    await message.answer("❌ Голосовое сообщение слишком длинное (макс. 5 минут)")
+                    dialog_manager.dialog_data["has_long_voice_duration"] = True
+                    await dialog_manager.switch_to(model.GeneratePublicationStates.input_text, show_mode=ShowMode.EDIT)
                     return
 
-                file = await self.bot.get_file(file_id)
-                file_data = await self.bot.download_file(file.file_path)
-                file_data = io.BytesIO(file_data.read())
+                # Clear error flags and show processing message
+                dialog_manager.dialog_data.pop("has_invalid_voice_type", None)
+                dialog_manager.dialog_data.pop("has_long_voice_duration", None)
+                dialog_manager.dialog_data.pop("has_voice_recognition_error", None)
+                dialog_manager.dialog_data.pop("has_empty_voice_text", None)
 
-                text = await self._convert_voice_to_text(state.organization_id, file_data)
+                loading_message = await message.answer("🎤 Обрабатываю голосовое сообщение...")
 
-                if not text:
-                    await message.answer(
-                        "❌ Не удалось распознать голосовое сообщение. "
-                        "Попробуйте еще раз или введите текст."
+                try:
+                    file = await self.bot.get_file(file_id)
+                    file_data = await self.bot.download_file(file.file_path)
+                    file_data = io.BytesIO(file_data.read())
+
+                    text = await self._convert_voice_to_text(state.organization_id, file_data)
+
+                    if not text or not text.strip():
+                        dialog_manager.dialog_data["has_empty_voice_text"] = True
+                        await loading_message.delete()
+                        await dialog_manager.switch_to(
+                            model.GeneratePublicationStates.input_text,
+                            show_mode=ShowMode.EDIT
+                        )
+                        return
+
+                    text = text.strip()
+
+                    # Apply same text validation as text input
+                    if len(text) < 10:
+                        dialog_manager.dialog_data["has_small_input_text"] = True
+                        await loading_message.delete()
+                        await dialog_manager.switch_to(
+                            model.GeneratePublicationStates.input_text,
+                            show_mode=ShowMode.EDIT
+                        )
+                        return
+
+                    if len(text) > 2000:
+                        dialog_manager.dialog_data["has_big_input_text"] = True
+                        await loading_message.delete()
+                        await dialog_manager.switch_to(
+                            model.GeneratePublicationStates.input_text,
+                            show_mode=ShowMode.EDIT
+                        )
+                        return
+
+                    # Successful processing
+                    dialog_manager.dialog_data["input_text"] = text
+                    dialog_manager.dialog_data["has_input_text"] = True
+
+                    self.logger.info(
+                        "Голосовое сообщение обработано",
+                        {
+                            common.TELEGRAM_CHAT_ID_KEY: message.chat.id,
+                            "voice_duration": duration,
+                            "text_length": len(text),
+                        }
                     )
+
+                    await loading_message.delete()
+                    # Update the window to show the recognized text
+                    await dialog_manager.switch_to(model.GeneratePublicationStates.input_text, show_mode=ShowMode.EDIT)
+
+                except Exception as voice_err:
+                    self.logger.error(f"Voice processing error: {voice_err}")
+                    dialog_manager.dialog_data["has_voice_recognition_error"] = True
+                    await loading_message.delete()
+                    await dialog_manager.switch_to(model.GeneratePublicationStates.input_text, show_mode=ShowMode.EDIT)
                     return
-
-                # Сохраняем распознанный текст
-                dialog_manager.dialog_data["input_text"] = text
-                dialog_manager.dialog_data["has_input_text"] = True
-
-                self.logger.info(
-                    "Голосовое сообщение обработано",
-                    {
-                        common.TELEGRAM_CHAT_ID_KEY: message.chat.id,
-                        "voice_duration": duration,
-                        "text_length": len(text),
-                    }
-                )
-
-                # Обновляем окно
-                await dialog_manager.update(dialog_manager.dialog_data)
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-                await message.answer("❌ Ошибка обработки голосового сообщения")
+                dialog_manager.dialog_data["has_voice_recognition_error"] = True
+                await dialog_manager.switch_to(model.GeneratePublicationStates.input_text, show_mode=ShowMode.EDIT)
                 raise
 
     async def handle_generate_text(
