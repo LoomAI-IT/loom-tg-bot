@@ -841,7 +841,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                         }
                     )
 
-                    await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
+                    await dialog_manager.switch_to(model.GeneratePublicationStates.preview, ShowMode.EDIT)
                     span.set_status(Status(StatusCode.OK))
                 else:
                     dialog_manager.dialog_data["has_image_processing_error"] = True
