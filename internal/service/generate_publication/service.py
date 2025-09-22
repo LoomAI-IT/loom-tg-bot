@@ -210,7 +210,11 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
         ) as span:
             try:
                 await callback.answer()
-                loading_message = await callback.message.answer("🔄 Генерирую текст, это может занять время...")
+
+                await callback.message.edit_text(
+                    "🔄 Генерирую текст, это может занять время...",
+                    reply_markup=None  # Убираем клавиатуру
+                )
 
                 category_id = dialog_manager.dialog_data["category_id"]
                 input_text = dialog_manager.dialog_data["input_text"]
@@ -223,16 +227,6 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 dialog_manager.dialog_data["publication_tags"] = publication_data["tags"]
                 dialog_manager.dialog_data["publication_name"] = publication_data["name"]
                 dialog_manager.dialog_data["publication_text"] = publication_data["text"]
-
-                # Обнуляем данные изображений при генерации только текста
-
-
-                await loading_message.edit_text("✅ Пост успешно сгенерирован!")
-                await asyncio.sleep(3)
-                try:
-                    await loading_message.delete()
-                except:
-                    pass
 
                 # Переходим к предпросмотру
                 await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
