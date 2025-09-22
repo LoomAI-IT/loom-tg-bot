@@ -602,6 +602,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 dialog_manager.dialog_data["has_image"] = True
                 dialog_manager.dialog_data["is_custom_image"] = False
                 dialog_manager.dialog_data["current_image_index"] = 0
+                dialog_manager.dialog_data.pop("custom_image_file_id", None)
 
                 await loading_message.edit_text("✅ Изображения успешно сгенерированы!")
                 await asyncio.sleep(3)
@@ -661,6 +662,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 dialog_manager.dialog_data["has_image"] = True
                 dialog_manager.dialog_data["is_custom_image"] = False
                 dialog_manager.dialog_data["current_image_index"] = 0
+                dialog_manager.dialog_data.pop("custom_image_file_id", None)
 
                 await loading_message.edit_text("✅ Изображения успешно сгенерированы!")
                 await asyncio.sleep(3)
