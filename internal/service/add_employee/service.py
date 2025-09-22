@@ -60,6 +60,7 @@ class AddEmployeeDialogService(interface.IAddEmployeeDialogService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+
                 await message.delete()
                 validated_name = utils.Validator.validate_name(name)
 
