@@ -94,37 +94,46 @@ jobs:
                     echo "🔨 Начинаем сборку контейнера..."
                     docker compose -f ./docker-compose/app.yaml up -d --build kontur-tg-bot
                     
-                    echo "⏳ Ждём запуска приложения..."
-                    sleep 10
+                    check_health() {
+                        # Если есть HTTP endpoint
+                        if curl -f -s -o /dev/null -w "%{http_code}" http://localhost:8005/api/tg-bot/health | grep -q "200"; then
+                            return 0
+                        else
+                            return 1
+                        fi
+                    }
                     
-                    # Простая проверка статуса контейнера
+                    MAX_ATTEMPTS=2
+                    ATTEMPT=1
+                    SUCCESS=false
                     CONTAINER_NAME="kontur-tg-bot"
-                    CONTAINER_STATUS=$(docker ps --filter "name=$CONTAINER_NAME" --format "{{.Status}}")
                     
-                    if [ -z "$CONTAINER_STATUS" ]; then
-                        echo "❌ Контейнер не запущен!"
-                        "❌ КРИТИЧЕСКАЯ ОШИБКА: Не удалось обновить ветку kontur-tg-bot/${{ env.BRANCH_NAME }} для ${{ env.AUTHOR_NAME }} на сервере ${{ env.SERVER_HOST }}!
+                    while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
+                        echo "🔍 Проверка health (попытка $ATTEMPT из $MAX_ATTEMPTS)..."
+                        
+                        if check_health; then
+                            echo "✅ Health check пройден!"
+                            SUCCESS=true
+                            break
+                        else
+                            echo "⏳ Health check не пройден, ждем..."
+                            sleep 10
+                        fi
+                        
+                        ATTEMPT=$((ATTEMPT + 1))
+                    done
                     
-                        🔥 Этап ошибки: $FAILURE_STEP
+                    if [ "$SUCCESS" = false ]; then
+                        
+                        python3 script/tg_bot_alert.py "❌ КРИТИЧЕСКАЯ ОШИБКА: Health check не пройден на сервере ${{ env.SERVER_HOST }}!
+                    
+                        🔥 Контейнер запущен, но приложение не отвечает
                         📋 Подробности в Actions: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
                         👤 Автор: ${{ env.AUTHOR_NAME }}
                         🌿 Ветка: ${{ env.BRANCH_NAME }}"
                         exit 1
                     fi
                     
-                    if echo "$CONTAINER_STATUS" | grep -q "Up"; then
-                        echo "✅ Контейнер работает корректно!"
-                        python3 script/tg_bot_alert.py "✅ Ветка kontur-tg-bot/${{ env.BRANCH_NAME }} успешно обновлена на сервере ${{ env.SERVER_HOST }}!"
-                    else
-                        echo "❌ Контейнер в некорректном состоянии: $CONTAINER_STATUS"
-                        python3 script/tg_bot_alert.py "❌ КРИТИЧЕСКАЯ ОШИБКА: Не удалось обновить ветку kontur-tg-bot/${{ env.BRANCH_NAME }} для ${{ env.AUTHOR_NAME }} на сервере ${{ env.SERVER_HOST }}!
-                    
-                        🔥 Этап ошибки: $FAILURE_STEP
-                        📋 Подробности в Actions: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-                        👤 Автор: ${{ env.AUTHOR_NAME }}
-                        🌿 Ветка: ${{ env.BRANCH_NAME }}"
-                        exit 1
-                    fi
-                    
-                    echo "✅ Ветка ${{ env.BRANCH_NAME }} успешно обновлена на сервере ${{ env.SERVER_HOST }}!"
+                    echo "✅ Ветка ${{ env.BRANCH_NAME }} успешно обновлена и приложение работает!"
+                    python3 script/tg_bot_alert.py "✅ Ветка kontur-tg-bot/${{ env.BRANCH_NAME }} успешно обновлена на сервере ${{ env.SERVER_HOST }}!"
                     EOF
