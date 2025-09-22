@@ -64,16 +64,16 @@ jobs:
                     # Очищаем старые ветки если текущая не main
                     if [ "$CURRENT_BRANCH" != "main" ] && [ "$CURRENT_BRANCH" != "master" ]; then
                         echo "🧹 Очищаем старые ветки (текущая ветка: $CURRENT_BRANCH)"
-                        
+                    
                         # Переключаемся на main для безопасного удаления веток
                         git checkout main 2>/dev/null || git checkout master 2>/dev/null || echo "⚠️ Не удалось переключиться на main/master"
-                        
+                    
                         # Удаляем все локальные ветки кроме main/master и текущей целевой ветки
                         git branch | grep -v -E "(main|master|\*|${{ env.BRANCH_NAME }})" | xargs -r git branch -D
-                        
+                    
                         # Очищаем удаленные ветки
                         git remote prune origin
-                        
+                    
                         echo "✅ Очистка веток завершена"
                     fi
                     
@@ -92,40 +92,39 @@ jobs:
                     export $(cat env/.env.app env/.env.db env/.env.monitoring | xargs)
                     
                     echo "🔨 Начинаем сборку контейнера..."
-                    if ! docker compose -f ./docker-compose/app.yaml up -d --build kontur-tg-bot; then
-                        echo "❌ Ошибка при сборке контейнера!"
-                        python3 script/tg_bot_alert.py "❌ ОШИБКА: Не удалось собрать ветку kontur-tg-bot/${{ env.BRANCH_NAME }} на сервере ${{ env.SERVER_HOST }}! Проверьте логи сборки."
+                    docker compose -f ./docker-compose/app.yaml up -d --build kontur-tg-bot
+                    
+                    echo "⏳ Ждём запуска приложения..."
+                    sleep 10
+                    
+                    # Простая проверка статуса контейнера
+                    CONTAINER_NAME="kontur-tg-bot"
+                    CONTAINER_STATUS=$(docker ps --filter "name=$CONTAINER_NAME" --format "{{.Status}}")
+                    
+                    if [ -z "$CONTAINER_STATUS" ]; then
+                        echo "❌ Контейнер не запущен!"
+                        "❌ КРИТИЧЕСКАЯ ОШИБКА: Не удалось обновить ветку kontur-tg-bot/${{ env.BRANCH_NAME }} для ${{ env.AUTHOR_NAME }} на сервере ${{ env.SERVER_HOST }}!
+                    
+                        🔥 Этап ошибки: $FAILURE_STEP
+                        📋 Подробности в Actions: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+                        👤 Автор: ${{ env.AUTHOR_NAME }}
+                        🌿 Ветка: ${{ env.BRANCH_NAME }}"
                         exit 1
                     fi
                     
-                    python3 script/tg_bot_alert.py "✅ Ветка kontur-tg-bot/${{ env.BRANCH_NAME }} успешно обновлена на сервере ${{ env.SERVER_HOST }}!"
+                    if echo "$CONTAINER_STATUS" | grep -q "Up"; then
+                        echo "✅ Контейнер работает корректно!"
+                        python3 script/tg_bot_alert.py "✅ Ветка kontur-tg-bot/${{ env.BRANCH_NAME }} успешно обновлена на сервере ${{ env.SERVER_HOST }}!"
+                    else
+                        echo "❌ Контейнер в некорректном состоянии: $CONTAINER_STATUS"
+                        python3 script/tg_bot_alert.py "❌ КРИТИЧЕСКАЯ ОШИБКА: Не удалось обновить ветку kontur-tg-bot/${{ env.BRANCH_NAME }} для ${{ env.AUTHOR_NAME }} на сервере ${{ env.SERVER_HOST }}!
+                    
+                        🔥 Этап ошибки: $FAILURE_STEP
+                        📋 Подробности в Actions: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+                        👤 Автор: ${{ env.AUTHOR_NAME }}
+                        🌿 Ветка: ${{ env.BRANCH_NAME }}"
+                        exit 1
+                    fi
                     
                     echo "✅ Ветка ${{ env.BRANCH_NAME }} успешно обновлена на сервере ${{ env.SERVER_HOST }}!"
                     EOF
-            -   name: Send failure alert
-                if: failure()
-                run: |
-                        # Определяем на каком этапе произошла ошибка
-                        FAILURE_STEP=""
-                        if [ "${{ steps.load-config.outcome }}" = "failure" ]; then
-                            FAILURE_STEP="загрузке конфигурации"
-                        elif [ "${{ steps.update-branch.outcome }}" = "failure" ]; then
-                            FAILURE_STEP="обновлении ветки"
-                        else
-                            FAILURE_STEP="неизвестном этапе"
-                        fi
-                        
-                        # Проверяем, есть ли доступ к серверу для отправки алерта
-                        if [ -n "${{ env.SERVER_HOST }}" ] && [ -n "${{ env.SERVER_PASSWORD }}" ]; then
-                            sshpass -p "${{ env.SERVER_PASSWORD }}" ssh -o StrictHostKeyChecking=no root@${{ env.SERVER_HOST }} -p 22 << EOF
-                            cd kontur/kontur-system
-                            python3 script/tg_bot_alert.py "❌ КРИТИЧЕСКАЯ ОШИБКА: Не удалось обновить ветку kontur-tg-bot/${{ env.BRANCH_NAME }} для ${{ env.AUTHOR_NAME }} на сервере ${{ env.SERVER_HOST }}!
-
-                            🔥 Этап ошибки: $FAILURE_STEP
-                            📋 Подробности в Actions: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-                            👤 Автор: ${{ env.AUTHOR_NAME }}
-                            🌿 Ветка: ${{ env.BRANCH_NAME }}"
-                            EOF
-                        else
-                            echo "❌ Не удалось отправить алерт - нет конфигурации сервера"
-                        fi
