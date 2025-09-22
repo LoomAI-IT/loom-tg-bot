@@ -278,7 +278,6 @@ class AddEmployeeDialogService(interface.IAddEmployeeDialogService):
             callback: CallbackQuery = None,
             error_message: str = "Произошла ошибка. Попробуйте снова."
     ) -> None:
-        """Обработка неожиданных ошибок"""
         span.record_exception(error)
         span.set_status(Status(StatusCode.ERROR, str(error)))
 
@@ -289,11 +288,7 @@ class AddEmployeeDialogService(interface.IAddEmployeeDialogService):
 
         raise error
 
-    async def _update_employee_permissions(self, employee_data: utils.EmployeeData) -> None:
-        """Обновление разрешений сотрудника"""
-
     def _format_permissions_text(self, permissions: utils.Permissions) -> str:
-        """Форматирование текста разрешений для отображения"""
         permissions_text_list = []
 
         permission_checks = [
