@@ -55,9 +55,15 @@ jobs:
                     echo "🔄 Обновляем ветку ${{ env.BRANCH_NAME }} для ${{ env.AUTHOR_NAME }}"
                     
                     cd kontur/kontur-tg-bot
+                    git fetch origin
                     
-                    # Получаем последние изменения
-                    git pull origin ${{ env.BRANCH_NAME }}
+                    if git show-ref --verify --quiet refs/heads/${{ env.BRANCH_NAME }}; then
+                        echo "Ветка существует локально, делаем pull"
+                        git pull origin ${{ env.BRANCH_NAME }}
+                    else
+                        echo "Первый деплой ветки, создаем и переключаемся"
+                        git checkout -b ${{ env.BRANCH_NAME }} origin/${{ env.BRANCH_NAME }}
+                    fi
                     
                     cd ../kontur-system
                     
