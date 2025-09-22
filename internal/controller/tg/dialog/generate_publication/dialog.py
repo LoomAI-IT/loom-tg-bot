@@ -26,10 +26,12 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             self.get_preview_window(),
             self.get_edit_text_menu_window(),
             self.get_regenerate_text_window(),
+            self.get_regenerate_loading_window(),
             self.get_edit_title_window(),
             self.get_edit_tags_window(),
             self.get_edit_content_window(),
             self.get_image_menu_window(),
+            self.get_generate_image_loading_window(),
             self.get_generate_image_window(),
             self.get_upload_image_window(),
             self.get_social_network_select_window()
@@ -294,6 +296,22 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
 
             state=model.GeneratePublicationStates.preview,
             getter=self.generate_publication_service.get_preview_data,
+            parse_mode="HTML",
+        )
+
+    def get_regenerate_loading_window(self) -> Window:
+        """Окно ожидания перегенерации"""
+        return Window(
+            Multi(
+                Const("🔄 <b>Перегенерация текста</b>\n\n"),
+                Format("📌 <b>Ваши указания:</b>\n<i>{regenerate_prompt}</i>\n\n"),
+                Const("⏳ <b>Генерирую текст с учетом ваших пожеланий...</b>\n"),
+                Const("Это может занять время. Пожалуйста, не совершайте никаких действий."),
+                sep="",
+            ),
+
+            state=model.GeneratePublicationStates.regenerate_loading,
+            getter=self.generate_publication_service.get_regenerate_data,
             parse_mode="HTML",
         )
 
@@ -577,6 +595,13 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                     },
                     selector="has_big_image_prompt"
                 ),
+                Case(
+                    {
+                        True: Const("❌ <b>Ошибка:</b> Не удалось сгенерировать изображение. Попробуйте еще раз\n\n"),
+                        False: Const(""),
+                    },
+                    selector="has_image_generation_error"
+                ),
                 Const("💡 <b>Опишите желаемое изображение:</b>\n"),
                 Const("<i>Например: минималистичная иллюстрация в синих тонах, деловой стиль</i>\n\n"),
                 Case(
@@ -601,6 +626,22 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             ),
 
             state=model.GeneratePublicationStates.generate_image,
+            getter=self.generate_publication_service.get_image_prompt_data,
+            parse_mode="HTML",
+        )
+
+    def get_generate_image_loading_window(self) -> Window:
+        """Окно ожидания генерации изображения"""
+        return Window(
+            Multi(
+                Const("🎨 <b>Генерация изображения</b>\n\n"),
+                Format("📌 <b>Ваше описание:</b>\n<i>{image_prompt}</i>\n\n"),
+                Const("⏳ <b>Генерирую изображение с учетом ваших пожеланий...</b>\n"),
+                Const("Это может занять время. Пожалуйста, не совершайте никаких действий."),
+                sep="",
+            ),
+
+            state=model.GeneratePublicationStates.generate_image_loading,
             getter=self.generate_publication_service.get_image_prompt_data,
             parse_mode="HTML",
         )

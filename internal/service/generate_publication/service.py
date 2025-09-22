@@ -271,7 +271,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 dialog_manager.dialog_data["publication_text"] = publication_data["text"]
 
                 # Переходим к предпросмотру
-                await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
+                await dialog_manager.switch_to(model.GeneratePublicationStates.preview, show_mode=ShowMode.EDIT)
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
@@ -323,7 +323,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 dialog_manager.dialog_data["current_image_index"] = 0  # Индекс текущего изображения
 
                 # Переходим к предпросмотру
-                await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
+                await dialog_manager.switch_to(model.GeneratePublicationStates.preview, show_mode=ShowMode.EDIT)
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
@@ -437,39 +437,68 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                if not prompt.strip():
-                    await message.answer("❌ Введите указания для перегенерации")
+                await message.delete()
+                prompt = prompt.strip()
+
+                if not prompt:
+                    dialog_manager.dialog_data["has_void_regenerate_prompt"] = True
+                    await dialog_manager.switch_to(model.GeneratePublicationStates.regenerate_text,
+                                                   show_mode=ShowMode.EDIT)
                     return
 
-                loading_message = await message.answer("🔄 Перегенерирую с учетом ваших пожеланий...")
+                if len(prompt) < 5:
+                    dialog_manager.dialog_data["has_small_regenerate_prompt"] = True
+                    await dialog_manager.switch_to(model.GeneratePublicationStates.regenerate_text,
+                                                   show_mode=ShowMode.EDIT)
+                    return
 
-                category_id = dialog_manager.dialog_data["category_id"]
-                current_text = dialog_manager.dialog_data["publication_text"]
+                if len(prompt) > 500:
+                    dialog_manager.dialog_data["has_big_regenerate_prompt"] = True
+                    await dialog_manager.switch_to(model.GeneratePublicationStates.regenerate_text,
+                                                   show_mode=ShowMode.EDIT)
+                    return
 
-                regenerated_data = await self.kontur_content_client.regenerate_publication_text(
-                    category_id=category_id,
-                    publication_text=current_text,
-                    prompt=prompt
-                )
+                # Clear error flags on successful input
+                dialog_manager.dialog_data.pop("has_void_regenerate_prompt", None)
+                dialog_manager.dialog_data.pop("has_small_regenerate_prompt", None)
+                dialog_manager.dialog_data.pop("has_big_regenerate_prompt", None)
 
-                dialog_manager.dialog_data["publication_name"] = regenerated_data["name"]
-                dialog_manager.dialog_data["publication_text"] = regenerated_data["text"]
-                dialog_manager.dialog_data["publication_tags"] = regenerated_data["tags"]
+                # Сохраняем промпт для отображения в состоянии ожидания
+                dialog_manager.dialog_data["regenerate_prompt"] = prompt
 
-                await loading_message.edit_text("✅ Пост успешно сгенерирован!")
-                await asyncio.sleep(3)
+                # Переключаемся на состояние ожидания
+                await dialog_manager.switch_to(model.GeneratePublicationStates.regenerate_loading,
+                                               show_mode=ShowMode.EDIT)
+
                 try:
-                    await loading_message.delete()
-                except:
-                    pass
+                    category_id = dialog_manager.dialog_data["category_id"]
+                    current_text = dialog_manager.dialog_data["publication_text"]
 
-                await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
+                    regenerated_data = await self.kontur_content_client.regenerate_publication_text(
+                        category_id=category_id,
+                        publication_text=current_text,
+                        prompt=prompt
+                    )
+
+                    dialog_manager.dialog_data["publication_name"] = regenerated_data["name"]
+                    dialog_manager.dialog_data["publication_text"] = regenerated_data["text"]
+                    dialog_manager.dialog_data["publication_tags"] = regenerated_data["tags"]
+
+                    await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
+
+                except Exception as regenerate_err:
+                    self.logger.error(f"Regeneration error: {regenerate_err}")
+                    dialog_manager.dialog_data["has_regenerate_api_error"] = True
+                    await dialog_manager.switch_to(model.GeneratePublicationStates.regenerate_text,
+                                                   show_mode=ShowMode.EDIT)
+                    return
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-                await message.answer("❌ Ошибка при перегенерации")
+                dialog_manager.dialog_data["has_regenerate_api_error"] = True
+                await dialog_manager.switch_to(model.GeneratePublicationStates.regenerate_text, show_mode=ShowMode.EDIT)
                 raise
 
     async def handle_edit_title_save(
@@ -511,7 +540,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                     }
                 )
 
-                await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
+                await dialog_manager.switch_to(model.GeneratePublicationStates.preview, show_mode=ShowMode.EDIT)
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
                 span.record_exception(err)
@@ -554,7 +583,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 dialog_manager.dialog_data.pop("has_too_many_tags", None)
                 dialog_manager.dialog_data["publication_tags"] = tags
 
-                await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
+                await dialog_manager.switch_to(model.GeneratePublicationStates.preview, show_mode=ShowMode.EDIT)
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
                 span.record_exception(err)
@@ -616,7 +645,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                     }
                 )
 
-                await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
+                await dialog_manager.switch_to(model.GeneratePublicationStates.preview, show_mode=ShowMode.EDIT)
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
                 span.record_exception(err)
@@ -636,7 +665,10 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
         ) as span:
             try:
                 await callback.answer()
-                loading_message = await callback.message.answer("🔄 Генерирую изображение, это может занять время...")
+                await callback.message.edit_text(
+                    "🔄 Генерирую изображение, это может занять время...",
+                    reply_markup=None  # Убираем клавиатуру
+                )
 
                 category_id = dialog_manager.dialog_data["category_id"]
                 publication_text = dialog_manager.dialog_data["publication_text"]
@@ -664,14 +696,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
                 dialog_manager.dialog_data["current_image_index"] = 0
                 dialog_manager.dialog_data.pop("custom_image_file_id", None)
 
-                await loading_message.edit_text("✅ Изображения успешно сгенерированы!")
-                await asyncio.sleep(3)
-                try:
-                    await loading_message.delete()
-                except:
-                    pass
-
-                await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
+                await dialog_manager.switch_to(model.GeneratePublicationStates.preview, show_mode=ShowMode.EDIT)
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
@@ -697,68 +722,84 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
 
                 if not prompt:
                     dialog_manager.dialog_data["has_void_image_prompt"] = True
-                    await dialog_manager.switch_to(model.GeneratePublicationStates.generate_image,
-                                                   show_mode=ShowMode.EDIT)
+                    await dialog_manager.switch_to(
+                        model.GeneratePublicationStates.generate_image,
+                        show_mode=ShowMode.EDIT
+                    )
                     return
 
                 if len(prompt) < 5:
                     dialog_manager.dialog_data["has_small_image_prompt"] = True
-                    await dialog_manager.switch_to(model.GeneratePublicationStates.generate_image,
-                                                   show_mode=ShowMode.EDIT)
+                    await dialog_manager.switch_to(
+                        model.GeneratePublicationStates.generate_image,
+                        show_mode=ShowMode.EDIT
+                    )
                     return
 
                 if len(prompt) > 500:
                     dialog_manager.dialog_data["has_big_image_prompt"] = True
-                    await dialog_manager.switch_to(model.GeneratePublicationStates.generate_image,
-                                                   show_mode=ShowMode.EDIT)
+                    await dialog_manager.switch_to(
+                        model.GeneratePublicationStates.generate_image,
+                        show_mode=ShowMode.EDIT
+                    )
                     return
 
                 # Clear error flags on successful input
                 dialog_manager.dialog_data.pop("has_void_image_prompt", None)
                 dialog_manager.dialog_data.pop("has_small_image_prompt", None)
                 dialog_manager.dialog_data.pop("has_big_image_prompt", None)
+                dialog_manager.dialog_data.pop("has_image_generation_error", None)
 
-                loading_message = await message.answer("🔄 Генерирую с учетом ваших пожеланий...")
+                # Сохраняем промпт для отображения в состоянии ожидания
+                dialog_manager.dialog_data["image_prompt"] = prompt
 
-                category_id = dialog_manager.dialog_data["category_id"]
-                publication_text = dialog_manager.dialog_data["publication_text"]
-                text_reference = dialog_manager.dialog_data["input_text"]
+                # Переключаемся на состояние ожидания
+                await dialog_manager.switch_to(model.GeneratePublicationStates.generate_image_loading,
+                                               show_mode=ShowMode.EDIT)
 
-                # Передаем текущее изображение если есть
-                current_image_content = None
-                current_image_filename = None
-
-                if await self._get_current_image_data(dialog_manager):
-                    current_image_content, current_image_filename = await self._get_current_image_data(dialog_manager)
-
-                images_url = await self.kontur_content_client.generate_publication_image(
-                    category_id=category_id,
-                    publication_text=publication_text,
-                    text_reference=text_reference,
-                    prompt=prompt,
-                    image_content=current_image_content,
-                    image_filename=current_image_filename,
-                )
-
-                dialog_manager.dialog_data["publication_images_url"] = images_url
-                dialog_manager.dialog_data["has_image"] = True
-                dialog_manager.dialog_data["is_custom_image"] = False
-                dialog_manager.dialog_data["current_image_index"] = 0
-                dialog_manager.dialog_data.pop("custom_image_file_id", None)
-
-                await loading_message.edit_text("✅ Изображения успешно сгенерированы!")
-                await asyncio.sleep(3)
                 try:
-                    await loading_message.delete()
-                except:
-                    pass
-                await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
+                    category_id = dialog_manager.dialog_data["category_id"]
+                    publication_text = dialog_manager.dialog_data["publication_text"]
+                    text_reference = dialog_manager.dialog_data["input_text"]
+
+                    # Передаем текущее изображение если есть
+                    current_image_content = None
+                    current_image_filename = None
+
+                    if await self._get_current_image_data(dialog_manager):
+                        current_image_content, current_image_filename = await self._get_current_image_data(
+                            dialog_manager)
+
+                    images_url = await self.kontur_content_client.generate_publication_image(
+                        category_id=category_id,
+                        publication_text=publication_text,
+                        text_reference=text_reference,
+                        prompt=prompt,
+                        image_content=current_image_content,
+                        image_filename=current_image_filename,
+                    )
+
+                    dialog_manager.dialog_data["publication_images_url"] = images_url
+                    dialog_manager.dialog_data["has_image"] = True
+                    dialog_manager.dialog_data["is_custom_image"] = False
+                    dialog_manager.dialog_data["current_image_index"] = 0
+                    dialog_manager.dialog_data.pop("custom_image_file_id", None)
+
+                    await dialog_manager.switch_to(model.GeneratePublicationStates.preview, show_mode=ShowMode.EDIT)
+
+                except Exception as generation_err:
+                    self.logger.error(f"Image generation error: {generation_err}")
+                    dialog_manager.dialog_data["has_image_generation_error"] = True
+                    await dialog_manager.switch_to(model.GeneratePublicationStates.generate_image,
+                                                   show_mode=ShowMode.EDIT)
+                    return
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-                await message.answer("❌ Ошибка при генерации изображения")
+                dialog_manager.dialog_data["has_image_generation_error"] = True
+                await dialog_manager.switch_to(model.GeneratePublicationStates.generate_image, show_mode=ShowMode.EDIT)
                 raise
 
     async def handle_image_upload(
@@ -1485,6 +1526,11 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
         return {
             "has_regenerate_prompt": dialog_manager.dialog_data.get("regenerate_prompt", "") != "",
             "regenerate_prompt": dialog_manager.dialog_data.get("regenerate_prompt", ""),
+            # Error flags
+            "has_void_regenerate_prompt": dialog_manager.dialog_data.get("has_void_regenerate_prompt", False),
+            "has_small_regenerate_prompt": dialog_manager.dialog_data.get("has_small_regenerate_prompt", False),
+            "has_big_regenerate_prompt": dialog_manager.dialog_data.get("has_big_regenerate_prompt", False),
+            "has_regenerate_api_error": dialog_manager.dialog_data.get("has_regenerate_api_error", False),
         }
 
     async def get_image_menu_data(
@@ -1509,6 +1555,7 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
             "has_void_image_prompt": dialog_manager.dialog_data.get("has_void_image_prompt", False),
             "has_small_image_prompt": dialog_manager.dialog_data.get("has_small_image_prompt", False),
             "has_big_image_prompt": dialog_manager.dialog_data.get("has_big_image_prompt", False),
+            "has_image_generation_error": dialog_manager.dialog_data.get("has_image_generation_error", False),
         }
 
     async def get_upload_image_data(
