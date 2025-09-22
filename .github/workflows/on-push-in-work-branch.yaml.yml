@@ -30,6 +30,7 @@ jobs:
                     source /root/.env.servers
                     set +a
                     
+                    
                     # Формируем имена переменных для текущего автора
                     HOST_VAR="${AUTHOR_NAME}_HOST"
                     PASSWORD_VAR="${AUTHOR_NAME}_PASSWORD"
