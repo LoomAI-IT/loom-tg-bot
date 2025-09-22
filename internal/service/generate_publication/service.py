@@ -1321,10 +1321,15 @@ class GeneratePublicationDialogService(interface.IGeneratePublicationDialogServi
             "category_name": dialog_manager.dialog_data.get("category_name", ""),
             "input_text": dialog_manager.dialog_data.get("input_text", ""),
             "has_input_text": dialog_manager.dialog_data.get("has_input_text", False),
-            # Error flags
+            # Text input error flags
             "has_void_input_text": dialog_manager.dialog_data.get("has_void_input_text", False),
             "has_small_input_text": dialog_manager.dialog_data.get("has_small_input_text", False),
             "has_big_input_text": dialog_manager.dialog_data.get("has_big_input_text", False),
+            # Voice input error flags
+            "has_invalid_voice_type": dialog_manager.dialog_data.get("has_invalid_voice_type", False),
+            "has_long_voice_duration": dialog_manager.dialog_data.get("has_long_voice_duration", False),
+            "has_voice_recognition_error": dialog_manager.dialog_data.get("has_voice_recognition_error", False),
+            "has_empty_voice_text": dialog_manager.dialog_data.get("has_empty_voice_text", False),
         }
 
     async def get_preview_data(
