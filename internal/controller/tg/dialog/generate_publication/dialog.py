@@ -26,12 +26,10 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             self.get_preview_window(),
             self.get_edit_text_menu_window(),
             self.get_regenerate_text_window(),
-            self.get_regenerate_loading_window(),
             self.get_edit_title_window(),
             self.get_edit_tags_window(),
             self.get_edit_content_window(),
             self.get_image_menu_window(),
-            self.get_generate_image_loading_window(),
             self.get_generate_image_window(),
             self.get_upload_image_window(),
             self.get_social_network_select_window()
@@ -299,22 +297,6 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             parse_mode="HTML",
         )
 
-    def get_regenerate_loading_window(self) -> Window:
-        """Окно ожидания перегенерации"""
-        return Window(
-            Multi(
-                Const("🔄 <b>Перегенерация текста</b>\n\n"),
-                Format("📌 <b>Ваши указания:</b>\n<i>{regenerate_prompt}</i>\n\n"),
-                Const("⏳ <b>Генерирую текст с учетом ваших пожеланий...</b>\n"),
-                Const("Это может занять время. Пожалуйста, не совершайте никаких действий."),
-                sep="",
-            ),
-
-            state=model.GeneratePublicationStates.regenerate_loading,
-            getter=self.generate_publication_service.get_regenerate_data,
-            parse_mode="HTML",
-        )
-
     def get_edit_text_menu_window(self) -> Window:
         """Меню редактирования текстовых элементов"""
         return Window(
@@ -366,14 +348,51 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
         return Window(
             Multi(
                 Const("🔄 <b>Перегенерация с дополнительными указаниями</b>\n\n"),
-                Const("💡 <b>Введите дополнительные пожелания:</b>\n"),
-                Const("<i>Например: сделай текст короче, добавь больше эмоций, убери технические термины и т.д.</i>\n\n"),
+                # Показываем состояние загрузки если регенерируем
                 Case(
                     {
-                        True: Format("📌 <b>Ваши указания:</b>\n<i>{regenerate_prompt}</i>"),
-                        False: Const("💬 Ожидание ввода..."),
+                        True: Multi(
+                            Format("📌 <b>Ваши указания:</b>\n<i>{regenerate_prompt}</i>\n\n"),
+                            Const("⏳ <b>Перегенерирую текст...</b>\n"),
+                            Const("Это может занять время. Пожалуйста, ожидайте."),
+                        ),
+                        False: Multi(
+                            # Error messages только если не регенерируем
+                            Case(
+                                {
+                                    True: Const("⚠️ <b>Ошибка:</b> Укажите дополнительные пожелания\n\n"),
+                                    False: Const(""),
+                                },
+                                selector="has_void_regenerate_prompt"
+                            ),
+                            Case(
+                                {
+                                    True: Const("⚠️ <b>Ошибка:</b> Указания слишком короткие (минимум 5 символов)\n\n"),
+                                    False: Const(""),
+                                },
+                                selector="has_small_regenerate_prompt"
+                            ),
+                            Case(
+                                {
+                                    True: Const(
+                                        "⚠️ <b>Ошибка:</b> Указания слишком длинные (максимум 500 символов)\n\n"),
+                                    False: Const(""),
+                                },
+                                selector="has_big_regenerate_prompt"
+                            ),
+                            Const("💡 <b>Введите дополнительные пожелания:</b>\n"),
+                            Const(
+                                "<i>Например: сделай текст короче, добавь больше эмоций, убери технические термины и т.д.</i>\n\n"),
+                            Case(
+                                {
+                                    True: Format("📌 <b>Ваши указания:</b>\n<i>{regenerate_prompt}</i>"),
+                                    False: Const("💬 Ожидание ввода..."),
+                                },
+                                selector="has_regenerate_prompt"
+                            ),
+                        ),
                     },
-                    selector="has_regenerate_prompt"
+                    selector="is_regenerating_text"
                 ),
                 sep="",
             ),
@@ -382,10 +401,12 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                 id="regenerate_prompt_input",
                 on_success=self.generate_publication_service.handle_regenerate_text_with_prompt,
             ),
+
             Button(
                 Const("📄 ◀️ Назад"),
                 id="edit_text_menu",
                 on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.edit_text_menu),
+                when="~is_regenerating_text",  # Отключаем кнопку во время регенерации
             ),
 
             state=model.GeneratePublicationStates.regenerate_text,
@@ -573,43 +594,50 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
         return Window(
             Multi(
                 Const("🎨 <b>Генерация изображения</b>\n\n"),
-                # Add error messages
+                # Показываем состояние загрузки если генерируем
                 Case(
                     {
-                        True: Const("⚠️ <b>Ошибка:</b> Описание изображения не может быть пустым\n\n"),
-                        False: Const(""),
+                        True: Multi(
+                            Format("📌 <b>Ваше описание:</b>\n<i>{image_prompt}</i>\n\n"),
+                            Const("⏳ <b>Генерирую изображение...</b>\n"),
+                            Const("Это может занять время. Пожалуйста, ожидайте."),
+                        ),
+                        False: Multi(
+                            # Error messages только если не генерируем
+                            Case(
+                                {
+                                    True: Const("⚠️ <b>Ошибка:</b> Описание изображения не может быть пустым\n\n"),
+                                    False: Const(""),
+                                },
+                                selector="has_void_image_prompt"
+                            ),
+                            Case(
+                                {
+                                    True: Const("⚠️ <b>Ошибка:</b> Описание слишком короткое (минимум 5 символов)\n\n"),
+                                    False: Const(""),
+                                },
+                                selector="has_small_image_prompt"
+                            ),
+                            Case(
+                                {
+                                    True: Const(
+                                        "⚠️ <b>Ошибка:</b> Описание слишком длинное (максимум 500 символов)\n\n"),
+                                    False: Const(""),
+                                },
+                                selector="has_big_image_prompt"
+                            ),
+                            Const("💡 <b>Опишите желаемое изображение:</b>\n"),
+                            Const("<i>Например: минималистичная иллюстрация в синих тонах, деловой стиль</i>\n\n"),
+                            Case(
+                                {
+                                    True: Format("📌 <b>Ваше описание:</b>\n<i>{image_prompt}</i>"),
+                                    False: Const("💬 Ожидание ввода..."),
+                                },
+                                selector="has_image_prompt"
+                            ),
+                        ),
                     },
-                    selector="has_void_image_prompt"
-                ),
-                Case(
-                    {
-                        True: Const("⚠️ <b>Ошибка:</b> Описание слишком короткое (минимум 5 символов)\n\n"),
-                        False: Const(""),
-                    },
-                    selector="has_small_image_prompt"
-                ),
-                Case(
-                    {
-                        True: Const("⚠️ <b>Ошибка:</b> Описание слишком длинное (максимум 500 символов)\n\n"),
-                        False: Const(""),
-                    },
-                    selector="has_big_image_prompt"
-                ),
-                Case(
-                    {
-                        True: Const("❌ <b>Ошибка:</b> Не удалось сгенерировать изображение. Попробуйте еще раз\n\n"),
-                        False: Const(""),
-                    },
-                    selector="has_image_generation_error"
-                ),
-                Const("💡 <b>Опишите желаемое изображение:</b>\n"),
-                Const("<i>Например: минималистичная иллюстрация в синих тонах, деловой стиль</i>\n\n"),
-                Case(
-                    {
-                        True: Format("📌 <b>Ваше описание:</b>\n<i>{image_prompt}</i>"),
-                        False: Const("💬 Ожидание ввода..."),
-                    },
-                    selector="has_image_prompt"
+                    selector="is_generating_image"
                 ),
                 sep="",
             ),
@@ -623,25 +651,10 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                 Const("📄 ◀️ Назад"),
                 id="image_menu",
                 on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.image_menu),
+                when="~is_generating_image",  # Отключаем кнопку во время генерации
             ),
 
             state=model.GeneratePublicationStates.generate_image,
-            getter=self.generate_publication_service.get_image_prompt_data,
-            parse_mode="HTML",
-        )
-
-    def get_generate_image_loading_window(self) -> Window:
-        """Окно ожидания генерации изображения"""
-        return Window(
-            Multi(
-                Const("🎨 <b>Генерация изображения</b>\n\n"),
-                Format("📌 <b>Ваше описание:</b>\n<i>{image_prompt}</i>\n\n"),
-                Const("⏳ <b>Генерирую изображение с учетом ваших пожеланий...</b>\n"),
-                Const("Это может занять время. Пожалуйста, не совершайте никаких действий."),
-                sep="",
-            ),
-
-            state=model.GeneratePublicationStates.generate_image_loading,
             getter=self.generate_publication_service.get_image_prompt_data,
             parse_mode="HTML",
         )

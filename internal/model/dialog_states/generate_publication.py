@@ -16,8 +16,6 @@ class GeneratePublicationStates(StatesGroup):
     edit_tags = State()
     edit_content = State()
 
-    regenerate_loading = State()
-    generate_image_loading = State()
     # Состояния управления изображением
     image_menu = State()
     generate_image = State()

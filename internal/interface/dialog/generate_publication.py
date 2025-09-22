@@ -32,9 +32,6 @@ class IGeneratePublicationDialog(Protocol):
     def get_regenerate_text_window(self) -> Window: pass
 
     @abstractmethod
-    def get_regenerate_loading_window(self) -> Window: pass
-
-    @abstractmethod
     def get_edit_title_window(self) -> Window: pass
 
     @abstractmethod
@@ -51,9 +48,6 @@ class IGeneratePublicationDialog(Protocol):
 
     @abstractmethod
     def get_upload_image_window(self) -> Window: pass
-
-    @abstractmethod
-    def get_generate_image_loading_window(self) -> Window: pass
 
     @abstractmethod
     def get_social_network_select_window(self) -> Window: pass
