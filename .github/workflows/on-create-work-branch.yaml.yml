@@ -1,4 +1,4 @@
-name: Branch Create - Deploy to Dev Server
+name: Create work branch - Deploy to Dev Server
 
 on:
     create:

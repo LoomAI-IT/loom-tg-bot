@@ -1,4 +1,4 @@
-name: Branch Push - Update Dev Server
+name: Push in work brunch - Update Dev Server
 
 on:
     push:

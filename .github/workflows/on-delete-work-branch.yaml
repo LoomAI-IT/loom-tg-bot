@@ -1,4 +1,4 @@
-name: Branch Delete - Cleanup Dev Server
+name: Delete work branch - Cleanup Dev Server
 
 on:
     delete:
