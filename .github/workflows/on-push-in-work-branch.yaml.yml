@@ -91,9 +91,41 @@ jobs:
                     
                     export $(cat env/.env.app env/.env.db env/.env.monitoring | xargs)
                     
-                    docker compose -f ./docker-compose/app.yaml up -d --build kontur-tg-bot
+                    echo "🔨 Начинаем сборку контейнера..."
+                    if ! docker compose -f ./docker-compose/app.yaml up -d --build kontur-tg-bot; then
+                        echo "❌ Ошибка при сборке контейнера!"
+                        python3 script/tg_bot_alert.py "❌ ОШИБКА: Не удалось собрать ветку kontur-tg-bot/${{ env.BRANCH_NAME }} на сервере ${{ env.SERVER_HOST }}! Проверьте логи сборки."
+                        exit 1
+                    fi
                     
                     python3 script/tg_bot_alert.py "✅ Ветка kontur-tg-bot/${{ env.BRANCH_NAME }} успешно обновлена на сервере ${{ env.SERVER_HOST }}!"
                     
                     echo "✅ Ветка ${{ env.BRANCH_NAME }} успешно обновлена на сервере ${{ env.SERVER_HOST }}!"
                     EOF
+            -   name: Send failure alert
+                if: failure()
+                run: |
+                        # Определяем на каком этапе произошла ошибка
+                        FAILURE_STEP=""
+                        if [ "${{ steps.load-config.outcome }}" = "failure" ]; then
+                            FAILURE_STEP="загрузке конфигурации"
+                        elif [ "${{ steps.update-branch.outcome }}" = "failure" ]; then
+                            FAILURE_STEP="обновлении ветки"
+                        else
+                            FAILURE_STEP="неизвестном этапе"
+                        fi
+                        
+                        # Проверяем, есть ли доступ к серверу для отправки алерта
+                        if [ -n "${{ env.SERVER_HOST }}" ] && [ -n "${{ env.SERVER_PASSWORD }}" ]; then
+                            sshpass -p "${{ env.SERVER_PASSWORD }}" ssh -o StrictHostKeyChecking=no root@${{ env.SERVER_HOST }} -p 22 << EOF
+                            cd kontur/kontur-system
+                            python3 script/tg_bot_alert.py "❌ КРИТИЧЕСКАЯ ОШИБКА: Не удалось обновить ветку kontur-tg-bot/${{ env.BRANCH_NAME }} для ${{ env.AUTHOR_NAME }} на сервере ${{ env.SERVER_HOST }}!
+
+                            🔥 Этап ошибки: $FAILURE_STEP
+                            📋 Подробности в Actions: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+                            👤 Автор: ${{ env.AUTHOR_NAME }}
+                            🌿 Ветка: ${{ env.BRANCH_NAME }}"
+                            EOF
+                        else
+                            echo "❌ Не удалось отправить алерт - нет конфигурации сервера"
+                        fi
