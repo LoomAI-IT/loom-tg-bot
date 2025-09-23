@@ -106,7 +106,8 @@ jobs:
                     MAX_ATTEMPTS=2
                     ATTEMPT=1
                     SUCCESS=false
-                    CONTAINER_NAME="kontur-tg-bot"
+                    
+                    sleep 5
                     
                     while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
                         echo "🔍 Проверка health (попытка $ATTEMPT из $MAX_ATTEMPTS)..."
@@ -124,13 +125,10 @@ jobs:
                     done
                     
                     if [ "$SUCCESS" = false ]; then
-                        
-                        python3 script/tg_bot_alert.py "❌ КРИТИЧЕСКАЯ ОШИБКА: Health check не пройден на сервере ${{ env.SERVER_HOST }}!
+                        docker logs -f kontur-tg-bot
+                        python3 script/tg_bot_alert.py "❌ Ветка kontur-tg-bot/${{ env.BRANCH_NAME }} не обновлена на сервере ${{ env.SERVER_HOST }}!
+                    📋 Подробности в Actions: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
                     
-                        🔥 Контейнер запущен, но приложение не отвечает
-                        📋 Подробности в Actions: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-                        👤 Автор: ${{ env.AUTHOR_NAME }}
-                        🌿 Ветка: ${{ env.BRANCH_NAME }}"
                         exit 1
                     fi
                     
