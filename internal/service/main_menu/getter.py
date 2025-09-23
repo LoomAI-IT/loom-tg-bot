@@ -35,6 +35,7 @@ class MainMenuGetter(interface.IMainMenuGetter):
                         model.GenerateVideoCutStates.video_generated_alert,
                         mode=StartMode.RESET_STACK
                     )
+                    await self.state_repo.delete_state_by_tg_chat_id(state.id)
                     raise common.AiogramDialogGetterSpecialError("Vizard alert")
 
 
