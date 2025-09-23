@@ -376,6 +376,14 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                                 },
                                 selector="has_big_regenerate_prompt"
                             ),
+                            Case(
+                                {
+                                    True: Const(
+                                        "⚠️ <b>Ошибка:</b> Не удалось перегенерировать текст. Попробуйте еще раз\n\n"),
+                                    False: Const(""),
+                                },
+                                selector="has_regenerate_error"
+                            ),
                             Const("💡 <b>Введите дополнительные пожелания:</b>\n"),
                             Const(
                                 "<i>Например: сделай текст короче, добавь больше эмоций, убери технические термины и т.д.</i>\n\n"),
@@ -430,6 +438,14 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                     },
                     selector="has_big_title"
                 ),
+                Case(
+                    {
+                        True: Const(
+                            "⚠️ <b>Ошибка:</b> Не удалось изменить название. Попробуйте еще раз\n\n"),
+                        False: Const(""),
+                    },
+                    selector="has_edit_title_error"
+                ),
                 Const("✍️ <b>Введите новое название:</b>"),
                 sep="",
             ),
@@ -463,6 +479,14 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                         False: Const(""),
                     },
                     selector="has_too_many_tags"
+                ),
+                Case(
+                    {
+                        True: Const(
+                            "⚠️ <b>Ошибка:</b> Не удалось изменить тэги. Попробуйте еще раз\n\n"),
+                        False: Const(""),
+                    },
+                    selector="has_edit_tags_error"
                 ),
                 Const("✍️ <b>Введите теги через запятую:</b>\n"),
                 Const("<i>Например: маркетинг, продажи, SMM</i>"),
@@ -510,6 +534,14 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                         False: Const(""),
                     },
                     selector="has_big_content"
+                ),
+                Case(
+                    {
+                        True: Const(
+                            "⚠️ <b>Ошибка:</b> Не удалось изменить текст. Попробуйте еще раз\n\n"),
+                        False: Const(""),
+                    },
+                    selector="has_edit_content_error"
                 ),
                 Const("✍️ <b>Введите новый текст:</b>\n"),
                 Const("<i>Текущий текст показан в предыдущем окне</i>"),
@@ -618,6 +650,14 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                                 },
                                 selector="has_big_image_prompt"
                             ),
+                            Case(
+                                {
+                                    True: Const(
+                                        "⚠️ <b>Ошибка:</b> Не удалось сгенерировать изображение. Попробуйте еще раз\n\n"),
+                                    False: Const(""),
+                                },
+                                selector="has_regenerate_image_error"
+                            ),
                             Const("💡 <b>Опишите желаемое изображение:</b>\n"),
                             Const("<i>Например: минималистичная иллюстрация в синих тонах, деловой стиль</i>\n\n"),
                             Case(
@@ -676,6 +716,14 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                         False: Const(""),
                     },
                     selector="has_image_processing_error"
+                ),
+                Case(
+                    {
+                        True: Const(
+                            "⚠️ <b>Ошибка:</b> Не удалось сгенерировать изображение. Попробуйте еще раз\n\n"),
+                        False: Const(""),
+                    },
+                    selector="has_upload_image_error"
                 ),
                 Const("📸 <b>Отправьте изображение:</b>\n"),
                 Const("<i>Поддерживаются форматы: JPG, PNG, GIF</i>\n"),

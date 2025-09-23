@@ -375,6 +375,13 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 await message.delete()
                 prompt = prompt.strip()
 
+                # Очищаем предыдущие ошибки
+                dialog_manager.dialog_data.pop("has_void_regenerate_prompt", None)
+                dialog_manager.dialog_data.pop("has_small_regenerate_prompt", None)
+                dialog_manager.dialog_data.pop("has_big_regenerate_prompt", None)
+                dialog_manager.dialog_data.pop("has_regenerate_api_error", None)
+
+                # Валидация
                 if not prompt:
                     dialog_manager.dialog_data["has_void_regenerate_prompt"] = True
                     await dialog_manager.switch_to(model.GeneratePublicationStates.regenerate_text, ShowMode.EDIT)
@@ -390,14 +397,11 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                     await dialog_manager.switch_to(model.GeneratePublicationStates.regenerate_text, ShowMode.EDIT)
                     return
 
-                # Clear error flags
-                dialog_manager.dialog_data.pop("has_void_regenerate_prompt", None)
-                dialog_manager.dialog_data.pop("has_small_regenerate_prompt", None)
-                dialog_manager.dialog_data.pop("has_big_regenerate_prompt", None)
-
+                # Сохраняем промпт и устанавливаем состояние загрузки
                 dialog_manager.dialog_data["regenerate_prompt"] = prompt
                 dialog_manager.dialog_data["is_regenerating_text"] = True
 
+                # Обновляем UI для показа индикатора загрузки
                 await dialog_manager.show(ShowMode.EDIT)
 
                 category_id = dialog_manager.dialog_data["category_id"]
@@ -409,17 +413,27 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                     prompt=prompt
                 )
 
+                # Обновляем данные публикации
                 dialog_manager.dialog_data["publication_name"] = regenerated_data["name"]
                 dialog_manager.dialog_data["publication_text"] = regenerated_data["text"]
-                dialog_manager.dialog_data["publication_tags"] = regenerated_data["tags"]
+                dialog_manager.dialog_data["publication_tags"] = regenerated_data.get("tags", [])
+
+                # Отключаем индикатор загрузки
                 dialog_manager.dialog_data["is_regenerating_text"] = False
 
+                # Переходим к превью
                 await dialog_manager.switch_to(model.GeneratePublicationStates.preview, ShowMode.EDIT)
+
+                self.logger.info("Текст успешно перегенерирован с промптом")
                 span.set_status(Status(StatusCode.OK))
+
             except Exception as err:
+                dialog_manager.dialog_data["is_regenerating_text"] = False
+                dialog_manager.dialog_data["has_regenerate_text_error"] = True
+                await dialog_manager.show(ShowMode.EDIT)
+
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-                await message.answer("❌ Ошибка", show_alert=True)
                 raise
 
     async def handle_edit_title_save(
@@ -457,9 +471,11 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 await dialog_manager.switch_to(model.GeneratePublicationStates.preview, ShowMode.EDIT)
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
+                dialog_manager.dialog_data["has_edit_title_error"] = True
+                await dialog_manager.show(ShowMode.EDIT)
+
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-                await message.answer("❌ Ошибка при сохранении названия")
                 raise
 
     async def handle_edit_tags_save(
@@ -497,9 +513,11 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 await dialog_manager.switch_to(model.GeneratePublicationStates.preview, ShowMode.EDIT)
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
+                dialog_manager.dialog_data["has_edit_tags_error"] = True
+                await dialog_manager.show(ShowMode.EDIT)
+
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-                await message.answer("❌ Ошибка при сохранении тегов")
                 raise
 
     async def handle_edit_content_save(
@@ -543,9 +561,12 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 await dialog_manager.switch_to(model.GeneratePublicationStates.preview, show_mode=ShowMode.EDIT)
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
+                dialog_manager.dialog_data["has_edit_content_error"] = True
+                await dialog_manager.show(ShowMode.EDIT)
+
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-                await message.answer("❌ Ошибка при сохранении текста")
+
                 raise
 
     async def handle_generate_new_image(
@@ -669,6 +690,10 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 await dialog_manager.switch_to(model.GeneratePublicationStates.preview, ShowMode.EDIT)
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
+                dialog_manager.dialog_data["is_generating_image"] = False
+                dialog_manager.dialog_data["has_regenerate_image_error"] = True
+                await dialog_manager.show(ShowMode.EDIT)
+
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
@@ -719,9 +744,11 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                     await dialog_manager.switch_to(model.GeneratePublicationStates.upload_image, ShowMode.EDIT)
 
             except Exception as err:
+                dialog_manager.dialog_data["has_image_upload_error"] = True
+                await dialog_manager.show(ShowMode.EDIT)
+
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-                await message.answer("❌ Ошибка", show_alert=True)
                 raise
 
     async def handle_remove_image(
@@ -1030,7 +1057,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
             return None
         except Exception as err:
-            self.logger.error(f"Ошибка получения данных изображения: {err}")
             return None
 
     async def _get_selected_image_data(self, dialog_manager: DialogManager) -> tuple[
