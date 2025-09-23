@@ -279,7 +279,7 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
             "has_void_image_prompt": dialog_manager.dialog_data.get("has_void_image_prompt", False),
             "has_small_image_prompt": dialog_manager.dialog_data.get("has_small_image_prompt", False),
             "has_big_image_prompt": dialog_manager.dialog_data.get("has_big_image_prompt", False),
-            "has_image_generation_error": dialog_manager.dialog_data.get("has_image_generation_error", False),
+            "has_regenerate_image_error": dialog_manager.dialog_data.get("has_regenerate_image_error", False),
         }
 
     async def get_upload_image_data(
