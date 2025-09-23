@@ -10,11 +10,13 @@ class PersonalProfileDialog(interface.IPersonalProfileDialog):
     def __init__(
             self,
             tel: interface.ITelemetry,
-            personal_profile_service: interface.IPersonalProfileDialogService,
+            personal_profile_service: interface.IPersonalProfileService,
+            personal_profile_getter: interface.IPersonalProfileGetter,
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
         self.personal_profile_service = personal_profile_service
+        self.personal_profile_getter = personal_profile_getter
 
     def get_dialog(self) -> Dialog:
         return Dialog(
@@ -53,7 +55,7 @@ class PersonalProfileDialog(interface.IPersonalProfileDialog):
             ),
 
             state=model.PersonalProfileStates.personal_profile,
-            getter=self.personal_profile_service.get_personal_profile_data,
+            getter=self.personal_profile_getter.get_personal_profile_data,
             parse_mode="HTML",
         )
 
