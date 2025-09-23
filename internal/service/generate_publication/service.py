@@ -48,7 +48,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
                 self.logger.info("Категория выбрана")
 
-                await dialog_manager.switch_to(model.GeneratePublicationStates.input_text)
+                await dialog_manager.switch_to(model.GeneratePublicationStates.input_text, ShowMode.EDIT)
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
                 span.record_exception(err)
@@ -352,7 +352,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 dialog_manager.dialog_data["publication_text"] = regenerated_data["text"]
                 dialog_manager.dialog_data["publication_tags"] = regenerated_data["tags"]
 
-                await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
+                await dialog_manager.switch_to(model.GeneratePublicationStates.preview, ShowMode.EDIT)
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
                 span.record_exception(err)
@@ -558,7 +558,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
                 self.logger.info("Текст публикации изменен")
 
-                await dialog_manager.switch_to(model.GeneratePublicationStates.preview, show_mode=ShowMode.EDIT)
+                await dialog_manager.switch_to(model.GeneratePublicationStates.preview, ShowMode.EDIT)
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
                 dialog_manager.dialog_data["has_edit_content_error"] = True
@@ -770,7 +770,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
                 self.logger.info("Изображение удалено из публикации")
 
-                await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
+                await dialog_manager.switch_to(model.GeneratePublicationStates.preview, ShowMode.EDIT)
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
@@ -941,7 +941,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                await dialog_manager.switch_to(model.GeneratePublicationStates.social_network_select)
+                await dialog_manager.switch_to(model.GeneratePublicationStates.social_network_select, ShowMode.EDIT)
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
                 span.record_exception(err)
@@ -1008,7 +1008,8 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
                 await dialog_manager.start(
                     model.ContentMenuStates.content_menu,
-                    mode=StartMode.RESET_STACK
+                    mode=StartMode.RESET_STACK,
+                    show_mode=ShowMode.EDIT
                 )
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
@@ -1030,7 +1031,8 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             try:
                 await dialog_manager.start(
                     model.ContentMenuStates.content_menu,
-                    mode=StartMode.RESET_STACK
+                    mode=StartMode.RESET_STACK,
+                    show_mode=ShowMode.EDIT
                 )
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
