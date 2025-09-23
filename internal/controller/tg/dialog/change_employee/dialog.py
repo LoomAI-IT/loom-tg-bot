@@ -1,6 +1,6 @@
 from aiogram_dialog import Window, Dialog
 from aiogram_dialog.widgets.text import Const, Format, Multi, Case
-from aiogram_dialog.widgets.kbd import Button, Column, Row, Back, ScrollingGroup, Select, NumberedPager, Group
+from aiogram_dialog.widgets.kbd import Button, Column, Row, Back, ScrollingGroup, Select, NumberedPager
 from aiogram_dialog.widgets.input import TextInput
 
 from internal import interface, model
@@ -11,11 +11,13 @@ class ChangeEmployeeDialog(interface.IChangeEmployeeDialog):
     def __init__(
             self,
             tel: interface.ITelemetry,
-            change_employee_service: interface.IChangeEmployeeDialogService,
+            change_employee_service: interface.IChangeEmployeeService,
+            change_employee_getter: interface.IChangeEmployeeGetter,
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
         self.change_employee_service = change_employee_service
+        self.change_employee_getter = change_employee_getter
 
     def get_dialog(self) -> Dialog:
         return Dialog(
@@ -95,7 +97,7 @@ class ChangeEmployeeDialog(interface.IChangeEmployeeDialog):
             ),
 
             state=model.ChangeEmployeeStates.employee_list,
-            getter=self.change_employee_service.get_employee_list_data,
+            getter=self.change_employee_getter.get_employee_list_data,
             parse_mode="HTML",
         )
 
@@ -170,7 +172,7 @@ class ChangeEmployeeDialog(interface.IChangeEmployeeDialog):
             ),
 
             state=model.ChangeEmployeeStates.employee_detail,
-            getter=self.change_employee_service.get_employee_detail_data,
+            getter=self.change_employee_getter.get_employee_detail_data,
             parse_mode="HTML",
         )
 
@@ -243,7 +245,7 @@ class ChangeEmployeeDialog(interface.IChangeEmployeeDialog):
             ),
 
             state=model.ChangeEmployeeStates.change_permissions,
-            getter=self.change_employee_service.get_permissions_data,
+            getter=self.change_employee_getter.get_permissions_data,
             parse_mode="HTML",
         )
 
@@ -270,6 +272,6 @@ class ChangeEmployeeDialog(interface.IChangeEmployeeDialog):
             ),
 
             state=model.ChangeEmployeeStates.confirm_delete,
-            getter=self.change_employee_service.get_delete_confirmation_data,
+            getter=self.change_employee_getter.get_delete_confirmation_data,
             parse_mode="HTML",
         )
