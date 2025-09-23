@@ -34,13 +34,7 @@ class IVideoCutModerationDialog(Protocol):
     def get_social_network_select_window(self) -> Window: pass
 
 
-class IVideoCutModerationDialogService(Protocol):
-    # Обработчики для списка видео на модерации
-    @abstractmethod
-    async def get_moderation_list_data(
-            self,
-            dialog_manager: DialogManager,
-    ) -> dict: pass
+class IVideoCutModerationService(Protocol):
 
     @abstractmethod
     async def handle_navigate_video_cut(
@@ -49,13 +43,6 @@ class IVideoCutModerationDialogService(Protocol):
             button: Any,
             dialog_manager: DialogManager
     ) -> None: pass
-
-    # Обработчики для комментария отклонения
-    @abstractmethod
-    async def get_reject_comment_data(
-            self,
-            dialog_manager: DialogManager,
-    ) -> dict: pass
 
     @abstractmethod
     async def handle_reject_comment_input(
@@ -73,13 +60,6 @@ class IVideoCutModerationDialogService(Protocol):
             button: Any,
             dialog_manager: DialogManager
     ) -> None: pass
-
-    # Обработчики для окна редактирования с превью
-    @abstractmethod
-    async def get_edit_preview_data(
-            self,
-            dialog_manager: DialogManager,
-    ) -> dict: pass
 
     # Обработчики редактирования полей
     @abstractmethod
@@ -142,12 +122,6 @@ class IVideoCutModerationDialogService(Protocol):
             dialog_manager: DialogManager
     ) -> None: pass
 
-    @abstractmethod
-    async def get_social_network_select_data(
-            self,
-            dialog_manager: DialogManager,
-    ) -> dict: pass
-
     # Навигация
     @abstractmethod
     async def handle_back_to_content_menu(
@@ -156,6 +130,31 @@ class IVideoCutModerationDialogService(Protocol):
             button: Any,
             dialog_manager: DialogManager
     ) -> None: pass
+
+class IVideoCutModerationGetter(Protocol):
+    @abstractmethod
+    async def get_moderation_list_data(
+            self,
+            dialog_manager: DialogManager,
+    ) -> dict: pass
+
+    @abstractmethod
+    async def get_reject_comment_data(
+            self,
+            dialog_manager: DialogManager,
+    ) -> dict: pass
+
+    @abstractmethod
+    async def get_edit_preview_data(
+            self,
+            dialog_manager: DialogManager,
+    ) -> dict: pass
+
+    @abstractmethod
+    async def get_social_network_select_data(
+            self,
+            dialog_manager: DialogManager,
+    ) -> dict: pass
 
     # Дополнительные геттеры для окон редактирования
     @abstractmethod

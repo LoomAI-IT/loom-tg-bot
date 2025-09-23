@@ -44,7 +44,7 @@ from internal.service.generate_publication.service import GeneratePublicationSer
 from internal.service.generate_video_cut.service import GenerateVideoCutService
 from internal.service.moderation_publication.service import ModerationPublicationService
 from internal.service.video_cut_draft_content.service import VideoCutsDraftService
-from internal.service.moderation_video_cut.service import VideoCutModerationDialogService
+from internal.service.moderation_video_cut.service import VideoCutModerationService
 
 from internal.service.auth.getter import AuthGetter
 from internal.service.main_menu.getter import MainMenuGetter
@@ -57,6 +57,7 @@ from internal.service.generate_publication.getter import GeneratePublicationData
 from internal.service.moderation_publication.getter import ModerationPublicationGetter
 from internal.service.generate_video_cut.getter import GenerateVideoCutGetter
 from internal.service.video_cut_draft_content.getter import VideoCutsDraftGetter
+from internal.service.moderation_video_cut.getter import VideoCutModerationGetter
 
 from internal.repo.state.repo import StateRepo
 
@@ -155,6 +156,13 @@ moderation_publication_getter = ModerationPublicationGetter(
     cfg.domain,
 )
 
+video_cut_moderation_getter = VideoCutModerationGetter(
+    tel,
+    state_repo,
+    kontur_employee_client,
+    kontur_content_client,
+)
+
 generate_video_cut_getter = GenerateVideoCutGetter(
     tel
 )
@@ -251,12 +259,10 @@ video_cuts_draft_service = VideoCutsDraftService(
     kontur_content_client,
 )
 
-video_cut_moderation_service = VideoCutModerationDialogService(
+video_cut_moderation_service = VideoCutModerationService(
     tel,
     bot,
     state_repo,
-    kontur_employee_client,
-    kontur_organization_client,
     kontur_content_client,
 )
 
@@ -325,7 +331,8 @@ video_cuts_draft_dialog = VideoCutsDraftDialog(
 
 video_cut_moderation_dialog = VideoCutModerationDialog(
     tel,
-    video_cut_moderation_service
+    video_cut_moderation_service,
+    video_cut_moderation_getter,
 )
 
 # Инициализация middleware
