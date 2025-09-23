@@ -1,9 +1,7 @@
-# internal/interface/dialog/add_employee.py
 from abc import abstractmethod
 from typing import Protocol, Any
 from aiogram_dialog import DialogManager, Dialog, Window
 from aiogram.types import CallbackQuery, Message
-from internal import model
 
 
 class IAddEmployeeDialog(Protocol):
@@ -26,7 +24,7 @@ class IAddEmployeeDialog(Protocol):
     def get_confirm_employee_window(self) -> Window: pass
 
 
-class IAddEmployeeDialogService(Protocol):
+class IAddEmployeeService(Protocol):
     @abstractmethod
     async def handle_account_id_input(
             self,
@@ -79,6 +77,7 @@ class IAddEmployeeDialogService(Protocol):
     ) -> None:
         pass
 
+class IAddEmployeeGetter(Protocol):
     @abstractmethod
     async def get_enter_account_id_data(self) -> dict: pass
 
