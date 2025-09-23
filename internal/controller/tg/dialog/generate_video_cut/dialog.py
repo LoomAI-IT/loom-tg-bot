@@ -1,6 +1,6 @@
 from aiogram_dialog import Window, Dialog
-from aiogram_dialog.widgets.text import Const, Format
-from aiogram_dialog.widgets.kbd import Button, Back
+from aiogram_dialog.widgets.text import Const
+from aiogram_dialog.widgets.kbd import Button
 from aiogram_dialog.widgets.input import MessageInput
 
 from internal import interface, model
@@ -10,11 +10,13 @@ class GenerateVideoCutDialog(interface.IGenerateVideoCutDialog):
     def __init__(
             self,
             tel: interface.ITelemetry,
-            generate_video_cut_service: interface.IGenerateVideoCutDialogService,
+            generate_video_cut_service: interface.IGenerateVideoCutService,
+            generate_video_cut_getter: interface.IGenerateVideoCutGetter,
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
         self.generate_video_cut_service = generate_video_cut_service
+        self.generate_video_cut_getter = generate_video_cut_getter
 
     def get_dialog(self) -> Dialog:
         return Dialog(
@@ -45,6 +47,6 @@ class GenerateVideoCutDialog(interface.IGenerateVideoCutDialog):
             ),
 
             state=model.GenerateVideoCutStates.input_youtube_link,
-            getter=self.generate_video_cut_service.get_youtube_input_data,
+            getter=self.generate_video_cut_getter.get_youtube_input_data,
             parse_mode="HTML",
         )
