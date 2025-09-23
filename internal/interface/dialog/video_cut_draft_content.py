@@ -1,11 +1,9 @@
-# internal/interface/dialog/video_cut_draft_content.py
 from abc import abstractmethod
 from typing import Protocol, Any
 
 from aiogram import Bot
 from aiogram_dialog import DialogManager, Dialog, Window
 from aiogram.types import CallbackQuery, Message
-from aiogram_dialog.widgets.input import MessageInput
 
 
 class IVideoCutsDraftDialog(Protocol):
@@ -31,15 +29,7 @@ class IVideoCutsDraftDialog(Protocol):
     def get_social_network_select_window(self) -> Window: pass
 
 
-class IVideoCutsDraftDialogService(Protocol):
-    # Обработчики для списка черновиков
-    @abstractmethod
-    async def get_video_cut_list_data(
-            self,
-            dialog_manager: DialogManager,
-            bot: Bot
-    ) -> dict: pass
-
+class IVideoCutsDraftService(Protocol):
     @abstractmethod
     async def handle_navigate_video_cut(
             self,
@@ -55,15 +45,6 @@ class IVideoCutsDraftDialogService(Protocol):
             button: Any,
             dialog_manager: DialogManager
     ) -> None: pass
-
-    # Обработчики для окна редактирования с превью
-    @abstractmethod
-    async def get_edit_preview_data(
-            self,
-            dialog_manager: DialogManager,
-            bot: Bot
-    ) -> dict: pass
-
     @abstractmethod
     async def handle_save_changes(
             self,
@@ -100,7 +81,6 @@ class IVideoCutsDraftDialogService(Protocol):
             text: str
     ) -> None: pass
 
-    # Обработчики выбора социальных сетей
     @abstractmethod
     async def handle_toggle_social_network(
             self,
@@ -109,7 +89,6 @@ class IVideoCutsDraftDialogService(Protocol):
             dialog_manager: DialogManager
     ) -> None: pass
 
-    # Навигация
     @abstractmethod
     async def handle_back_to_video_cut_list(
             self,
@@ -142,7 +121,8 @@ class IVideoCutsDraftDialogService(Protocol):
             dialog_manager: DialogManager
     ) -> None: pass
 
-    # Дополнительные геттеры для окон редактирования
+
+class IVideoCutsDraftGetter(Protocol):
     @abstractmethod
     async def get_edit_title_data(
             self,
@@ -165,4 +145,18 @@ class IVideoCutsDraftDialogService(Protocol):
     async def get_social_network_select_data(
             self,
             dialog_manager: DialogManager,
+    ) -> dict: pass
+
+    @abstractmethod
+    async def get_video_cut_list_data(
+            self,
+            dialog_manager: DialogManager,
+            bot: Bot
+    ) -> dict: pass
+
+    @abstractmethod
+    async def get_edit_preview_data(
+            self,
+            dialog_manager: DialogManager,
+            bot: Bot
     ) -> dict: pass

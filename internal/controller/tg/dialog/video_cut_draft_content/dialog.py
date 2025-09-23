@@ -1,4 +1,3 @@
-# internal/controller/tg/dialog/video_cut_draft_content/dialog.py
 from aiogram_dialog import Window, Dialog
 from aiogram_dialog.widgets.text import Const, Format, Multi, Case
 from aiogram_dialog.widgets.kbd import Button, Column, Row, Checkbox
@@ -13,11 +12,13 @@ class VideoCutsDraftDialog(interface.IVideoCutsDraftDialog):
     def __init__(
             self,
             tel: interface.ITelemetry,
-            video_cut_draft_service: interface.IVideoCutsDraftDialogService,
+            video_cut_draft_service: interface.IVideoCutsDraftService,
+            video_cut_draft_getter: interface.IVideoCutsDraftGetter,
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
         self.video_cut_draft_service = video_cut_draft_service
+        self.video_cut_draft_getter = video_cut_draft_getter
 
     def get_dialog(self) -> Dialog:
         return Dialog(
@@ -171,7 +172,7 @@ class VideoCutsDraftDialog(interface.IVideoCutsDraftDialog):
             ),
 
             state=model.VideoCutsDraftStates.video_cut_list,
-            getter=self.video_cut_draft_service.get_video_cut_list_data,
+            getter=self.video_cut_draft_getter.get_video_cut_list_data,
             parse_mode="HTML",
         )
 
@@ -252,7 +253,7 @@ class VideoCutsDraftDialog(interface.IVideoCutsDraftDialog):
             ),
 
             state=model.VideoCutsDraftStates.edit_preview,
-            getter=self.video_cut_draft_service.get_edit_preview_data,
+            getter=self.video_cut_draft_getter.get_edit_preview_data,
             parse_mode="HTML",
         )
 
@@ -280,7 +281,7 @@ class VideoCutsDraftDialog(interface.IVideoCutsDraftDialog):
             ),
 
             state=model.VideoCutsDraftStates.edit_title,
-            getter=self.video_cut_draft_service.get_edit_title_data,
+            getter=self.video_cut_draft_getter.get_edit_title_data,
             parse_mode="HTML",
         )
 
@@ -309,7 +310,7 @@ class VideoCutsDraftDialog(interface.IVideoCutsDraftDialog):
             ),
 
             state=model.VideoCutsDraftStates.edit_description,
-            getter=self.video_cut_draft_service.get_edit_description_data,
+            getter=self.video_cut_draft_getter.get_edit_description_data,
             parse_mode="HTML",
         )
 
@@ -345,7 +346,7 @@ class VideoCutsDraftDialog(interface.IVideoCutsDraftDialog):
             ),
 
             state=model.VideoCutsDraftStates.edit_tags,
-            getter=self.video_cut_draft_service.get_edit_tags_data,
+            getter=self.video_cut_draft_getter.get_edit_tags_data,
             parse_mode="HTML",
         )
 
@@ -439,6 +440,6 @@ class VideoCutsDraftDialog(interface.IVideoCutsDraftDialog):
             ),
 
             state=model.VideoCutsDraftStates.social_network_select,
-            getter=self.video_cut_draft_service.get_social_network_select_data,
+            getter=self.video_cut_draft_getter.get_social_network_select_data,
             parse_mode="HTML",
         )
