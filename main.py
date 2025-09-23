@@ -206,6 +206,7 @@ add_employee_getter = AddEmployeeGetter(
 publication_draft_getter = PublicationDraftGetter(
     tel,
     state_repo,
+    kontur_employee_client,
     kontur_content_client,
 )
 

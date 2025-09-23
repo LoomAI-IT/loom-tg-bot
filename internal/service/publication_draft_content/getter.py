@@ -13,11 +13,13 @@ class PublicationDraftGetter(interface.IPublicationDraftGetter):
             self,
             tel: interface.ITelemetry,
             state_repo: interface.IStateRepo,
+            kontur_employee_client: interface.IKonturEmployeeClient,
             kontur_content_client: interface.IKonturContentClient,
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
         self.state_repo = state_repo
+        self.kontur_employee_client = kontur_employee_client
         self.kontur_content_client = kontur_content_client
 
     async def get_publication_list_data(
@@ -37,11 +39,11 @@ class PublicationDraftGetter(interface.IPublicationDraftGetter):
             try:
                 state = await self._get_state(dialog_manager)
                 
-                # 📋 Получаем черновики организации
-                drafts = await self.kontur_content_client.get_publications_by_status(
-                    organization_id=state.organization_id,
-                    status="draft"
+                # 📋 Получаем публикации организации и фильтруем черновики
+                publications = await self.kontur_content_client.get_publications_by_organization(
+                    state.organization_id
                 )
+                drafts = [p for p in publications if getattr(p, "moderation_status", None) == "draft"]
                 
                 # 📝 Форматируем для отображения
                 publications_data = []
@@ -119,7 +121,7 @@ class PublicationDraftGetter(interface.IPublicationDraftGetter):
                 
                 # 📊 Проверяем права пользователя
                 state = await self._get_state(dialog_manager)
-                employee = await self.kontur_content_client.get_employee_by_account_id(state.account_id)
+                employee = await self.kontur_employee_client.get_employee_by_account_id(state.account_id)
                 
                 data = {
                     "publication_title": publication.name or "Без названия",
