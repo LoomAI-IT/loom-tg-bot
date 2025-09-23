@@ -53,7 +53,6 @@ class GenerateVideoCutService(interface.IGenerateVideoCutService):
 
                 # Устанавливаем состояние обработки и показываем индикатор загрузки
                 dialog_manager.dialog_data["is_processing_video"] = True
-                await dialog_manager.show(ShowMode.EDIT)
 
                 await self.kontur_content_client.generate_video_cut(
                     state.organization_id,

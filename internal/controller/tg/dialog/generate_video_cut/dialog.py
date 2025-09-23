@@ -89,7 +89,7 @@ class GenerateVideoCutDialog(interface.IGenerateVideoCutDialog):
                     Const("🏠 В меню контента"),
                     id="to_content_menu",
                     on_click=self.generate_video_cut_service.handle_go_to_content_menu,
-                    when="~is_processing_video",
+                    when="is_processing_video",
                 ),
             ),
 
