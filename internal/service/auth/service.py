@@ -6,25 +6,22 @@ from aiogram_dialog import DialogManager, StartMode
 
 from opentelemetry.trace import SpanKind, Status, StatusCode
 
-from internal import interface, model, common
+from internal import interface, model
 
 
-class AuthDialogService(interface.IAuthDialogService):
+class AuthService(interface.IAuthService):
+
     def __init__(
             self,
             tel: interface.ITelemetry,
             state_repo: interface.IStateRepo,
-            domain: str,
             kontur_account_client: interface.IKonturAccountClient,
-            kontur_organization_client: interface.IKonturOrganizationClient,
             kontur_employee_client: interface.IKonturEmployeeClient,
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
         self.state_repo = state_repo
-        self.domain = domain
         self.kontur_account_client = kontur_account_client
-        self.kontur_organization_client = kontur_organization_client
         self.kontur_employee_client = kontur_employee_client
 
     async def accept_user_agreement(
@@ -34,20 +31,13 @@ class AuthDialogService(interface.IAuthDialogService):
             dialog_manager: DialogManager
     ) -> None:
         with self.tracer.start_as_current_span(
-                "AuthDialogHandler.accept_user_agreement",
+                "AuthDialogService.accept_user_agreement",
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                chat_id = callback.message.chat.id
-
                 dialog_manager.dialog_data["user_agreement_accepted"] = True
 
-                self.logger.info(
-                    "Пользователь принял пользовательское соглашение",
-                    {
-                        common.TELEGRAM_CHAT_ID_KEY: chat_id,
-                    }
-                )
+                self.logger.info("Пользователь принял пользовательское соглашение")
 
                 # Переходим к следующему окну
                 await dialog_manager.switch_to(model.AuthStates.privacy_policy)
@@ -66,21 +56,14 @@ class AuthDialogService(interface.IAuthDialogService):
             dialog_manager: DialogManager
     ) -> None:
         with self.tracer.start_as_current_span(
-                "AuthDialogHandler.accept_privacy_policy",
+                "AuthDialogService.accept_privacy_policy",
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                chat_id = callback.message.chat.id
-
                 # Сохраняем принятие
                 dialog_manager.dialog_data["privacy_policy_accepted"] = True
 
-                self.logger.info(
-                    "Пользователь принял политику конфиденциальности",
-                    {
-                        common.TELEGRAM_CHAT_ID_KEY: chat_id,
-                    }
-                )
+                self.logger.info("Пользователь принял политику конфиденциальности")
 
                 # Переходим к следующему окну
                 await dialog_manager.switch_to(model.AuthStates.data_processing)
@@ -104,7 +87,6 @@ class AuthDialogService(interface.IAuthDialogService):
         ) as span:
             try:
                 chat_id = callback.message.chat.id
-                user = callback.from_user
 
                 # Сохраняем принятие
                 dialog_manager.dialog_data["data_processing_accepted"] = True
@@ -125,13 +107,7 @@ class AuthDialogService(interface.IAuthDialogService):
                     refresh_token=authorized_data.refresh_token
                 )
 
-                self.logger.info(
-                    "Пользователь завершил процесс авторизации",
-                    {
-                        common.TELEGRAM_CHAT_ID_KEY: chat_id,
-                        common.TELEGRAM_USER_USERNAME_KEY: user.username,
-                    }
-                )
+                self.logger.info("Пользователь завершил процесс авторизации")
 
                 # Проверяем доступ к организации
                 employee = await self.kontur_employee_client.get_employee_by_account_id(
@@ -165,7 +141,7 @@ class AuthDialogService(interface.IAuthDialogService):
             dialog_manager: DialogManager
     ) -> None:
         with self.tracer.start_as_current_span(
-                "AuthDialogHandler.handle_access_denied",
+                "AuthDialogService.handle_access_denied",
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
@@ -184,54 +160,7 @@ class AuthDialogService(interface.IAuthDialogService):
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
-    async def get_agreement_data(self, **kwargs) -> dict:
-        with self.tracer.start_as_current_span(
-                "AuthDialogGetter.get_agreement_data",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                # Получаем ссылки на документы из конфига
-                data = {
-                    "user_agreement_link": f"https://{self.domain}/agreement",
-                    "privacy_policy_link": f"https://{self.domain}/privacy",
-                    "data_processing_link": f"https://{self.domain}/data-processing",
-                }
-
-                span.set_status(Status(StatusCode.OK))
-                return data
-            except Exception as err:
-                span.record_exception(err)
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                raise
-
-    async def get_user_status(
-            self,
-            dialog_manager: DialogManager,
-            **kwargs
-    ) -> dict:
-        with self.tracer.start_as_current_span(
-                "AuthDialogGetter.get_user_status",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                user = dialog_manager.event.from_user
-
-                state = await self.__get_state(dialog_manager)
-
-                data = {
-                    "name": user.first_name or "Пользователь",
-                    "username": user.username,
-                    "account_id": state.account_id,
-                }
-
-                span.set_status(Status(StatusCode.OK))
-                return data
-            except Exception as err:
-                span.record_exception(err)
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                raise
-
-    async def __get_state(self, dialog_manager: DialogManager) -> model.UserState:
+    async def _get_state(self, dialog_manager: DialogManager) -> model.UserState:
         if hasattr(dialog_manager.event, 'message') and dialog_manager.event.message:
             chat_id = dialog_manager.event.message.chat.id
         elif hasattr(dialog_manager.event, 'chat'):
