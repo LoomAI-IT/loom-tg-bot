@@ -41,7 +41,7 @@ from internal.service.personal_profile.service import PersonalProfileService
 from internal.service.change_employee.service import ChangeEmployeeDialogService
 from internal.service.add_employee.service import AddEmployeeDialogService
 from internal.service.generate_publication.service import GeneratePublicationService
-from internal.service.generate_video_cut.service import GenerateVideoCutDialogService
+from internal.service.generate_video_cut.service import GenerateVideoCutService
 from internal.service.moderation_publication.service import ModerationPublicationDialogService
 from internal.service.video_cut_draft_content.service import VideoCutsDraftDialogService
 from internal.service.moderation_video_cut.service import VideoCutModerationDialogService
@@ -52,6 +52,7 @@ from internal.service.organization_menu.getter import OrganizationMenuGetter
 from internal.service.content_menu.getter import ContentMenuGetter
 from internal.service.personal_profile.getter import PersonalProfileGetter
 from internal.service.generate_publication.getter import GeneratePublicationDataGetter
+from internal.service.generate_video_cut.getter import GenerateVideoCutGetter
 
 from internal.repo.state.repo import StateRepo
 
@@ -142,6 +143,10 @@ generate_publication_getter = GeneratePublicationDataGetter(
     kontur_content_client,
 )
 
+generate_video_cut_getter = GenerateVideoCutGetter(
+    tel
+)
+
 personal_profile_getter = PersonalProfileGetter(
     tel,
     state_repo,
@@ -196,10 +201,9 @@ generate_publication_service = GeneratePublicationService(
     kontur_content_client,
 )
 
-generate_video_cut_service = GenerateVideoCutDialogService(
+generate_video_cut_service = GenerateVideoCutService(
     tel,
     state_repo,
-    kontur_employee_client,
     kontur_content_client,
 )
 
@@ -276,7 +280,8 @@ generate_publication_dialog = GeneratePublicationDialog(
 
 generate_video_cut_dialog = GenerateVideoCutDialog(
     tel,
-    generate_video_cut_service
+    generate_video_cut_service,
+    generate_video_cut_getter,
 )
 
 moderation_publication_dialog = ModerationPublicationDialog(
