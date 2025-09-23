@@ -126,6 +126,7 @@ auth_getter = AuthGetter(
 
 main_menu_getter = MainMenuGetter(
     tel,
+    state_repo
 )
 
 organization_menu_getter = OrganizationMenuGetter(
@@ -165,7 +166,8 @@ video_cut_moderation_getter = VideoCutModerationGetter(
 )
 
 generate_video_cut_getter = GenerateVideoCutGetter(
-    tel
+    tel,
+    state_repo
 )
 
 change_employee_getter = ChangeEmployeeGetter(
