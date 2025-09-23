@@ -1,18 +1,12 @@
-from fastapi import FastAPI
-
-from aiogram.filters import Command, ExceptionTypeFilter
-from aiogram_dialog import setup_dialogs
+from aiogram.filters import Command
+from aiogram_dialog import setup_dialogs, BgManagerFactory
 from aiogram import Dispatcher, Router
 
-from internal import model, interface
+from internal import interface
 
 
 def NewTg(
-        db: interface.IDB,
         dp: Dispatcher,
-        http_middleware: interface.IHttpMiddleware,
-        tg_middleware: interface.ITelegramMiddleware,
-        tg_webhook_controller: interface.ITelegramWebhookController,
         command_controller: interface.ICommandController,
         auth_dialog: interface.IAuthDialog,
         main_menu_dialog: interface.IMainMenuDialog,
@@ -26,23 +20,12 @@ def NewTg(
         moderation_publication_dialog: interface.IModerationPublicationDialog,
         moderation_video_cut_dialog: interface.IVideoCutModerationDialog,
         video_cuts_draft_dialog: interface.IVideoCutsDraftDialog,
-        prefix: str
-):
-    app = FastAPI(
-        openapi_url=prefix + "/openapi.json",
-        docs_url=prefix + "/docs",
-        redoc_url=prefix + "/redoc",
-    )
-    include_tg_middleware(dp, tg_middleware)
-    include_http_middleware(app, http_middleware)
-
-    include_db_handler(app, db, prefix)
-    include_tg_webhook(app, tg_webhook_controller, prefix)
+) -> BgManagerFactory:
     include_command_handlers(
         dp,
         command_controller
     )
-    include_dialogs(
+    dialog_bg_factory = include_dialogs(
         dp,
         auth_dialog,
         main_menu_dialog,
@@ -57,21 +40,8 @@ def NewTg(
         moderation_video_cut_dialog,
         video_cuts_draft_dialog
     )
-    dp.errors.register(
-        tg_middleware.on_critical_error,
-        ExceptionTypeFilter(Exception),
-    )
 
-    return app
-
-
-def include_http_middleware(
-        app: FastAPI,
-        http_middleware: interface.IHttpMiddleware
-):
-    http_middleware.logger_middleware03(app)
-    http_middleware.metrics_middleware02(app)
-    http_middleware.trace_middleware01(app)
+    return dialog_bg_factory
 
 
 def include_tg_middleware(
@@ -81,41 +51,6 @@ def include_tg_middleware(
     dp.update.middleware(tg_middleware.trace_middleware01)
     dp.update.middleware(tg_middleware.metric_middleware02)
     dp.update.middleware(tg_middleware.logger_middleware03)
-
-
-def include_tg_webhook(
-        app: FastAPI,
-        tg_webhook_controller: interface.ITelegramWebhookController,
-        prefix: str
-):
-    app.add_api_route(
-        prefix + "/update",
-        tg_webhook_controller.bot_webhook,
-        methods=["POST"]
-    )
-    app.add_api_route(
-        prefix + "/webhook/set",
-        tg_webhook_controller.bot_set_webhook,
-        methods=["POST"]
-    )
-
-    app.add_api_route(
-        prefix + "/employee/notify/added",
-        tg_webhook_controller.notify_employee_added,
-        methods=["POST"]
-    )
-
-    app.add_api_route(
-        prefix + "/video-cut/vizard/notify/generated",
-        tg_webhook_controller.notify_vizard_video_cut_generated,
-        methods=["POST"]
-    )
-
-    app.add_api_route(
-        prefix + "/file/cache",
-        tg_webhook_controller.set_cache_file,
-        methods=["POST"]
-    )
 
 
 def include_command_handlers(
@@ -142,7 +77,8 @@ def include_dialogs(
         moderation_publication_dialog: interface.IModerationPublicationDialog,
         moderation_video_cut_dialog: interface.IVideoCutModerationDialog,
         video_cuts_draft_dialog: interface.IVideoCutsDraftDialog,
-):
+) -> BgManagerFactory:
+
     dialog_router = Router()
     dialog_router.include_routers(
         auth_dialog.get_dialog(),
@@ -161,37 +97,6 @@ def include_dialogs(
 
     dp.include_routers(dialog_router)
 
-    setup_dialogs(dp)
+    dialog_bg_factory = setup_dialogs(dp)
 
-
-def include_db_handler(app: FastAPI, db: interface.IDB, prefix):
-    app.add_api_route(prefix + "/table/create", create_table_handler(db), methods=["GET"])
-    app.add_api_route(prefix + "/table/drop", drop_table_handler(db), methods=["GET"])
-    app.add_api_route(prefix+"/health", heath_check_handler(), methods=["GET"])
-
-
-def create_table_handler(db: interface.IDB):
-    async def create_table():
-        try:
-            await db.multi_query(model.create_queries)
-        except Exception as err:
-            raise err
-
-    return create_table
-
-def heath_check_handler():
-    async def heath_check():
-        return "ok"
-
-    return heath_check
-
-
-
-def drop_table_handler(db: interface.IDB):
-    async def delete_table():
-        try:
-            await db.multi_query(model.drop_queries)
-        except Exception as err:
-            raise err
-
-    return delete_table
+    return dialog_bg_factory

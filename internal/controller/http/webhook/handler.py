@@ -1,7 +1,8 @@
 from typing import Annotated
 
 from aiogram import Bot, Dispatcher
-from aiogram.types import Update, ReplyKeyboardMarkup, KeyboardButton
+from aiogram.types import Update
+from aiogram_dialog import BgManagerFactory
 from fastapi import Header
 from opentelemetry.trace import Status, StatusCode, SpanKind
 from starlette.responses import JSONResponse
@@ -17,6 +18,7 @@ class TelegramWebhookController(interface.ITelegramWebhookController):
             dp: Dispatcher,
             bot: Bot,
             state_service: interface.IStateService,
+            dialog_bg_factory: BgManagerFactory,
             domain: str,
             prefix: str,
             interserver_secret_key: str
@@ -27,6 +29,7 @@ class TelegramWebhookController(interface.ITelegramWebhookController):
         self.dp = dp
         self.bot = bot
         self.state_service = state_service
+        self.dialog_bg_factory = dialog_bg_factory
 
         self.domain = domain
         self.prefix = prefix
@@ -157,6 +160,12 @@ class TelegramWebhookController(interface.ITelegramWebhookController):
 
                 # Формируем сообщение для уведомления о генерации видео
                 message_text = self._format_vizard_notification_message(body)
+
+                dialog_manager = self.dialog_bg_factory.bg(
+                    bot=self.bot,
+                    user_id=user_state.tg_chat_id,
+                    chat_id=user_state.tg_chat_id,
+                )
 
                 # Отправляем уведомление
                 await self.bot.send_message(

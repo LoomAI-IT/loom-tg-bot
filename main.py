@@ -62,6 +62,7 @@ from internal.service.moderation_video_cut.getter import VideoCutModerationGette
 from internal.repo.state.repo import StateRepo
 
 from internal.app.tg.app import NewTg
+from internal.app.server.app import NewServer
 
 from internal.config.config import Config
 
@@ -90,7 +91,6 @@ tel = Telemetry(
     cfg.otlp_port,
     alert_manager
 )
-bot = Bot(token=cfg.tg_bot_token)
 
 redis_client = redis.Redis(
     host=cfg.monitoring_redis_host,
@@ -104,6 +104,7 @@ storage = RedisStorage(
     key_builder=key_builder
 )
 dp = Dispatcher(storage=storage)
+bot = Bot(token=cfg.tg_bot_token)
 
 # Инициализация клиентов
 db = PG(tel, cfg.db_user, cfg.db_pass, cfg.db_host, cfg.db_port, cfg.db_name)
@@ -335,6 +336,25 @@ video_cut_moderation_dialog = VideoCutModerationDialog(
     video_cut_moderation_getter,
 )
 
+command_controller = CommandController(tel, state_service)
+
+dialog_bg_factory = NewTg(
+    dp,
+    command_controller,
+    auth_dialog,
+    main_menu_dialog,
+    personal_profile_dialog,
+    organization_menu_dialog,
+    change_employee_dialog,
+    add_employee_dialog,
+    content_menu_dialog,
+    generate_publication_dialog,
+    generate_video_cut_dialog,
+    moderation_publication_dialog,
+    video_cut_moderation_dialog,
+    video_cuts_draft_dialog,
+)
+
 # Инициализация middleware
 tg_middleware = TgMiddleware(
     tel,
@@ -350,33 +370,17 @@ tg_webhook_controller = TelegramWebhookController(
     dp,
     bot,
     state_service,
+    dialog_bg_factory,
     cfg.domain,
     cfg.prefix,
     cfg.interserver_secret_key
 )
 
-command_controller = CommandController(tel, state_service)
-
 if __name__ == "__main__":
-    app = NewTg(
+    app = NewServer(
         db,
-        dp,
         http_middleware,
-        tg_middleware,
         tg_webhook_controller,
-        command_controller,
-        auth_dialog,
-        main_menu_dialog,
-        personal_profile_dialog,
-        organization_menu_dialog,
-        change_employee_dialog,
-        add_employee_dialog,
-        content_menu_dialog,
-        generate_publication_dialog,
-        generate_video_cut_dialog,
-        moderation_publication_dialog,
-        video_cut_moderation_dialog,
-        video_cuts_draft_dialog,
         cfg.prefix,
     )
     uvicorn.run(app, host="0.0.0.0", port=int(cfg.http_port), access_log=False)
