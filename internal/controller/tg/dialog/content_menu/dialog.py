@@ -1,7 +1,6 @@
 from aiogram_dialog import Window, Dialog
 from aiogram_dialog.widgets.text import Const, Format
-from aiogram_dialog.widgets.kbd import Button, Column, Row, Back
-
+from aiogram_dialog.widgets.kbd import Button, Column, Row
 from internal import interface, model
 
 
@@ -9,11 +8,13 @@ class ContentMenuDialog(interface.IContentMenuDialog):
     def __init__(
             self,
             tel: interface.ITelemetry,
-            content_menu_service: interface.IContentMenuDialogService,
+            content_menu_service: interface.IContentMenuService,
+            content_menu_getter: interface.IContentMenuGetter,
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
         self.content_menu_service = content_menu_service
+        self.content_menu_getter = content_menu_getter
 
     def get_dialog(self) -> Dialog:
         return Dialog(
@@ -62,7 +63,7 @@ class ContentMenuDialog(interface.IContentMenuDialog):
             ),
 
             state=model.ContentMenuStates.content_menu,
-            getter=self.content_menu_service.get_content_menu_data,
+            getter=self.content_menu_getter.get_content_menu_data,
             parse_mode="HTML",
         )
 
@@ -120,7 +121,7 @@ class ContentMenuDialog(interface.IContentMenuDialog):
             ),
 
             state=model.ContentMenuStates.select_drafts_type,
-            getter=self.content_menu_service.get_drafts_type_data,
+            getter=self.content_menu_getter.get_drafts_type_data,
             parse_mode="HTML",
         )
 
@@ -151,6 +152,6 @@ class ContentMenuDialog(interface.IContentMenuDialog):
             ),
 
             state=model.ContentMenuStates.select_moderation_type,
-            getter=self.content_menu_service.get_moderation_type_data,
+            getter=self.content_menu_getter.get_moderation_type_data,
             parse_mode="HTML",
         )

@@ -1,11 +1,11 @@
 from abc import abstractmethod
 from typing import Protocol, Any
-from aiogram_dialog import DialogManager, Dialog, Window
 from aiogram.types import CallbackQuery
-from internal import model
+from aiogram_dialog import DialogManager, Dialog, Window
 
 
 class IOrganizationMenuDialog(Protocol):
+
     @abstractmethod
     def get_dialog(self) -> Dialog: pass
 
@@ -13,20 +13,15 @@ class IOrganizationMenuDialog(Protocol):
     def get_organization_menu_window(self) -> Window: pass
 
 
-class IOrganizationMenuDialogService(Protocol):
-    @abstractmethod
-    async def get_organization_menu_data(
-            self,
-            dialog_manager: DialogManager,
-    ) -> dict: pass
-
+class IOrganizationMenuService(Protocol):
     @abstractmethod
     async def handle_go_to_employee_settings(
             self,
             callback: CallbackQuery,
             button: Any,
             dialog_manager: DialogManager
-    ) -> None: pass
+    ) -> None:
+        pass
 
     @abstractmethod
     async def handle_go_to_add_employee(
@@ -34,7 +29,8 @@ class IOrganizationMenuDialogService(Protocol):
             callback: CallbackQuery,
             button: Any,
             dialog_manager: DialogManager
-    ) -> None: pass
+    ) -> None:
+        pass
 
     @abstractmethod
     async def handle_go_to_top_up_balance(
@@ -42,7 +38,8 @@ class IOrganizationMenuDialogService(Protocol):
             callback: CallbackQuery,
             button: Any,
             dialog_manager: DialogManager
-    ) -> None: pass
+    ) -> None:
+        pass
 
     @abstractmethod
     async def handle_go_to_social_networks(
@@ -50,7 +47,8 @@ class IOrganizationMenuDialogService(Protocol):
             callback: CallbackQuery,
             button: Any,
             dialog_manager: DialogManager
-    ) -> None: pass
+    ) -> None:
+        pass
 
     @abstractmethod
     async def handle_go_to_main_menu(
@@ -58,4 +56,15 @@ class IOrganizationMenuDialogService(Protocol):
             callback: CallbackQuery,
             button: Any,
             dialog_manager: DialogManager
-    ) -> None: pass
+    ) -> None:
+        pass
+
+
+class IOrganizationMenuGetter(Protocol):
+
+    @abstractmethod
+    async def get_organization_menu_data(
+            self,
+            dialog_manager: DialogManager
+    ) -> dict:
+        pass
