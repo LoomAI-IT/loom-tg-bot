@@ -12,11 +12,13 @@ class VideoCutModerationDialog(interface.IVideoCutModerationDialog):
     def __init__(
             self,
             tel: interface.ITelemetry,
-            video_cut_moderation_service: interface.IVideoCutModerationDialogService,
+            video_cut_moderation_service: interface.IVideoCutModerationService,
+            video_cut_moderation_getter: interface.IVideoCutModerationGetter,
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
         self.video_cut_moderation_service = video_cut_moderation_service
+        self.video_cut_moderation_getter = video_cut_moderation_getter
 
     def get_dialog(self) -> Dialog:
         return Dialog(
@@ -146,7 +148,7 @@ class VideoCutModerationDialog(interface.IVideoCutModerationDialog):
             ),
 
             state=model.VideoCutModerationStates.moderation_list,
-            getter=self.video_cut_moderation_service.get_moderation_list_data,
+            getter=self.video_cut_moderation_getter.get_moderation_list_data,
             parse_mode="HTML",
         )
 
@@ -192,7 +194,7 @@ class VideoCutModerationDialog(interface.IVideoCutModerationDialog):
             ),
 
             state=model.VideoCutModerationStates.reject_comment,
-            getter=self.video_cut_moderation_service.get_reject_comment_data,
+            getter=self.video_cut_moderation_getter.get_reject_comment_data,
             parse_mode="HTML",
         )
 
@@ -274,7 +276,7 @@ class VideoCutModerationDialog(interface.IVideoCutModerationDialog):
             ),
 
             state=model.VideoCutModerationStates.edit_preview,
-            getter=self.video_cut_moderation_service.get_edit_preview_data,
+            getter=self.video_cut_moderation_getter.get_edit_preview_data,
             parse_mode="HTML",
         )
 
@@ -302,7 +304,7 @@ class VideoCutModerationDialog(interface.IVideoCutModerationDialog):
             ),
 
             state=model.VideoCutModerationStates.edit_title,
-            getter=self.video_cut_moderation_service.get_edit_title_data,
+            getter=self.video_cut_moderation_getter.get_edit_title_data,
             parse_mode="HTML",
         )
 
@@ -331,7 +333,7 @@ class VideoCutModerationDialog(interface.IVideoCutModerationDialog):
             ),
 
             state=model.VideoCutModerationStates.edit_description,
-            getter=self.video_cut_moderation_service.get_edit_description_data,
+            getter=self.video_cut_moderation_getter.get_edit_description_data,
             parse_mode="HTML",
         )
 
@@ -367,7 +369,7 @@ class VideoCutModerationDialog(interface.IVideoCutModerationDialog):
             ),
 
             state=model.VideoCutModerationStates.edit_tags,
-            getter=self.video_cut_moderation_service.get_edit_tags_data,
+            getter=self.video_cut_moderation_getter.get_edit_tags_data,
             parse_mode="HTML",
         )
 
@@ -453,6 +455,6 @@ class VideoCutModerationDialog(interface.IVideoCutModerationDialog):
             ),
 
             state=model.VideoCutModerationStates.social_network_select,
-            getter=self.video_cut_moderation_service.get_social_network_select_data,
+            getter=self.video_cut_moderation_getter.get_social_network_select_data,
             parse_mode="HTML",
         )

@@ -1,12 +1,9 @@
-# internal/service/video_cut_moderation/service.py
 import asyncio
-from datetime import datetime, timezone
 from typing import Any
 
 from aiogram.enums import ParseMode
-from aiogram_dialog.api.entities import MediaAttachment, MediaId
 from aiogram import Bot
-from aiogram.types import CallbackQuery, Message, ContentType
+from aiogram.types import CallbackQuery, Message
 from aiogram_dialog import DialogManager, StartMode
 from aiogram_dialog.widgets.kbd import ManagedCheckbox
 
@@ -15,149 +12,19 @@ from opentelemetry.trace import SpanKind, Status, StatusCode
 from internal import interface, model, common
 
 
-class VideoCutModerationDialogService(interface.IVideoCutModerationDialogService):
+class VideoCutModerationService(interface.IVideoCutModerationService):
     def __init__(
             self,
             tel: interface.ITelemetry,
             bot: Bot,
             state_repo: interface.IStateRepo,
-            kontur_employee_client: interface.IKonturEmployeeClient,
-            kontur_organization_client: interface.IKonturOrganizationClient,
             kontur_content_client: interface.IKonturContentClient,
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
         self.bot = bot
         self.state_repo = state_repo
-        self.kontur_employee_client = kontur_employee_client
-        self.kontur_organization_client = kontur_organization_client
         self.kontur_content_client = kontur_content_client
-
-    async def get_moderation_list_data(
-            self,
-            dialog_manager: DialogManager,
-            **kwargs
-    ) -> dict:
-        """Получение данных для основного окна - сразу показываем первое видео"""
-        with self.tracer.start_as_current_span(
-                "VideoCutModerationDialogService.get_moderation_list_data",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                state = await self._get_state(dialog_manager)
-
-                # Получаем видео-нарезки на модерации для организации
-                video_cuts = await self.kontur_content_client.get_video_cuts_by_organization(
-                    organization_id=state.organization_id
-                )
-
-                # Фильтруем только те, что на модерации
-                moderation_video_cuts = [
-                    video_cut.to_dict() for video_cut in video_cuts
-                    if video_cut.moderation_status == "moderation"
-                ]
-
-                if not moderation_video_cuts:
-                    return {
-                        "has_video_cuts": False,
-                        "video_cuts_count": 0,
-                        "period_text": "",
-                    }
-
-                # Сохраняем список для навигации
-                dialog_manager.dialog_data["moderation_list"] = moderation_video_cuts
-
-                # Устанавливаем текущий индекс (0 если не был установлен)
-                if "current_index" not in dialog_manager.dialog_data:
-                    dialog_manager.dialog_data["current_index"] = 0
-
-                current_index = dialog_manager.dialog_data["current_index"]
-                current_video_cut = model.VideoCut(**moderation_video_cuts[current_index])
-
-                # Получаем информацию об авторе
-                author = await self.kontur_employee_client.get_employee_by_account_id(
-                    current_video_cut.creator_id
-                )
-
-                # Форматируем теги
-                tags = current_video_cut.tags or []
-                tags_text = ", ".join(tags) if tags else ""
-
-                # Рассчитываем время ожидания
-                waiting_time = self._calculate_waiting_time_text(current_video_cut.created_at)
-
-                # Подготавливаем медиа для видео
-                video_media = await self._get_video_media(current_video_cut)
-
-                # Определяем период
-                period_text = self._get_period_text(moderation_video_cuts)
-
-                data = {
-                    "has_video_cuts": True,
-                    "video_cuts_count": len(moderation_video_cuts),
-                    "period_text": period_text,
-                    "author_name": author.name,
-                    "created_at": self._format_datetime(current_video_cut.created_at),
-                    "has_waiting_time": bool(waiting_time),
-                    "waiting_time": waiting_time,
-                    "youtube_reference": current_video_cut.youtube_video_reference or "Не указан",
-                    "video_name": current_video_cut.name or "Без названия",
-                    "video_description": current_video_cut.description or "Описание отсутствует",
-                    "has_tags": bool(tags),
-                    "video_tags": tags_text,
-                    "has_video": bool(current_video_cut.video_fid),
-                    "video_media": video_media,
-                    "current_index": current_index + 1,
-                    "total_count": len(moderation_video_cuts),
-                    "has_prev": current_index > 0,
-                    "has_next": current_index < len(moderation_video_cuts) - 1,
-                }
-
-                # Сохраняем данные текущего видео для редактирования
-                dialog_manager.dialog_data["original_video_cut"] = {
-                    "id": current_video_cut.id,
-                    "creator_id": current_video_cut.creator_id,
-                    "organization_id": current_video_cut.organization_id,
-                    "project_id": current_video_cut.project_id,
-                    "moderator_id": current_video_cut.moderator_id,
-                    "transcript": current_video_cut.transcript,
-                    "video_name": current_video_cut.video_name,
-                    "original_url": current_video_cut.original_url,
-                    "vizard_rub_cost": current_video_cut.vizard_rub_cost,
-                    "moderation_comment": current_video_cut.moderation_comment,
-                    "publication_at": current_video_cut.publication_at,
-                    "name": current_video_cut.name,
-                    "description": current_video_cut.description,
-                    "tags": current_video_cut.tags or [],
-                    "youtube_video_reference": current_video_cut.youtube_video_reference,
-                    "video_fid": current_video_cut.video_fid,
-                    "moderation_status": current_video_cut.moderation_status,
-                    "created_at": current_video_cut.created_at,
-                    "youtube_source": current_video_cut.youtube_source,
-                    "inst_source": current_video_cut.inst_source,
-                }
-
-                # Копируем в рабочую версию, если ее еще нет
-                if "working_video_cut" not in dialog_manager.dialog_data:
-                    dialog_manager.dialog_data["working_video_cut"] = dict(
-                        dialog_manager.dialog_data["original_video_cut"])
-
-                self.logger.info(
-                    "Список модерации видео загружен",
-                    {
-                        common.TELEGRAM_CHAT_ID_KEY: self._get_chat_id(dialog_manager),
-                        "video_cuts_count": len(moderation_video_cuts),
-                        "current_index": current_index,
-                    }
-                )
-
-                span.set_status(Status(StatusCode.OK))
-                return data
-
-            except Exception as err:
-                span.record_exception(err)
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                raise
 
     async def handle_navigate_video_cut(
             self,
@@ -166,7 +33,7 @@ class VideoCutModerationDialogService(interface.IVideoCutModerationDialogService
             dialog_manager: DialogManager
     ) -> None:
         with self.tracer.start_as_current_span(
-                "VideoCutModerationDialogService.handle_navigate_video_cut",
+                "VideoCutModerationService.handle_navigate_video_cut",
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
@@ -207,38 +74,6 @@ class VideoCutModerationDialogService(interface.IVideoCutModerationDialogService
                 await callback.answer("❌ Ошибка навигации", show_alert=True)
                 raise
 
-    async def get_reject_comment_data(
-            self,
-            dialog_manager: DialogManager,
-            **kwargs
-    ) -> dict:
-        with self.tracer.start_as_current_span(
-                "VideoCutModerationDialogService.get_reject_comment_data",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                original_video_cut = dialog_manager.dialog_data.get("original_video_cut", {})
-
-                # Получаем информацию об авторе
-                author = await self.kontur_employee_client.get_employee_by_account_id(
-                    original_video_cut["creator_id"],
-                )
-
-                data = {
-                    "video_name": original_video_cut["name"] or "Без названия",
-                    "author_name": author.name,
-                    "has_comment": bool(dialog_manager.dialog_data.get("reject_comment")),
-                    "reject_comment": dialog_manager.dialog_data.get("reject_comment", ""),
-                }
-
-                span.set_status(Status(StatusCode.OK))
-                return data
-
-            except Exception as err:
-                span.record_exception(err)
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                raise
-
     async def handle_reject_comment_input(
             self,
             message: Message,
@@ -247,7 +82,7 @@ class VideoCutModerationDialogService(interface.IVideoCutModerationDialogService
             comment: str
     ) -> None:
         with self.tracer.start_as_current_span(
-                "VideoCutModerationDialogService.handle_reject_comment_input",
+                "VideoCutModerationService.handle_reject_comment_input",
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
@@ -293,7 +128,7 @@ class VideoCutModerationDialogService(interface.IVideoCutModerationDialogService
             dialog_manager: DialogManager
     ) -> None:
         with self.tracer.start_as_current_span(
-                "VideoCutModerationDialogService.handle_send_rejection",
+                "VideoCutModerationService.handle_send_rejection",
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
@@ -357,59 +192,6 @@ class VideoCutModerationDialogService(interface.IVideoCutModerationDialogService
                 await callback.answer("❌ Ошибка при отклонении", show_alert=True)
                 raise
 
-    async def get_edit_preview_data(
-            self,
-            dialog_manager: DialogManager,
-            **kwargs
-    ) -> dict:
-        """Получение данных для окна редактирования с превью"""
-        with self.tracer.start_as_current_span(
-                "VideoCutModerationDialogService.get_edit_preview_data",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                # Инициализируем рабочую версию если ее нет
-                if "working_video_cut" not in dialog_manager.dialog_data:
-                    dialog_manager.dialog_data["working_video_cut"] = dict(
-                        dialog_manager.dialog_data["original_video_cut"]
-                    )
-
-                working_video_cut = dialog_manager.dialog_data["working_video_cut"]
-                original_video_cut = dialog_manager.dialog_data["original_video_cut"]
-
-                # Получаем информацию об авторе
-                author = await self.kontur_employee_client.get_employee_by_account_id(
-                    working_video_cut["creator_id"]
-                )
-
-                # Форматируем теги
-                tags = working_video_cut.get("tags", [])
-                tags_text = ", ".join(tags) if tags else ""
-
-                # Подготавливаем медиа для видео
-                video_media = await self._get_video_media(model.VideoCut(**working_video_cut))
-
-                data = {
-                    "author_name": author.name,
-                    "created_at": self._format_datetime(original_video_cut["created_at"]),
-                    "youtube_reference": working_video_cut["youtube_video_reference"] or "Не указан",
-                    "video_name": working_video_cut["name"] or "Без названия",
-                    "video_description": working_video_cut["description"] or "Описание отсутствует",
-                    "has_tags": bool(tags),
-                    "video_tags": tags_text,
-                    "has_video": bool(working_video_cut.get("video_fid")),
-                    "video_media": video_media,
-                    "has_changes": self._has_changes(dialog_manager),
-                }
-
-                span.set_status(Status(StatusCode.OK))
-                return data
-
-            except Exception as err:
-                span.record_exception(err)
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                raise
-
     async def handle_edit_title_save(
             self,
             message: Message,
@@ -418,7 +200,7 @@ class VideoCutModerationDialogService(interface.IVideoCutModerationDialogService
             text: str
     ) -> None:
         with self.tracer.start_as_current_span(
-                "VideoCutModerationDialogService.handle_edit_title_save",
+                "VideoCutModerationService.handle_edit_title_save",
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
@@ -454,7 +236,7 @@ class VideoCutModerationDialogService(interface.IVideoCutModerationDialogService
             text: str
     ) -> None:
         with self.tracer.start_as_current_span(
-                "VideoCutModerationDialogService.handle_edit_description_save",
+                "VideoCutModerationService.handle_edit_description_save",
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
@@ -490,7 +272,7 @@ class VideoCutModerationDialogService(interface.IVideoCutModerationDialogService
             text: str
     ) -> None:
         with self.tracer.start_as_current_span(
-                "VideoCutModerationDialogService.handle_edit_tags_save",
+                "VideoCutModerationService.handle_edit_tags_save",
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
@@ -528,7 +310,7 @@ class VideoCutModerationDialogService(interface.IVideoCutModerationDialogService
             dialog_manager: DialogManager
     ) -> None:
         with self.tracer.start_as_current_span(
-                "VideoCutModerationDialogService.handle_save_edits",
+                "VideoCutModerationService.handle_save_edits",
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
@@ -569,7 +351,7 @@ class VideoCutModerationDialogService(interface.IVideoCutModerationDialogService
             dialog_manager: DialogManager
     ) -> None:
         with self.tracer.start_as_current_span(
-                "VideoCutModerationDialogService.handle_back_to_moderation_list",
+                "VideoCutModerationService.handle_back_to_moderation_list",
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
@@ -588,7 +370,7 @@ class VideoCutModerationDialogService(interface.IVideoCutModerationDialogService
             dialog_manager: DialogManager
     ) -> None:
         with self.tracer.start_as_current_span(
-                "VideoCutModerationDialogService.handle_toggle_social_network",
+                "VideoCutModerationService.handle_toggle_social_network",
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
@@ -626,7 +408,7 @@ class VideoCutModerationDialogService(interface.IVideoCutModerationDialogService
             dialog_manager: DialogManager
     ) -> None:
         with self.tracer.start_as_current_span(
-                "VideoCutModerationDialogService.handle_publish_with_selected_networks",
+                "VideoCutModerationService.handle_publish_with_selected_networks",
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
@@ -649,47 +431,6 @@ class VideoCutModerationDialogService(interface.IVideoCutModerationDialogService
                 await callback.answer("❌ Ошибка при публикации", show_alert=True)
                 raise
 
-    async def get_social_network_select_data(
-            self,
-            dialog_manager: DialogManager,
-            **kwargs
-    ) -> dict:
-        with self.tracer.start_as_current_span(
-                "VideoCutModerationDialogService.get_social_network_select_data",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                state = await self._get_state(dialog_manager)
-
-                # Получаем подключенные социальные сети для организации
-                social_networks = await self.kontur_content_client.get_social_networks_by_organization(
-                    organization_id=state.organization_id
-                )
-
-                # Проверяем подключенные сети
-                youtube_connected = self._is_network_connected(social_networks, "youtube")
-                instagram_connected = self._is_network_connected(social_networks, "instagram")
-
-                # Получаем текущие выбранные сети
-                selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
-                has_selected_networks = any(selected_networks.values())
-
-                data = {
-                    "youtube_connected": youtube_connected,
-                    "instagram_connected": instagram_connected,
-                    "no_connected_networks": not youtube_connected and not instagram_connected,
-                    "has_available_networks": youtube_connected or instagram_connected,
-                    "has_selected_networks": has_selected_networks,
-                }
-
-                span.set_status(Status(StatusCode.OK))
-                return data
-
-            except Exception as err:
-                span.record_exception(err)
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                raise
-
     async def handle_back_to_content_menu(
             self,
             callback: CallbackQuery,
@@ -697,7 +438,7 @@ class VideoCutModerationDialogService(interface.IVideoCutModerationDialogService
             dialog_manager: DialogManager
     ) -> None:
         with self.tracer.start_as_current_span(
-                "VideoCutModerationDialogService.handle_back_to_content_menu",
+                "VideoCutModerationService.handle_back_to_content_menu",
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
@@ -712,41 +453,6 @@ class VideoCutModerationDialogService(interface.IVideoCutModerationDialogService
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
-
-    async def get_edit_title_data(
-            self,
-            dialog_manager: DialogManager,
-            **kwargs
-    ) -> dict:
-        working_video_cut = dialog_manager.dialog_data.get("working_video_cut", {})
-        return {
-            "current_title": working_video_cut.get("name", ""),
-        }
-
-    async def get_edit_description_data(
-            self,
-            dialog_manager: DialogManager,
-            **kwargs
-    ) -> dict:
-        working_video_cut = dialog_manager.dialog_data.get("working_video_cut", {})
-        description = working_video_cut.get("description", "")
-        return {
-            "current_description_length": len(description),
-        }
-
-    async def get_edit_tags_data(
-            self,
-            dialog_manager: DialogManager,
-            **kwargs
-    ) -> dict:
-        working_video_cut = dialog_manager.dialog_data.get("working_video_cut", {})
-        tags = working_video_cut.get("tags", [])
-        return {
-            "has_tags": bool(tags),
-            "current_tags": ", ".join(tags) if tags else "",
-        }
-
-    # Вспомогательные методы
 
     def _has_changes(self, dialog_manager: DialogManager) -> bool:
         original = dialog_manager.dialog_data.get("original_video_cut", {})
@@ -763,11 +469,6 @@ class VideoCutModerationDialogService(interface.IVideoCutModerationDialogService
 
         return False
 
-    def _is_network_connected(self, social_networks: dict, network_type: str) -> bool:
-        if not social_networks:
-            return False
-        return network_type in social_networks and len(social_networks[network_type]) > 0
-
     async def _save_video_cut_changes(self, dialog_manager: DialogManager) -> None:
         working_video_cut = dialog_manager.dialog_data["working_video_cut"]
         video_cut_id = working_video_cut["id"]
@@ -779,21 +480,13 @@ class VideoCutModerationDialogService(interface.IVideoCutModerationDialogService
             tags=working_video_cut.get("tags", []),
         )
 
-        self.logger.info(
-            "Изменения видео-нарезки в модерации сохранены",
-            {
-                "video_cut_id": video_cut_id,
-                "has_changes": self._has_changes(dialog_manager),
-            }
-        )
-
     async def _publish_moderated_video_cut(
             self,
             callback: CallbackQuery,
             dialog_manager: DialogManager
     ) -> None:
         with self.tracer.start_as_current_span(
-                "VideoCutModerationDialogService._publish_moderated_video_cut",
+                "VideoCutModerationService._publish_moderated_video_cut",
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
@@ -836,16 +529,6 @@ class VideoCutModerationDialogService(interface.IVideoCutModerationDialogService
 
                 networks_text = ", ".join(published_networks)
 
-                self.logger.info(
-                    "Видео-нарезка одобрена и опубликована",
-                    {
-                        common.TELEGRAM_CHAT_ID_KEY: callback.message.chat.id,
-                        "video_cut_id": video_cut_id,
-                        "youtube_source": youtube_source,
-                        "inst_source": inst_source,
-                    }
-                )
-
                 await loading_message.edit_text(
                     f"🚀 Видео-нарезка успешно опубликована!\n\n"
                     f"📋 Опубликовано в: {networks_text}"
@@ -883,94 +566,15 @@ class VideoCutModerationDialogService(interface.IVideoCutModerationDialogService
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
-    def _format_datetime(self, dt: str) -> str:
-        try:
-            if isinstance(dt, str):
-                dt = datetime.fromisoformat(dt.replace('Z', '+00:00'))
-
-            # Форматируем в читаемый вид
-            return dt.strftime("%d.%m.%Y %H:%M")
-        except:
-            return str(dt)
-
-    def _calculate_waiting_hours(self, created_at: str) -> int:
-        try:
-            if isinstance(created_at, str):
-                created_at = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
-
-            now = datetime.now(timezone.utc)
-            delta = now - created_at
-            return int(delta.total_seconds() / 3600)
-        except:
-            return 0
-
-    def _calculate_waiting_time_text(self, created_at: str) -> str:
-        hours = self._calculate_waiting_hours(created_at)
-
-        if hours == 0:
-            return "менее часа"
-        elif hours == 1:
-            return "1 час"
-        elif hours < 24:
-            return f"{hours} часов"
-        else:
-            days = hours // 24
-            if days == 1:
-                return "1 день"
-            else:
-                return f"{days} дней"
-
-    def _get_period_text(self, video_cuts: list) -> str:
-        if not video_cuts:
-            return "Нет данных"
-
-        # Находим самое старое и новое видео
-        dates = []
-        for video_cut in video_cuts:
-            if hasattr(video_cut, 'created_at') and video_cut.created_at:
-                dates.append(video_cut.created_at)
-
-        if not dates:
-            return "Сегодня"
-
-        # Простое определение периода на основе самого старого видео
-        oldest_date = min(dates)
-        waiting_hours = self._calculate_waiting_hours(oldest_date)
-
-        if waiting_hours < 24:
-            return "За сегодня"
-        elif waiting_hours < 48:
-            return "За последние 2 дня"
-        elif waiting_hours < 168:  # неделя
-            return "За неделю"
-        else:
-            return "За месяц"
-
     async def _get_state(self, dialog_manager: DialogManager) -> model.UserState:
-        chat_id = self._get_chat_id(dialog_manager)
-        return await self._get_state_by_chat_id(chat_id)
+        if hasattr(dialog_manager.event, 'message') and dialog_manager.event.message:
+            chat_id = dialog_manager.event.message.chat.id
+        elif hasattr(dialog_manager.event, 'chat'):
+            chat_id = dialog_manager.event.chat.id
+        else:
+            raise ValueError("Cannot extract chat_id from dialog_manager")
 
-    async def _get_state_by_chat_id(self, chat_id: int) -> model.UserState:
         state = await self.state_repo.state_by_id(chat_id)
         if not state:
             raise ValueError(f"State not found for chat_id: {chat_id}")
         return state[0]
-
-    def _get_chat_id(self, dialog_manager: DialogManager) -> int:
-        if hasattr(dialog_manager.event, 'message') and dialog_manager.event.message:
-            return dialog_manager.event.message.chat.id
-        elif hasattr(dialog_manager.event, 'chat'):
-            return dialog_manager.event.chat.id
-        else:
-            raise ValueError("Cannot extract chat_id from dialog_manager")
-
-    async def _get_video_media(self, video_cut: model.VideoCut) -> MediaAttachment | None:
-        video_media = None
-        if video_cut.video_fid:
-            cached_file = await self.state_repo.get_cache_file(video_cut.video_name)
-            if cached_file:
-                video_media = MediaAttachment(
-                    file_id=MediaId(cached_file[0].file_id),
-                    type=ContentType.VIDEO,
-                )
-        return video_media
