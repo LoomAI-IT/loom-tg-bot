@@ -125,8 +125,7 @@ auth_getter = AuthGetter(
 )
 
 main_menu_getter = MainMenuGetter(
-    tel,
-    state_repo
+    tel
 )
 
 organization_menu_getter = OrganizationMenuGetter(

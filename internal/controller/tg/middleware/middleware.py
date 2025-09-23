@@ -191,9 +191,6 @@ class TgMiddleware(interface.ITelegramMiddleware):
             except UnknownIntent as err:
                 raise err
 
-            except common.AiogramDialogGetterSpecialError as err:
-                pass
-
             except Exception as err:
                 extra_log = {
                     **extra_log,
