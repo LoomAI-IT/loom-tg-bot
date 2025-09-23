@@ -34,7 +34,7 @@ from internal.controller.tg.dialog.moderation_video_cut.dialog import VideoCutMo
 
 from internal.service.state.service import StateService
 from internal.service.auth.service import AuthService
-from internal.service.main_menu.service import MainMenuDialogService
+from internal.service.main_menu.service import MainMenuService
 from internal.service.personal_profile.service import PersonalProfileDialogService
 from internal.service.organization_menu.service import OrganizationMenuDialogService
 from internal.service.change_employee.service import ChangeEmployeeDialogService
@@ -46,8 +46,9 @@ from internal.service.moderation_publication.service import ModerationPublicatio
 from internal.service.video_cut_draft_content.service import VideoCutsDraftDialogService
 from internal.service.moderation_video_cut.service import VideoCutModerationDialogService
 
-from internal.service.generate_publication.getter import GeneratePublicationDataGetter
 from internal.service.auth.getter import AuthGetter
+from internal.service.main_menu.getter import MainMenuGetter
+from internal.service.generate_publication.getter import GeneratePublicationDataGetter
 
 from internal.repo.state.repo import StateRepo
 
@@ -112,6 +113,10 @@ auth_getter = AuthGetter(
     state_repo,
     cfg.domain
 )
+
+main_menu_getter = MainMenuGetter(
+    tel,
+)
 generate_publication_getter = GeneratePublicationDataGetter(
     tel,
     state_repo,
@@ -127,11 +132,9 @@ auth_service = AuthService(
     kontur_account_client,
     kontur_employee_client,
 )
-main_menu_service = MainMenuDialogService(
+main_menu_service = MainMenuService(
     tel,
     state_repo,
-    kontur_employee_client,
-    kontur_organization_client
 )
 personal_profile_service = PersonalProfileDialogService(
     tel,
@@ -219,7 +222,8 @@ auth_dialog = AuthDialog(
 )
 main_menu_dialog = MainMenuDialog(
     tel,
-    main_menu_service
+    main_menu_service,
+    main_menu_getter
 )
 personal_profile_dialog = PersonalProfileDialog(
     tel,
