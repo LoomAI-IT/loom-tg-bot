@@ -38,7 +38,7 @@ from internal.service.main_menu.service import MainMenuService
 from internal.service.organization_menu.service import OrganizationMenuService
 from internal.service.content_menu.service import ContentMenuService
 from internal.service.personal_profile.service import PersonalProfileService
-from internal.service.change_employee.service import ChangeEmployeeDialogService
+from internal.service.change_employee.service import ChangeEmployeeService
 from internal.service.add_employee.service import AddEmployeeService
 from internal.service.generate_publication.service import GeneratePublicationService
 from internal.service.generate_video_cut.service import GenerateVideoCutService
@@ -51,6 +51,7 @@ from internal.service.main_menu.getter import MainMenuGetter
 from internal.service.organization_menu.getter import OrganizationMenuGetter
 from internal.service.content_menu.getter import ContentMenuGetter
 from internal.service.personal_profile.getter import PersonalProfileGetter
+from internal.service.change_employee.getter import ChangeEmployeeGetter
 from internal.service.add_employee.getter import AddEmployeeGetter
 from internal.service.generate_publication.getter import GeneratePublicationDataGetter
 from internal.service.generate_video_cut.getter import GenerateVideoCutGetter
@@ -149,6 +150,13 @@ generate_video_cut_getter = GenerateVideoCutGetter(
     tel
 )
 
+change_employee_getter = ChangeEmployeeGetter(
+    tel,
+    state_repo,
+    kontur_employee_client,
+    kontur_organization_client,
+)
+
 personal_profile_getter = PersonalProfileGetter(
     tel,
     state_repo,
@@ -189,13 +197,11 @@ organization_menu_service = OrganizationMenuService(
 personal_profile_service = PersonalProfileService(
     tel,
 )
-change_employee_service = ChangeEmployeeDialogService(
+change_employee_service = ChangeEmployeeService(
     tel,
     bot,
     state_repo,
-    kontur_employee_client,
-    kontur_organization_client,
-    kontur_content_client
+    kontur_employee_client
 )
 
 add_employee_service = AddEmployeeService(
@@ -271,7 +277,8 @@ organization_menu_dialog = OrganizationMenuDialog(
 )
 change_employee_dialog = ChangeEmployeeDialog(
     tel,
-    change_employee_service
+    change_employee_service,
+    change_employee_getter
 )
 
 add_employee_dialog = AddEmployeeDialog(

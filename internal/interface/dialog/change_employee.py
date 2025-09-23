@@ -28,35 +28,7 @@ class IChangeEmployeeDialog(Protocol):
         pass
 
 
-class IChangeEmployeeDialogService(Protocol):
-
-    @abstractmethod
-    async def get_employee_list_data(
-            self,
-            dialog_manager: DialogManager
-    ) -> dict:
-        pass
-
-    @abstractmethod
-    async def get_employee_detail_data(
-            self,
-            dialog_manager: DialogManager
-    ) -> dict:
-        pass
-
-    @abstractmethod
-    async def get_permissions_data(
-            self,
-            dialog_manager: DialogManager
-    ) -> dict:
-        pass
-
-    @abstractmethod
-    async def get_delete_confirmation_data(
-            self,
-            dialog_manager: DialogManager
-    ) -> dict:
-        pass
+class IChangeEmployeeService(Protocol):
 
     @abstractmethod
     async def handle_select_employee(
@@ -160,4 +132,35 @@ class IChangeEmployeeDialogService(Protocol):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
+        pass
+
+
+class IChangeEmployeeGetter(Protocol):
+
+    @abstractmethod
+    async def get_employee_list_data(
+            self,
+            dialog_manager: DialogManager
+    ) -> dict:
+        pass
+
+    @abstractmethod
+    async def get_employee_detail_data(
+            self,
+            dialog_manager: DialogManager
+    ) -> dict:
+        pass
+
+    @abstractmethod
+    async def get_permissions_data(
+            self,
+            dialog_manager: DialogManager
+    ) -> dict:
+        pass
+
+    @abstractmethod
+    async def get_delete_confirmation_data(
+            self,
+            dialog_manager: DialogManager
+    ) -> dict:
         pass
