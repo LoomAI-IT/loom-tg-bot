@@ -208,6 +208,7 @@ publication_draft_getter = PublicationDraftGetter(
     state_repo,
     kontur_employee_client,
     kontur_content_client,
+    cfg.domain,
 )
 
 # Инициализация сервисов

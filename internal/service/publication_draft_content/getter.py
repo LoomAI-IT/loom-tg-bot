@@ -2,6 +2,8 @@ from datetime import datetime
 
 from aiogram import Bot
 from aiogram_dialog import DialogManager
+from aiogram_dialog.api.entities import MediaAttachment
+from aiogram.types import ContentType
 
 from opentelemetry.trace import SpanKind, Status, StatusCode
 
@@ -15,12 +17,14 @@ class PublicationDraftGetter(interface.IPublicationDraftGetter):
             state_repo: interface.IStateRepo,
             kontur_employee_client: interface.IKonturEmployeeClient,
             kontur_content_client: interface.IKonturContentClient,
+            kontur_domain: str,
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
         self.state_repo = state_repo
         self.kontur_employee_client = kontur_employee_client
         self.kontur_content_client = kontur_content_client
+        self.kontur_domain = kontur_domain
 
     async def get_publication_list_data(
             self,
@@ -123,13 +127,23 @@ class PublicationDraftGetter(interface.IPublicationDraftGetter):
                 state = await self._get_state(dialog_manager)
                 employee = await self.kontur_employee_client.get_employee_by_account_id(state.account_id)
                 
+                # 🖼️ Готовим превью изображения, если есть
+                preview_image_media = None
+                has_image = bool(getattr(publication, "image_fid", None))
+                if has_image:
+                    image_url = f"https://{self.kontur_domain}/api/content/publication/{publication.id}/image/download"
+                    preview_image_media = MediaAttachment(
+                        url=image_url,
+                        type=ContentType.PHOTO
+                    )
+
                 data = {
                     "publication_title": publication.name or "Без названия",
                     "publication_content": publication.text or "",
                     "publication_tags": ", ".join(publication.tags) if publication.tags else "Нет тегов",
                     "category_name": category.name,
                     "has_tags": bool(publication.tags),
-                    "has_image": bool(publication.image_url),
+                    "has_image": has_image,
                     
                     # 🎮 Навигация
                     "current_index": current_index,
@@ -142,7 +156,7 @@ class PublicationDraftGetter(interface.IPublicationDraftGetter):
                     "can_publish_directly": not employee.required_moderation if employee else False,
                     
                     # 🖼️ Изображение (если есть)
-                    "preview_image_media": publication.image_url if publication.image_url else None,
+                    "preview_image_media": preview_image_media,
                 }
                 
                 span.set_status(Status(StatusCode.OK))
