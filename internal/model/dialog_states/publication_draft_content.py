@@ -23,3 +23,6 @@ class PublicationDraftStates(StatesGroup):
     # Настройки публикации
     edit_tags = State()
     social_network_select = State()
+
+
+__all__ = ["PublicationDraftStates"]
