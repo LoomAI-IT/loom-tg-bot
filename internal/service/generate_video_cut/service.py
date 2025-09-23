@@ -94,28 +94,6 @@ class GenerateVideoCutService(interface.IGenerateVideoCutService):
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
-    async def handle_go_to_main_menu(
-            self,
-            callback: CallbackQuery,
-            button: Any,
-            dialog_manager: DialogManager
-    ) -> None:
-        with self.tracer.start_as_current_span(
-                "GenerateVideoCutService.handle_go_to_main_menu",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                await dialog_manager.start(
-                    model.MainMenuStates.main_menu,
-                    mode=StartMode.RESET_STACK,
-                    show_mode=ShowMode.EDIT
-                )
-                span.set_status(Status(StatusCode.OK))
-            except Exception as err:
-                span.record_exception(err)
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                raise
-
     def _is_valid_youtube_url(self, url: str) -> bool:
         youtube_regex = re.compile(
             r'(https?://)?(www\.)?(youtube|youtu|youtube-nocookie)\.(com|be)/'

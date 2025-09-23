@@ -86,12 +86,6 @@ class GenerateVideoCutDialog(interface.IGenerateVideoCutDialog):
 
             Column(
                 Button(
-                    Const("🏠 В главное меню"),
-                    id="to_main_menu",
-                    on_click=self.generate_video_cut_service.handle_go_to_main_menu,
-                    when="is_processing_video",
-                ),
-                Button(
                     Const("🏠 В меню контента"),
                     id="to_content_menu",
                     on_click=self.generate_video_cut_service.handle_go_to_content_menu,
