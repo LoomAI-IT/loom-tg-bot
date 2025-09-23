@@ -226,17 +226,17 @@ class StateRepo(interface.IStateRepo):
                 span.set_status(StatusCode.ERROR, str(err))
                 raise
 
-    async def delete_vizard_video_cut_alert(self, alert_id: int) -> None:
+    async def delete_vizard_video_cut_alert(self, state_id: int) -> None:
         with self.tracer.start_as_current_span(
                 "StateRepo.delete_vizard_video_cut_alert",
                 kind=SpanKind.INTERNAL,
                 attributes={
-                    "alert_id": alert_id,
+                    "state_id": state_id,
                 }
         ) as span:
             try:
                 args = {
-                    'alert_id': alert_id
+                    'state_id': state_id
                 }
                 await self.db.delete(delete_vizard_video_cut_alert, args)
 

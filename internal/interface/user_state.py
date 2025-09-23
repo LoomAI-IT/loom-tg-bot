@@ -96,4 +96,4 @@ class IStateRepo(Protocol):
     ) -> list[model.VizardVideoCutAlert]: pass
 
     @abstractmethod
-    async def delete_vizard_video_cut_alert(self, alert_id: int) -> None: pass
+    async def delete_vizard_video_cut_alert(self, state_id: int) -> None: pass

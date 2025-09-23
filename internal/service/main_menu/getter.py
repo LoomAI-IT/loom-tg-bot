@@ -48,6 +48,7 @@ class MainMenuGetter(interface.IMainMenuGetter):
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
+                self.logger.error("error getting main menu data", {"error": str(err)})
                 raise err
 
     async def _get_state(self, dialog_manager: DialogManager) -> model.UserState:

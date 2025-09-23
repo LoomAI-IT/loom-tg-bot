@@ -43,5 +43,5 @@ WHERE state_id = :state_id;
 
 delete_vizard_video_cut_alert = """
 DELETE FROM vizard_video_cut_alerts
-WHERE id = :alert_id;
+WHERE state_id = :state_id;
 """
