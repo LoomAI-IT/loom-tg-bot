@@ -23,8 +23,13 @@ class GenerateVideoCutGetter(interface.IGenerateVideoCutGetter):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                # Возвращаем пустые данные, так как вся информация статична в диалоге
-                data = {}
+                data = {
+                    "youtube_url": dialog_manager.dialog_data["youtube_url"],
+                    "has_invalid_youtube_url": dialog_manager.dialog_data["has_invalid_youtube_url"],
+                    "has_processing_error": dialog_manager.dialog_data["has_processing_error"],
+                    "has_youtube_url": dialog_manager.dialog_data["has_youtube_url"],
+                    "is_processing_video": dialog_manager.dialog_data["is_processing_video"],
+                }
 
                 self.logger.info("Данные окна ввода YouTube ссылки загружены")
 
