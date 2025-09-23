@@ -33,7 +33,7 @@ from internal.controller.tg.dialog.video_cut_draft_content.dialog import VideoCu
 from internal.controller.tg.dialog.moderation_video_cut.dialog import VideoCutModerationDialog
 
 from internal.service.state.service import StateService
-from internal.service.auth.service import AuthDialogService
+from internal.service.auth.service import AuthService
 from internal.service.main_menu.service import MainMenuDialogService
 from internal.service.personal_profile.service import PersonalProfileDialogService
 from internal.service.organization_menu.service import OrganizationMenuDialogService
@@ -47,6 +47,7 @@ from internal.service.video_cut_draft_content.service import VideoCutsDraftDialo
 from internal.service.moderation_video_cut.service import VideoCutModerationDialogService
 
 from internal.service.generate_publication.getter import GeneratePublicationDataGetter
+from internal.service.auth.getter import AuthGetter
 
 from internal.repo.state.repo import StateRepo
 
@@ -106,6 +107,11 @@ kontur_content_client = KonturContentClient(tel, cfg.kontur_content_host, cfg.ko
 state_repo = StateRepo(tel, db)
 
 # Инициализация геттеров
+auth_getter = AuthGetter(
+    tel,
+    state_repo,
+    cfg.domain
+)
 generate_publication_getter = GeneratePublicationDataGetter(
     tel,
     state_repo,
@@ -115,12 +121,10 @@ generate_publication_getter = GeneratePublicationDataGetter(
 
 # Инициализация сервисов
 state_service = StateService(tel, state_repo)
-auth_dialog_service = AuthDialogService(
+auth_service = AuthService(
     tel,
     state_repo,
-    cfg.domain,
     kontur_account_client,
-    kontur_organization_client,
     kontur_employee_client,
 )
 main_menu_service = MainMenuDialogService(
@@ -210,7 +214,8 @@ video_cut_moderation_service = VideoCutModerationDialogService(
 # Инициализация диалогов
 auth_dialog = AuthDialog(
     tel,
-    auth_dialog_service,
+    auth_service,
+    auth_getter,
 )
 main_menu_dialog = MainMenuDialog(
     tel,

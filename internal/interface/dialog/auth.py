@@ -1,10 +1,7 @@
 from abc import abstractmethod
 from typing import Protocol, Any
-
-from aiogram_dialog import DialogManager, Dialog, Window
 from aiogram.types import CallbackQuery
-
-from internal import model
+from aiogram_dialog import DialogManager, Dialog, Window
 
 
 class IAuthDialog(Protocol):
@@ -25,15 +22,15 @@ class IAuthDialog(Protocol):
     def get_access_denied_window(self) -> Window: pass
 
 
-class IAuthDialogService(Protocol):
-
+class IAuthService(Protocol):
     @abstractmethod
     async def accept_user_agreement(
             self,
             callback: CallbackQuery,
             button: Any,
             dialog_manager: DialogManager
-    ) -> None: pass
+    ) -> None:
+        pass
 
     @abstractmethod
     async def accept_privacy_policy(
@@ -41,7 +38,8 @@ class IAuthDialogService(Protocol):
             callback: CallbackQuery,
             button: Any,
             dialog_manager: DialogManager
-    ) -> None: pass
+    ) -> None:
+        pass
 
     @abstractmethod
     async def accept_data_processing(
@@ -49,7 +47,8 @@ class IAuthDialogService(Protocol):
             callback: CallbackQuery,
             button: Any,
             dialog_manager: DialogManager,
-    ) -> None: pass
+    ) -> None:
+        pass
 
     @abstractmethod
     async def handle_access_denied(
@@ -57,13 +56,19 @@ class IAuthDialogService(Protocol):
             callback: CallbackQuery,
             button: Any,
             dialog_manager: DialogManager
-    ) -> None: pass
+    ) -> None:
+        pass
+
+
+class IAuthGetter(Protocol):
 
     @abstractmethod
-    async def get_agreement_data(self) -> dict: pass
+    async def get_agreement_data(self) -> dict:
+        pass
 
     @abstractmethod
     async def get_user_status(
             self,
-            dialog_manager: DialogManager,
-    ) -> dict: pass
+            dialog_manager: DialogManager
+    ) -> dict:
+        pass
