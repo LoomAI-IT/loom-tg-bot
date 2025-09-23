@@ -23,7 +23,8 @@ class PublicationDraftGetter(interface.IPublicationDraftGetter):
     async def get_publication_list_data(
             self,
             dialog_manager: DialogManager,
-            bot: Bot
+            bot: Bot,
+            **kwargs
     ) -> dict:
         """
         📋 ДАННЫЕ для списка черновиков
@@ -86,7 +87,8 @@ class PublicationDraftGetter(interface.IPublicationDraftGetter):
     async def get_edit_preview_data(
             self,
             dialog_manager: DialogManager,
-            bot: Bot
+            bot: Bot,
+            **kwargs
     ) -> dict:
         """
         👁️ ДАННЫЕ для превью черновика
@@ -153,6 +155,7 @@ class PublicationDraftGetter(interface.IPublicationDraftGetter):
     async def get_edit_text_menu_data(
             self,
             dialog_manager: DialogManager,
+            **kwargs
     ) -> dict:
         """📝 Данные для меню редактирования"""
         return {
@@ -163,6 +166,7 @@ class PublicationDraftGetter(interface.IPublicationDraftGetter):
     async def get_regenerate_text_data(
             self,
             dialog_manager: DialogManager,
+            **kwargs
     ) -> dict:
         """🔄 Данные для регенерации"""
         return {
@@ -175,6 +179,7 @@ class PublicationDraftGetter(interface.IPublicationDraftGetter):
     async def get_edit_title_data(
             self,
             dialog_manager: DialogManager,
+            **kwargs  
     ) -> dict:
         """📝 Данные для редактирования названия"""
         return {
@@ -185,6 +190,7 @@ class PublicationDraftGetter(interface.IPublicationDraftGetter):
     async def get_edit_description_data(
             self,
             dialog_manager: DialogManager,
+            **kwargs
     ) -> dict:
         """📝 Данные для редактирования описания"""
         return {
@@ -194,6 +200,7 @@ class PublicationDraftGetter(interface.IPublicationDraftGetter):
     async def get_edit_content_data(
             self,
             dialog_manager: DialogManager,
+            **kwargs
     ) -> dict:
         """📄 Данные для редактирования контента"""
         return {
@@ -204,6 +211,7 @@ class PublicationDraftGetter(interface.IPublicationDraftGetter):
     async def get_edit_tags_data(
             self,
             dialog_manager: DialogManager,
+            **kwargs
     ) -> dict:
         """🏷️ Данные для редактирования тегов"""
         tags = dialog_manager.dialog_data.get("publication_tags", [])
@@ -216,6 +224,7 @@ class PublicationDraftGetter(interface.IPublicationDraftGetter):
     async def get_edit_image_menu_data(
             self,
             dialog_manager: DialogManager,
+            **kwargs
     ) -> dict:
         """🖼️ Данные для управления изображениями"""
         return {
@@ -225,6 +234,7 @@ class PublicationDraftGetter(interface.IPublicationDraftGetter):
     async def get_generate_image_data(
             self,
             dialog_manager: DialogManager,
+            **kwargs
     ) -> dict:
         """🎨 Данные для генерации изображения"""
         return {
@@ -235,6 +245,7 @@ class PublicationDraftGetter(interface.IPublicationDraftGetter):
     async def get_upload_image_data(
             self,
             dialog_manager: DialogManager,
+            **kwargs
     ) -> dict:
         """📤 Данные для загрузки изображения"""
         return {}
@@ -242,6 +253,7 @@ class PublicationDraftGetter(interface.IPublicationDraftGetter):
     async def get_social_network_select_data(
             self,
             dialog_manager: DialogManager,
+            **kwargs
     ) -> dict:
         """🌐 Данные для выбора соцсетей"""
         return {
