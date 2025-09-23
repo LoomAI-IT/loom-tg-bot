@@ -47,9 +47,6 @@ class ITelegramMiddleware(Protocol):
             data: dict[str, Any]
     ): pass
 
-    @abstractmethod
-    async def on_critical_error(self, event: ErrorEvent, dialog_manager: DialogManager): pass
-
 
 
 class ITelegramWebhookController(Protocol):

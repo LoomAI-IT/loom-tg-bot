@@ -1,7 +1,7 @@
 from aiogram_dialog import DialogManager, StartMode
 from opentelemetry.trace import SpanKind, Status, StatusCode
 
-from internal import interface, model
+from internal import interface, model, common
 
 
 class MainMenuGetter(interface.IMainMenuGetter):
@@ -35,7 +35,8 @@ class MainMenuGetter(interface.IMainMenuGetter):
                         model.GenerateVideoCutStates.video_generated_alert,
                         mode=StartMode.RESET_STACK
                     )
-                    return {}
+                    raise common.AiogramDialogGetterSpecialError("Vizard alert")
+
 
                 user = dialog_manager.event.from_user
 
@@ -48,7 +49,6 @@ class MainMenuGetter(interface.IMainMenuGetter):
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-                self.logger.error("error getting main menu data", {"error": str(err)})
                 raise err
 
     async def _get_state(self, dialog_manager: DialogManager) -> model.UserState:
