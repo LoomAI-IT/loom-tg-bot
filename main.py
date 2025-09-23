@@ -43,7 +43,7 @@ from internal.service.add_employee.service import AddEmployeeDialogService
 from internal.service.generate_publication.service import GeneratePublicationService
 from internal.service.generate_video_cut.service import GenerateVideoCutService
 from internal.service.moderation_publication.service import ModerationPublicationDialogService
-from internal.service.video_cut_draft_content.service import VideoCutsDraftDialogService
+from internal.service.video_cut_draft_content.service import VideoCutsDraftService
 from internal.service.moderation_video_cut.service import VideoCutModerationDialogService
 
 from internal.service.auth.getter import AuthGetter
@@ -53,6 +53,7 @@ from internal.service.content_menu.getter import ContentMenuGetter
 from internal.service.personal_profile.getter import PersonalProfileGetter
 from internal.service.generate_publication.getter import GeneratePublicationDataGetter
 from internal.service.generate_video_cut.getter import GenerateVideoCutGetter
+from internal.service.video_cut_draft_content.getter import VideoCutsDraftGetter
 
 from internal.repo.state.repo import StateRepo
 
@@ -154,6 +155,14 @@ personal_profile_getter = PersonalProfileGetter(
     kontur_organization_client,
 )
 
+video_cuts_draft_getter = VideoCutsDraftGetter(
+    tel,
+    state_repo,
+    kontur_employee_client,
+    kontur_organization_client,
+    kontur_content_client,
+)
+
 # Инициализация сервисов
 state_service = StateService(tel, state_repo)
 auth_service = AuthService(
@@ -217,13 +226,10 @@ moderation_publication_service = ModerationPublicationDialogService(
     cfg.domain
 )
 
-video_cuts_draft_service = VideoCutsDraftDialogService(
+video_cuts_draft_service = VideoCutsDraftService(
     tel,
     state_repo,
-    kontur_employee_client,
-    kontur_organization_client,
     kontur_content_client,
-    cfg.domain
 )
 
 video_cut_moderation_service = VideoCutModerationDialogService(
@@ -291,7 +297,8 @@ moderation_publication_dialog = ModerationPublicationDialog(
 
 video_cuts_draft_dialog = VideoCutsDraftDialog(
     tel,
-    video_cuts_draft_service
+    video_cuts_draft_service,
+    video_cuts_draft_getter
 )
 
 video_cut_moderation_dialog = VideoCutModerationDialog(
