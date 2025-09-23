@@ -66,7 +66,7 @@ class GenerateVideoCutService(interface.IGenerateVideoCutService):
             except Exception as err:
                 dialog_manager.dialog_data["is_processing_video"] = False
                 dialog_manager.dialog_data["has_processing_error"] = True
-                await dialog_manager.show(ShowMode.EDIT)
+                await dialog_manager.show()
 
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
@@ -83,12 +83,66 @@ class GenerateVideoCutService(interface.IGenerateVideoCutService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 await dialog_manager.start(
                     model.ContentMenuStates.content_menu,
                     mode=StartMode.RESET_STACK,
-                    show_mode=ShowMode.EDIT
                 )
                 span.set_status(Status(StatusCode.OK))
+
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
+                raise
+
+    async def handle_go_to_video_drafts(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        with self.tracer.start_as_current_span(
+                "GenerateVideoCutService.handle_go_to_video_drafts",
+                kind=SpanKind.INTERNAL
+        ) as span:
+            try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
+                await dialog_manager.start(
+                    model.VideoCutsDraftStates.video_cut_list,
+                    mode=StartMode.RESET_STACK
+                )
+
+                self.logger.info("Переход в черновики видео-нарезок")
+                span.set_status(Status(StatusCode.OK))
+
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
+                raise
+
+    async def handle_go_to_main_menu(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        with self.tracer.start_as_current_span(
+                "GenerateVideoCutService.handle_go_to_main_menu",
+                kind=SpanKind.INTERNAL
+        ) as span:
+            try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
+                await dialog_manager.start(
+                    model.MainMenuStates.main_menu,
+                    mode=StartMode.RESET_STACK
+                )
+
+                self.logger.info("Переход в главное меню")
+                span.set_status(Status(StatusCode.OK))
+
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
