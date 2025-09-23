@@ -161,10 +161,16 @@ class TelegramWebhookController(interface.ITelegramWebhookController):
                 # Формируем сообщение для уведомления о генерации видео
                 message_text = self._format_vizard_notification_message(body)
 
-                dialog_manager = self.dialog_bg_factory.bg(
-                    bot=self.bot,
-                    user_id=user_state.tg_chat_id,
-                    chat_id=user_state.tg_chat_id,
+                # dialog_manager = self.dialog_bg_factory.bg(
+                #     bot=self.bot,
+                #     user_id=user_state.tg_chat_id,
+                #     chat_id=user_state.tg_chat_id,
+                # )
+
+                await self.state_service.create_vizard_video_cut_alert(
+                    state_id=user_state.id,
+                    youtube_video_reference=body.youtube_video_reference,
+                    video_count=body.vizard_video_count,
                 )
 
                 # Отправляем уведомление
