@@ -39,6 +39,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
                 category = await self.kontur_content_client.get_category_by_id(
                     int(category_id)
                 )
@@ -48,11 +49,13 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
                 self.logger.info("Категория выбрана")
 
-                await dialog_manager.switch_to(model.GeneratePublicationStates.input_text, ShowMode.EDIT)
+                await dialog_manager.switch_to(model.GeneratePublicationStates.input_text)
                 span.set_status(Status(StatusCode.OK))
+
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
+
                 await callback.answer("❌ Ошибка", show_alert=True)
                 raise
 
@@ -68,22 +71,20 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
                 await message.delete()
                 text = text.strip()
 
                 if not text:
                     dialog_manager.dialog_data["has_void_input_text"] = True
-                    await dialog_manager.switch_to(model.GeneratePublicationStates.input_text, ShowMode.EDIT)
                     return
 
                 if len(text) < 10:
                     dialog_manager.dialog_data["has_small_input_text"] = True
-                    await dialog_manager.switch_to(model.GeneratePublicationStates.input_text, ShowMode.EDIT)
                     return
 
                 if len(text) > 2000:
                     dialog_manager.dialog_data["has_big_input_text"] = True
-                    await dialog_manager.switch_to(model.GeneratePublicationStates.input_text, ShowMode.EDIT)
                     return
 
                 # Clear error flags on successful input
@@ -96,13 +97,15 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
                 self.logger.info("Текст для генерации введен")
 
-                await dialog_manager.switch_to(model.GeneratePublicationStates.input_text, ShowMode.EDIT)
+                await dialog_manager.switch_to(model.GeneratePublicationStates.input_text)
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
+                dialog_manager.dialog_data["has_input_text_error"] = True
+                await dialog_manager.show()
+
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-                await message.answer("❌ Ошибка обработки текста")
                 raise
 
     async def handle_voice_input(
@@ -116,11 +119,11 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
                 state = await self._get_state(dialog_manager)
 
                 if message.content_type not in [ContentType.VOICE, ContentType.AUDIO]:
                     dialog_manager.dialog_data["has_invalid_voice_type"] = True
-                    await dialog_manager.switch_to(model.GeneratePublicationStates.input_text, ShowMode.EDIT)
                     return
 
                 if message.voice:
@@ -132,7 +135,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
                 if duration > 300:  # 5 minutes max
                     dialog_manager.dialog_data["has_long_voice_duration"] = True
-                    await dialog_manager.switch_to(model.GeneratePublicationStates.input_text, ShowMode.EDIT)
                     return
 
                 # Clear error flags
@@ -154,19 +156,16 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
                 if not text or not text.strip():
                     dialog_manager.dialog_data["has_empty_voice_text"] = True
-                    await dialog_manager.switch_to(model.GeneratePublicationStates.input_text, ShowMode.EDIT)
                     return
 
                 text = text.strip()
 
                 if len(text) < 10:
                     dialog_manager.dialog_data["has_small_input_text"] = True
-                    await dialog_manager.switch_to(model.GeneratePublicationStates.input_text, ShowMode.EDIT)
                     return
 
                 if len(text) > 2000:
                     dialog_manager.dialog_data["has_big_input_text"] = True
-                    await dialog_manager.switch_to(model.GeneratePublicationStates.input_text, ShowMode.EDIT)
                     return
 
                 dialog_manager.dialog_data["input_text"] = text
@@ -174,13 +173,15 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
                 self.logger.info("Голосовое сообщение обработано")
 
-                await dialog_manager.switch_to(model.GeneratePublicationStates.input_text, ShowMode.EDIT)
+                await dialog_manager.switch_to(model.GeneratePublicationStates.input_text)
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
+                dialog_manager.dialog_data["has_input_voice_error"] = True
+                await dialog_manager.show()
+
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-                await message.answer("❌ Ошибка обработки голоса")
                 raise
 
     async def handle_generate_text(
@@ -194,6 +195,8 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 await callback.answer()
                 await callback.message.edit_text(
                     "🔄 Генерирую текст, это может занять время... Не совершайте никаких действий",
@@ -212,11 +215,13 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 dialog_manager.dialog_data["publication_name"] = publication_data["name"]
                 dialog_manager.dialog_data["publication_text"] = publication_data["text"]
 
-                await dialog_manager.switch_to(model.GeneratePublicationStates.preview, ShowMode.EDIT)
+                await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
                 span.set_status(Status(StatusCode.OK))
+
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
+
                 await callback.answer("❌ Ошибка", show_alert=True)
                 raise
 
@@ -231,6 +236,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
                 await callback.answer()
                 await callback.message.edit_text(
                     "🔄 Генерирую текст с картинкой, это может занять минуты 3. Не совершайте никаких действий...",
@@ -260,11 +266,13 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 dialog_manager.dialog_data["is_custom_image"] = False
                 dialog_manager.dialog_data["current_image_index"] = 0
 
-                await dialog_manager.switch_to(model.GeneratePublicationStates.preview, ShowMode.EDIT)
+                await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
                 span.set_status(Status(StatusCode.OK))
+
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
+
                 await callback.answer("❌ Ошибка", show_alert=True)
                 raise
 
@@ -279,6 +287,8 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 images_url = dialog_manager.dialog_data.get("publication_images_url", [])
                 current_index = dialog_manager.dialog_data.get("current_image_index", 0)
 
@@ -289,9 +299,11 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
                 await callback.answer()
                 span.set_status(Status(StatusCode.OK))
+
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
+
                 await callback.answer("❌ Ошибка", show_alert=True)
                 raise
 
@@ -306,6 +318,8 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 images_url = dialog_manager.dialog_data.get("publication_images_url", [])
                 current_index = dialog_manager.dialog_data.get("current_image_index", 0)
 
@@ -316,9 +330,11 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
                 await callback.answer()
                 span.set_status(Status(StatusCode.OK))
+
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
+
                 await callback.answer("❌ Ошибка", show_alert=True)
                 raise
 
@@ -333,6 +349,8 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 await callback.answer()
                 await callback.message.edit_text(
                     "🔄 Генерирую текст, это может занять время... Не совершайте никаких действий",
@@ -352,11 +370,13 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 dialog_manager.dialog_data["publication_text"] = regenerated_data["text"]
                 dialog_manager.dialog_data["publication_tags"] = regenerated_data["tags"]
 
-                await dialog_manager.switch_to(model.GeneratePublicationStates.preview, ShowMode.EDIT)
+                await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
                 span.set_status(Status(StatusCode.OK))
+
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
+
                 await callback.answer("❌ Ошибка", show_alert=True)
                 raise
 
@@ -372,6 +392,8 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 await message.delete()
                 prompt = prompt.strip()
 
@@ -384,17 +406,14 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 # Валидация
                 if not prompt:
                     dialog_manager.dialog_data["has_void_regenerate_prompt"] = True
-                    await dialog_manager.switch_to(model.GeneratePublicationStates.regenerate_text, ShowMode.EDIT)
                     return
 
                 if len(prompt) < 5:
                     dialog_manager.dialog_data["has_small_regenerate_prompt"] = True
-                    await dialog_manager.switch_to(model.GeneratePublicationStates.regenerate_text, ShowMode.EDIT)
                     return
 
                 if len(prompt) > 500:
                     dialog_manager.dialog_data["has_big_regenerate_prompt"] = True
-                    await dialog_manager.switch_to(model.GeneratePublicationStates.regenerate_text, ShowMode.EDIT)
                     return
 
                 # Сохраняем промпт и устанавливаем состояние загрузки
@@ -402,7 +421,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 dialog_manager.dialog_data["is_regenerating_text"] = True
 
                 # Обновляем UI для показа индикатора загрузки
-                await dialog_manager.show(ShowMode.EDIT)
+                await dialog_manager.show()
 
                 category_id = dialog_manager.dialog_data["category_id"]
                 current_text = dialog_manager.dialog_data["publication_text"]
@@ -422,7 +441,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 dialog_manager.dialog_data["is_regenerating_text"] = False
 
                 # Переходим к превью
-                await dialog_manager.switch_to(model.GeneratePublicationStates.preview, ShowMode.EDIT)
+                await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
 
                 self.logger.info("Текст успешно перегенерирован с промптом")
                 span.set_status(Status(StatusCode.OK))
@@ -430,7 +449,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             except Exception as err:
                 dialog_manager.dialog_data["is_regenerating_text"] = False
                 dialog_manager.dialog_data["has_regenerate_text_error"] = True
-                await dialog_manager.show(ShowMode.EDIT)
+                await dialog_manager.show()
 
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
@@ -448,17 +467,17 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 await message.delete()
                 new_title = text.strip()
 
                 if not new_title:
                     dialog_manager.dialog_data["has_void_title"] = True
-                    await dialog_manager.switch_to(model.GeneratePublicationStates.edit_title, ShowMode.EDIT)
                     return
 
                 if len(new_title) > 200:
                     dialog_manager.dialog_data["has_big_title"] = True
-                    await dialog_manager.switch_to(model.GeneratePublicationStates.edit_title, ShowMode.EDIT)
                     return
 
                 dialog_manager.dialog_data.pop("has_void_title", None)
@@ -468,11 +487,11 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
                 self.logger.info("Название публикации изменено")
 
-                await dialog_manager.switch_to(model.GeneratePublicationStates.preview, ShowMode.EDIT)
+                await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
                 dialog_manager.dialog_data["has_edit_title_error"] = True
-                await dialog_manager.show(ShowMode.EDIT)
+                await dialog_manager.show()
 
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
@@ -490,6 +509,8 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 await message.delete()
                 tags_raw = text.strip()
 
@@ -504,17 +525,17 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
                 if len(tags) > 10:
                     dialog_manager.dialog_data["has_too_many_tags"] = True
-                    await dialog_manager.switch_to(model.GeneratePublicationStates.edit_tags, ShowMode.EDIT)
                     return
 
                 dialog_manager.dialog_data.pop("has_too_many_tags", None)
                 dialog_manager.dialog_data["publication_tags"] = tags
 
-                await dialog_manager.switch_to(model.GeneratePublicationStates.preview, ShowMode.EDIT)
+                await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
                 span.set_status(Status(StatusCode.OK))
+
             except Exception as err:
                 dialog_manager.dialog_data["has_edit_tags_error"] = True
-                await dialog_manager.show(ShowMode.EDIT)
+                await dialog_manager.show()
 
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
@@ -532,22 +553,21 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 await message.delete()
                 new_text = text.strip()
 
                 if not new_text:
                     dialog_manager.dialog_data["has_void_content"] = True
-                    await dialog_manager.switch_to(model.GeneratePublicationStates.edit_content, ShowMode.EDIT)
                     return
 
                 if len(new_text) > 4000:
                     dialog_manager.dialog_data["has_big_content"] = True
-                    await dialog_manager.switch_to(model.GeneratePublicationStates.edit_content, ShowMode.EDIT)
                     return
 
                 if len(new_text) < 50:
                     dialog_manager.dialog_data["has_small_content"] = True
-                    await dialog_manager.switch_to(model.GeneratePublicationStates.edit_content, ShowMode.EDIT)
                     return
 
                 dialog_manager.dialog_data.pop("has_void_content", None)
@@ -558,15 +578,15 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
                 self.logger.info("Текст публикации изменен")
 
-                await dialog_manager.switch_to(model.GeneratePublicationStates.preview, ShowMode.EDIT)
+                await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
                 span.set_status(Status(StatusCode.OK))
+
             except Exception as err:
                 dialog_manager.dialog_data["has_edit_content_error"] = True
-                await dialog_manager.show(ShowMode.EDIT)
+                await dialog_manager.show()
 
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-
                 raise
 
     async def handle_generate_new_image(
@@ -580,6 +600,8 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 await callback.answer()
                 await callback.message.edit_text(
                     "🔄 Генерирую изображение, это может занять время...",
@@ -610,11 +632,13 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 dialog_manager.dialog_data["current_image_index"] = 0
                 dialog_manager.dialog_data.pop("custom_image_file_id", None)
 
-                await dialog_manager.switch_to(model.GeneratePublicationStates.preview, ShowMode.EDIT)
+                await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
                 span.set_status(Status(StatusCode.OK))
+
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
+
                 await callback.answer("❌ Ошибка", show_alert=True)
                 raise
 
@@ -630,22 +654,21 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 await message.delete()
                 prompt = prompt.strip()
 
                 if not prompt:
                     dialog_manager.dialog_data["has_void_image_prompt"] = True
-                    await dialog_manager.switch_to(model.GeneratePublicationStates.generate_image, ShowMode.EDIT)
                     return
 
                 if len(prompt) < 5:
                     dialog_manager.dialog_data["has_small_image_prompt"] = True
-                    await dialog_manager.switch_to(model.GeneratePublicationStates.generate_image, ShowMode.EDIT)
                     return
 
                 if len(prompt) > 500:
                     dialog_manager.dialog_data["has_big_image_prompt"] = True
-                    await dialog_manager.switch_to(model.GeneratePublicationStates.generate_image, ShowMode.EDIT)
                     return
 
                 # Clear error flags
@@ -687,12 +710,13 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 dialog_manager.dialog_data.pop("custom_image_file_id", None)
                 dialog_manager.dialog_data["is_generating_image"] = False
 
-                await dialog_manager.switch_to(model.GeneratePublicationStates.preview, ShowMode.EDIT)
+                await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
                 span.set_status(Status(StatusCode.OK))
+
             except Exception as err:
                 dialog_manager.dialog_data["is_generating_image"] = False
                 dialog_manager.dialog_data["has_regenerate_image_error"] = True
-                await dialog_manager.show(ShowMode.EDIT)
+                await dialog_manager.show()
 
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
@@ -709,11 +733,12 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 await message.delete()
 
                 if message.content_type != ContentType.PHOTO:
                     dialog_manager.dialog_data["has_invalid_image_type"] = True
-                    await dialog_manager.switch_to(model.GeneratePublicationStates.upload_image, ShowMode.EDIT)
                     return
 
                 if message.photo:
@@ -722,7 +747,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                     if hasattr(photo, 'file_size') and photo.file_size:
                         if photo.file_size > 10 * 1024 * 1024:  # 10 MB
                             dialog_manager.dialog_data["has_big_image_size"] = True
-                            await dialog_manager.switch_to(model.GeneratePublicationStates.upload_image, ShowMode.EDIT)
                             return
 
                     dialog_manager.dialog_data.pop("has_invalid_image_type", None)
@@ -737,15 +761,14 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
                     self.logger.info("Пользовательское изображение загружено")
 
-                    await dialog_manager.switch_to(model.GeneratePublicationStates.preview, ShowMode.EDIT)
+                    await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
                     span.set_status(Status(StatusCode.OK))
                 else:
                     dialog_manager.dialog_data["has_image_processing_error"] = True
-                    await dialog_manager.switch_to(model.GeneratePublicationStates.upload_image, ShowMode.EDIT)
 
             except Exception as err:
                 dialog_manager.dialog_data["has_image_upload_error"] = True
-                await dialog_manager.show(ShowMode.EDIT)
+                await dialog_manager.show()
 
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
@@ -762,6 +785,8 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 dialog_manager.dialog_data["has_image"] = False
                 dialog_manager.dialog_data.pop("publication_images_url", None)
                 dialog_manager.dialog_data.pop("custom_image_file_id", None)
@@ -770,12 +795,13 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
                 self.logger.info("Изображение удалено из публикации")
 
-                await dialog_manager.switch_to(model.GeneratePublicationStates.preview, ShowMode.EDIT)
-
+                await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
                 span.set_status(Status(StatusCode.OK))
+
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
+
                 await callback.answer("❌ Ошибка при удалении изображения", show_alert=True)
                 raise
 
@@ -790,6 +816,8 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 state = await self._get_state(dialog_manager)
 
                 category_id = dialog_manager.dialog_data["category_id"]
@@ -832,11 +860,12 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                     model.ContentMenuStates.content_menu,
                     mode=StartMode.RESET_STACK
                 )
-
                 span.set_status(Status(StatusCode.OK))
+
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
+
                 await callback.answer("❌ Ошибка сохранения", show_alert=True)
                 raise
 
@@ -851,6 +880,8 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 state = await self._get_state(dialog_manager)
 
                 category_id = dialog_manager.dialog_data["category_id"]
@@ -893,11 +924,11 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                     model.ContentMenuStates.content_menu,
                     mode=StartMode.RESET_STACK
                 )
-
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
+
                 await callback.answer("❌ Ошибка отправки", show_alert=True)
                 raise
 
@@ -912,6 +943,8 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 if "selected_social_networks" not in dialog_manager.dialog_data:
                     dialog_manager.dialog_data["selected_social_networks"] = {}
 
@@ -924,9 +957,11 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
                 await callback.answer()
                 span.set_status(Status(StatusCode.OK))
+
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
+
                 await callback.answer("❌ Ошибка", show_alert=True)
                 raise
 
@@ -941,11 +976,15 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                await dialog_manager.switch_to(model.GeneratePublicationStates.social_network_select, ShowMode.EDIT)
+                dialog_manager.show_mode = ShowMode.EDIT
+
+                await dialog_manager.switch_to(model.GeneratePublicationStates.social_network_select)
                 span.set_status(Status(StatusCode.OK))
+
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
+
                 await callback.answer("❌ Ошибка при переходе к выбору соцсетей", show_alert=True)
                 raise
 
@@ -960,6 +999,8 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 state = await self._get_state(dialog_manager)
 
                 selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
@@ -1008,13 +1049,14 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
                 await dialog_manager.start(
                     model.ContentMenuStates.content_menu,
-                    mode=StartMode.RESET_STACK,
-                    show_mode=ShowMode.EDIT
+                    mode=StartMode.RESET_STACK
                 )
                 span.set_status(Status(StatusCode.OK))
+
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
+
                 await callback.answer("❌ Ошибка при публикации", show_alert=True)
                 raise
 
@@ -1031,13 +1073,15 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             try:
                 await dialog_manager.start(
                     model.ContentMenuStates.content_menu,
-                    mode=StartMode.RESET_STACK,
-                    show_mode=ShowMode.EDIT
+                    mode=StartMode.RESET_STACK
                 )
                 span.set_status(Status(StatusCode.OK))
+
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
+
+                await callback.answer("❌ Ошибка", show_alert=True)
                 raise
 
     async def _get_current_image_data(self, dialog_manager: DialogManager) -> tuple[bytes, str] | None:

@@ -93,6 +93,13 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                 ),
                 Case(
                     {
+                        True: Const("⚠️ <b>Ошибка: ввода текста</b>\n\n"),
+                        False: Const(""),
+                    },
+                    selector="has_input_text_error"
+                ),
+                Case(
+                    {
                         True: Const("⚠️ <b>Ошибка:</b> Текст слишком короткий (минимум 10 символов)\n\n"),
                         False: Const(""),
                     },
@@ -126,15 +133,15 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                             "⚠️ <b>Ошибка:</b> Не удалось распознать речь. Попробуйте записать заново или введите текст\n\n"),
                         False: Const(""),
                     },
-                    selector="has_voice_recognition_error"
+                    selector="has_empty_voice_text"
                 ),
                 Case(
                     {
                         True: Const(
-                            "⚠️ <b>Ошибка:</b> В голосовом сообщении не распознан текст. Попробуйте говорить четче\n\n"),
+                            "⚠️ <b>Ошибка:</b> Не удалось распознать речь. Ввведите текст\n\n"),
                         False: Const(""),
                     },
-                    selector="has_empty_voice_text"
+                    selector="has_input_voice_error"
                 ),
                 Const("💡 <b>Введите тему или описание публикации:</b>\n"),
                 Const("<i>• Можете описать своими словами о чем должен быть пост\n"),
