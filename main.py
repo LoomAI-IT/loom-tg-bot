@@ -37,7 +37,7 @@ from internal.service.auth.service import AuthService
 from internal.service.main_menu.service import MainMenuService
 from internal.service.organization_menu.service import OrganizationMenuService
 from internal.service.content_menu.service import ContentMenuService
-from internal.service.personal_profile.service import PersonalProfileDialogService
+from internal.service.personal_profile.service import PersonalProfileService
 from internal.service.change_employee.service import ChangeEmployeeDialogService
 from internal.service.add_employee.service import AddEmployeeDialogService
 from internal.service.generate_publication.service import GeneratePublicationService
@@ -50,6 +50,7 @@ from internal.service.auth.getter import AuthGetter
 from internal.service.main_menu.getter import MainMenuGetter
 from internal.service.organization_menu.getter import OrganizationMenuGetter
 from internal.service.content_menu.getter import ContentMenuGetter
+from internal.service.personal_profile.getter import PersonalProfileGetter
 from internal.service.generate_publication.getter import GeneratePublicationDataGetter
 
 from internal.repo.state.repo import StateRepo
@@ -141,6 +142,13 @@ generate_publication_getter = GeneratePublicationDataGetter(
     kontur_content_client,
 )
 
+personal_profile_getter = PersonalProfileGetter(
+    tel,
+    state_repo,
+    kontur_employee_client,
+    kontur_organization_client,
+)
+
 # Инициализация сервисов
 state_service = StateService(tel, state_repo)
 auth_service = AuthService(
@@ -157,11 +165,8 @@ organization_menu_service = OrganizationMenuService(
     tel,
     state_repo
 )
-personal_profile_service = PersonalProfileDialogService(
+personal_profile_service = PersonalProfileService(
     tel,
-    state_repo,
-    kontur_employee_client,
-    kontur_organization_client
 )
 change_employee_service = ChangeEmployeeDialogService(
     tel,
@@ -239,7 +244,8 @@ main_menu_dialog = MainMenuDialog(
 )
 personal_profile_dialog = PersonalProfileDialog(
     tel,
-    personal_profile_service
+    personal_profile_service,
+    personal_profile_getter,
 )
 organization_menu_dialog = OrganizationMenuDialog(
     tel,
