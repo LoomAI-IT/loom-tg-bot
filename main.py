@@ -289,7 +289,7 @@ command_controller = CommandController(tel, state_service)
 
 if __name__ == "__main__":
     app = NewTg(
-        # db,
+        db,
         dp,
         http_middleware,
         tg_middleware,

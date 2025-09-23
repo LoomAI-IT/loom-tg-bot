@@ -38,7 +38,6 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
         )
 
     def get_select_category_window(self) -> Window:
-        """Окно выбора категории/рубрики для публикации"""
         return Window(
             Multi(
                 Const("📝 <b>Создание новой публикации</b>\n\n"),
@@ -79,7 +78,6 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
         )
 
     def get_input_text_window(self) -> Window:
-        """Окно ввода текста для генерации"""
         return Window(
             Multi(
                 Const("📝 <b>Создание новой публикации</b>\n\n"),
@@ -176,7 +174,6 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
         )
 
     def get_generation_window(self) -> Window:
-        """Окно выбора типа генерации"""
         return Window(
             Multi(
                 Const("📝 <b>Создание новой публикации</b>\n\n"),
@@ -207,7 +204,6 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
         )
 
     def get_preview_window(self) -> Window:
-        """Окно предпросмотра публикации"""
         return Window(
             Multi(
                 Const("📝 <b>Предпросмотр публикации</b>\n\n"),
@@ -300,7 +296,6 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
         )
 
     def get_edit_text_menu_window(self) -> Window:
-        """Меню редактирования текстовых элементов"""
         return Window(
             Multi(
                 Const("✏️ <b>Редактирование текста</b>\n\n"),
@@ -346,7 +341,6 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
         )
 
     def get_regenerate_text_window(self) -> Window:
-        """Окно для ввода дополнительного промпта при перегенерации"""
         return Window(
             Multi(
                 Const("🔄 <b>Перегенерация с дополнительными указаниями</b>\n\n"),
@@ -417,7 +411,6 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
         )
 
     def get_edit_title_window(self) -> Window:
-        """Окно редактирования названия"""
         return Window(
             Multi(
                 Const("📝 <b>Изменение названия</b>\n\n"),
@@ -493,7 +486,6 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
         )
 
     def get_edit_content_window(self) -> Window:
-        """Окно редактирования основного текста"""
         return Window(
             Multi(
                 Const("📄 <b>Изменение текста публикации</b>\n\n"),
@@ -541,7 +533,6 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
         )
 
     def get_image_menu_window(self) -> Window:
-        """Меню управления изображением"""
         return Window(
             Multi(
                 Const("🖼 <b>Управление изображением</b>\n\n"),
@@ -592,7 +583,6 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
         )
 
     def get_generate_image_window(self) -> Window:
-        """Окно генерации изображения с промптом"""
         return Window(
             Multi(
                 Const("🎨 <b>Генерация изображения</b>\n\n"),
@@ -662,7 +652,6 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
         )
 
     def get_upload_image_window(self) -> Window:
-        """Окно загрузки собственного изображения"""
         return Window(
             Multi(
                 Const("📤 <b>Загрузка изображения</b>\n\n"),
@@ -710,7 +699,6 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
         )
 
     def get_social_network_select_window(self) -> Window:
-        """Окно выбора социальных сетей для публикации"""
         return Window(
             Multi(
                 Const("🌐 <b>Выбор социальных сетей</b>\n\n"),

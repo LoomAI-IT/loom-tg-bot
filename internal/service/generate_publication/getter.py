@@ -295,19 +295,13 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
         return network_type in social_networks and len(social_networks[network_type]) > 0
 
     async def _get_state(self, dialog_manager: DialogManager) -> model.UserState:
-        chat_id = self._get_chat_id(dialog_manager)
-        return await self._get_state_by_chat_id(chat_id)
-
-    async def _get_state_by_chat_id(self, chat_id: int) -> model.UserState:
+        if hasattr(dialog_manager.event, 'message') and dialog_manager.event.message:
+            chat_id = dialog_manager.event.message.chat.id
+        elif hasattr(dialog_manager.event, 'chat'):
+            chat_id = dialog_manager.event.chat.id
+        else:
+            raise ValueError("Cannot extract chat_id from dialog_manager")
         state = await self.state_repo.state_by_id(chat_id)
         if not state:
             raise ValueError(f"State not found for chat_id: {chat_id}")
         return state[0]
-
-    def _get_chat_id(self, dialog_manager: DialogManager) -> int:
-        if hasattr(dialog_manager.event, 'message') and dialog_manager.event.message:
-            return dialog_manager.event.message.chat.id
-        elif hasattr(dialog_manager.event, 'chat'):
-            return dialog_manager.event.chat.id
-        else:
-            raise ValueError("Cannot extract chat_id from dialog_manager")
