@@ -21,33 +21,40 @@ class IContentMenuDialog(Protocol):
     def get_moderation_type_selection_window(self) -> Window: pass
 
 
-class IContentMenuDialogService(Protocol):
+class IContentMenuGetter(Protocol):
+
     @abstractmethod
     async def get_content_menu_data(
             self,
             dialog_manager: DialogManager,
-    ) -> dict: pass
+    ) -> dict:
+        pass
 
     @abstractmethod
     async def get_drafts_type_data(
             self,
             dialog_manager: DialogManager,
-    ) -> dict: pass
+    ) -> dict:
+        pass
 
     @abstractmethod
     async def get_moderation_type_data(
             self,
             dialog_manager: DialogManager,
-    ) -> dict: pass
+    ) -> dict:
+        pass
 
-    # Генерация контента
+
+class IContentMenuService(Protocol):
+
     @abstractmethod
     async def handle_go_to_publication_generation(
             self,
             callback: CallbackQuery,
             button: Any,
             dialog_manager: DialogManager
-    ) -> None: pass
+    ) -> None:
+        pass
 
     @abstractmethod
     async def handle_go_to_video_cut_generation(
@@ -55,16 +62,17 @@ class IContentMenuDialogService(Protocol):
             callback: CallbackQuery,
             button: Any,
             dialog_manager: DialogManager
-    ) -> None: pass
+    ) -> None:
+        pass
 
-    # Черновики
     @abstractmethod
     async def handle_go_to_publication_drafts(
             self,
             callback: CallbackQuery,
             button: Any,
             dialog_manager: DialogManager
-    ) -> None: pass
+    ) -> None:
+        pass
 
     @abstractmethod
     async def handle_go_to_video_drafts(
@@ -72,16 +80,17 @@ class IContentMenuDialogService(Protocol):
             callback: CallbackQuery,
             button: Any,
             dialog_manager: DialogManager
-    ) -> None: pass
+    ) -> None:
+        pass
 
-    # Модерация
     @abstractmethod
     async def handle_go_to_publication_moderation(
             self,
             callback: CallbackQuery,
             button: Any,
             dialog_manager: DialogManager
-    ) -> None: pass
+    ) -> None:
+        pass
 
     @abstractmethod
     async def handle_go_to_video_moderation(
@@ -89,7 +98,8 @@ class IContentMenuDialogService(Protocol):
             callback: CallbackQuery,
             button: Any,
             dialog_manager: DialogManager
-    ) -> None: pass
+    ) -> None:
+        pass
 
     @abstractmethod
     async def handle_go_to_main_menu(
@@ -97,7 +107,8 @@ class IContentMenuDialogService(Protocol):
             callback: CallbackQuery,
             button: Any,
             dialog_manager: DialogManager
-    ) -> None: pass
+    ) -> None:
+        pass
 
     @abstractmethod
     async def handle_go_to_content_menu(
@@ -105,4 +116,5 @@ class IContentMenuDialogService(Protocol):
             callback: CallbackQuery,
             button: Any,
             dialog_manager: DialogManager
-    ) -> None: pass
+    ) -> None:
+        pass
