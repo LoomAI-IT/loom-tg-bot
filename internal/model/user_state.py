@@ -51,3 +51,24 @@ class CachedFile:
         ]
 
 
+@dataclass
+class VizardVideoCutAlert:
+    id: int
+    state_id: int
+    youtube_video_reference: str
+    video_count: int
+    created_at: datetime
+
+    @classmethod
+    def serialize(cls, rows) -> list:
+        return [
+            cls(
+                id=row.id,
+                state_id=row.state_id,
+                youtube_video_reference=row.youtube_video_reference,
+                video_count=row.video_count,
+                created_at=row.created_at,
+            )
+            for row in rows
+        ]
+

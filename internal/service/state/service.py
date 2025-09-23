@@ -125,3 +125,63 @@ class StateService(interface.IStateService):
                 span.record_exception(err)
                 span.set_status(StatusCode.ERROR, str(err))
                 raise
+
+
+    async def create_vizard_video_cut_alert(self, state_id: int, youtube_video_reference: str, video_count: int) -> int:
+        with self.tracer.start_as_current_span(
+                "StateService.create_vizard_video_cut_alert",
+                kind=SpanKind.INTERNAL,
+                attributes={
+                    "youtube_video_reference": youtube_video_reference,
+                    "video_count": video_count
+                }
+        ) as span:
+            try:
+                alert_id = await self.state_repo.create_vizard_video_cut_alert(
+                    state_id,
+                    youtube_video_reference,
+                    video_count
+                )
+
+                span.set_status(StatusCode.OK)
+                return alert_id
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(StatusCode.ERROR, str(err))
+                raise
+
+    async def get_vizard_video_cut_alert_by_state_id(self, state_id: int) -> list[model.VizardVideoCutAlert]:
+        with self.tracer.start_as_current_span(
+                "StateService.get_vizard_video_cut_alert_by_state_id",
+                kind=SpanKind.INTERNAL,
+                attributes={
+                    "state_id": state_id,
+                }
+        ) as span:
+            try:
+                alert = await self.state_repo.get_vizard_video_cut_alert_by_state_id(state_id)
+
+                span.set_status(StatusCode.OK)
+                return alert
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(StatusCode.ERROR, str(err))
+                raise
+
+
+    async def delete_vizard_video_cut_alert(self, state_id: int) -> None:
+        with self.tracer.start_as_current_span(
+                "StateService.delete_vizard_video_cut_alert",
+                kind=SpanKind.INTERNAL,
+                attributes={
+                    "state_id": state_id
+                }
+        ) as span:
+            try:
+                await self.state_repo.delete_vizard_video_cut_alert(state_id)
+
+                span.set_status(StatusCode.OK)
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(StatusCode.ERROR, str(err))
+                raise
