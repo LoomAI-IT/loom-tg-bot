@@ -44,7 +44,6 @@ class GenerateVideoCutService(interface.IGenerateVideoCutService):
                 # Валидация YouTube ссылки
                 if not self._is_valid_youtube_url(youtube_url):
                     dialog_manager.dialog_data["has_invalid_youtube_url"] = True
-                    await dialog_manager.show(ShowMode.EDIT)
                     return
 
                 # Получаем состояние пользователя
