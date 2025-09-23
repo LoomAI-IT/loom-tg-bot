@@ -1,6 +1,6 @@
 from aiogram_dialog import Window, Dialog
 from aiogram_dialog.widgets.text import Const, Format, Multi, Case
-from aiogram_dialog.widgets.kbd import Button, Column, Row, Back, Select, Checkbox
+from aiogram_dialog.widgets.kbd import Button, Column, Row, Checkbox
 from aiogram_dialog.widgets.input import TextInput, MessageInput
 from aiogram_dialog.widgets.media import DynamicMedia
 
@@ -12,11 +12,13 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
     def __init__(
             self,
             tel: interface.ITelemetry,
-            moderation_publication_service: interface.IModerationPublicationDialogService,
+            moderation_publication_service: interface.IModerationPublicationService,
+            moderation_publication_getter: interface.IModerationPublicationGetter,
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
         self.moderation_publication_service = moderation_publication_service
+        self.moderation_publication_getter = moderation_publication_getter
 
     def get_dialog(self) -> Dialog:
         return Dialog(
@@ -35,7 +37,6 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
         )
 
     def get_moderation_list_window(self) -> Window:
-        """Окно списка публикаций на модерации - теперь сразу показывает первую публикацию"""
         return Window(
             Multi(
                 Const("🔍 <b>Модерация публикаций</b>\n\n"),
@@ -141,12 +142,11 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
             ),
 
             state=model.ModerationPublicationStates.moderation_list,
-            getter=self.moderation_publication_service.get_moderation_list_data,
+            getter=self.moderation_publication_getter.get_moderation_list_data,
             parse_mode="HTML",
         )
 
     def get_reject_comment_window(self) -> Window:
-        """Окно ввода комментария при отклонении"""
         return Window(
             Multi(
                 Const("❌ <b>Отклонение публикации</b>\n\n"),
@@ -187,12 +187,11 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
             ),
 
             state=model.ModerationPublicationStates.reject_comment,
-            getter=self.moderation_publication_service.get_reject_comment_data,
+            getter=self.moderation_publication_getter.get_reject_comment_data,
             parse_mode="HTML",
         )
 
     def get_edit_preview_window(self) -> Window:
-        """Окно редактирования с превью публикации"""
         return Window(
             Multi(
                 Const("✏️ <b>Редактирование публикации</b>\n\n"),
@@ -280,12 +279,11 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
             ),
 
             state=model.ModerationPublicationStates.edit_preview,
-            getter=self.moderation_publication_service.get_edit_preview_data,
+            getter=self.moderation_publication_getter.get_edit_preview_data,
             parse_mode="HTML",
         )
 
     def get_edit_text_menu_window(self) -> Window:
-        """Новое меню редактирования текстовых элементов"""
         return Window(
             Multi(
                 Const("✏️ <b>Редактирование текста</b>\n\n"),
@@ -331,7 +329,6 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
         )
 
     def get_regenerate_text_window(self) -> Window:
-        """Новое окно для ввода дополнительного промпта при перегенерации"""
         return Window(
             Multi(
                 Const("🔄 <b>Перегенерация с дополнительными указаниями</b>\n\n"),
@@ -353,12 +350,11 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
             ),
 
             state=model.ModerationPublicationStates.regenerate_text,
-            getter=self.moderation_publication_service.get_regenerate_data,
+            getter=self.moderation_publication_getter.get_regenerate_data,
             parse_mode="HTML",
         )
 
     def get_edit_title_window(self) -> Window:
-        """Окно редактирования названия"""
         return Window(
             Multi(
                 Const("📝 <b>Изменение названия</b>\n\n"),
@@ -380,12 +376,11 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
             ),
 
             state=model.ModerationPublicationStates.edit_title,
-            getter=self.moderation_publication_service.get_edit_title_data,
+            getter=self.moderation_publication_getter.get_edit_title_data,
             parse_mode="HTML",
         )
 
     def get_edit_tags_window(self) -> Window:
-        """Окно редактирования тегов"""
         return Window(
             Multi(
                 Const("🏷 <b>Изменение тегов</b>\n\n"),
@@ -414,12 +409,11 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
             ),
 
             state=model.ModerationPublicationStates.edit_tags,
-            getter=self.moderation_publication_service.get_edit_tags_data,
+            getter=self.moderation_publication_getter.get_edit_tags_data,
             parse_mode="HTML",
         )
 
     def get_edit_content_window(self) -> Window:
-        """Окно редактирования основного текста"""
         return Window(
             Multi(
                 Const("📄 <b>Изменение текста публикации</b>\n\n"),
@@ -442,12 +436,11 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
             ),
 
             state=model.ModerationPublicationStates.edit_content,
-            getter=self.moderation_publication_service.get_edit_content_data,
+            getter=self.moderation_publication_getter.get_edit_content_data,
             parse_mode="HTML",
         )
 
     def get_edit_image_menu_window(self) -> Window:
-        """Меню управления изображением при редактировании"""
         return Window(
             Multi(
                 Const("🖼 <b>Управление изображением</b>\n\n"),
@@ -502,12 +495,11 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
             ),
 
             state=model.ModerationPublicationStates.edit_image_menu,
-            getter=self.moderation_publication_service.get_image_menu_data,
+            getter=self.moderation_publication_getter.get_image_menu_data,
             parse_mode="HTML",
         )
 
     def get_generate_image_window(self) -> Window:
-        """Окно генерации изображения с промптом"""
         return Window(
             Multi(
                 Const("🎨 <b>Генерация изображения</b>\n\n"),
@@ -536,12 +528,11 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
             ),
 
             state=model.ModerationPublicationStates.generate_image,
-            getter=self.moderation_publication_service.get_image_prompt_data,
+            getter=self.moderation_publication_getter.get_image_prompt_data,
             parse_mode="HTML",
         )
 
     def get_upload_image_window(self) -> Window:
-        """Окно загрузки собственного изображения"""
         return Window(
             Multi(
                 Const("📤 <b>Загрузка изображения</b>\n\n"),
@@ -569,7 +560,6 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
         )
 
     def get_social_network_select_window(self) -> Window:
-        """Окно выбора социальных сетей для публикации"""
         return Window(
             Multi(
                 Const("🌐 <b>Выбор социальных сетей</b>\n\n"),
@@ -650,6 +640,6 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
             ),
 
             state=model.ModerationPublicationStates.social_network_select,
-            getter=self.moderation_publication_service.get_social_network_select_data,
+            getter=self.moderation_publication_getter.get_social_network_select_data,
             parse_mode="HTML",
         )

@@ -49,13 +49,7 @@ class IModerationPublicationDialog(Protocol):
     def get_social_network_select_window(self) -> Window: pass
 
 
-class IModerationPublicationDialogService(Protocol):
-    # Обработчики для списка публикаций
-    @abstractmethod
-    async def get_moderation_list_data(
-            self,
-            dialog_manager: DialogManager,
-    ) -> dict: pass
+class IModerationPublicationService(Protocol):
 
     @abstractmethod
     async def handle_navigate_publication(
@@ -98,25 +92,12 @@ class IModerationPublicationDialogService(Protocol):
     ) -> None: pass
 
     @abstractmethod
-    async def get_social_network_select_data(
-            self,
-            dialog_manager: DialogManager,
-    ) -> dict: pass
-
-    @abstractmethod
     async def handle_publish_publication(
             self,
             callback: CallbackQuery,
             button: Any,
             dialog_manager: DialogManager
     ) -> None: pass
-
-    # Обработчики для комментария отклонения
-    @abstractmethod
-    async def get_reject_comment_data(
-            self,
-            dialog_manager: DialogManager,
-    ) -> dict: pass
 
     @abstractmethod
     async def handle_reject_comment_input(
@@ -135,14 +116,6 @@ class IModerationPublicationDialogService(Protocol):
             dialog_manager: DialogManager
     ) -> None: pass
 
-    # Обработчики для нового окна редактирования с превью
-    @abstractmethod
-    async def get_edit_preview_data(
-            self,
-            dialog_manager: DialogManager,
-    ) -> dict: pass
-
-    # Новые обработчики для перегенерации текста
     @abstractmethod
     async def handle_regenerate_text(
             self,
@@ -160,13 +133,6 @@ class IModerationPublicationDialogService(Protocol):
             prompt: str
     ) -> None: pass
 
-    @abstractmethod
-    async def get_regenerate_data(
-            self,
-            dialog_manager: DialogManager,
-    ) -> dict: pass
-
-    # Обработчики редактирования
     @abstractmethod
     async def handle_edit_title_save(
             self,
@@ -252,7 +218,38 @@ class IModerationPublicationDialogService(Protocol):
             dialog_manager: DialogManager
     ) -> None: pass
 
-    # Дополнительные геттеры для окон редактирования
+
+class IModerationPublicationGetter(Protocol):
+    @abstractmethod
+    async def get_moderation_list_data(
+            self,
+            dialog_manager: DialogManager,
+    ) -> dict: pass
+
+    @abstractmethod
+    async def get_social_network_select_data(
+            self,
+            dialog_manager: DialogManager,
+    ) -> dict: pass
+
+    @abstractmethod
+    async def get_reject_comment_data(
+            self,
+            dialog_manager: DialogManager,
+    ) -> dict: pass
+
+    @abstractmethod
+    async def get_edit_preview_data(
+            self,
+            dialog_manager: DialogManager,
+    ) -> dict: pass
+
+    @abstractmethod
+    async def get_regenerate_data(
+            self,
+            dialog_manager: DialogManager,
+    ) -> dict: pass
+
     @abstractmethod
     async def get_edit_title_data(
             self,
