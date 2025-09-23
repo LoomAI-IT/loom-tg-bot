@@ -1,7 +1,7 @@
 import re
 from typing import Any
-from aiogram.types import Message
-from aiogram_dialog import DialogManager, StartMode
+from aiogram.types import Message, CallbackQuery
+from aiogram_dialog import DialogManager, StartMode, ShowMode
 
 from opentelemetry.trace import SpanKind, Status, StatusCode
 
@@ -31,52 +31,68 @@ class GenerateVideoCutService(interface.IGenerateVideoCutService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
+                await message.delete()
                 youtube_url = message.text.strip()
+
+                # Очищаем предыдущие ошибки
+                dialog_manager.dialog_data.pop("has_invalid_youtube_url", None)
+                dialog_manager.dialog_data.pop("has_processing_error", None)
+
+                # Сохраняем URL для отображения
+                dialog_manager.dialog_data["youtube_url"] = youtube_url
 
                 # Валидация YouTube ссылки
                 if not self._is_valid_youtube_url(youtube_url):
-                    await message.answer(
-                        "❌ <b>Неверная ссылка на YouTube</b>\n\n"
-                        "Пожалуйста, отправьте корректную ссылку на YouTube видео.\n"
-                        "Например: https://www.youtube.com/watch?v=VIDEO_ID",
-                        parse_mode="HTML"
-                    )
+                    dialog_manager.dialog_data["has_invalid_youtube_url"] = True
                     return
 
                 # Получаем состояние пользователя
                 state = await self._get_state(dialog_manager)
 
-                # Запускаем обработку видео асинхронно
+                # Устанавливаем состояние обработки и показываем индикатор загрузки
+                dialog_manager.dialog_data["is_processing_video"] = True
+
                 await self.kontur_content_client.generate_video_cut(
                     state.organization_id,
                     state.account_id,
                     youtube_url,
                 )
 
-                # Отправляем уведомление о начале обработки
-                await message.answer(
-                    "⏳ <b>Видео обрабатывается</b>\n\n"
-                    "Я создам короткие видео из вашей ссылки.\n"
-                    "Это может занять несколько минут.\n\n"
-                    "📩 <b>Я уведомлю вас, как только видео будут готовы!</b>\n"
-                    "Готовые видео появятся в разделе \"Черновики\" → \"Черновики видео-нарезок\"",
-                    parse_mode="HTML"
-                )
-
-                # Возвращаем пользователя в главное меню
-                await dialog_manager.start(
-                    model.MainMenuStates.main_menu,
-                    mode=StartMode.RESET_STACK
-                )
-
                 self.logger.info("YouTube ссылка принята к обработке")
-
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
+                dialog_manager.dialog_data["is_processing_video"] = False
+                dialog_manager.dialog_data["has_processing_error"] = True
+                await dialog_manager.show(ShowMode.EDIT)
+
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-                raise err
+                raise
+
+    async def handle_go_to_content_menu(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        with self.tracer.start_as_current_span(
+                "GenerateVideoCutService.handle_go_to_content_menu",
+                kind=SpanKind.INTERNAL
+        ) as span:
+            try:
+                await dialog_manager.start(
+                    model.ContentMenuStates.content_menu,
+                    mode=StartMode.RESET_STACK,
+                    show_mode=ShowMode.EDIT
+                )
+                span.set_status(Status(StatusCode.OK))
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
+                raise
 
     def _is_valid_youtube_url(self, url: str) -> bool:
         youtube_regex = re.compile(

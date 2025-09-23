@@ -1,6 +1,6 @@
 from abc import abstractmethod
 from typing import Protocol, Any
-from aiogram.types import Message
+from aiogram.types import Message, CallbackQuery
 from aiogram_dialog import DialogManager, Dialog, Window
 
 
@@ -25,6 +25,13 @@ class IGenerateVideoCutService(Protocol):
     ) -> None:
         pass
 
+    @abstractmethod
+    async def handle_go_to_content_menu(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None: pass
 
 class IGenerateVideoCutGetter(Protocol):
 
