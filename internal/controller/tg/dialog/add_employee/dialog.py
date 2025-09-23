@@ -1,4 +1,3 @@
-# internal/controller/tg/dialog/add_employee/dialog.py
 from aiogram_dialog import Window, Dialog
 from aiogram_dialog.widgets.text import Const, Format, Multi
 from aiogram_dialog.widgets.kbd import Button, Column, Row, Back, Select
@@ -12,11 +11,13 @@ class AddEmployeeDialog(interface.IAddEmployeeDialog):
     def __init__(
             self,
             tel: interface.ITelemetry,
-            add_employee_service: interface.IAddEmployeeDialogService,
+            add_employee_service: interface.IAddEmployeeService,
+            add_employee_getter: interface.IAddEmployeeGetter,
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
         self.add_employee_service = add_employee_service
+        self.add_employee_getter = add_employee_getter
 
     def get_dialog(self) -> Dialog:
         return Dialog(
@@ -45,12 +46,11 @@ class AddEmployeeDialog(interface.IAddEmployeeDialog):
             ),
 
             state=model.AddEmployeeStates.enter_account_id,
-            getter=self.add_employee_service.get_enter_account_id_data,
+            getter=self.add_employee_getter.get_enter_account_id_data,
             parse_mode="HTML",
         )
 
     def get_enter_name_window(self) -> Window:
-        """Окно ввода имени сотрудника"""
         return Window(
             Multi(
                 Const("👤 <b>Добавление нового сотрудника</b>\n\n"),
@@ -68,12 +68,11 @@ class AddEmployeeDialog(interface.IAddEmployeeDialog):
             Back(Const("◀️ Назад")),
 
             state=model.AddEmployeeStates.enter_name,
-            getter=self.add_employee_service.get_enter_name_data,
+            getter=self.add_employee_getter.get_enter_name_data,
             parse_mode="HTML",
         )
 
     def get_enter_role_window(self) -> Window:
-        """Окно выбора роли сотрудника"""
         return Window(
             Multi(
                 Const("👤 <b>Добавление нового сотрудника</b>\n\n"),
@@ -97,12 +96,11 @@ class AddEmployeeDialog(interface.IAddEmployeeDialog):
             Back(Const("◀️ Назад")),
 
             state=model.AddEmployeeStates.enter_role,
-            getter=self.add_employee_service.get_enter_role_data,
+            getter=self.add_employee_getter.get_enter_role_data,
             parse_mode="HTML",
         )
 
     def get_set_permissions_window(self) -> Window:
-        """Окно настройки разрешений сотрудника - улучшенная версия с одной кнопкой на правило"""
         return Window(
             Multi(
                 Const("👤 <b>Добавление нового сотрудника</b>\n\n"),
@@ -167,12 +165,11 @@ class AddEmployeeDialog(interface.IAddEmployeeDialog):
             Back(Const("◀️ Назад")),
 
             state=model.AddEmployeeStates.set_permissions,
-            getter=self.add_employee_service.get_permissions_data,
+            getter=self.add_employee_getter.get_permissions_data,
             parse_mode="HTML",
         )
 
     def get_confirm_employee_window(self) -> Window:
-        """Окно подтверждения создания сотрудника"""
         return Window(
             Multi(
                 Const("👤 <b>Подтверждение создания сотрудника</b>\n\n"),
@@ -196,6 +193,6 @@ class AddEmployeeDialog(interface.IAddEmployeeDialog):
             ),
 
             state=model.AddEmployeeStates.confirm_employee,
-            getter=self.add_employee_service.get_confirm_data,
+            getter=self.add_employee_getter.get_confirm_data,
             parse_mode="HTML",
         )

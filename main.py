@@ -39,7 +39,7 @@ from internal.service.organization_menu.service import OrganizationMenuService
 from internal.service.content_menu.service import ContentMenuService
 from internal.service.personal_profile.service import PersonalProfileService
 from internal.service.change_employee.service import ChangeEmployeeService
-from internal.service.add_employee.service import AddEmployeeDialogService
+from internal.service.add_employee.service import AddEmployeeService
 from internal.service.generate_publication.service import GeneratePublicationService
 from internal.service.generate_video_cut.service import GenerateVideoCutService
 from internal.service.moderation_publication.service import ModerationPublicationDialogService
@@ -52,6 +52,7 @@ from internal.service.organization_menu.getter import OrganizationMenuGetter
 from internal.service.content_menu.getter import ContentMenuGetter
 from internal.service.personal_profile.getter import PersonalProfileGetter
 from internal.service.change_employee.getter import ChangeEmployeeGetter
+from internal.service.add_employee.getter import AddEmployeeGetter
 from internal.service.generate_publication.getter import GeneratePublicationDataGetter
 from internal.service.generate_video_cut.getter import GenerateVideoCutGetter
 from internal.service.video_cut_draft_content.getter import VideoCutsDraftGetter
@@ -171,6 +172,12 @@ video_cuts_draft_getter = VideoCutsDraftGetter(
     kontur_content_client,
 )
 
+add_employee_getter = AddEmployeeGetter(
+    tel,
+    state_repo,
+    kontur_employee_client,
+)
+
 # Инициализация сервисов
 state_service = StateService(tel, state_repo)
 auth_service = AuthService(
@@ -197,7 +204,7 @@ change_employee_service = ChangeEmployeeService(
     kontur_employee_client
 )
 
-add_employee_service = AddEmployeeDialogService(
+add_employee_service = AddEmployeeService(
     tel,
     state_repo,
     kontur_employee_client,
@@ -276,7 +283,8 @@ change_employee_dialog = ChangeEmployeeDialog(
 
 add_employee_dialog = AddEmployeeDialog(
     tel,
-    add_employee_service
+    add_employee_service,
+    add_employee_getter,
 )
 
 content_menu_dialog = ContentMenuDialog(
