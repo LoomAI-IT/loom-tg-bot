@@ -21,8 +21,8 @@ from internal.controller.http.webhook.handler import TelegramWebhookController
 
 from internal.controller.tg.dialog.auth.dialog import AuthDialog
 from internal.controller.tg.dialog.main_menu.dialog import MainMenuDialog
-from internal.controller.tg.dialog.personal_profile.dialog import PersonalProfileDialog
 from internal.controller.tg.dialog.organization_menu.dialog import OrganizationMenuDialog
+from internal.controller.tg.dialog.personal_profile.dialog import PersonalProfileDialog
 from internal.controller.tg.dialog.change_employee.dialog import ChangeEmployeeDialog
 from internal.controller.tg.dialog.add_employee.dialog import AddEmployeeDialog
 from internal.controller.tg.dialog.content_menu.dialog import ContentMenuDialog
@@ -35,8 +35,8 @@ from internal.controller.tg.dialog.moderation_video_cut.dialog import VideoCutMo
 from internal.service.state.service import StateService
 from internal.service.auth.service import AuthService
 from internal.service.main_menu.service import MainMenuService
+from internal.service.organization_menu.service import OrganizationMenuService
 from internal.service.personal_profile.service import PersonalProfileDialogService
-from internal.service.organization_menu.service import OrganizationMenuDialogService
 from internal.service.change_employee.service import ChangeEmployeeDialogService
 from internal.service.add_employee.service import AddEmployeeDialogService
 from internal.service.content_menu.service import ContentMenuDialogService
@@ -48,6 +48,7 @@ from internal.service.moderation_video_cut.service import VideoCutModerationDial
 
 from internal.service.auth.getter import AuthGetter
 from internal.service.main_menu.getter import MainMenuGetter
+from internal.service.organization_menu.getter import OrganizationMenuGetter
 from internal.service.generate_publication.getter import GeneratePublicationDataGetter
 
 from internal.repo.state.repo import StateRepo
@@ -117,6 +118,14 @@ auth_getter = AuthGetter(
 main_menu_getter = MainMenuGetter(
     tel,
 )
+
+organization_menu_getter = OrganizationMenuGetter(
+    tel,
+    state_repo,
+    kontur_organization_client,
+    kontur_employee_client,
+    kontur_content_client,
+)
 generate_publication_getter = GeneratePublicationDataGetter(
     tel,
     state_repo,
@@ -136,18 +145,15 @@ main_menu_service = MainMenuService(
     tel,
     state_repo,
 )
+organization_menu_service = OrganizationMenuService(
+    tel,
+    state_repo
+)
 personal_profile_service = PersonalProfileDialogService(
     tel,
     state_repo,
     kontur_employee_client,
     kontur_organization_client
-)
-organization_menu_service = OrganizationMenuDialogService(
-    tel,
-    state_repo,
-    kontur_organization_client,
-    kontur_employee_client,
-    kontur_content_client,
 )
 change_employee_service = ChangeEmployeeDialogService(
     tel,
@@ -231,7 +237,8 @@ personal_profile_dialog = PersonalProfileDialog(
 )
 organization_menu_dialog = OrganizationMenuDialog(
     tel,
-    organization_menu_service
+    organization_menu_service,
+    organization_menu_getter
 )
 change_employee_dialog = ChangeEmployeeDialog(
     tel,

@@ -10,11 +10,13 @@ class OrganizationMenuDialog(interface.IOrganizationMenuDialog):
     def __init__(
             self,
             tel: interface.ITelemetry,
-            organization_menu_service: interface.IOrganizationMenuDialogService,
+            organization_menu_service: interface.IOrganizationMenuService,
+            organization_menu_getter: interface.IOrganizationMenuGetter,
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
         self.organization_menu_service = organization_menu_service
+        self.organization_menu_getter = organization_menu_getter
 
     def get_dialog(self) -> Dialog:
         return Dialog(
@@ -60,6 +62,6 @@ class OrganizationMenuDialog(interface.IOrganizationMenuDialog):
             ),
 
             state=model.OrganizationMenuStates.organization_menu,
-            getter=self.organization_menu_service.get_organization_menu_data,
+            getter=self.organization_menu_getter.get_organization_menu_data,
             parse_mode="HTML",
         )
