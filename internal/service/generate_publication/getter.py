@@ -254,6 +254,7 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
             "has_void_content": dialog_manager.dialog_data.get("has_void_content", False),
             "has_small_content": dialog_manager.dialog_data.get("has_small_content", False),
             "has_big_content": dialog_manager.dialog_data.get("has_big_content", False),
+            "has_edit_content_error": dialog_manager.dialog_data.get("has_edit_content_error", False),
         }
 
     async def get_image_menu_data(
