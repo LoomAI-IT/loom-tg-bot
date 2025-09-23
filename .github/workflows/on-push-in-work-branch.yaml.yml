@@ -64,16 +64,16 @@ jobs:
                     # Очищаем старые ветки если текущая не main
                     if [ "$CURRENT_BRANCH" != "main" ] && [ "$CURRENT_BRANCH" != "master" ]; then
                         echo "🧹 Очищаем старые ветки (текущая ветка: $CURRENT_BRANCH)"
-                        
+                    
                         # Переключаемся на main для безопасного удаления веток
                         git checkout main 2>/dev/null || git checkout master 2>/dev/null || echo "⚠️ Не удалось переключиться на main/master"
-                        
+                    
                         # Удаляем все локальные ветки кроме main/master и текущей целевой ветки
                         git branch | grep -v -E "(main|master|\*|${{ env.BRANCH_NAME }})" | xargs -r git branch -D
-                        
+                    
                         # Очищаем удаленные ветки
                         git remote prune origin
-                        
+                    
                         echo "✅ Очистка веток завершена"
                     fi
                     
@@ -91,9 +91,47 @@ jobs:
                     
                     export $(cat env/.env.app env/.env.db env/.env.monitoring | xargs)
                     
+                    echo "🔨 Начинаем сборку контейнера..."
                     docker compose -f ./docker-compose/app.yaml up -d --build kontur-tg-bot
                     
-                    python3 script/tg_bot_alert.py "✅ Ветка kontur-tg-bot/${{ env.BRANCH_NAME }} успешно обновлена на сервере ${{ env.SERVER_HOST }}!"
+                    check_health() {
+                        # Если есть HTTP endpoint
+                        if curl -f -s -o /dev/null -w "%{http_code}" http://localhost:8005/api/tg-bot/health | grep -q "200"; then
+                            return 0
+                        else
+                            return 1
+                        fi
+                    }
                     
-                    echo "✅ Ветка ${{ env.BRANCH_NAME }} успешно обновлена на сервере ${{ env.SERVER_HOST }}!"
+                    MAX_ATTEMPTS=2
+                    ATTEMPT=1
+                    SUCCESS=false
+                    
+                    sleep 5
+                    
+                    while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
+                        echo "🔍 Проверка health (попытка $ATTEMPT из $MAX_ATTEMPTS)..."
+                        
+                        if check_health; then
+                            echo "✅ Health check пройден!"
+                            SUCCESS=true
+                            break
+                        else
+                            echo "⏳ Health check не пройден, ждем..."
+                            sleep 10
+                        fi
+                        
+                        ATTEMPT=$((ATTEMPT + 1))
+                    done
+                    
+                    if [ "$SUCCESS" = false ]; then
+                        docker logs -f kontur-tg-bot
+                        python3 script/tg_bot_alert.py "❌ Ветка kontur-tg-bot/${{ env.BRANCH_NAME }} не обновлена на сервере ${{ env.SERVER_HOST }}!
+                    📋 Подробности в Actions: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                    
+                        exit 1
+                    fi
+                    
+                    echo "✅ Ветка ${{ env.BRANCH_NAME }} успешно обновлена и приложение работает!"
+                    python3 script/tg_bot_alert.py "✅ Ветка kontur-tg-bot/${{ env.BRANCH_NAME }} успешно обновлена на сервере ${{ env.SERVER_HOST }}!"
                     EOF

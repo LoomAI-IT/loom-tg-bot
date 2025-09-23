@@ -1,6 +1,6 @@
 from aiogram_dialog import Window, Dialog
 from aiogram_dialog.widgets.text import Const, Format, Multi, Case
-from aiogram_dialog.widgets.kbd import Button, Column, Row, Back, Select, Checkbox, Cancel, Next
+from aiogram_dialog.widgets.kbd import Button, Column, Row, Back, Select, Checkbox, Next
 from aiogram_dialog.widgets.input import TextInput, MessageInput
 from aiogram_dialog.widgets.media import DynamicMedia
 
@@ -12,11 +12,13 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
     def __init__(
             self,
             tel: interface.ITelemetry,
-            generate_publication_service: interface.IGeneratePublicationDialogService,
+            generate_publication_service: interface.IGeneratePublicationService,
+            generate_publication_getter: interface.IGeneratePublicationGetter,
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
         self.generate_publication_service = generate_publication_service
+        self.generate_publication_getter = generate_publication_getter
 
     def get_dialog(self) -> Dialog:
         return Dialog(
@@ -36,7 +38,6 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
         )
 
     def get_select_category_window(self) -> Window:
-        """Окно выбора категории/рубрики для публикации"""
         return Window(
             Multi(
                 Const("📝 <b>Создание новой публикации</b>\n\n"),
@@ -72,12 +73,11 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             ),
 
             state=model.GeneratePublicationStates.select_category,
-            getter=self.generate_publication_service.get_categories_data,
+            getter=self.generate_publication_getter.get_categories_data,
             parse_mode="HTML",
         )
 
     def get_input_text_window(self) -> Window:
-        """Окно ввода текста для генерации"""
         return Window(
             Multi(
                 Const("📝 <b>Создание новой публикации</b>\n\n"),
@@ -169,12 +169,11 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             ),
 
             state=model.GeneratePublicationStates.input_text,
-            getter=self.generate_publication_service.get_input_text_data,
+            getter=self.generate_publication_getter.get_input_text_data,
             parse_mode="HTML",
         )
 
     def get_generation_window(self) -> Window:
-        """Окно выбора типа генерации"""
         return Window(
             Multi(
                 Const("📝 <b>Создание новой публикации</b>\n\n"),
@@ -200,12 +199,11 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             Back(Const("◀️ Назад")),
 
             state=model.GeneratePublicationStates.generation,
-            getter=self.generate_publication_service.get_input_text_data,
+            getter=self.generate_publication_getter.get_input_text_data,
             parse_mode="HTML",
         )
 
     def get_preview_window(self) -> Window:
-        """Окно предпросмотра публикации"""
         return Window(
             Multi(
                 Const("📝 <b>Предпросмотр публикации</b>\n\n"),
@@ -293,12 +291,11 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             ),
 
             state=model.GeneratePublicationStates.preview,
-            getter=self.generate_publication_service.get_preview_data,
+            getter=self.generate_publication_getter.get_preview_data,
             parse_mode="HTML",
         )
 
     def get_edit_text_menu_window(self) -> Window:
-        """Меню редактирования текстовых элементов"""
         return Window(
             Multi(
                 Const("✏️ <b>Редактирование текста</b>\n\n"),
@@ -344,7 +341,6 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
         )
 
     def get_regenerate_text_window(self) -> Window:
-        """Окно для ввода дополнительного промпта при перегенерации"""
         return Window(
             Multi(
                 Const("🔄 <b>Перегенерация с дополнительными указаниями</b>\n\n"),
@@ -410,12 +406,11 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             ),
 
             state=model.GeneratePublicationStates.regenerate_text,
-            getter=self.generate_publication_service.get_regenerate_data,
+            getter=self.generate_publication_getter.get_regenerate_data,
             parse_mode="HTML",
         )
 
     def get_edit_title_window(self) -> Window:
-        """Окно редактирования названия"""
         return Window(
             Multi(
                 Const("📝 <b>Изменение названия</b>\n\n"),
@@ -451,7 +446,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             ),
 
             state=model.GeneratePublicationStates.edit_title,
-            getter=self.generate_publication_service.get_edit_title_data,
+            getter=self.generate_publication_getter.get_edit_title_data,
             parse_mode="HTML",
         )
 
@@ -486,12 +481,11 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             ),
 
             state=model.GeneratePublicationStates.edit_tags,
-            getter=self.generate_publication_service.get_edit_tags_data,
+            getter=self.generate_publication_getter.get_edit_tags_data,
             parse_mode="HTML",
         )
 
     def get_edit_content_window(self) -> Window:
-        """Окно редактирования основного текста"""
         return Window(
             Multi(
                 Const("📄 <b>Изменение текста публикации</b>\n\n"),
@@ -534,12 +528,11 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             ),
 
             state=model.GeneratePublicationStates.edit_content,
-            getter=self.generate_publication_service.get_edit_content_data,
+            getter=self.generate_publication_getter.get_edit_content_data,
             parse_mode="HTML",
         )
 
     def get_image_menu_window(self) -> Window:
-        """Меню управления изображением"""
         return Window(
             Multi(
                 Const("🖼 <b>Управление изображением</b>\n\n"),
@@ -585,12 +578,11 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             ),
 
             state=model.GeneratePublicationStates.image_menu,
-            getter=self.generate_publication_service.get_image_menu_data,
+            getter=self.generate_publication_getter.get_image_menu_data,
             parse_mode="HTML",
         )
 
     def get_generate_image_window(self) -> Window:
-        """Окно генерации изображения с промптом"""
         return Window(
             Multi(
                 Const("🎨 <b>Генерация изображения</b>\n\n"),
@@ -655,12 +647,11 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             ),
 
             state=model.GeneratePublicationStates.generate_image,
-            getter=self.generate_publication_service.get_image_prompt_data,
+            getter=self.generate_publication_getter.get_image_prompt_data,
             parse_mode="HTML",
         )
 
     def get_upload_image_window(self) -> Window:
-        """Окно загрузки собственного изображения"""
         return Window(
             Multi(
                 Const("📤 <b>Загрузка изображения</b>\n\n"),
@@ -703,12 +694,11 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             ),
 
             state=model.GeneratePublicationStates.upload_image,
-            getter=self.generate_publication_service.get_upload_image_data,
+            getter=self.generate_publication_getter.get_upload_image_data,
             parse_mode="HTML",
         )
 
     def get_social_network_select_window(self) -> Window:
-        """Окно выбора социальных сетей для публикации"""
         return Window(
             Multi(
                 Const("🌐 <b>Выбор социальных сетей</b>\n\n"),
@@ -789,6 +779,6 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             ),
 
             state=model.GeneratePublicationStates.social_network_select,
-            getter=self.generate_publication_service.get_social_network_select_data,
+            getter=self.generate_publication_getter.get_social_network_select_data,
             parse_mode="HTML",
         )

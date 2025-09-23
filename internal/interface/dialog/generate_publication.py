@@ -1,13 +1,9 @@
-# internal/interface/dialog/generate_publication.py
 from abc import abstractmethod
 from typing import Protocol, Any
 from aiogram_dialog import DialogManager, Dialog, Window
 from aiogram.types import CallbackQuery, Message
 from aiogram_dialog.widgets.input import MessageInput
 from aiogram_dialog.widgets.kbd import ManagedCheckbox
-
-from internal import model
-
 
 class IGeneratePublicationDialog(Protocol):
     @abstractmethod
@@ -53,8 +49,8 @@ class IGeneratePublicationDialog(Protocol):
     def get_social_network_select_window(self) -> Window: pass
 
 
-class IGeneratePublicationDialogService(Protocol):
-    # Существующие методы
+class IGeneratePublicationService(Protocol):
+
     @abstractmethod
     async def handle_select_category(
             self,
@@ -105,7 +101,6 @@ class IGeneratePublicationDialogService(Protocol):
             dialog_manager: DialogManager
     ) -> None: pass
 
-    # Новые методы для редактирования текста
     @abstractmethod
     async def handle_regenerate_text(
             self,
@@ -150,7 +145,6 @@ class IGeneratePublicationDialogService(Protocol):
             text: str
     ) -> None: pass
 
-    # Методы для управления изображением
     @abstractmethod
     async def handle_generate_new_image(
             self,
@@ -184,7 +178,6 @@ class IGeneratePublicationDialogService(Protocol):
             dialog_manager: DialogManager
     ) -> None: pass
 
-    # НОВЫЕ методы для навигации по изображениям
     @abstractmethod
     async def handle_prev_image(
             self,
@@ -201,7 +194,6 @@ class IGeneratePublicationDialogService(Protocol):
             dialog_manager: DialogManager
     ) -> None: pass
 
-    # Существующие методы для публикации
     @abstractmethod
     async def handle_add_to_drafts(
             self,
@@ -242,13 +234,15 @@ class IGeneratePublicationDialogService(Protocol):
             dialog_manager: DialogManager
     ) -> None: pass
 
+
+class IGeneratePublicationGetter(Protocol):
+
     @abstractmethod
     async def get_social_network_select_data(
             self,
             dialog_manager: DialogManager,
     ) -> dict: pass
 
-    # Геттеры для окон
     @abstractmethod
     async def get_preview_data(
             self,
