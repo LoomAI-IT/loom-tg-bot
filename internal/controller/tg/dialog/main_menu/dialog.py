@@ -9,11 +9,13 @@ class MainMenuDialog(interface.IMainMenuDialog):
     def __init__(
             self,
             tel: interface.ITelemetry,
-            main_menu_service: interface.IMainMenuDialogService,
+            main_menu_service: interface.IMainMenuService,
+            main_menu_getter: interface.IMainMenuGetter,
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
         self.main_menu_service = main_menu_service
+        self.main_menu_getter = main_menu_getter
 
     def get_dialog(self) -> Dialog:
         return Dialog(
@@ -49,6 +51,6 @@ class MainMenuDialog(interface.IMainMenuDialog):
                 ),
             ),
             state=model.MainMenuStates.main_menu,
-            getter=self.main_menu_service.get_main_menu_data,
+            getter=self.main_menu_getter.get_main_menu_data,
             parse_mode="HTML",
         )
