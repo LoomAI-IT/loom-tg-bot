@@ -42,7 +42,7 @@ from internal.service.change_employee.service import ChangeEmployeeService
 from internal.service.add_employee.service import AddEmployeeService
 from internal.service.generate_publication.service import GeneratePublicationService
 from internal.service.generate_video_cut.service import GenerateVideoCutService
-from internal.service.moderation_publication.service import ModerationPublicationDialogService
+from internal.service.moderation_publication.service import ModerationPublicationService
 from internal.service.video_cut_draft_content.service import VideoCutsDraftService
 from internal.service.moderation_video_cut.service import VideoCutModerationDialogService
 
@@ -54,6 +54,7 @@ from internal.service.personal_profile.getter import PersonalProfileGetter
 from internal.service.change_employee.getter import ChangeEmployeeGetter
 from internal.service.add_employee.getter import AddEmployeeGetter
 from internal.service.generate_publication.getter import GeneratePublicationDataGetter
+from internal.service.moderation_publication.getter import ModerationPublicationGetter
 from internal.service.generate_video_cut.getter import GenerateVideoCutGetter
 from internal.service.video_cut_draft_content.getter import VideoCutsDraftGetter
 
@@ -146,6 +147,14 @@ generate_publication_getter = GeneratePublicationDataGetter(
     kontur_content_client,
 )
 
+moderation_publication_getter = ModerationPublicationGetter(
+    tel,
+    state_repo,
+    kontur_employee_client,
+    kontur_content_client,
+    cfg.domain,
+)
+
 generate_video_cut_getter = GenerateVideoCutGetter(
     tel
 )
@@ -229,14 +238,11 @@ generate_video_cut_service = GenerateVideoCutService(
     kontur_content_client,
 )
 
-moderation_publication_service = ModerationPublicationDialogService(
+moderation_publication_service = ModerationPublicationService(
     tel,
     bot,
     state_repo,
-    kontur_employee_client,
-    kontur_organization_client,
     kontur_content_client,
-    cfg.domain
 )
 
 video_cuts_draft_service = VideoCutsDraftService(
@@ -307,7 +313,8 @@ generate_video_cut_dialog = GenerateVideoCutDialog(
 
 moderation_publication_dialog = ModerationPublicationDialog(
     tel,
-    moderation_publication_service
+    moderation_publication_service,
+    moderation_publication_getter,
 )
 
 video_cuts_draft_dialog = VideoCutsDraftDialog(
