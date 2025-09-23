@@ -170,7 +170,7 @@ class TelegramWebhookController(interface.ITelegramWebhookController):
                 await self.state_service.create_vizard_video_cut_alert(
                     state_id=user_state.id,
                     youtube_video_reference=body.youtube_video_reference,
-                    video_count=body.vizard_video_count,
+                    video_count=body.video_count,
                 )
 
                 # Отправляем уведомление
