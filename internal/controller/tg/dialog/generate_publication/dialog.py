@@ -1,4 +1,4 @@
-from aiogram_dialog import Window, Dialog
+from aiogram_dialog import Window, Dialog, ShowMode
 from aiogram_dialog.widgets.text import Const, Format, Multi, Case
 from aiogram_dialog.widgets.kbd import Button, Column, Row, Back, Select, Checkbox, Next
 from aiogram_dialog.widgets.input import TextInput, MessageInput
@@ -257,12 +257,12 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                     Button(
                         Const("✏️ Текст"),
                         id="edit_text_menu",
-                        on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.edit_text_menu),
+                        on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.edit_text_menu, ShowMode.EDIT),
                     ),
                     Button(
                         Const("🖼 Изображение"),
                         id="edit_image_menu",
-                        on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.image_menu),
+                        on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.image_menu, ShowMode.EDIT),
                     ),
                 ),
                 Button(
@@ -312,28 +312,28 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                 Button(
                     Const("🔄 Перегенерировать с промптом"),
                     id="regenerate_with_prompt",
-                    on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.regenerate_text),
+                    on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.regenerate_text, ShowMode.EDIT),
                 ),
                 Button(
                     Const("📝 Изменить название"),
                     id="edit_title",
-                    on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.edit_title),
+                    on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.edit_title, ShowMode.EDIT),
                 ),
                 Button(
                     Const("🏷 Изменить теги"),
                     id="edit_tags",
-                    on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.edit_tags),
+                    on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.edit_tags, ShowMode.EDIT),
                 ),
                 Button(
                     Const("📄 Изменить текст"),
                     id="edit_content",
-                    on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.edit_content),
+                    on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.edit_content, ShowMode.EDIT),
                 ),
             ),
             Button(
                 Const("📄 ◀️ Назад к превью"),
                 id="preview",
-                on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.preview),
+                on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.preview, ShowMode.EDIT),
             ),
 
             state=model.GeneratePublicationStates.edit_text_menu,
@@ -376,6 +376,14 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                                 },
                                 selector="has_big_regenerate_prompt"
                             ),
+                            Case(
+                                {
+                                    True: Const(
+                                        "⚠️ <b>Ошибка:</b> Не удалось перегенерировать текст. Попробуйте еще раз\n\n"),
+                                    False: Const(""),
+                                },
+                                selector="has_regenerate_error"
+                            ),
                             Const("💡 <b>Введите дополнительные пожелания:</b>\n"),
                             Const(
                                 "<i>Например: сделай текст короче, добавь больше эмоций, убери технические термины и т.д.</i>\n\n"),
@@ -401,7 +409,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             Button(
                 Const("📄 ◀️ Назад"),
                 id="edit_text_menu",
-                on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.edit_text_menu),
+                on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.edit_text_menu, ShowMode.EDIT),
                 when="~is_regenerating_text",  # Отключаем кнопку во время регенерации
             ),
 
@@ -430,6 +438,14 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                     },
                     selector="has_big_title"
                 ),
+                Case(
+                    {
+                        True: Const(
+                            "⚠️ <b>Ошибка:</b> Не удалось изменить название. Попробуйте еще раз\n\n"),
+                        False: Const(""),
+                    },
+                    selector="has_edit_title_error"
+                ),
                 Const("✍️ <b>Введите новое название:</b>"),
                 sep="",
             ),
@@ -442,7 +458,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             Button(
                 Const("📄 ◀️ Назад"),
                 id="edit_text_menu",
-                on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.edit_text_menu),
+                on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.edit_text_menu, ShowMode.EDIT),
             ),
 
             state=model.GeneratePublicationStates.edit_title,
@@ -464,6 +480,14 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                     },
                     selector="has_too_many_tags"
                 ),
+                Case(
+                    {
+                        True: Const(
+                            "⚠️ <b>Ошибка:</b> Не удалось изменить тэги. Попробуйте еще раз\n\n"),
+                        False: Const(""),
+                    },
+                    selector="has_edit_tags_error"
+                ),
                 Const("✍️ <b>Введите теги через запятую:</b>\n"),
                 Const("<i>Например: маркетинг, продажи, SMM</i>"),
                 sep="",
@@ -477,7 +501,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             Button(
                 Const("📄 ◀️ Назад"),
                 id="edit_text_menu",
-                on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.edit_text_menu),
+                on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.edit_text_menu, ShowMode.EDIT),
             ),
 
             state=model.GeneratePublicationStates.edit_tags,
@@ -511,6 +535,14 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                     },
                     selector="has_big_content"
                 ),
+                Case(
+                    {
+                        True: Const(
+                            "⚠️ <b>Ошибка:</b> Не удалось изменить текст. Попробуйте еще раз\n\n"),
+                        False: Const(""),
+                    },
+                    selector="has_edit_content_error"
+                ),
                 Const("✍️ <b>Введите новый текст:</b>\n"),
                 Const("<i>Текущий текст показан в предыдущем окне</i>"),
                 sep="",
@@ -524,7 +556,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             Button(
                 Const("📄 ◀️ Назад"),
                 id="edit_text_menu",
-                on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.edit_text_menu),
+                on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.edit_text_menu, ShowMode.EDIT),
             ),
 
             state=model.GeneratePublicationStates.edit_content,
@@ -556,12 +588,12 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                 Button(
                     Const("🎨 Сгенерировать с промптом"),
                     id="generate_image_prompt",
-                    on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.generate_image),
+                    on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.generate_image, ShowMode.EDIT),
                 ),
                 Button(
                     Const("📤 Загрузить своё"),
                     id="upload_image",
-                    on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.upload_image),
+                    on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.upload_image, ShowMode.EDIT),
                 ),
                 Button(
                     Const("🗑 Удалить изображение"),
@@ -574,7 +606,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             Button(
                 Const("📄 ◀️ Назад"),
                 id="preview",
-                on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.preview),
+                on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.preview, ShowMode.EDIT),
             ),
 
             state=model.GeneratePublicationStates.image_menu,
@@ -618,6 +650,14 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                                 },
                                 selector="has_big_image_prompt"
                             ),
+                            Case(
+                                {
+                                    True: Const(
+                                        "⚠️ <b>Ошибка:</b> Не удалось сгенерировать изображение. Попробуйте еще раз\n\n"),
+                                    False: Const(""),
+                                },
+                                selector="has_regenerate_image_error"
+                            ),
                             Const("💡 <b>Опишите желаемое изображение:</b>\n"),
                             Const("<i>Например: минималистичная иллюстрация в синих тонах, деловой стиль</i>\n\n"),
                             Case(
@@ -642,7 +682,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             Button(
                 Const("📄 ◀️ Назад"),
                 id="image_menu",
-                on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.image_menu),
+                on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.image_menu, ShowMode.EDIT),
                 when="~is_generating_image",  # Отключаем кнопку во время генерации
             ),
 
@@ -677,6 +717,14 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                     },
                     selector="has_image_processing_error"
                 ),
+                Case(
+                    {
+                        True: Const(
+                            "⚠️ <b>Ошибка:</b> Не удалось сгенерировать изображение. Попробуйте еще раз\n\n"),
+                        False: Const(""),
+                    },
+                    selector="has_upload_image_error"
+                ),
                 Const("📸 <b>Отправьте изображение:</b>\n"),
                 Const("<i>Поддерживаются форматы: JPG, PNG, GIF</i>\n"),
                 Const("<i>Максимальный размер: 10 МБ</i>"),
@@ -690,7 +738,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             Button(
                 Const("📄 ◀️ Назад"),
                 id="image_menu",
-                on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.image_menu),
+                on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.image_menu, ShowMode.EDIT),
             ),
 
             state=model.GeneratePublicationStates.upload_image,
@@ -766,7 +814,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                 Button(
                     Const("◀️ Назад"),
                     id="back_to_preview",
-                    on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.preview),
+                    on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.preview, ShowMode.EDIT),
                 ),
             ),
 
@@ -774,7 +822,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             Button(
                 Const("◀️ Назад к превью"),
                 id="back_to_preview_no_networks",
-                on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.preview),
+                on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.preview, ShowMode.EDIT),
                 when="no_connected_networks",
             ),
 

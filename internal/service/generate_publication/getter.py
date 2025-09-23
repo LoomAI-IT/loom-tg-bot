@@ -203,16 +203,20 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
             **kwargs
     ) -> dict:
         return {
+            # Основные данные
             "has_regenerate_prompt": dialog_manager.dialog_data.get("regenerate_prompt", "") != "",
             "regenerate_prompt": dialog_manager.dialog_data.get("regenerate_prompt", ""),
-            # Error flags
+
+            # Состояние процесса
+            "is_regenerating_text": dialog_manager.dialog_data.get("is_regenerating_text", False),
+
+            # Флаги ошибок валидации
             "has_void_regenerate_prompt": dialog_manager.dialog_data.get("has_void_regenerate_prompt", False),
             "has_small_regenerate_prompt": dialog_manager.dialog_data.get("has_small_regenerate_prompt", False),
             "has_big_regenerate_prompt": dialog_manager.dialog_data.get("has_big_regenerate_prompt", False),
-            "has_regenerate_api_error": dialog_manager.dialog_data.get("has_regenerate_api_error", False),
-            "is_regenerating_text": dialog_manager.dialog_data.get("is_regenerating_text", False),
-        }
 
+            "has_regenerate_error": dialog_manager.dialog_data.get("has_regenerate_error", False),
+        }
     async def get_edit_title_data(
             self,
             dialog_manager: DialogManager,
@@ -223,6 +227,7 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
             # Error flags
             "has_void_title": dialog_manager.dialog_data.get("has_void_title", False),
             "has_big_title": dialog_manager.dialog_data.get("has_big_title", False),
+            "has_edit_title_error": dialog_manager.dialog_data.get("has_edit_title_error", False),
         }
 
     async def get_edit_tags_data(
@@ -235,6 +240,7 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
             "publication_tags": ", ".join(tags) if tags else "Нет тегов",
             # Error flags
             "has_too_many_tags": dialog_manager.dialog_data.get("has_too_many_tags", False),
+            "has_edit_tags_error": dialog_manager.dialog_data.get("has_edit_tags_error", False),
         }
 
     async def get_edit_content_data(
@@ -248,6 +254,7 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
             "has_void_content": dialog_manager.dialog_data.get("has_void_content", False),
             "has_small_content": dialog_manager.dialog_data.get("has_small_content", False),
             "has_big_content": dialog_manager.dialog_data.get("has_big_content", False),
+            "has_edit_content_error": dialog_manager.dialog_data.get("has_edit_content_error", False),
         }
 
     async def get_image_menu_data(
@@ -273,7 +280,7 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
             "has_void_image_prompt": dialog_manager.dialog_data.get("has_void_image_prompt", False),
             "has_small_image_prompt": dialog_manager.dialog_data.get("has_small_image_prompt", False),
             "has_big_image_prompt": dialog_manager.dialog_data.get("has_big_image_prompt", False),
-            "has_image_generation_error": dialog_manager.dialog_data.get("has_image_generation_error", False),
+            "has_regenerate_image_error": dialog_manager.dialog_data.get("has_regenerate_image_error", False),
         }
 
     async def get_upload_image_data(
@@ -286,6 +293,7 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
             "has_invalid_image_type": dialog_manager.dialog_data.get("has_invalid_image_type", False),
             "has_big_image_size": dialog_manager.dialog_data.get("has_big_image_size", False),
             "has_image_processing_error": dialog_manager.dialog_data.get("has_image_processing_error", False),
+            "has_upload_image_error": dialog_manager.dialog_data.get("has_upload_image_error", False),
         }
 
     # Helper methods
