@@ -31,6 +31,8 @@ class GenerateVideoCutService(interface.IGenerateVideoCutService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 await message.delete()
                 youtube_url = message.text.strip()
 
