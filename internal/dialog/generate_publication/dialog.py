@@ -292,7 +292,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                                     Const("🕐 <i>Это может занять время. Пожалуйста, подождите.</i>"),
                                 ),
                             },
-                            selector=""
+                            selector="regenerate_prompt"
                         )
                     },
                     selector="is_regenerating_text"
