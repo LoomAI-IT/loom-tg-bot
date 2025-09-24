@@ -238,6 +238,7 @@ class VideoCutsDraftGetter(interface.IVideoCutsDraftGetter):
                     "youtube_connected": youtube_connected,
                     "instagram_connected": instagram_connected,
                     "has_available_networks": youtube_connected or instagram_connected,
+                    "no_connected_networks": not youtube_connected and not instagram_connected,
                 }
 
                 span.set_status(Status(StatusCode.OK))
