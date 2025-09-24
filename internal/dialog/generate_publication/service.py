@@ -69,6 +69,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 dialog_manager.dialog_data["has_input_text"] = True
 
                 self.logger.info("Текст для генерации введен")
+                await dialog_manager.switch_to(model.GeneratePublicationStates.generation)
 
                 span.set_status(Status(StatusCode.OK))
 
@@ -146,6 +147,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 dialog_manager.dialog_data["has_input_text"] = True
 
                 self.logger.info("Голосовое сообщение обработано")
+                await dialog_manager.switch_to(model.GeneratePublicationStates.generation)
 
                 span.set_status(Status(StatusCode.OK))
 
@@ -912,7 +914,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                     vk_source=vk_source,
                 )
 
-                await callback.answer("💾 Опубликовано!")
+                await callback.answer("💾 Опубликовано!", show_alert=True)
 
                 if await self._check_alerts(dialog_manager):
                     return

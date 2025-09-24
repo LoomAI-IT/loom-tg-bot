@@ -143,10 +143,10 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             ),
 
             Row(
-                Next(
-                    Const("▶️ Далее"),
-                    when="has_input_text"
-                ),
+                # Next(
+                #     Const("▶️ Далее"),
+                #     when="has_input_text"
+                # ),
                 Back(Const("◀️ Назад")),
             ),
 
