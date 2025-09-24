@@ -35,7 +35,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
     def get_select_category_window(self) -> Window:
         return Window(
             Multi(
-                Const("📌 Выберите рубрику, чтобы начать генерацию:</b>\n"),
+                Const("📌 <b>Выберите рубрику, чтобы начать генерацию:</b>\n"),
                 Case(
                     {
                         True: Const("<b>Актуальные рубрики</b>:"),
