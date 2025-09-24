@@ -11,7 +11,7 @@ class UserState:
 
     access_token: str
     refresh_token: str
-    current_dialog: str
+    can_show_alerts: bool
 
     created_at: datetime
 
@@ -25,7 +25,7 @@ class UserState:
                 organization_id=row.organization_id,
                 access_token=row.access_token,
                 refresh_token=row.refresh_token,
-                current_dialog=row.current_dialog,
+                can_show_alerts=row.can_show_alerts,
                 created_at=row.created_at,
             )
             for row in rows

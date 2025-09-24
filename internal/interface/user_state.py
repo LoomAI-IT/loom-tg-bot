@@ -75,7 +75,7 @@ class IStateRepo(Protocol):
             organization_id: int = None,
             access_token: str = None,
             refresh_token: str = None,
-            current_dialog: str = None,
+            can_show_alerts: bool = None,
     ) -> None: pass
 
     @abstractmethod

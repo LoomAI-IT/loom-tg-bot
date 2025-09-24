@@ -30,6 +30,12 @@ class ContentMenuService(interface.IContentMenuService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                state = await self._get_state(dialog_manager)
+                await self.state_repo.change_user_state(
+                    state_id=state.id,
+                    can_show_alerts=False
+                )
+
                 # Запускаем диалог генерации публикации
                 await dialog_manager.start(
                     model.GeneratePublicationStates.select_category,
@@ -56,6 +62,12 @@ class ContentMenuService(interface.IContentMenuService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                state = await self._get_state(dialog_manager)
+                await self.state_repo.change_user_state(
+                    state_id=state.id,
+                    can_show_alerts=False
+                )
+
                 # Запускаем диалог генерации видео-нарезки
                 await dialog_manager.start(
                     model.GenerateVideoCutStates.input_youtube_link,
@@ -82,6 +94,12 @@ class ContentMenuService(interface.IContentMenuService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                state = await self._get_state(dialog_manager)
+                await self.state_repo.change_user_state(
+                    state_id=state.id,
+                    can_show_alerts=False
+                )
+
                 # Запускаем диалог черновиков публикаций
                 await dialog_manager.start(
                     model.PublicationDraftContentStates.drafts_list,
@@ -108,6 +126,12 @@ class ContentMenuService(interface.IContentMenuService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                state = await self._get_state(dialog_manager)
+                await self.state_repo.change_user_state(
+                    state_id=state.id,
+                    can_show_alerts=False
+                )
+
                 # Запускаем диалог черновиков видео-нарезок
                 await dialog_manager.start(
                     model.VideoCutsDraftStates.video_cut_list,
@@ -154,6 +178,11 @@ class ContentMenuService(interface.IContentMenuService):
                     )
                     return
 
+                await self.state_repo.change_user_state(
+                    state_id=state.id,
+                    can_show_alerts=False
+                )
+
                 # Запускаем диалог модерации публикаций
                 await dialog_manager.start(
                     model.ModerationPublicationStates.moderation_list,
@@ -199,6 +228,11 @@ class ContentMenuService(interface.IContentMenuService):
                         show_alert=True
                     )
                     return
+
+                await self.state_repo.change_user_state(
+                    state_id=state.id,
+                    can_show_alerts=False
+                )
 
                 # Запускаем диалог модерации видео-нарезок
                 await dialog_manager.start(

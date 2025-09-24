@@ -164,7 +164,7 @@ class TelegramWebhookController(interface.ITelegramWebhookController):
                     video_count=body.video_count,
                 )
 
-                if user_state.current_dialog in ["main_menu", "organization_menu", "content_menu"]:
+                if user_state.can_show_alerts:
                     dialog_manager = self.dialog_bg_factory.bg(
                         bot=self.bot,
                         user_id=user_state.tg_chat_id,
