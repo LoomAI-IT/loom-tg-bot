@@ -45,11 +45,23 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
                 has_selected_networks = any(selected_networks.values())
 
                 if not has_selected_networks and not selected_networks:
-                    vkontakte_checkbox: ManagedCheckbox = dialog_manager.find("vkontakte_checkbox")
-                    await vkontakte_checkbox.set_checked(social_networks["vkontakte"][0].get("autoselect", False))
+                    if vkontakte_connected:
+                        widget_id = "vkontakte_checkbox"
+                        autoselect = social_networks["vkontakte"][0].get("autoselect", False)
 
-                    telegram_checkbox: ManagedCheckbox = dialog_manager.find("telegram_checkbox")
-                    await telegram_checkbox.set_checked(social_networks["telegram"][0].get("autoselect", False))
+                        vkontakte_checkbox: ManagedCheckbox = dialog_manager.find(widget_id)
+                        selected_networks[widget_id] = autoselect
+
+                        await vkontakte_checkbox.set_checked(autoselect)
+
+                    if telegram_connected:
+                        widget_id = "telegram_checkbox"
+                        autoselect = social_networks["telegram"][0].get("autoselect", False)
+
+                        telegram_checkbox: ManagedCheckbox = dialog_manager.find(widget_id)
+                        selected_networks[widget_id] = autoselect
+
+                        await telegram_checkbox.set_checked(autoselect)
 
                 data = {
                     "telegram_connected": telegram_connected,
