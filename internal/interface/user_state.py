@@ -24,6 +24,7 @@ class IStateService(Protocol):
             access_token: str = None,
             refresh_token: str = None,
             can_show_alerts: bool = None,
+            show_error_recovery: bool = None,
     ) -> None: pass
 
     @abstractmethod
@@ -77,6 +78,7 @@ class IStateRepo(Protocol):
             access_token: str = None,
             refresh_token: str = None,
             can_show_alerts: bool = None,
+            show_error_recovery: bool = None,
     ) -> None: pass
 
     @abstractmethod

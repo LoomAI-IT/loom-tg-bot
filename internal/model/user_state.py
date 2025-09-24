@@ -12,6 +12,7 @@ class UserState:
     access_token: str
     refresh_token: str
     can_show_alerts: bool
+    show_error_recovery: bool
 
     created_at: datetime
 
@@ -26,6 +27,7 @@ class UserState:
                 access_token=row.access_token,
                 refresh_token=row.refresh_token,
                 can_show_alerts=row.can_show_alerts,
+                show_error_recovery=row.show_error_recovery,
                 created_at=row.created_at,
             )
             for row in rows
