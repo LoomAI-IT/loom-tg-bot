@@ -465,20 +465,20 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 new_text = text.strip()
 
                 if not new_text:
-                    dialog_manager.dialog_data["has_void_content"] = True
+                    dialog_manager.dialog_data["has_void_text"] = True
                     return
 
                 if len(new_text) > 4000:
-                    dialog_manager.dialog_data["has_big_content"] = True
+                    dialog_manager.dialog_data["has_big_text"] = True
                     return
 
                 if len(new_text) < 50:
-                    dialog_manager.dialog_data["has_small_content"] = True
+                    dialog_manager.dialog_data["has_small_text"] = True
                     return
 
-                dialog_manager.dialog_data.pop("has_void_content", None)
-                dialog_manager.dialog_data.pop("has_big_content", None)
-                dialog_manager.dialog_data.pop("has_small_content", None)
+                dialog_manager.dialog_data.pop("has_void_text", None)
+                dialog_manager.dialog_data.pop("has_big_text", None)
+                dialog_manager.dialog_data.pop("has_small_text", None)
 
                 dialog_manager.dialog_data["publication_text"] = new_text
 
