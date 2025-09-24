@@ -13,9 +13,7 @@ class Publication:
     tg_source: bool | None
 
     text_reference: str
-    name: str
     text: str
-    tags: list[str]
     image_fid: str | None
     image_name: str | None
 
@@ -37,9 +35,7 @@ class Publication:
             "vk_source": self.vk_source,
             "tg_source": self.tg_source,
             "text_reference": self.text_reference,
-            "name": self.name,
             "text": self.text,
-            "tags": self.tags,
             "image_fid": self.image_fid,
             "image_name": self.image_name,
             "openai_rub_cost": self.openai_rub_cost,

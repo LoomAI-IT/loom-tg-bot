@@ -57,11 +57,11 @@ class KonturContentClient(interface.IKonturContentClient):
                     "category_id": category_id,
                     "text_reference": text_reference,
                 }
-                response = await self.client.post("/publication/text/generate", json=body)
-                json_response = response.json()
+                # response = await self.client.post("/publication/text/generate", json=body)
+                # json_response = response.json()
 
                 span.set_status(Status(StatusCode.OK))
-                return json_response
+                return {"text": "мок текста в клиенте"}
 
             except Exception as e:
                 span.record_exception(e)
@@ -84,11 +84,11 @@ class KonturContentClient(interface.IKonturContentClient):
                     "publication_text": publication_text,
                     "prompt": prompt,
                 }
-                response = await self.client.post("/publication/text/regenerate", json=body)
-                json_response = response.json()
+                # response = await self.client.post("/publication/text/regenerate", json=body)
+                # json_response = response.json()
 
                 span.set_status(Status(StatusCode.OK))
-                return json_response
+                return {"text": "мок перегенерированного текста в клиенте"}
 
             except Exception as e:
                 span.record_exception(e)
@@ -149,9 +149,7 @@ class KonturContentClient(interface.IKonturContentClient):
             category_id: int,
             creator_id: int,
             text_reference: str,
-            name: str,
             text: str,
-            tags: list[str],
             moderation_status: str,
             image_url: str = None,
             image_content: bytes = None,
@@ -168,9 +166,7 @@ class KonturContentClient(interface.IKonturContentClient):
                     "category_id": str(category_id),
                     "creator_id": str(creator_id),
                     "text_reference": text_reference,
-                    "name": name,
                     "text": text,
-                    "tags": json.dumps(tags),
                     "moderation_status": moderation_status,
                 }
 
@@ -209,9 +205,7 @@ class KonturContentClient(interface.IKonturContentClient):
             publication_id: int,
             vk_source: bool = None,
             tg_source: bool = None,
-            name: str = None,
             text: str = None,
-            tags: list[str] = None,
             time_for_publication: datetime = None,
             image_url: str = None,
             image_content: bytes = None,
@@ -232,12 +226,8 @@ class KonturContentClient(interface.IKonturContentClient):
                     data["vk_source"] = vk_source
                 if tg_source is not None:
                     data["tg_source"] = tg_source
-                if name is not None:
-                    data["name"] = name
                 if text is not None:
                     data["text"] = text
-                if tags is not None:
-                    data["tags"] = json.dumps(tags)
                 if time_for_publication is not None:
                     data["time_for_publication"] = time_for_publication.isoformat() if hasattr(time_for_publication,
                                                                                                'isoformat') else str(

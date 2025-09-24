@@ -58,6 +58,7 @@ class TelegramWebhookController(interface.ITelegramWebhookController):
                 return None
             except Exception as err:
                 try:
+                    self.logger.error("Ошибка", {"traceback": traceback.format_exc()})
                     chat_id = self._get_chat_id(telegram_update)
                     await self._recovery_start_functionality(chat_id)
                 except Exception as err:

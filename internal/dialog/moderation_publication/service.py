@@ -1002,9 +1002,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         if image_url or image_content:
             await self.kontur_content_client.change_publication(
                 publication_id=publication_id,
-                name=working_pub["name"],
                 text=working_pub["text"],
-                tags=working_pub.get("tags", []),
                 image_url=image_url,
                 image_content=image_content,
                 image_filename=image_filename,
@@ -1013,9 +1011,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             # Обновляем только текстовые поля
             await self.kontur_content_client.change_publication(
                 publication_id=publication_id,
-                name=working_pub["name"],
                 text=working_pub["text"],
-                tags=working_pub.get("tags", []),
             )
 
     async def _get_current_image_data_for_moderation(self, dialog_manager: DialogManager) -> tuple[bytes, str] | None:

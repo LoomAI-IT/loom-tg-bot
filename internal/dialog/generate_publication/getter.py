@@ -1,6 +1,7 @@
 from aiogram.types import ContentType
 from aiogram_dialog import DialogManager
 from aiogram_dialog.api.entities import MediaAttachment, MediaId
+from aiogram_dialog.widgets.kbd import ManagedCheckbox
 
 from opentelemetry.trace import SpanKind, Status, StatusCode
 
@@ -43,6 +44,25 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
                 selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
                 has_selected_networks = any(selected_networks.values())
 
+                if not has_selected_networks and not selected_networks:
+                    if vkontakte_connected:
+                        widget_id = "vkontakte_checkbox"
+                        autoselect = social_networks["vkontakte"][0].get("autoselect", False)
+
+                        vkontakte_checkbox: ManagedCheckbox = dialog_manager.find(widget_id)
+                        selected_networks[widget_id] = autoselect
+
+                        await vkontakte_checkbox.set_checked(autoselect)
+
+                    if telegram_connected:
+                        widget_id = "telegram_checkbox"
+                        autoselect = social_networks["telegram"][0].get("autoselect", False)
+
+                        telegram_checkbox: ManagedCheckbox = dialog_manager.find(widget_id)
+                        selected_networks[widget_id] = autoselect
+
+                        await telegram_checkbox.set_checked(autoselect)
+
                 data = {
                     "telegram_connected": telegram_connected,
                     "vkontakte_connected": vkontakte_connected,
@@ -75,8 +95,6 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
                     state.account_id
                 )
 
-                tags = dialog_manager.dialog_data.get("publication_tags", [])
-                name = dialog_manager.dialog_data.get("publication_name", "")
                 text = dialog_manager.dialog_data.get("publication_text", "")
 
                 # Check for image presence
@@ -112,10 +130,7 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
 
                 data = {
                     "category_name": dialog_manager.dialog_data.get("category_name", ""),
-                    "publication_name": name,
                     "publication_text": text,
-                    "has_tags": bool(tags),
-                    "publication_tags": ", ".join(tags) if tags else "",
                     "has_scheduled_time": False,
                     "publish_time": "",
                     "has_image": has_image,
@@ -148,12 +163,10 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
             "has_void_input_text": dialog_manager.dialog_data.get("has_void_input_text", False),
             "has_small_input_text": dialog_manager.dialog_data.get("has_small_input_text", False),
             "has_big_input_text": dialog_manager.dialog_data.get("has_big_input_text", False),
-            "has_input_text_error": dialog_manager.dialog_data.get("has_input_text_error", False),
             # Voice input error flags
             "has_invalid_voice_type": dialog_manager.dialog_data.get("has_invalid_voice_type", False),
             "has_long_voice_duration": dialog_manager.dialog_data.get("has_long_voice_duration", False),
             "has_empty_voice_text": dialog_manager.dialog_data.get("has_empty_voice_text", False),
-            "has_input_voice_error": dialog_manager.dialog_data.get("has_input_voice_error", False),
         }
 
     async def get_categories_data(
@@ -198,64 +211,21 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
-    async def get_regenerate_data(
-            self,
-            dialog_manager: DialogManager,
-            **kwargs
-    ) -> dict:
-        return {
-            # Основные данные
-            "has_regenerate_prompt": dialog_manager.dialog_data.get("regenerate_prompt", "") != "",
-            "regenerate_prompt": dialog_manager.dialog_data.get("regenerate_prompt", ""),
 
-            # Состояние процесса
-            "is_regenerating_text": dialog_manager.dialog_data.get("is_regenerating_text", False),
-
-            # Флаги ошибок валидации
-            "has_void_regenerate_prompt": dialog_manager.dialog_data.get("has_void_regenerate_prompt", False),
-            "has_small_regenerate_prompt": dialog_manager.dialog_data.get("has_small_regenerate_prompt", False),
-            "has_big_regenerate_prompt": dialog_manager.dialog_data.get("has_big_regenerate_prompt", False),
-
-            "has_regenerate_error": dialog_manager.dialog_data.get("has_regenerate_error", False),
-        }
-    async def get_edit_title_data(
-            self,
-            dialog_manager: DialogManager,
-            **kwargs
-    ) -> dict:
-        return {
-            "publication_name": dialog_manager.dialog_data.get("publication_name", ""),
-            # Error flags
-            "has_void_title": dialog_manager.dialog_data.get("has_void_title", False),
-            "has_big_title": dialog_manager.dialog_data.get("has_big_title", False),
-            "has_edit_title_error": dialog_manager.dialog_data.get("has_edit_title_error", False),
-        }
-
-    async def get_edit_tags_data(
-            self,
-            dialog_manager: DialogManager,
-            **kwargs
-    ) -> dict:
-        tags = dialog_manager.dialog_data.get("publication_tags", [])
-        return {
-            "publication_tags": ", ".join(tags) if tags else "Нет тегов",
-            # Error flags
-            "has_too_many_tags": dialog_manager.dialog_data.get("has_too_many_tags", False),
-            "has_edit_tags_error": dialog_manager.dialog_data.get("has_edit_tags_error", False),
-        }
-
-    async def get_edit_content_data(
+    async def get_edit_text_data(
             self,
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
         return {
             "publication_text": dialog_manager.dialog_data.get("publication_text", ""),
+            "regenerate_prompt": dialog_manager.dialog_data.get("regenerate_prompt", ""),
+            "has_regenerate_prompt": bool(dialog_manager.dialog_data.get("regenerate_prompt", "")),
+            "is_regenerating_text": dialog_manager.dialog_data.get("is_regenerating_text", False),
             # Error flags
-            "has_void_content": dialog_manager.dialog_data.get("has_void_content", False),
-            "has_small_content": dialog_manager.dialog_data.get("has_small_content", False),
-            "has_big_content": dialog_manager.dialog_data.get("has_big_content", False),
-            "has_edit_content_error": dialog_manager.dialog_data.get("has_edit_content_error", False),
+            "has_void_text": dialog_manager.dialog_data.get("has_void_text", False),
+            "has_small_text": dialog_manager.dialog_data.get("has_small_text", False),
+            "has_big_text": dialog_manager.dialog_data.get("has_big_text", False),
         }
 
     async def get_image_menu_data(
@@ -263,25 +233,39 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        return {
-            "has_image": dialog_manager.dialog_data.get("has_image", False),
-            "is_custom_image": dialog_manager.dialog_data.get("is_custom_image", False),
-        }
+        has_image = False
+        preview_image_media = None
 
-    async def get_image_prompt_data(
-            self,
-            dialog_manager: DialogManager,
-            **kwargs
-    ) -> dict:
+        # Priority: custom image > generated images
+        if dialog_manager.dialog_data.get("custom_image_file_id"):
+            has_image = True
+            file_id = dialog_manager.dialog_data["custom_image_file_id"]
+            preview_image_media = MediaAttachment(
+                file_id=MediaId(file_id),
+                type=ContentType.PHOTO
+            )
+        elif dialog_manager.dialog_data.get("publication_images_url"):
+            has_image = True
+            images_url = dialog_manager.dialog_data["publication_images_url"]
+            current_image_index = dialog_manager.dialog_data.get("current_image_index", 0)
+
+            if current_image_index < len(images_url):
+                preview_image_media = MediaAttachment(
+                    url=images_url[current_image_index],
+                    type=ContentType.PHOTO
+                )
+
         return {
+            "has_image": has_image,
+            "is_custom_image": dialog_manager.dialog_data.get("is_custom_image", False),
             "has_image_prompt": dialog_manager.dialog_data.get("image_prompt", "") != "",
             "image_prompt": dialog_manager.dialog_data.get("image_prompt", ""),
             "is_generating_image": dialog_manager.dialog_data.get("is_generating_image", False),
+            "preview_image_media": preview_image_media,
             # Error flags
             "has_void_image_prompt": dialog_manager.dialog_data.get("has_void_image_prompt", False),
             "has_small_image_prompt": dialog_manager.dialog_data.get("has_small_image_prompt", False),
             "has_big_image_prompt": dialog_manager.dialog_data.get("has_big_image_prompt", False),
-            "has_regenerate_image_error": dialog_manager.dialog_data.get("has_regenerate_image_error", False),
         }
 
     async def get_upload_image_data(
@@ -294,7 +278,6 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
             "has_invalid_image_type": dialog_manager.dialog_data.get("has_invalid_image_type", False),
             "has_big_image_size": dialog_manager.dialog_data.get("has_big_image_size", False),
             "has_image_processing_error": dialog_manager.dialog_data.get("has_image_processing_error", False),
-            "has_upload_image_error": dialog_manager.dialog_data.get("has_upload_image_error", False),
         }
 
     # Helper methods

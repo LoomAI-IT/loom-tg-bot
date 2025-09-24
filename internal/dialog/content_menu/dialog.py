@@ -26,37 +26,32 @@ class ContentMenuDialog(interface.IContentMenuDialog):
 
     def get_content_menu_window(self) -> Window:
         return Window(
-            Const("✍️ <b>Контент и публикации</b>\n\n"),
-            Const("🎯 <b>Что хотите сделать?</b>\n\n"),
-            Format("📊 <b>Статистика:</b>\n"),
-            Format("• Черновиков: <b>{drafts_count}</b>\n"),
-            Format("• На модерации: <b>{moderation_count}</b>\n"),
-            Format("• Прошли модерацию: <b>{approved_count}</b>\n"),
-            Format("• Опубликовано: <b>{published_count}</b>\n"),
-            Format("• Сгенерированно публикаций: <b>{publication_count}</b>\n"),
-            Format("• Сгенерировано нарезок: <b>{video_cut_count}</b>\n"),
-            Format("• Всего генераций: <b>{total_generations}</b>\n\n"),
+            Const("✍️ 💡 Ты можешь сгенерировать новый контент или вернуться к своим черновикам.\n"),
+            Format("📊 <b>Статистика:</b>"),
+            Format("• Черновиков: <b>{drafts_count}</b>"),
+            Format("• На модерации: <b>{moderation_count}</b>"),
+            Format("• Опубликовано: <b>{published_count}</b>"),
 
             Column(
                 Button(
-                    Const("🚀 Создать новый контент"),
+                    Const("Генерация контента"),
                     id="create_content",
                     on_click=lambda c, b, d: d.switch_to(model.ContentMenuStates.select_content_type),
                 ),
                 Row(
                     Button(
-                        Const("📝 Черновики"),
+                        Const("Мои черновики"),
                         id="drafts",
                         on_click=lambda c, b, d: d.switch_to(model.ContentMenuStates.select_drafts_type),
                     ),
                     Button(
-                        Const("🔍 Модерация"),
+                        Const("На модерации"),
                         id="moderation",
                         on_click=lambda c, b, d: d.switch_to(model.ContentMenuStates.select_moderation_type),
                     ),
                 ),
                 Button(
-                    Const("🏠 В главное меню"),
+                    Const("В главное меню"),
                     id="to_main_menu",
                     on_click=self.content_menu_service.handle_go_to_main_menu,
                 ),
@@ -69,23 +64,22 @@ class ContentMenuDialog(interface.IContentMenuDialog):
 
     def get_content_type_selection_window(self) -> Window:
         return Window(
-            Const("🎯 <b>Выберите тип контента для создания</b>\n\n"),
-
+            Const("📝 Что будем создавать?"),
             Column(
                 Button(
-                    Const("📝 Публикация с текстом и изображением"),
+                    Const("Публикации"),
                     id="create_publication",
                     on_click=self.content_menu_service.handle_go_to_publication_generation,
                 ),
                 Button(
-                    Const("🎬 Короткие видео из YouTube"),
+                    Const("Короткие видео"),
                     id="create_video_cut",
                     on_click=self.content_menu_service.handle_go_to_video_cut_generation,
                 ),
             ),
 
             Button(
-                Const("🏠 Обратно в меню контента"),
+                Const("Назад"),
                 id="to_content_menu",
                 on_click=self.content_menu_service.handle_go_to_content_menu,
             ),
@@ -103,19 +97,19 @@ class ContentMenuDialog(interface.IContentMenuDialog):
 
             Column(
                 Button(
-                    Const("📝 Черновики публикаций"),
+                    Const("Публикации"),
                     id="publication_drafts",
                     on_click=self.content_menu_service.handle_go_to_publication_drafts,
                 ),
                 Button(
-                    Const("🎬 Черновики видео-нарезок"),
+                    Const("Видео"),
                     id="video_drafts",
                     on_click=self.content_menu_service.handle_go_to_video_drafts,
                 ),
             ),
 
             Button(
-                Const("🏠 Обратно в меню контента"),
+                Const("Назад"),
                 id="to_content_menu",
                 on_click=self.content_menu_service.handle_go_to_content_menu,
             ),
@@ -127,26 +121,26 @@ class ContentMenuDialog(interface.IContentMenuDialog):
 
     def get_moderation_type_selection_window(self) -> Window:
         return Window(
-            Const("🔍 <b>Выберите тип модерации</b>\n\n"),
-            Format("📊 <b>Статистика модерации:</b>\n"),
-            Format("• Публикации на модерации: <b>{publication_moderation_count}</b>\n"),
-            Format("• Видео на модерации: <b>{video_moderation_count}</b>\n\n"),
+            Const("📝 Выбери, что будешь модерировать\n"),
+            Format("📊 <b>Статистика модерации:</b>"),
+            Format("• Публикации на модерации: <b>{publication_moderation_count}</b>"),
+            Format("• Видео на модерации: <b>{video_moderation_count}</b>"),
 
             Column(
                 Button(
-                    Const("📝 Модерация публикаций"),
+                    Const("Публикации"),
                     id="publication_moderation",
                     on_click=self.content_menu_service.handle_go_to_publication_moderation,
                 ),
                 Button(
-                    Const("🎬 Модерация видео-нарезок"),
+                    Const("Видео"),
                     id="video_moderation",
                     on_click=self.content_menu_service.handle_go_to_video_moderation,
                 ),
             ),
 
             Button(
-                Const("🏠 Обратно в меню контента"),
+                Const("Назад"),
                 id="to_content_menu",
                 on_click=self.content_menu_service.handle_go_to_content_menu,
             ),
