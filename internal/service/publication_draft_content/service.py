@@ -153,7 +153,7 @@ class PublicationDraftService(interface.IPublicationDraftService):
                 tags = dialog_manager.dialog_data.get("publication_tags", [])
                 
                 # 🔄 Обновляем через API
-                await self.kontur_content_client.update_publication(
+                await self.kontur_content_client.change_publication(
                     publication_id=publication_id,
                     name=name,
                     text=text,
@@ -373,10 +373,8 @@ class PublicationDraftService(interface.IPublicationDraftService):
         try:
             publication_id = int(dialog_manager.dialog_data.get("selected_publication_id"))
             
-            # 📤 Меняем статус на "moderation"
-            await self.kontur_content_client.update_publication_status(
-                publication_id, "moderation"
-            )
+            # 📤 Отправляем на модерацию
+            await self.kontur_content_client.send_publication_to_moderation(publication_id)
             
             await callback.answer("📤 Отправлено на модерацию!", show_alert=True)
             await dialog_manager.start(model.ContentMenuStates.content_menu, mode=StartMode.RESET_STACK)
@@ -394,9 +392,12 @@ class PublicationDraftService(interface.IPublicationDraftService):
         try:
             publication_id = int(dialog_manager.dialog_data.get("selected_publication_id"))
             
-            # 🚀 Публикуем
-            await self.kontur_content_client.update_publication_status(
-                publication_id, "published"
+            # 🚀 Публикуем (минуя модерацию): подтверждаем как опубликовано текущим пользователем
+            state = await self._get_state(dialog_manager)
+            await self.kontur_content_client.moderate_publication(
+                publication_id=publication_id,
+                moderator_id=state.account_id,
+                moderation_status="published",
             )
             
             await callback.answer("🚀 Опубликовано!", show_alert=True)
