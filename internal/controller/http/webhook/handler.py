@@ -1,12 +1,13 @@
 from typing import Annotated
 
 from aiogram import Bot, Dispatcher
-from aiogram.types import Update, ReplyKeyboardMarkup, KeyboardButton
+from aiogram.types import Update
+from aiogram_dialog import BgManagerFactory, ShowMode, StartMode
 from fastapi import Header
 from opentelemetry.trace import Status, StatusCode, SpanKind
 from starlette.responses import JSONResponse
 
-from internal import interface, common
+from internal import interface, common, model
 from .model import *
 
 
@@ -17,6 +18,7 @@ class TelegramWebhookController(interface.ITelegramWebhookController):
             dp: Dispatcher,
             bot: Bot,
             state_service: interface.IStateService,
+            dialog_bg_factory: BgManagerFactory,
             domain: str,
             prefix: str,
             interserver_secret_key: str
@@ -27,6 +29,7 @@ class TelegramWebhookController(interface.ITelegramWebhookController):
         self.dp = dp
         self.bot = bot
         self.state_service = state_service
+        self.dialog_bg_factory = dialog_bg_factory
 
         self.domain = domain
         self.prefix = prefix
@@ -155,25 +158,25 @@ class TelegramWebhookController(interface.ITelegramWebhookController):
                     body.account_id
                 ))[0]
 
-                # Формируем сообщение для уведомления о генерации видео
-                message_text = self._format_vizard_notification_message(body)
-
-                # Отправляем уведомление
-                await self.bot.send_message(
-                    chat_id=user_state.tg_chat_id,
-                    text=message_text,
-                    parse_mode="HTML"
+                await self.state_service.create_vizard_video_cut_alert(
+                    state_id=user_state.id,
+                    youtube_video_reference=body.youtube_video_reference,
+                    video_count=body.video_count,
                 )
 
-                self.logger.info(
-                    "Уведомление о генерации видео отправлено",
-                    {
-                        common.TELEGRAM_CHAT_ID_KEY: user_state.tg_chat_id,
-                        "account_id": body.account_id,
-                        "youtube_video_reference": body.youtube_video_reference,
-                        "video_count": body.video_count,
-                    }
-                )
+                if user_state.can_show_alerts:
+                    dialog_manager = self.dialog_bg_factory.bg(
+                        bot=self.bot,
+                        user_id=user_state.tg_chat_id,
+                        chat_id=user_state.tg_chat_id,
+                    )
+                    await dialog_manager.start(
+                        model.GenerateVideoCutStates.video_generated_alert,
+                        mode=StartMode.RESET_STACK,
+                        show_mode=ShowMode.EDIT
+                    )
+
+                self.logger.info("Уведомление о генерации видео отправлено")
 
                 span.set_status(Status(StatusCode.OK))
                 return JSONResponse(
@@ -236,19 +239,6 @@ class TelegramWebhookController(interface.ITelegramWebhookController):
                     content={"status": "error", "message": "Failed to cache file"},
                     status_code=500
                 )
-
-    def _format_vizard_notification_message(self, body: NotifyVizardVideoCutGenerated) -> str:
-        """Форматирует сообщение для уведомления о генерации видео"""
-        video_word = "видео" if body.video_count == 1 else "видеороликов"
-
-        message_text = (
-            f"🎬 <b>Ваше видео готово!</b>\n\n"
-            f"Успешно сгенерировано {body.video_count} {video_word} из видео:\n"
-            f"📺 <a href='{body.youtube_video_reference}'>Исходное видео</a>\n\n"
-            f"Перейдите в черновики, чтобы посмотреть результат!"
-        )
-
-        return message_text
 
     def _format_notification_message(self, body: EmployeeNotificationBody) -> str:
         role_names = {

@@ -180,6 +180,9 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                if await self._check_alerts(dialog_manager):
+                    return
+
                 await dialog_manager.start(
                     model.OrganizationMenuStates.organization_menu,
                     mode=StartMode.RESET_STACK
@@ -401,3 +404,34 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 await callback.answer("❌ Ошибка при удалении сотрудника", show_alert=True)
                 raise
+
+    async def _check_alerts(self, dialog_manager: DialogManager) -> bool:
+        state = await self._get_state(dialog_manager)
+        await self.state_repo.change_user_state(
+            state_id=state.id,
+            can_show_alerts=True
+        )
+
+        vizard_alerts = await self.state_repo.get_vizard_video_cut_alert_by_state_id(
+            state_id=state.id
+        )
+        if vizard_alerts:
+            await dialog_manager.start(
+                model.GenerateVideoCutStates.video_generated_alert,
+                mode=StartMode.RESET_STACK
+            )
+            return True
+
+        return False
+
+    async def _get_state(self, dialog_manager: DialogManager) -> model.UserState:
+        if hasattr(dialog_manager.event, 'message') and dialog_manager.event.message:
+            chat_id = dialog_manager.event.message.chat.id
+        elif hasattr(dialog_manager.event, 'chat'):
+            chat_id = dialog_manager.event.chat.id
+        else:
+            raise ValueError("Cannot extract chat_id from dialog_manager")
+        state = await self.state_repo.state_by_id(chat_id)
+        if not state:
+            raise ValueError(f"State not found for chat_id: {chat_id}")
+        return state[0]

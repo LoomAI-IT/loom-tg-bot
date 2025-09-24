@@ -6,7 +6,7 @@ from aiogram_dialog.widgets.input import MessageInput
 
 from aiogram import Bot
 from aiogram.types import CallbackQuery, Message, ContentType
-from aiogram_dialog import DialogManager, StartMode
+from aiogram_dialog import DialogManager, StartMode, ShowMode
 from aiogram_dialog.widgets.kbd import ManagedCheckbox
 
 from opentelemetry.trace import SpanKind, Status, StatusCode
@@ -69,60 +69,6 @@ class ModerationPublicationService(interface.IModerationPublicationService):
                 await callback.answer("❌ Ошибка навигации", show_alert=True)
                 raise
 
-    async def handle_publish_publication(
-            self,
-            callback: CallbackQuery,
-            button: Any,
-            dialog_manager: DialogManager
-    ) -> None:
-        with self.tracer.start_as_current_span(
-                "ModerationPublicationDialogService.handle_publish_publication",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                # Если есть несохраненные изменения, сохраняем их перед одобрением
-                if self._has_changes(dialog_manager):
-                    await self._save_publication_changes(dialog_manager)
-
-                original_pub = dialog_manager.dialog_data["original_publication"]
-                publication_id = original_pub["id"]
-                state = await self._get_state(dialog_manager)
-
-                # Одобряем публикацию через API
-                await self.kontur_content_client.moderate_publication(
-                    publication_id=publication_id,
-                    moderator_id=state.account_id,
-                    moderation_status="approved",
-                )
-
-                self.logger.info("Публикация одобрена" )
-
-                await callback.answer("✅ Публикация одобрена!", show_alert=True)
-
-                # Удаляем одобренную публикацию из списка
-                moderation_list = dialog_manager.dialog_data.get("moderation_list", [])
-                current_index = dialog_manager.dialog_data.get("current_index", 0)
-
-                if moderation_list and current_index < len(moderation_list):
-                    moderation_list.pop(current_index)
-
-                    # Корректируем индекс если нужно
-                    if current_index >= len(moderation_list) and moderation_list:
-                        dialog_manager.dialog_data["current_index"] = len(moderation_list) - 1
-                    elif not moderation_list:
-                        dialog_manager.dialog_data["current_index"] = 0
-
-                    # Сбрасываем рабочие данные
-                    dialog_manager.dialog_data.pop("working_publication", None)
-
-                # Обновляем экран (останемся в том же состоянии)
-                span.set_status(Status(StatusCode.OK))
-
-            except Exception as err:
-                span.record_exception(err)
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                await callback.answer("❌ Ошибка при одобрении", show_alert=True)
-                raise
 
     async def handle_reject_comment_input(
             self,
@@ -722,6 +668,9 @@ class ModerationPublicationService(interface.IModerationPublicationService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                if await self._check_alerts(dialog_manager):
+                    return
+
                 await dialog_manager.start(
                     model.ContentMenuStates.content_menu,
                     mode=StartMode.RESET_STACK
@@ -1107,6 +1056,25 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         except Exception as err:
             self.logger.error(f"Ошибка получения данных изображения для модерации: {err}")
             return None
+
+    async def _check_alerts(self, dialog_manager: DialogManager) -> bool:
+        state = await self._get_state(dialog_manager)
+        await self.state_repo.change_user_state(
+            state_id=state.id,
+            can_show_alerts=True
+        )
+
+        vizard_alerts = await self.state_repo.get_vizard_video_cut_alert_by_state_id(
+            state_id=state.id
+        )
+        if vizard_alerts:
+            await dialog_manager.start(
+                model.GenerateVideoCutStates.video_generated_alert,
+                mode=StartMode.RESET_STACK
+            )
+            return True
+
+        return False
 
     async def _get_state(self, dialog_manager: DialogManager) -> model.UserState:
         if hasattr(dialog_manager.event, 'message') and dialog_manager.event.message:

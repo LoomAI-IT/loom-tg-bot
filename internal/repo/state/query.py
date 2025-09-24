@@ -29,3 +29,19 @@ delete_state_by_tg_chat_id = """
 DELETE FROM user_states
 WHERE tg_chat_id = :tg_chat_id;
 """
+
+create_vizard_video_cut_alert = """
+INSERT INTO vizard_video_cut_alerts (state_id, youtube_video_reference, video_count)
+VALUES (:state_id, :youtube_video_reference, :video_count)
+RETURNING id;
+"""
+
+get_vizard_video_cut_alert_by_state_id = """
+SELECT * FROM vizard_video_cut_alerts
+WHERE state_id = :state_id;
+"""
+
+delete_vizard_video_cut_alert = """
+DELETE FROM vizard_video_cut_alerts
+WHERE state_id = :state_id;
+"""

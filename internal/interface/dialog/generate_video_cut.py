@@ -11,7 +11,12 @@ class IGenerateVideoCutDialog(Protocol):
         pass
 
     @abstractmethod
-    def get_youtube_link_input_window(self) -> Window: pass
+    def get_youtube_link_input_window(self) -> Window:
+        pass
+
+    @abstractmethod
+    def get_video_generated_alert_window(self) -> Window:
+        pass
 
 
 class IGenerateVideoCutService(Protocol):
@@ -31,12 +36,39 @@ class IGenerateVideoCutService(Protocol):
             callback: CallbackQuery,
             button: Any,
             dialog_manager: DialogManager
-    ) -> None: pass
+    ) -> None:
+        pass
+
+    @abstractmethod
+    async def handle_go_to_video_drafts(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        pass
+
+    @abstractmethod
+    async def handle_go_to_main_menu(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        pass
+
 
 class IGenerateVideoCutGetter(Protocol):
 
     @abstractmethod
     async def get_youtube_input_data(
+            self,
+            dialog_manager: DialogManager,
+    ) -> dict:
+        pass
+
+    @abstractmethod
+    async def get_video_alert_data(
             self,
             dialog_manager: DialogManager,
     ) -> dict:

@@ -3,13 +3,12 @@ import traceback
 
 from aiogram import Bot
 from typing import Callable, Any, Awaitable
-from aiogram.types import TelegramObject, Update, ErrorEvent
+from aiogram.types import TelegramObject, Update
 from aiogram.exceptions import TelegramBadRequest
-from aiogram_dialog import DialogManager, StartMode
 from aiogram_dialog.api.exceptions import UnknownIntent
 from opentelemetry.trace import SpanKind, Status, StatusCode
 
-from internal import interface, common, model
+from internal import interface, common
 
 
 class TgMiddleware(interface.ITelegramMiddleware):
@@ -187,12 +186,6 @@ class TgMiddleware(interface.ITelegramMiddleware):
                         common.TELEGRAM_CHAT_ID_KEY: self._get_chat_id(event),
                     }
                 )
-                extra_log = {
-                    **extra_log,
-                    common.TELEGRAM_MESSAGE_DURATION_KEY: int((time.time() - start_time) * 1000),
-                    common.TRACEBACK_KEY: traceback.format_exc()
-                }
-                self.logger.error(f"TelegramBadRequest в dialog middleware {event_type}:", extra_log)
                 pass
 
             except UnknownIntent as err:
@@ -210,104 +203,6 @@ class TgMiddleware(interface.ITelegramMiddleware):
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise err
 
-    async def on_critical_error(self, event: ErrorEvent, dialog_manager: DialogManager):
-
-        if event.update.callback_query:
-            chat_id = event.update.callback_query.message.chat.id
-            user = event.update.callback_query.from_user
-        else:
-            chat_id = event.update.message.chat.id
-            user = event.update.message.from_user
-
-        username = user.username if user else "unknown"
-        error = event.exception
-
-        self.logger.warning(
-            "Критическая ошибка - выполняем полный сброс состояния пользователя",
-            {
-                common.TELEGRAM_CHAT_ID_KEY: chat_id,
-                common.TELEGRAM_USER_USERNAME_KEY: username,
-                common.ERROR_KEY: str(error),
-                "error_type": type(error).__name__,
-                common.TRACEBACK_KEY: traceback.format_exc(),
-            }
-        )
-
-        try:
-            # Сбрасываем диалоги
-            await dialog_manager.reset_stack()
-
-            try:
-                # Получаем состояние пользователя
-                user_state = await self.state_service.state_by_id(chat_id)
-
-                if not user_state:
-                    # Если пользователь не найден, создаем состояние
-                    await self.state_service.create_state(chat_id)
-                    user_state = await self.state_service.state_by_id(chat_id)
-
-                user_state = user_state[0]
-
-                await dialog_manager.reset_stack()
-                await dialog_manager.update({})
-
-                # Определяем, куда направить пользователя в зависимости от его состояния
-                if user_state.organization_id == 0 and user_state.account_id == 0:
-                    # Не авторизован - отправляем на авторизацию
-                    await dialog_manager.start(
-                        model.AuthStates.user_agreement,
-                        mode=StartMode.RESET_STACK
-                    )
-                elif user_state.organization_id == 0 and user_state.account_id != 0:
-                    # Авторизован, но нет доступа к организации
-                    await dialog_manager.start(
-                        model.AuthStates.access_denied,
-                        mode=StartMode.RESET_STACK
-                    )
-                else:
-                    # Полностью авторизован - отправляем в главное меню
-                    await dialog_manager.start(
-                        model.MainMenuStates.main_menu,
-                        mode=StartMode.RESET_STACK
-                    )
-
-                self.logger.info(
-                    "Состояние пользователя успешно сброшено после критической ошибки",
-                    {
-                        common.TELEGRAM_CHAT_ID_KEY: chat_id,
-                        common.TELEGRAM_USER_USERNAME_KEY: username,
-                    }
-                )
-            except Exception as err:
-                self.logger.error(
-                    "Не удалось перенаправить на главную",
-                    {
-                        common.TELEGRAM_CHAT_ID_KEY: chat_id,
-                        common.ERROR_KEY: str(err),
-                        common.TRACEBACK_KEY: traceback.format_exc(),
-                    }
-                )
-
-        except Exception as err:
-            self.logger.error(
-                "Критическая ошибка при восстановлении после сбоя",
-                {
-                    common.TELEGRAM_CHAT_ID_KEY: chat_id,
-                    common.TELEGRAM_USER_USERNAME_KEY: username,
-                    "original_error": str(error),
-                    "recovery_error": str(err),
-                    common.TRACEBACK_KEY: traceback.format_exc(),
-                }
-            )
-            try:
-                if hasattr(dialog_manager.event, 'message') and dialog_manager.event.message:
-                    await dialog_manager.event.message.answer(
-                        "❌ Произошла серьезная ошибка. Нажмите /start для перезапуска бота."
-                    )
-                else:
-                    await dialog_manager.event.answer("❌ Произошла серьезная ошибка. Нажмите /start для перезапуска.")
-            except:
-                pass
 
     def __extract_metadata(self, event: Update):
         message = event.message if event.message is not None else event.callback_query.message
@@ -333,9 +228,3 @@ class TgMiddleware(interface.ITelegramMiddleware):
             return event.callback_query.message.chat.id
         return 0
 
-    def _get_message(self, event: Update):
-        if event.message:
-            return event.message
-        elif event.callback_query and event.callback_query.message:
-            return event.callback_query.message
-        return None

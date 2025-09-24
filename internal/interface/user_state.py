@@ -29,9 +29,25 @@ class IStateService(Protocol):
     async def delete_state_by_tg_chat_id(self, tg_chat_id: int) -> None: pass
 
     @abstractmethod
-    async def set_cache_file(self, filename: str, file_id: str) -> None:
-        pass
+    async def set_cache_file(self, filename: str, file_id: str) -> None: pass
 
+    # Методы для работы с Vizard video cut alerts
+    @abstractmethod
+    async def create_vizard_video_cut_alert(
+        self,
+        state_id: int,
+        youtube_video_reference: str,
+        video_count: int
+    ) -> int: pass
+
+    @abstractmethod
+    async def get_vizard_video_cut_alert_by_state_id(
+        self,
+        state_id: int
+    ) -> list[model.VizardVideoCutAlert]: pass
+
+    @abstractmethod
+    async def delete_vizard_video_cut_alert(self, state_id: int) -> None: pass
 
 
 class IStateRepo(Protocol):
@@ -59,7 +75,26 @@ class IStateRepo(Protocol):
             organization_id: int = None,
             access_token: str = None,
             refresh_token: str = None,
+            can_show_alerts: bool = None,
     ) -> None: pass
 
     @abstractmethod
     async def delete_state_by_tg_chat_id(self, tg_chat_id: int) -> None: pass
+
+    # Методы для работы с Vizard video cut alerts
+    @abstractmethod
+    async def create_vizard_video_cut_alert(
+        self,
+        state_id: int,
+        youtube_video_reference: str,
+        video_count: int
+    ) -> int: pass
+
+    @abstractmethod
+    async def get_vizard_video_cut_alert_by_state_id(
+        self,
+        state_id: int
+    ) -> list[model.VizardVideoCutAlert]: pass
+
+    @abstractmethod
+    async def delete_vizard_video_cut_alert(self, state_id: int) -> None: pass

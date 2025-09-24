@@ -19,49 +19,50 @@ from internal.controller.tg.middleware.middleware import TgMiddleware
 from internal.controller.tg.command.handler import CommandController
 from internal.controller.http.webhook.handler import TelegramWebhookController
 
-from internal.controller.tg.dialog.auth.dialog import AuthDialog
-from internal.controller.tg.dialog.main_menu.dialog import MainMenuDialog
-from internal.controller.tg.dialog.organization_menu.dialog import OrganizationMenuDialog
-from internal.controller.tg.dialog.personal_profile.dialog import PersonalProfileDialog
-from internal.controller.tg.dialog.change_employee.dialog import ChangeEmployeeDialog
-from internal.controller.tg.dialog.add_employee.dialog import AddEmployeeDialog
-from internal.controller.tg.dialog.content_menu.dialog import ContentMenuDialog
-from internal.controller.tg.dialog.generate_publication.dialog import GeneratePublicationDialog
-from internal.controller.tg.dialog.generate_video_cut.dialog import GenerateVideoCutDialog
-from internal.controller.tg.dialog.moderation_publication.dialog import ModerationPublicationDialog
-from internal.controller.tg.dialog.video_cut_draft_content.dialog import VideoCutsDraftDialog
-from internal.controller.tg.dialog.moderation_video_cut.dialog import VideoCutModerationDialog
+from internal.dialog.auth.dialog import AuthDialog
+from internal.dialog.main_menu.dialog import MainMenuDialog
+from internal.dialog.organization_menu.dialog import OrganizationMenuDialog
+from internal.dialog.personal_profile.dialog import PersonalProfileDialog
+from internal.dialog.change_employee.dialog import ChangeEmployeeDialog
+from internal.dialog.add_employee.dialog import AddEmployeeDialog
+from internal.dialog.content_menu.dialog import ContentMenuDialog
+from internal.dialog.generate_publication.dialog import GeneratePublicationDialog
+from internal.dialog.generate_video_cut.dialog import GenerateVideoCutDialog
+from internal.dialog.moderation_publication.dialog import ModerationPublicationDialog
+from internal.dialog.video_cut_draft_content.dialog import VideoCutsDraftDialog
+from internal.dialog.moderation_video_cut.dialog import VideoCutModerationDialog
 
 from internal.service.state.service import StateService
-from internal.service.auth.service import AuthService
-from internal.service.main_menu.service import MainMenuService
-from internal.service.organization_menu.service import OrganizationMenuService
-from internal.service.content_menu.service import ContentMenuService
-from internal.service.personal_profile.service import PersonalProfileService
-from internal.service.change_employee.service import ChangeEmployeeService
-from internal.service.add_employee.service import AddEmployeeService
-from internal.service.generate_publication.service import GeneratePublicationService
-from internal.service.generate_video_cut.service import GenerateVideoCutService
-from internal.service.moderation_publication.service import ModerationPublicationService
-from internal.service.video_cut_draft_content.service import VideoCutsDraftService
-from internal.service.moderation_video_cut.service import VideoCutModerationService
+from internal.dialog.auth.service import AuthService
+from internal.dialog.main_menu.service import MainMenuService
+from internal.dialog.organization_menu.service import OrganizationMenuService
+from internal.dialog.content_menu.service import ContentMenuService
+from internal.dialog.personal_profile.service import PersonalProfileService
+from internal.dialog.change_employee.service import ChangeEmployeeService
+from internal.dialog.add_employee.service import AddEmployeeService
+from internal.dialog.generate_publication.service import GeneratePublicationService
+from internal.dialog.generate_video_cut.service import GenerateVideoCutService
+from internal.dialog.moderation_publication.service import ModerationPublicationService
+from internal.dialog.video_cut_draft_content.service import VideoCutsDraftService
+from internal.dialog.moderation_video_cut.service import VideoCutModerationService
 
-from internal.service.auth.getter import AuthGetter
-from internal.service.main_menu.getter import MainMenuGetter
-from internal.service.organization_menu.getter import OrganizationMenuGetter
-from internal.service.content_menu.getter import ContentMenuGetter
-from internal.service.personal_profile.getter import PersonalProfileGetter
-from internal.service.change_employee.getter import ChangeEmployeeGetter
-from internal.service.add_employee.getter import AddEmployeeGetter
-from internal.service.generate_publication.getter import GeneratePublicationDataGetter
-from internal.service.moderation_publication.getter import ModerationPublicationGetter
-from internal.service.generate_video_cut.getter import GenerateVideoCutGetter
-from internal.service.video_cut_draft_content.getter import VideoCutsDraftGetter
-from internal.service.moderation_video_cut.getter import VideoCutModerationGetter
+from internal.dialog.auth.getter import AuthGetter
+from internal.dialog.main_menu.getter import MainMenuGetter
+from internal.dialog.organization_menu.getter import OrganizationMenuGetter
+from internal.dialog.content_menu.getter import ContentMenuGetter
+from internal.dialog.personal_profile.getter import PersonalProfileGetter
+from internal.dialog.change_employee.getter import ChangeEmployeeGetter
+from internal.dialog.add_employee.getter import AddEmployeeGetter
+from internal.dialog.generate_publication.getter import GeneratePublicationDataGetter
+from internal.dialog.moderation_publication.getter import ModerationPublicationGetter
+from internal.dialog.generate_video_cut.getter import GenerateVideoCutGetter
+from internal.dialog.video_cut_draft_content.getter import VideoCutsDraftGetter
+from internal.dialog.moderation_video_cut.getter import VideoCutModerationGetter
 
 from internal.repo.state.repo import StateRepo
 
 from internal.app.tg.app import NewTg
+from internal.app.server.app import NewServer
 
 from internal.config.config import Config
 
@@ -90,7 +91,6 @@ tel = Telemetry(
     cfg.otlp_port,
     alert_manager
 )
-bot = Bot(token=cfg.tg_bot_token)
 
 redis_client = redis.Redis(
     host=cfg.monitoring_redis_host,
@@ -104,6 +104,7 @@ storage = RedisStorage(
     key_builder=key_builder
 )
 dp = Dispatcher(storage=storage)
+bot = Bot(token=cfg.tg_bot_token)
 
 # Инициализация клиентов
 db = PG(tel, cfg.db_user, cfg.db_pass, cfg.db_host, cfg.db_port, cfg.db_name)
@@ -124,7 +125,7 @@ auth_getter = AuthGetter(
 )
 
 main_menu_getter = MainMenuGetter(
-    tel,
+    tel
 )
 
 organization_menu_getter = OrganizationMenuGetter(
@@ -164,7 +165,8 @@ video_cut_moderation_getter = VideoCutModerationGetter(
 )
 
 generate_video_cut_getter = GenerateVideoCutGetter(
-    tel
+    tel,
+    state_repo
 )
 
 change_employee_getter = ChangeEmployeeGetter(
@@ -335,6 +337,25 @@ video_cut_moderation_dialog = VideoCutModerationDialog(
     video_cut_moderation_getter,
 )
 
+command_controller = CommandController(tel, state_service)
+
+dialog_bg_factory = NewTg(
+    dp,
+    command_controller,
+    auth_dialog,
+    main_menu_dialog,
+    personal_profile_dialog,
+    organization_menu_dialog,
+    change_employee_dialog,
+    add_employee_dialog,
+    content_menu_dialog,
+    generate_publication_dialog,
+    generate_video_cut_dialog,
+    moderation_publication_dialog,
+    video_cut_moderation_dialog,
+    video_cuts_draft_dialog,
+)
+
 # Инициализация middleware
 tg_middleware = TgMiddleware(
     tel,
@@ -350,33 +371,17 @@ tg_webhook_controller = TelegramWebhookController(
     dp,
     bot,
     state_service,
+    dialog_bg_factory,
     cfg.domain,
     cfg.prefix,
     cfg.interserver_secret_key
 )
 
-command_controller = CommandController(tel, state_service)
-
 if __name__ == "__main__":
-    app = NewTg(
+    app = NewServer(
         db,
-        dp,
         http_middleware,
-        tg_middleware,
         tg_webhook_controller,
-        command_controller,
-        auth_dialog,
-        main_menu_dialog,
-        personal_profile_dialog,
-        organization_menu_dialog,
-        change_employee_dialog,
-        add_employee_dialog,
-        content_menu_dialog,
-        generate_publication_dialog,
-        generate_video_cut_dialog,
-        moderation_publication_dialog,
-        video_cut_moderation_dialog,
-        video_cuts_draft_dialog,
         cfg.prefix,
     )
     uvicorn.run(app, host="0.0.0.0", port=int(cfg.http_port), access_log=False)

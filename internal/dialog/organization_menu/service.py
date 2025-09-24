@@ -28,6 +28,12 @@ class OrganizationMenuService(interface.IOrganizationMenuService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                state = await self._get_state(dialog_manager)
+                await self.state_repo.change_user_state(
+                    state_id=state.id,
+                    can_show_alerts=False
+                )
+
                 # Запускаем диалог изменения сотрудников
                 await dialog_manager.start(
                     model.ChangeEmployeeStates.employee_list,
@@ -54,6 +60,13 @@ class OrganizationMenuService(interface.IOrganizationMenuService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                state = await self._get_state(dialog_manager)
+                await self.state_repo.change_user_state(
+                    state_id=state.id,
+                    can_show_alerts=False
+                )
+
+
                 await dialog_manager.start(
                     model.AddEmployeeStates.enter_account_id,
                     mode=StartMode.RESET_STACK
@@ -135,3 +148,15 @@ class OrganizationMenuService(interface.IOrganizationMenuService):
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
+    async def _get_state(self, dialog_manager: DialogManager) -> model.UserState:
+        if hasattr(dialog_manager.event, 'message') and dialog_manager.event.message:
+            chat_id = dialog_manager.event.message.chat.id
+        elif hasattr(dialog_manager.event, 'chat'):
+            chat_id = dialog_manager.event.chat.id
+        else:
+            raise ValueError("Cannot extract chat_id from dialog_manager")
+
+        state = await self.state_repo.state_by_id(chat_id)
+        if not state:
+            raise ValueError(f"State not found for chat_id: {chat_id}")
+        return state[0]

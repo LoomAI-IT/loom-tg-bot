@@ -66,7 +66,7 @@ class GenerateVideoCutService(interface.IGenerateVideoCutService):
             except Exception as err:
                 dialog_manager.dialog_data["is_processing_video"] = False
                 dialog_manager.dialog_data["has_processing_error"] = True
-                await dialog_manager.show(ShowMode.EDIT)
+                await dialog_manager.show()
 
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
@@ -83,16 +83,104 @@ class GenerateVideoCutService(interface.IGenerateVideoCutService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
+                if await self._check_alerts(dialog_manager):
+                    return
+
                 await dialog_manager.start(
                     model.ContentMenuStates.content_menu,
                     mode=StartMode.RESET_STACK,
-                    show_mode=ShowMode.EDIT
                 )
                 span.set_status(Status(StatusCode.OK))
+
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
+
+    async def handle_go_to_video_drafts(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        with self.tracer.start_as_current_span(
+                "GenerateVideoCutService.handle_go_to_video_drafts",
+                kind=SpanKind.INTERNAL
+        ) as span:
+            try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
+                state = await self._get_state(dialog_manager)
+
+                await self.state_repo.delete_vizard_video_cut_alert(
+                    state.id
+                )
+
+                await dialog_manager.start(
+                    model.VideoCutsDraftStates.video_cut_list,
+                    mode=StartMode.RESET_STACK
+                )
+
+                self.logger.info("Переход в черновики видео-нарезок")
+                span.set_status(Status(StatusCode.OK))
+
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
+                raise
+
+    async def handle_go_to_main_menu(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        with self.tracer.start_as_current_span(
+                "GenerateVideoCutService.handle_go_to_main_menu",
+                kind=SpanKind.INTERNAL
+        ) as span:
+            try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
+                state = await self._get_state(dialog_manager)
+
+                await self.state_repo.delete_vizard_video_cut_alert(
+                    state.id
+                )
+
+                await dialog_manager.start(
+                    model.MainMenuStates.main_menu,
+                    mode=StartMode.RESET_STACK
+                )
+
+                self.logger.info("Переход в главное меню")
+                span.set_status(Status(StatusCode.OK))
+
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
+                raise
+
+    async def _check_alerts(self, dialog_manager: DialogManager) -> bool:
+        state = await self._get_state(dialog_manager)
+        await self.state_repo.change_user_state(
+            state_id=state.id,
+            can_show_alerts=True
+        )
+
+        vizard_alerts = await self.state_repo.get_vizard_video_cut_alert_by_state_id(
+            state_id=state.id
+        )
+        if vizard_alerts:
+            await dialog_manager.start(
+                model.GenerateVideoCutStates.video_generated_alert,
+                mode=StartMode.RESET_STACK
+            )
+            return True
+
+        return False
 
     def _is_valid_youtube_url(self, url: str) -> bool:
         youtube_regex = re.compile(
