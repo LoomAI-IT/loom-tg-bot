@@ -503,8 +503,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                dialog_manager.show_mode = ShowMode.EDIT
-
                 await callback.answer()
                 await callback.message.edit_text(
                     "🔄 Генерирую изображение, это может занять время...",
@@ -535,7 +533,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 dialog_manager.dialog_data["current_image_index"] = 0
                 dialog_manager.dialog_data.pop("custom_image_file_id", None)
 
-                await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
+                await dialog_manager.switch_to(model.GeneratePublicationStates.preview, show_mode=ShowMode.DELETE_AND_SEND)
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
