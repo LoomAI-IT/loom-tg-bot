@@ -5,10 +5,10 @@ from aiogram import Bot
 from typing import Callable, Any, Awaitable
 from aiogram.types import TelegramObject, Update
 from aiogram.exceptions import TelegramBadRequest
-from aiogram_dialog.api.exceptions import UnknownIntent
+from aiogram_dialog import StartMode, BgManagerFactory
 from opentelemetry.trace import SpanKind, Status, StatusCode
 
-from internal import interface, common
+from internal import interface, common, model
 
 
 class TgMiddleware(interface.ITelegramMiddleware):
@@ -17,14 +17,15 @@ class TgMiddleware(interface.ITelegramMiddleware):
             tel: interface.ITelemetry,
             state_service: interface.IStateService,
             bot: Bot,
+            dialog_bg_factory: BgManagerFactory,
     ):
         self.tracer = tel.tracer()
         self.meter = tel.meter()
         self.logger = tel.logger()
 
         self.state_service = state_service
-
         self.bot = bot
+        self.dialog_bg_factory = dialog_bg_factory
 
         self.ok_message_counter = self.meter.create_counter(
             name=common.OK_MESSAGE_TOTAL_METRIC,
@@ -85,6 +86,9 @@ class TgMiddleware(interface.ITelegramMiddleware):
             except Exception as err:
                 root_span.record_exception(err)
                 root_span.set_status(Status(StatusCode.ERROR, str(err)))
+
+                # При критической ошибке пытаемся восстановить пользователя
+                await self._recovery_start_functionality(tg_chat_id)
                 raise err
 
     async def metric_middleware02(
@@ -135,6 +139,7 @@ class TgMiddleware(interface.ITelegramMiddleware):
 
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
+
                 raise err
             finally:
                 self.active_messages.add(-1)
@@ -188,9 +193,6 @@ class TgMiddleware(interface.ITelegramMiddleware):
                 )
                 pass
 
-            except UnknownIntent as err:
-                raise err
-
             except Exception as err:
                 extra_log = {
                     **extra_log,
@@ -203,6 +205,93 @@ class TgMiddleware(interface.ITelegramMiddleware):
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise err
 
+    async def _recovery_start_functionality(self, tg_chat_id: int):
+        """
+        Функция восстановления, повторяющая функционал команды /start
+        Вызывается при критических ошибках для восстановления состояния пользователя
+        """
+        with self.tracer.start_as_current_span(
+                "TgMiddleware._recovery_start_functionality",
+                kind=SpanKind.INTERNAL
+        ) as span:
+            try:
+                self.logger.info(
+                    f"Начинаем восстановление пользователя через функционал /start",
+                    {common.TELEGRAM_CHAT_ID_KEY: tg_chat_id}
+                )
+
+                # Получаем или создаем состояние пользователя
+                user_state = await self.state_service.state_by_id(tg_chat_id)
+                if not user_state:
+                    await self.state_service.create_state(tg_chat_id)
+                    user_state = await self.state_service.state_by_id(tg_chat_id)
+
+                user_state = user_state[0]
+
+                # Создаем dialog_manager для восстановления
+                dialog_manager = self.dialog_bg_factory.bg(
+                    bot=self.bot,
+                    user_id=tg_chat_id,
+                    chat_id=tg_chat_id,
+                )
+
+                # Определяем состояние для запуска на основе данных пользователя
+                if user_state.organization_id == 0 and user_state.account_id == 0:
+                    target_state = model.AuthStates.user_agreement
+                    self.logger.info(f"Восстанавливаем в состояние авторизации для пользователя {tg_chat_id}")
+                elif user_state.organization_id == 0 and user_state.account_id != 0:
+                    target_state = model.AuthStates.access_denied
+                    self.logger.info(f"Восстанавливаем в состояние отказа доступа для пользователя {tg_chat_id}")
+                else:
+                    target_state = model.MainMenuStates.main_menu
+                    self.logger.info(f"Восстанавливаем в главное меню для пользователя {tg_chat_id}")
+
+                # Запускаем соответствующий диалог
+                await dialog_manager.start(
+                    target_state,
+                    mode=StartMode.RESET_STACK
+                )
+
+                # Восстанавливаем флаг показа уведомлений
+                await self.state_service.change_user_state(
+                    state_id=user_state.id,
+                    can_show_alerts=True
+                )
+
+                self.logger.info(
+                    f"Пользователь {tg_chat_id} успешно восстановлен в состояние {target_state}",
+                    {common.TELEGRAM_CHAT_ID_KEY: tg_chat_id}
+                )
+
+                span.set_status(Status(StatusCode.OK))
+
+            except Exception as recovery_err:
+                self.logger.error(
+                    f"Критическая ошибка при восстановлении пользователя {tg_chat_id}",
+                    {
+                        common.ERROR_KEY: str(recovery_err),
+                        common.TRACEBACK_KEY: traceback.format_exc(),
+                        common.TELEGRAM_CHAT_ID_KEY: tg_chat_id,
+                    }
+                )
+
+                span.record_exception(recovery_err)
+                span.set_status(Status(StatusCode.ERROR, str(recovery_err)))
+
+                # Последняя попытка - отправить пользователю сообщение с инструкцией
+                try:
+                    await self.bot.send_message(
+                        chat_id=tg_chat_id,
+                        text="❌ Произошла критическая ошибка. Пожалуйста, отправьте команду /start для восстановления работы."
+                    )
+                except Exception as msg_err:
+                    self.logger.error(
+                        f"Не удалось отправить сообщение о восстановлении пользователю {tg_chat_id}",
+                        {
+                            common.ERROR_KEY: str(msg_err),
+                            common.TELEGRAM_CHAT_ID_KEY: tg_chat_id,
+                        }
+                    )
 
     def __extract_metadata(self, event: Update):
         message = event.message if event.message is not None else event.callback_query.message
@@ -227,4 +316,3 @@ class TgMiddleware(interface.ITelegramMiddleware):
         elif event.callback_query and event.callback_query.message:
             return event.callback_query.message.chat.id
         return 0
-
