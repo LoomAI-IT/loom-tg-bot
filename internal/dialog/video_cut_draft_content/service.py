@@ -148,18 +148,18 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
                 new_title = text.strip()
 
                 if not new_title:
-                    await message.answer("❌ Название не может быть пустым")
+                    dialog_manager.dialog_data["has_void_title"] = True
                     return
+                dialog_manager.dialog_data.pop("has_void_title", None)
 
-                if len(new_title) > 100:  # YouTube Shorts лимит
-                    await message.answer("❌ Слишком длинное название (макс. 100 символов для YouTube)")
+                if len(new_title) > 100:
+                    dialog_manager.dialog_data["has_big_title"] = True
                     return
+                dialog_manager.dialog_data.pop("has_big_title", None)
 
-                # Обновляем рабочую версию
                 dialog_manager.dialog_data["working_video_cut"]["name"] = new_title
 
                 await dialog_manager.switch_to(model.VideoCutsDraftStates.edit_preview)
-
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
@@ -185,18 +185,18 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
                 new_description = text.strip()
 
                 if not new_description:
-                    await message.answer("❌ Описание не может быть пустым")
+                    dialog_manager.dialog_data["has_void_description"] = True
                     return
+                dialog_manager.dialog_data.pop("has_void_description", None)
 
-                if len(new_description) > 2200:  # Instagram лимит
-                    await message.answer("❌ Слишком длинное описание (макс. 2200 символов для Instagram)")
+                if len(new_description) > 2200:
+                    dialog_manager.dialog_data["has_big_description"] = True
                     return
+                dialog_manager.dialog_data.pop("has_big_description", None)
 
-                # Обновляем рабочую версию
                 dialog_manager.dialog_data["working_video_cut"]["description"] = new_description
 
                 await dialog_manager.switch_to(model.VideoCutsDraftStates.edit_preview)
-
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
@@ -229,14 +229,13 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
                     new_tags = [tag for tag in new_tags if tag]
 
                     if len(new_tags) > 15:  # YouTube лимит
-                        await message.answer("❌ Слишком много тегов (макс. 15 для YouTube)")
+                        dialog_manager.dialog_data["has_many_tags"] = True
                         return
+                    dialog_manager.dialog_data.pop("has_many_tags", None)
 
-                # Обновляем рабочую версию
                 dialog_manager.dialog_data["working_video_cut"]["tags"] = new_tags
 
                 await dialog_manager.switch_to(model.VideoCutsDraftStates.edit_preview)
-
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
@@ -267,7 +266,7 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
                 await callback.answer("❌ Ошибка", show_alert=True)
                 raise
 
-    async def handle_send_to_moderation_with_networks(
+    async def handle_send_to_moderation(
             self,
             callback: CallbackQuery,
             button: Any,
@@ -280,45 +279,20 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
             try:
                 dialog_manager.show_mode = ShowMode.EDIT
 
-                # Проверяем, что выбрана хотя бы одна соцсеть
-                selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
-                has_selected_networks = any(selected_networks.values())
-
-                if not has_selected_networks:
-                    await callback.answer(
-                        "⚠️ Выберите хотя бы одну социальную сеть для публикации",
-                        show_alert=True
-                    )
-                    return
-
-                # Если есть несохраненные изменения, сохраняем их
                 if self._has_changes(dialog_manager):
                     await self._save_video_cut_changes(dialog_manager)
 
-                # Сохраняем выбранные соцсети в видео-нарезку
-                await self._save_selected_networks(dialog_manager)
 
                 original_video_cut = dialog_manager.dialog_data["original_video_cut"]
                 video_cut_id = original_video_cut["id"]
 
-                # Отправляем на модерацию через API
                 await self.kontur_content_client.send_video_cut_to_moderation(
                     video_cut_id=video_cut_id
                 )
 
-                # Формируем сообщение о выбранных сетях
-                published_networks = []
-                if selected_networks.get("youtube_checkbox", False):
-                    published_networks.append("📺 YouTube Shorts")
-                if selected_networks.get("instagram_checkbox", False):
-                    published_networks.append("📸 Instagram Reels")
-
-                networks_text = ", ".join(published_networks)
-
                 self.logger.info("Черновик видео отправлен на модерацию с выбранными соцсетями")
-                await callback.answer(f"📤 Отправлено на модерацию!\n\nВыбранные сети: {networks_text}", show_alert=True)
+                await callback.answer(f"📤 Отправлено на модерацию!", show_alert=True)
 
-                # Удаляем черновик из списка (он больше не черновик)
                 await self._remove_current_video_cut_from_list(dialog_manager)
 
                 await dialog_manager.switch_to(model.VideoCutsDraftStates.video_cut_list)
@@ -331,7 +305,7 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
                 await callback.answer("❌ Ошибка отправки", show_alert=True)
                 raise
 
-    async def handle_publish_with_selected_networks(
+    async def handle_publish_now(
             self,
             callback: CallbackQuery,
             button: Any,
@@ -355,11 +329,9 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
                     )
                     return
 
-                # Если есть несохраненные изменения, сохраняем их
                 if self._has_changes(dialog_manager):
                     await self._save_video_cut_changes(dialog_manager)
 
-                # Сохраняем выбранные соцсети в видео-нарезку
                 await self._save_selected_networks(dialog_manager)
 
                 state = await self._get_state(dialog_manager)
@@ -374,10 +346,8 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
                 )
 
                 self.logger.info("Черновик видео опубликован с выбранными соцсетями")
-
                 await callback.answer("Черновик видео опубликован с выбранными соцсетями", show_alert=True)
 
-                # Удаляем черновик из списка
                 await self._remove_current_video_cut_from_list(dialog_manager)
 
                 await dialog_manager.switch_to(model.VideoCutsDraftStates.video_cut_list)

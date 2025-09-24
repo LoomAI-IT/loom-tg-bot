@@ -106,7 +106,7 @@ class IVideoCutsDraftService(Protocol):
     ) -> None: pass
 
     @abstractmethod
-    async def handle_send_to_moderation_with_networks(
+    async def handle_send_to_moderation(
             self,
             callback: CallbackQuery,
             button: Any,
@@ -114,7 +114,7 @@ class IVideoCutsDraftService(Protocol):
     ) -> None: pass
 
     @abstractmethod
-    async def handle_publish_with_selected_networks(
+    async def handle_publish_now(
             self,
             callback: CallbackQuery,
             button: Any,

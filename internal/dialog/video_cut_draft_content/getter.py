@@ -4,6 +4,7 @@ from aiogram import Bot
 from aiogram_dialog.api.entities import MediaAttachment, MediaId
 from aiogram.types import ContentType
 from aiogram_dialog import DialogManager
+from aiogram_dialog.widgets.kbd import ManagedCheckbox
 
 from opentelemetry.trace import SpanKind, Status, StatusCode
 
@@ -43,7 +44,9 @@ class VideoCutsDraftGetter(interface.IVideoCutsDraftGetter):
                 video_cuts = await self.kontur_content_client.get_video_cuts_by_organization(state.organization_id)
                 video_cuts = [
                     video_cut for video_cut in video_cuts if
-                    video_cut.video_fid != "" and video_cut.moderation_status == "draft"
+                    video_cut.video_fid != ""
+                    and video_cut.moderation_status == "draft"
+                    and video_cut.creator_id == state.account_id
                 ]
 
                 if not video_cuts:
@@ -53,20 +56,8 @@ class VideoCutsDraftGetter(interface.IVideoCutsDraftGetter):
                         "period_text": "",
                     }
 
-                # Получаем подключенные социальные сети для организации
-                social_networks = await self.kontur_content_client.get_social_networks_by_organization(
-                    state.organization_id
-                )
-
-                # Определяем подключенные сети
-                youtube_connected = self._is_network_connected(social_networks, "youtube")
-                instagram_connected = self._is_network_connected(social_networks, "instagram")
-
-                # Сохраняем список для навигации
                 dialog_manager.dialog_data["video_cuts_list"] = [video_cut.to_dict() for video_cut in video_cuts]
-                dialog_manager.dialog_data["social_networks"] = social_networks
 
-                # Устанавливаем текущий индекс (0 если не был установлен)
                 if "current_index" not in dialog_manager.dialog_data:
                     dialog_manager.dialog_data["current_index"] = 0
 
@@ -98,14 +89,8 @@ class VideoCutsDraftGetter(interface.IVideoCutsDraftGetter):
                     "video_description": current_video_cut.description or "Описание отсутствует",
                     "has_tags": bool(tags),
                     "video_tags": tags_text,
-                    "youtube_video_reference": current_video_cut.youtube_video_reference,
+                    "youtube_reference": current_video_cut.youtube_video_reference,
                     "created_at": self._format_datetime(current_video_cut.created_at),
-                    # Подключение и выбор для YouTube
-                    "youtube_connected": youtube_connected,
-                    "youtube_selected": current_video_cut.youtube_source,
-                    # Подключение и выбор для Instagram
-                    "instagram_connected": instagram_connected,
-                    "instagram_selected": current_video_cut.inst_source,
                     "has_video": bool(current_video_cut.video_fid),
                     "video_media": video_media,
                     "current_index": current_index + 1,
@@ -226,22 +211,36 @@ class VideoCutsDraftGetter(interface.IVideoCutsDraftGetter):
                 youtube_connected = self._is_network_connected(social_networks, "youtube")
                 instagram_connected = self._is_network_connected(social_networks, "instagram")
 
-                # Проверяем есть ли права на публикацию
-                employee = await self.kontur_employee_client.get_employee_by_account_id(state.account_id)
-                can_publish = not employee.required_moderation
-
                 # Получаем текущие выбранные сети
                 selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
                 has_selected_networks = any(selected_networks.values())
 
+                if not has_selected_networks and not selected_networks:
+                    if youtube_connected:
+                        widget_id = "youtube_checkbox"
+                        autoselect = social_networks["youtube"][0].get("autoselect", False)
+
+                        youtube_checkbox: ManagedCheckbox = dialog_manager.find(widget_id)
+                        selected_networks[widget_id] = autoselect
+
+                        await youtube_checkbox.set_checked(autoselect)
+
+                    if instagram_connected:
+                        widget_id = "instagram_checkbox"
+                        autoselect = social_networks["instagram"][0].get("autoselect", False)
+
+                        instagram_checkbox: ManagedCheckbox = dialog_manager.find(widget_id)
+                        selected_networks[widget_id] = autoselect
+
+                        await instagram_checkbox.set_checked(autoselect)
+
+                    dialog_manager.dialog_data["selected_social_networks"] = selected_networks
+
                 data = {
                     "youtube_connected": youtube_connected,
                     "instagram_connected": instagram_connected,
-                    "no_connected_networks": not youtube_connected and not instagram_connected,
                     "has_available_networks": youtube_connected or instagram_connected,
-                    "has_selected_networks": has_selected_networks,
-                    "can_publish": can_publish,
-                    "not_can_publish": not can_publish,
+                    "no_connected_networks": not youtube_connected and not instagram_connected,
                 }
 
                 span.set_status(Status(StatusCode.OK))

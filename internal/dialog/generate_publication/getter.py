@@ -63,6 +63,8 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
 
                         await telegram_checkbox.set_checked(autoselect)
 
+                    dialog_manager.dialog_data["selected_social_networks"] = selected_networks
+
                 data = {
                     "telegram_connected": telegram_connected,
                     "vkontakte_connected": vkontakte_connected,
