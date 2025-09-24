@@ -1,4 +1,3 @@
-import asyncio
 from typing import Any
 
 from aiogram.types import CallbackQuery, Message
@@ -32,6 +31,8 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 current_index = dialog_manager.dialog_data.get("current_index", 0)
                 video_cuts_list = dialog_manager.dialog_data.get("video_cuts_list", [])
 
@@ -50,7 +51,6 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
 
                 # Сбрасываем рабочие данные для нового черновика
                 dialog_manager.dialog_data.pop("working_video_cut", None)
-
                 self.logger.info("Навигация по черновикам видео")
 
                 await callback.answer()
@@ -59,6 +59,7 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
+
                 await callback.answer("❌ Ошибка навигации", show_alert=True)
                 raise
 
@@ -73,6 +74,8 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 original_video_cut = dialog_manager.dialog_data["original_video_cut"]
                 video_cut_id = original_video_cut["id"]
 
@@ -81,16 +84,15 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
                 )
 
                 self.logger.info("Черновик видео удален")
-
                 await callback.answer("🗑 Черновик удален", show_alert=True)
 
                 await self._remove_current_video_cut_from_list(dialog_manager)
-
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
+
                 await callback.answer("❌ Ошибка удаления", show_alert=True)
                 raise
 
@@ -105,33 +107,26 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 if not self._has_changes(dialog_manager):
                     await callback.answer("ℹ️ Нет изменений для сохранения", show_alert=True)
                     return
-
-                await callback.answer()
-                loading_message = await callback.message.answer("💾 Сохраняю изменения...")
 
                 # Сохраняем изменения
                 await self._save_video_cut_changes(dialog_manager)
 
                 # Обновляем оригинальную версию
                 dialog_manager.dialog_data["original_video_cut"] = dict(dialog_manager.dialog_data["working_video_cut"])
-
-                await loading_message.edit_text("✅ Изменения сохранены!")
-                await asyncio.sleep(2)
-                try:
-                    await loading_message.delete()
-                except:
-                    pass
+                await callback.answer("Изменения сохранены", show_alert=True)
 
                 await dialog_manager.switch_to(model.VideoCutsDraftStates.video_cut_list)
-
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
+
                 await callback.answer("❌ Ошибка сохранения", show_alert=True)
                 raise
 
@@ -147,6 +142,9 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
+                await message.delete()
                 new_title = text.strip()
 
                 if not new_title:
@@ -160,7 +158,6 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
                 # Обновляем рабочую версию
                 dialog_manager.dialog_data["working_video_cut"]["name"] = new_title
 
-                await message.delete()
                 await message.answer("✅ Название обновлено!")
                 await dialog_manager.switch_to(model.VideoCutsDraftStates.edit_preview)
 
@@ -169,7 +166,6 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-                await message.answer("❌ Ошибка при сохранении названия")
                 raise
 
     async def handle_edit_description_save(
@@ -184,6 +180,9 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+                await message.delete()
+
                 new_description = text.strip()
 
                 if not new_description:
@@ -197,7 +196,7 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
                 # Обновляем рабочую версию
                 dialog_manager.dialog_data["working_video_cut"]["description"] = new_description
 
-                await message.delete()
+
                 await message.answer("✅ Описание обновлено!")
                 await dialog_manager.switch_to(model.VideoCutsDraftStates.edit_preview)
 
@@ -206,7 +205,6 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-                await message.answer("❌ Ошибка при сохранении описания")
                 raise
 
     async def handle_edit_tags_save(
@@ -221,6 +219,9 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
+                await message.delete()
                 tags_raw = text.strip()
 
                 if not tags_raw:
@@ -237,7 +238,6 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
                 # Обновляем рабочую версию
                 dialog_manager.dialog_data["working_video_cut"]["tags"] = new_tags
 
-                await message.delete()
                 await message.answer(f"✅ Теги обновлены ({len(new_tags)} шт.)")
                 await dialog_manager.switch_to(model.VideoCutsDraftStates.edit_preview)
 
@@ -246,7 +246,6 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-                await message.answer("❌ Ошибка при сохранении тегов")
                 raise
 
     async def handle_back_to_video_cut_list(
@@ -260,12 +259,16 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 await dialog_manager.switch_to(model.VideoCutsDraftStates.video_cut_list)
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
+
+                await callback.answer("❌ Ошибка", show_alert=True)
                 raise
 
     async def handle_send_to_moderation_with_networks(
@@ -279,6 +282,8 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 # Проверяем, что выбрана хотя бы одна соцсеть
                 selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
                 has_selected_networks = any(selected_networks.values())
@@ -315,19 +320,18 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
                 networks_text = ", ".join(published_networks)
 
                 self.logger.info("Черновик видео отправлен на модерацию с выбранными соцсетями")
-
                 await callback.answer(f"📤 Отправлено на модерацию!\n\nВыбранные сети: {networks_text}", show_alert=True)
 
                 # Удаляем черновик из списка (он больше не черновик)
                 await self._remove_current_video_cut_from_list(dialog_manager)
 
                 await dialog_manager.switch_to(model.VideoCutsDraftStates.video_cut_list)
-
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
+
                 await callback.answer("❌ Ошибка отправки", show_alert=True)
                 raise
 
@@ -342,6 +346,8 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 # Проверяем, что выбрана хотя бы одна соцсеть
                 selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
                 has_selected_networks = any(selected_networks.values())
@@ -352,9 +358,6 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
                         show_alert=True
                     )
                     return
-
-                await callback.answer()
-                loading_message = await callback.message.answer("🚀 Публикую видео...")
 
                 # Если есть несохраненные изменения, сохраняем их
                 if self._has_changes(dialog_manager):
@@ -374,39 +377,20 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
                     moderation_status="approved",
                 )
 
-                # Формируем сообщение о публикации
-                published_networks = []
-                if selected_networks.get("youtube_checkbox", False):
-                    published_networks.append("📺 YouTube Shorts")
-                if selected_networks.get("instagram_checkbox", False):
-                    published_networks.append("📸 Instagram Reels")
+                self.logger.info("Черновик видео опубликован с выбранными соцсетями")
 
-                networks_text = ", ".join(published_networks)
-
-                self.logger.info(   "Черновик видео опубликован с выбранными соцсетями")
-
-                await loading_message.edit_text(
-                    f"🚀 Видео успешно опубликовано!\n\n"
-                    f"📋 Опубликовано в: {networks_text}"
-                )
-
-                await asyncio.sleep(3)
-                try:
-                    await loading_message.delete()
-                except:
-                    pass
+                await callback.answer("Черновик видео опубликован с выбранными соцсетями", show_alert=True)
 
                 # Удаляем черновик из списка
                 await self._remove_current_video_cut_from_list(dialog_manager)
 
-                # Возвращаемся к списку черновиков
                 await dialog_manager.switch_to(model.VideoCutsDraftStates.video_cut_list)
-
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
+
                 await callback.answer("❌ Ошибка публикации", show_alert=True)
                 raise
 
@@ -421,6 +405,8 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 # Инициализируем словарь выбранных соцсетей если его нет
                 if "selected_social_networks" not in dialog_manager.dialog_data:
                     dialog_manager.dialog_data["selected_social_networks"] = {}
@@ -438,6 +424,8 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
+
+                await callback.answer("❌ Ошибка", show_alert=True)
                 raise
 
     async def handle_back_to_content_menu(
@@ -451,6 +439,8 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 if await self._check_alerts(dialog_manager):
                     return
 
@@ -464,6 +454,8 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
+
+                await callback.answer("❌ Ошибка", show_alert=True)
                 raise
 
     # Вспомогательные методы
