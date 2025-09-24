@@ -158,7 +158,6 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
                 # Обновляем рабочую версию
                 dialog_manager.dialog_data["working_video_cut"]["name"] = new_title
 
-                await message.answer("✅ Название обновлено!")
                 await dialog_manager.switch_to(model.VideoCutsDraftStates.edit_preview)
 
                 span.set_status(Status(StatusCode.OK))
@@ -196,8 +195,6 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
                 # Обновляем рабочую версию
                 dialog_manager.dialog_data["working_video_cut"]["description"] = new_description
 
-
-                await message.answer("✅ Описание обновлено!")
                 await dialog_manager.switch_to(model.VideoCutsDraftStates.edit_preview)
 
                 span.set_status(Status(StatusCode.OK))
@@ -238,7 +235,6 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
                 # Обновляем рабочую версию
                 dialog_manager.dialog_data["working_video_cut"]["tags"] = new_tags
 
-                await message.answer(f"✅ Теги обновлены ({len(new_tags)} шт.)")
                 await dialog_manager.switch_to(model.VideoCutsDraftStates.edit_preview)
 
                 span.set_status(Status(StatusCode.OK))
