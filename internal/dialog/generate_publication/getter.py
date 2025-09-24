@@ -212,13 +212,35 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
+        has_image = False
+        preview_image_media = None
+
+        # Priority: custom image > generated images
+        if dialog_manager.dialog_data.get("custom_image_file_id"):
+            has_image = True
+            file_id = dialog_manager.dialog_data["custom_image_file_id"]
+            preview_image_media = MediaAttachment(
+                file_id=MediaId(file_id),
+                type=ContentType.PHOTO
+            )
+        elif dialog_manager.dialog_data.get("publication_images_url"):
+            has_image = True
+            images_url = dialog_manager.dialog_data["publication_images_url"]
+            current_image_index = dialog_manager.dialog_data.get("current_image_index", 0)
+
+            if current_image_index < len(images_url):
+                preview_image_media = MediaAttachment(
+                    url=images_url[current_image_index],
+                    type=ContentType.PHOTO
+                )
+
         return {
-            "has_image": dialog_manager.dialog_data.get("has_image", False),
+            "has_image": has_image,
             "is_custom_image": dialog_manager.dialog_data.get("is_custom_image", False),
             "has_image_prompt": dialog_manager.dialog_data.get("image_prompt", "") != "",
             "image_prompt": dialog_manager.dialog_data.get("image_prompt", ""),
             "is_generating_image": dialog_manager.dialog_data.get("is_generating_image", False),
-            "preview_image_media": dialog_manager.dialog_data.get("preview_image_media", False),
+            "preview_image_media": preview_image_media,
             # Error flags
             "has_void_image_prompt": dialog_manager.dialog_data.get("has_void_image_prompt", False),
             "has_small_image_prompt": dialog_manager.dialog_data.get("has_small_image_prompt", False),

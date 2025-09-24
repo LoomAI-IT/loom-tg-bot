@@ -235,13 +235,6 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                     ),
                 ),
                 Button(
-                    Const("🌐 Выбрать место публикации"),
-                    id="select_social_network",
-                    on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.social_network_select,
-                                                         ShowMode.EDIT),
-                    when="can_publish_directly",
-                ),
-                Button(
                     Const("📝 Добавить в черновики"),
                     id="save_draft",
                     on_click=self.generate_publication_service.handle_add_to_drafts,
@@ -251,6 +244,13 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                     id="send_moderation",
                     on_click=self.generate_publication_service.handle_send_to_moderation,
                     when="requires_moderation",
+                ),
+                Button(
+                    Const("🌐 Выбрать место публикации"),
+                    id="select_social_network",
+                    on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.social_network_select,
+                                                         ShowMode.EDIT),
+                    when="can_publish_directly",
                 ),
                 Button(
                     Const("🚀 Опубликовать"),
