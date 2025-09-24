@@ -20,7 +20,18 @@ def NewTg(
         moderation_publication_dialog: interface.IModerationPublicationDialog,
         moderation_video_cut_dialog: interface.IVideoCutModerationDialog,
         video_cuts_draft_dialog: interface.IVideoCutsDraftDialog,
-) -> BgManagerFactory:
+        prefix: str
+):
+    app = FastAPI(
+        openapi_url=prefix + "/openapi.json",
+        docs_url=prefix + "/docs",
+        redoc_url=prefix + "/redoc",
+    )
+    include_tg_middleware(dp, tg_middleware)
+    include_http_middleware(app, http_middleware)
+
+    include_db_handler(app, db, prefix)
+    include_tg_webhook(app, tg_webhook_controller, prefix)
     include_command_handlers(
         dp,
         command_controller
@@ -38,7 +49,8 @@ def NewTg(
         generate_video_cut_dialog,
         moderation_publication_dialog,
         moderation_video_cut_dialog,
-        video_cuts_draft_dialog
+        video_cuts_draft_dialog,
+        publication_draft_dialog
     )
 
     return dialog_bg_factory
@@ -77,8 +89,7 @@ def include_dialogs(
         moderation_publication_dialog: interface.IModerationPublicationDialog,
         moderation_video_cut_dialog: interface.IVideoCutModerationDialog,
         video_cuts_draft_dialog: interface.IVideoCutsDraftDialog,
-) -> BgManagerFactory:
-
+):
     dialog_router = Router()
     dialog_router.include_routers(
         auth_dialog.get_dialog(),
@@ -92,7 +103,8 @@ def include_dialogs(
         moderation_publication_dialog.get_dialog(),
         generate_video_cut_dialog.get_dialog(),
         moderation_video_cut_dialog.get_dialog(),
-        video_cuts_draft_dialog.get_dialog()
+        video_cuts_draft_dialog.get_dialog(),
+        publication_draft_dialog.get_dialog()
     )
 
     dp.include_routers(dialog_router)
