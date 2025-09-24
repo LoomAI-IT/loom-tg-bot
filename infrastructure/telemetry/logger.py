@@ -56,7 +56,7 @@ class OtelLogger(interface.IOtelLogger):
                     self.alert_manger.send_error_alert(
                         trace_id,
                         span_id,
-                        attributes[common.TRACEBACK_KEY]
+                        attributes.get(common.TRACEBACK_KEY, "")
                     )
 
         log_level = getattr(logging, level.upper(), logging.INFO)

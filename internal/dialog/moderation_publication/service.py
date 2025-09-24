@@ -1054,7 +1054,6 @@ class ModerationPublicationService(interface.IModerationPublicationService):
 
             return None
         except Exception as err:
-            self.logger.error(f"Ошибка получения данных изображения для модерации: {err}")
             return None
 
     async def _check_alerts(self, dialog_manager: DialogManager) -> bool:

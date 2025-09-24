@@ -70,6 +70,7 @@ class StateService(interface.IStateService):
             organization_id: int = None,
             access_token: str = None,
             refresh_token: str = None,
+            can_show_alerts: bool = None,
     ) -> None:
         with self.tracer.start_as_current_span(
                 "StateService.change_status",
@@ -85,6 +86,7 @@ class StateService(interface.IStateService):
                     organization_id,
                     access_token,
                     refresh_token,
+                    can_show_alerts
                 )
                 span.set_status(StatusCode.OK)
             except Exception as err:

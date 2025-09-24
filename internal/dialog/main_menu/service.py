@@ -40,6 +40,8 @@ class MainMenuService(interface.IMainMenuService):
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
+
+                await callback.answer("Ошибка", show_alert=True)
                 raise
 
     async def handle_go_to_organization(
@@ -89,4 +91,5 @@ class MainMenuService(interface.IMainMenuService):
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
+                await callback.answer("Ошибка", show_alert=True)
                 raise
