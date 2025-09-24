@@ -166,9 +166,7 @@ class KonturContentClient(interface.IKonturContentClient):
                     "category_id": str(category_id),
                     "creator_id": str(creator_id),
                     "text_reference": text_reference,
-                    "name": "",
                     "text": text,
-                    "tags": "",
                     "moderation_status": moderation_status,
                 }
 
@@ -207,9 +205,7 @@ class KonturContentClient(interface.IKonturContentClient):
             publication_id: int,
             vk_source: bool = None,
             tg_source: bool = None,
-            name: str = None,
             text: str = None,
-            tags: list[str] = None,
             time_for_publication: datetime = None,
             image_url: str = None,
             image_content: bytes = None,
@@ -230,12 +226,8 @@ class KonturContentClient(interface.IKonturContentClient):
                     data["vk_source"] = vk_source
                 if tg_source is not None:
                     data["tg_source"] = tg_source
-                if name is not None:
-                    data["name"] = name
                 if text is not None:
                     data["text"] = text
-                if tags is not None:
-                    data["tags"] = json.dumps(tags)
                 if time_for_publication is not None:
                     data["time_for_publication"] = time_for_publication.isoformat() if hasattr(time_for_publication,
                                                                                                'isoformat') else str(
