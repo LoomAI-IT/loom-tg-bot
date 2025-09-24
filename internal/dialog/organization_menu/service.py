@@ -78,6 +78,7 @@ class OrganizationMenuService(interface.IOrganizationMenuService):
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
+                await callback.answer("Ошибка", show_alert=True)
                 raise
 
     async def handle_go_to_top_up_balance(
