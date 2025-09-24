@@ -50,13 +50,6 @@ class AddEmployeeDialog(interface.IAddEmployeeDialog):
                     },
                     selector="has_invalid_account_id"
                 ),
-                Case(
-                    {
-                        True: Const("⚠️ <b>Ошибка:</b> Не удалось обработать ID аккаунта. Попробуйте еще раз\n\n"),
-                        False: Const(""),
-                    },
-                    selector="has_account_id_processing_error"
-                ),
 
                 Const("💡 <b>Введите ID аккаунта:</b>\n"),
 
@@ -116,13 +109,6 @@ class AddEmployeeDialog(interface.IAddEmployeeDialog):
                         False: Const(""),
                     },
                     selector="has_invalid_name_length"
-                ),
-                Case(
-                    {
-                        True: Const("⚠️ <b>Ошибка:</b> Не удалось обработать имя. Попробуйте еще раз\n\n"),
-                        False: Const(""),
-                    },
-                    selector="has_name_processing_error"
                 ),
 
                 Const("💡 <b>Введите полное имя сотрудника:</b>\n"),
@@ -278,36 +264,14 @@ class AddEmployeeDialog(interface.IAddEmployeeDialog):
         return Window(
             Multi(
                 Const("👤 <b>Подтверждение создания сотрудника</b>\n\n"),
-
-                # Показываем состояние создания
-                Case(
-                    {
-                        True: Multi(
-                            Const("⏳ <b>Создаю сотрудника...</b>\n"),
-                            Const("Это может занять время. Пожалуйста, ожидайте."),
-                        ),
-                        False: Multi(
-                            Const("📋 <b>Проверьте введенные данные:</b>\n\n"),
-                            Format("ID Аккаунта: <b>{account_id}</b>\n"),
-                            Format("Имя: <b>{name}</b>\n"),
-                            Format("Роль: <b>{role}</b>\n\n"),
-                            Const("⚙️ <b>Разрешения:</b>\n"),
-                            Format("{permissions_text}\n\n"),
-
-                            # Показываем ошибки создания если есть
-                            Case(
-                                {
-                                    True: Const(
-                                        "⚠️ <b>Ошибка:</b> Не удалось создать сотрудника. Попробуйте еще раз\n\n"),
-                                    False: Const(""),
-                                },
-                                selector="has_creation_error"
-                            ),
-
-                            Const("❓ Всё правильно?"),
-                        ),
-                    },
-                    selector="is_creating_employee"
+                Multi(
+                    Const("📋 <b>Проверьте введенные данные:</b>\n\n"),
+                    Format("ID Аккаунта: <b>{account_id}</b>\n"),
+                    Format("Имя: <b>{name}</b>\n"),
+                    Format("Роль: <b>{role}</b>\n\n"),
+                    Const("⚙️ <b>Разрешения:</b>\n"),
+                    Format("{permissions_text}\n\n"),
+                    Const("❓ Всё правильно?"),
                 ),
                 sep="",
             ),
