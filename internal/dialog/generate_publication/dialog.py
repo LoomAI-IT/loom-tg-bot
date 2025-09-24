@@ -28,6 +28,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             self.get_preview_window(),
             self.get_edit_text_menu_window(),
             self.get_image_menu_window(),
+            self.get_edit_text_window(),
             self.get_upload_image_window(),
             self.get_social_network_select_window()
         )
@@ -291,17 +292,20 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                     Const("Перегенерировать текст"),
                     id="regenerate_all",
                     on_click=self.generate_publication_service.handle_regenerate_text,
+                    when="~is_regenerating_text"
                 ),
                 Button(
                     Const("Написать свой текст"),
                     id="edit_content",
                     on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.edit_text, ShowMode.EDIT),
+                    when="~is_regenerating_text"
                 ),
             ),
             Button(
                 Const("Назад"),
                 id="preview",
                 on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.preview, ShowMode.EDIT),
+                when="~is_regenerating_text"
             ),
 
             TextInput(
