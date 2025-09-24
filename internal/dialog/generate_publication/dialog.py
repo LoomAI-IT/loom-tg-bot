@@ -1,5 +1,6 @@
 from aiogram import F
-from aiogram_dialog import Window, Dialog, ShowMode
+from aiogram_dialog import Window, Dialog, ShowMode, DialogManager
+from aiogram_dialog.widgets.common import Whenable
 from aiogram_dialog.widgets.text import Const, Format, Multi, Case
 from aiogram_dialog.widgets.kbd import Button, Column, Row, Back, Select, Checkbox, Next
 from aiogram_dialog.widgets.input import TextInput, MessageInput
@@ -322,7 +323,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
     def get_edit_text_window(self) -> Window:
         return Window(
             Multi(
-                Const("✍️ <b>Напишите итоговый текст"),
+                Const("✍️ <b>Напишите итоговый текст</b>"),
                 # Add error messages
                 Case(
                     {
@@ -428,6 +429,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                     on_click=self.generate_publication_service.handle_remove_image,
                     when="has_image",
                 ),
+                when=~F["is_generating_image"]
             ),
 
             TextInput(

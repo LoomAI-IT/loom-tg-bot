@@ -215,14 +215,6 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
         return {
             "has_image": dialog_manager.dialog_data.get("has_image", False),
             "is_custom_image": dialog_manager.dialog_data.get("is_custom_image", False),
-        }
-
-    async def get_image_prompt_data(
-            self,
-            dialog_manager: DialogManager,
-            **kwargs
-    ) -> dict:
-        return {
             "has_image_prompt": dialog_manager.dialog_data.get("image_prompt", "") != "",
             "image_prompt": dialog_manager.dialog_data.get("image_prompt", ""),
             "is_generating_image": dialog_manager.dialog_data.get("is_generating_image", False),
