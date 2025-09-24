@@ -75,8 +75,6 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
                     state.account_id
                 )
 
-                tags = dialog_manager.dialog_data.get("publication_tags", [])
-                name = dialog_manager.dialog_data.get("publication_name", "")
                 text = dialog_manager.dialog_data.get("publication_text", "")
 
                 # Check for image presence
@@ -112,10 +110,7 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
 
                 data = {
                     "category_name": dialog_manager.dialog_data.get("category_name", ""),
-                    "publication_name": name,
                     "publication_text": text,
-                    "has_tags": bool(tags),
-                    "publication_tags": ", ".join(tags) if tags else "",
                     "has_scheduled_time": False,
                     "publish_time": "",
                     "has_image": has_image,
@@ -196,49 +191,8 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
-    async def get_regenerate_data(
-            self,
-            dialog_manager: DialogManager,
-            **kwargs
-    ) -> dict:
-        return {
-            # Основные данные
-            "has_regenerate_prompt": dialog_manager.dialog_data.get("regenerate_prompt", "") != "",
-            "regenerate_prompt": dialog_manager.dialog_data.get("regenerate_prompt", ""),
 
-            # Состояние процесса
-            "is_regenerating_text": dialog_manager.dialog_data.get("is_regenerating_text", False),
-
-            # Флаги ошибок валидации
-            "has_void_regenerate_prompt": dialog_manager.dialog_data.get("has_void_regenerate_prompt", False),
-            "has_small_regenerate_prompt": dialog_manager.dialog_data.get("has_small_regenerate_prompt", False),
-            "has_big_regenerate_prompt": dialog_manager.dialog_data.get("has_big_regenerate_prompt", False),
-        }
-    async def get_edit_title_data(
-            self,
-            dialog_manager: DialogManager,
-            **kwargs
-    ) -> dict:
-        return {
-            "publication_name": dialog_manager.dialog_data.get("publication_name", ""),
-            # Error flags
-            "has_void_title": dialog_manager.dialog_data.get("has_void_title", False),
-            "has_big_title": dialog_manager.dialog_data.get("has_big_title", False),
-        }
-
-    async def get_edit_tags_data(
-            self,
-            dialog_manager: DialogManager,
-            **kwargs
-    ) -> dict:
-        tags = dialog_manager.dialog_data.get("publication_tags", [])
-        return {
-            "publication_tags": ", ".join(tags) if tags else "Нет тегов",
-            # Error flags
-            "has_too_many_tags": dialog_manager.dialog_data.get("has_too_many_tags", False),
-        }
-
-    async def get_edit_content_data(
+    async def get_edit_text_data(
             self,
             dialog_manager: DialogManager,
             **kwargs
@@ -246,9 +200,9 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
         return {
             "publication_text": dialog_manager.dialog_data.get("publication_text", ""),
             # Error flags
-            "has_void_content": dialog_manager.dialog_data.get("has_void_content", False),
-            "has_small_content": dialog_manager.dialog_data.get("has_small_content", False),
-            "has_big_content": dialog_manager.dialog_data.get("has_big_content", False),
+            "has_void_text": dialog_manager.dialog_data.get("has_void_text", False),
+            "has_small_text": dialog_manager.dialog_data.get("has_small_text", False),
+            "has_big_text": dialog_manager.dialog_data.get("has_big_text", False),
         }
 
     async def get_image_menu_data(

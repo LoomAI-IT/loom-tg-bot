@@ -12,9 +12,7 @@ class GeneratePublicationStates(StatesGroup):
     # Состояния редактирования текста
     edit_text_menu = State()
     regenerate_text = State()
-    edit_title = State()
-    edit_tags = State()
-    edit_content = State()
+    edit_text = State()
 
     # Состояния управления изображением
     image_menu = State()

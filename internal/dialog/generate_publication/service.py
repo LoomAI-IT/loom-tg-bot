@@ -27,38 +27,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         self.state_repo = state_repo
         self.kontur_content_client = kontur_content_client
 
-    async def handle_select_category(
-            self,
-            callback: CallbackQuery,
-            widget: Any,
-            dialog_manager: DialogManager,
-            category_id: str
-    ) -> None:
-        with self.tracer.start_as_current_span(
-                "GeneratePublicationDialogService.handle_select_category",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                dialog_manager.show_mode = ShowMode.EDIT
-                category = await self.kontur_content_client.get_category_by_id(
-                    int(category_id)
-                )
-
-                dialog_manager.dialog_data["category_id"] = category.id
-                dialog_manager.dialog_data["category_name"] = category.name
-
-                self.logger.info("Категория выбрана")
-
-                await dialog_manager.switch_to(model.GeneratePublicationStates.input_text)
-                span.set_status(Status(StatusCode.OK))
-
-            except Exception as err:
-                span.record_exception(err)
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-
-                await callback.answer("❌ Ошибка", show_alert=True)
-                raise
-
     async def handle_text_input(
             self,
             message: Message,
@@ -72,9 +40,10 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         ) as span:
             try:
                 dialog_manager.show_mode = ShowMode.EDIT
-                await message.delete()
-                text = text.strip()
 
+                await message.delete()
+
+                text = text.strip()
                 if not text:
                     dialog_manager.dialog_data["has_void_input_text"] = True
                     return
@@ -87,7 +56,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                     dialog_manager.dialog_data["has_big_input_text"] = True
                     return
 
-                # Clear error flags on successful input
                 dialog_manager.dialog_data.pop("has_void_input_text", None)
                 dialog_manager.dialog_data.pop("has_small_input_text", None)
                 dialog_manager.dialog_data.pop("has_big_input_text", None)
@@ -97,7 +65,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
                 self.logger.info("Текст для генерации введен")
 
-                await dialog_manager.switch_to(model.GeneratePublicationStates.input_text)
+                await dialog_manager.switch_to(model.GeneratePublicationStates.select_category)
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
@@ -169,6 +137,36 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 dialog_manager.dialog_data["has_input_text"] = True
 
                 self.logger.info("Голосовое сообщение обработано")
+                await dialog_manager.switch_to(model.GeneratePublicationStates.select_category)
+
+                span.set_status(Status(StatusCode.OK))
+
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
+                raise
+
+    async def handle_select_category(
+            self,
+            callback: CallbackQuery,
+            widget: Any,
+            dialog_manager: DialogManager,
+            category_id: str
+    ) -> None:
+        with self.tracer.start_as_current_span(
+                "GeneratePublicationDialogService.handle_select_category",
+                kind=SpanKind.INTERNAL
+        ) as span:
+            try:
+                dialog_manager.show_mode = ShowMode.EDIT
+                category = await self.kontur_content_client.get_category_by_id(
+                    int(category_id)
+                )
+
+                dialog_manager.dialog_data["category_id"] = category.id
+                dialog_manager.dialog_data["category_name"] = category.name
+
+                self.logger.info("Категория выбрана")
 
                 await dialog_manager.switch_to(model.GeneratePublicationStates.input_text)
                 span.set_status(Status(StatusCode.OK))
@@ -176,6 +174,8 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
+
+                await callback.answer("❌ Ошибка", show_alert=True)
                 raise
 
     async def handle_generate_text(
@@ -205,8 +205,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                     text_reference=input_text,
                 )
 
-                dialog_manager.dialog_data["publication_tags"] = publication_data["tags"]
-                dialog_manager.dialog_data["publication_name"] = publication_data["name"]
                 dialog_manager.dialog_data["publication_text"] = publication_data["text"]
 
                 await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
@@ -245,8 +243,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                     text_reference=input_text,
                 )
 
-                dialog_manager.dialog_data["publication_tags"] = publication_data.get("tags", [])
-                dialog_manager.dialog_data["publication_name"] = publication_data["name"]
                 dialog_manager.dialog_data["publication_text"] = publication_data["text"]
 
                 images_url = await self.kontur_content_client.generate_publication_image(
@@ -360,9 +356,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                     prompt=None
                 )
 
-                dialog_manager.dialog_data["publication_name"] = regenerated_data["name"]
                 dialog_manager.dialog_data["publication_text"] = regenerated_data["text"]
-                dialog_manager.dialog_data["publication_tags"] = regenerated_data["tags"]
 
                 await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
                 span.set_status(Status(StatusCode.OK))
@@ -427,9 +421,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 )
 
                 # Обновляем данные публикации
-                dialog_manager.dialog_data["publication_name"] = regenerated_data["name"]
                 dialog_manager.dialog_data["publication_text"] = regenerated_data["text"]
-                dialog_manager.dialog_data["publication_tags"] = regenerated_data.get("tags", [])
 
                 # Отключаем индикатор загрузки
                 dialog_manager.dialog_data["is_regenerating_text"] = False
@@ -445,7 +437,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
-    async def handle_edit_title_save(
+    async def handle_edit_text(
             self,
             message: Message,
             widget: Any,
@@ -453,88 +445,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             text: str
     ) -> None:
         with self.tracer.start_as_current_span(
-                "GeneratePublicationDialogService.handle_edit_title_save",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                dialog_manager.show_mode = ShowMode.EDIT
-
-                await message.delete()
-                new_title = text.strip()
-
-                if not new_title:
-                    dialog_manager.dialog_data["has_void_title"] = True
-                    return
-
-                if len(new_title) > 200:
-                    dialog_manager.dialog_data["has_big_title"] = True
-                    return
-
-                dialog_manager.dialog_data.pop("has_void_title", None)
-                dialog_manager.dialog_data.pop("has_big_title", None)
-
-                dialog_manager.dialog_data["publication_name"] = new_title
-
-                self.logger.info("Название публикации изменено")
-
-                await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
-                span.set_status(Status(StatusCode.OK))
-            except Exception as err:
-
-                span.record_exception(err)
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                raise
-
-    async def handle_edit_tags_save(
-            self,
-            message: Message,
-            widget: Any,
-            dialog_manager: DialogManager,
-            text: str
-    ) -> None:
-        with self.tracer.start_as_current_span(
-                "GeneratePublicationDialogService.handle_edit_tags_save",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                dialog_manager.show_mode = ShowMode.EDIT
-
-                await message.delete()
-                tags_raw = text.strip()
-
-                if not tags_raw:
-                    dialog_manager.dialog_data.pop("has_too_many_tags", None)
-                    dialog_manager.dialog_data["publication_tags"] = []
-                    await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
-                    return
-
-                tags = [tag.strip() for tag in tags_raw.split(",")]
-                tags = [tag for tag in tags if tag]
-
-                if len(tags) > 10:
-                    dialog_manager.dialog_data["has_too_many_tags"] = True
-                    return
-
-                dialog_manager.dialog_data.pop("has_too_many_tags", None)
-                dialog_manager.dialog_data["publication_tags"] = tags
-
-                await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
-                span.set_status(Status(StatusCode.OK))
-
-            except Exception as err:
-                span.record_exception(err)
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                raise
-
-    async def handle_edit_content_save(
-            self,
-            message: Message,
-            widget: Any,
-            dialog_manager: DialogManager,
-            text: str
-    ) -> None:
-        with self.tracer.start_as_current_span(
-                "GeneratePublicationDialogService.handle_edit_content_save",
+                "GeneratePublicationDialogService.handle_edit_text",
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
@@ -797,8 +708,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
                 category_id = dialog_manager.dialog_data["category_id"]
                 text_reference = dialog_manager.dialog_data["input_text"]
-                tags = dialog_manager.dialog_data["publication_tags"]
-                name = dialog_manager.dialog_data["publication_name"]
                 text = dialog_manager.dialog_data["publication_text"]
 
                 image_url, image_content, image_filename = await self._get_selected_image_data(dialog_manager)
@@ -808,9 +717,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                     category_id,
                     state.account_id,
                     text_reference,
-                    name,
                     text,
-                    tags,
                     "draft",
                     image_url=image_url,
                     image_content=image_content,
@@ -865,8 +772,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
                 category_id = dialog_manager.dialog_data["category_id"]
                 text_reference = dialog_manager.dialog_data["input_text"]
-                tags = dialog_manager.dialog_data["publication_tags"]
-                name = dialog_manager.dialog_data["publication_name"]
                 text = dialog_manager.dialog_data["publication_text"]
 
                 image_url, image_content, image_filename = await self._get_selected_image_data(dialog_manager)
@@ -876,9 +781,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                     category_id,
                     state.account_id,
                     text_reference,
-                    name,
                     text,
-                    tags,
                     "moderation",
                     image_url=image_url,
                     image_content=image_content,
@@ -961,29 +864,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             try:
                 dialog_manager.show_mode = ShowMode.EDIT
 
-                await dialog_manager.switch_to(model.GeneratePublicationStates.social_network_select)
-                span.set_status(Status(StatusCode.OK))
-
-            except Exception as err:
-                span.record_exception(err)
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-
-                await callback.answer("❌ Ошибка при переходе к выбору соцсетей", show_alert=True)
-                raise
-
-    async def handle_publish_with_selected_networks(
-            self,
-            callback: CallbackQuery,
-            button: Any,
-            dialog_manager: DialogManager
-    ) -> None:
-        with self.tracer.start_as_current_span(
-                "GeneratePublicationDialogService.handle_publish_with_selected_networks",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                dialog_manager.show_mode = ShowMode.EDIT
-
                 state = await self._get_state(dialog_manager)
 
                 selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
@@ -998,8 +878,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
                 category_id = dialog_manager.dialog_data["category_id"]
                 text_reference = dialog_manager.dialog_data["input_text"]
-                tags = dialog_manager.dialog_data["publication_tags"]
-                name = dialog_manager.dialog_data["publication_name"]
                 text = dialog_manager.dialog_data["publication_text"]
 
                 image_url, image_content, image_filename = await self._get_selected_image_data(dialog_manager)
@@ -1009,9 +887,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                     category_id,
                     state.account_id,
                     text_reference,
-                    name,
                     text,
-                    tags,
                     "published",
                     image_url=image_url,
                     image_content=image_content,
@@ -1043,7 +919,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
 
-                await callback.answer("❌ Ошибка при публикации", show_alert=True)
+                await callback.answer("❌ Ошибка при переходе к выбору соцсетей", show_alert=True)
                 raise
 
     async def handle_go_to_content_menu(

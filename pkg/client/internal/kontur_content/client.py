@@ -149,9 +149,7 @@ class KonturContentClient(interface.IKonturContentClient):
             category_id: int,
             creator_id: int,
             text_reference: str,
-            name: str,
             text: str,
-            tags: list[str],
             moderation_status: str,
             image_url: str = None,
             image_content: bytes = None,
@@ -168,9 +166,9 @@ class KonturContentClient(interface.IKonturContentClient):
                     "category_id": str(category_id),
                     "creator_id": str(creator_id),
                     "text_reference": text_reference,
-                    "name": name,
+                    "name": "",
                     "text": text,
-                    "tags": json.dumps(tags),
+                    "tags": "",
                     "moderation_status": moderation_status,
                 }
 

@@ -1,7 +1,8 @@
 from abc import abstractmethod
 from typing import Protocol, Any
 from aiogram_dialog import DialogManager, Dialog, Window
-from aiogram.types import CallbackQuery
+from aiogram.types import CallbackQuery, Message
+from aiogram_dialog.widgets.input import MessageInput
 
 
 class IContentMenuDialog(Protocol):

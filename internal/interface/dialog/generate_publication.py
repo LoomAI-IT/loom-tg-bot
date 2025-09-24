@@ -25,22 +25,7 @@ class IGeneratePublicationDialog(Protocol):
     def get_edit_text_menu_window(self) -> Window: pass
 
     @abstractmethod
-    def get_regenerate_text_window(self) -> Window: pass
-
-    @abstractmethod
-    def get_edit_title_window(self) -> Window: pass
-
-    @abstractmethod
-    def get_edit_tags_window(self) -> Window: pass
-
-    @abstractmethod
-    def get_edit_content_window(self) -> Window: pass
-
-    @abstractmethod
     def get_image_menu_window(self) -> Window: pass
-
-    @abstractmethod
-    def get_generate_image_window(self) -> Window: pass
 
     @abstractmethod
     def get_upload_image_window(self) -> Window: pass
@@ -118,26 +103,9 @@ class IGeneratePublicationService(Protocol):
             prompt: str
     ) -> None: pass
 
-    @abstractmethod
-    async def handle_edit_title_save(
-            self,
-            message: Message,
-            widget: Any,
-            dialog_manager: DialogManager,
-            text: str
-    ) -> None: pass
 
     @abstractmethod
-    async def handle_edit_tags_save(
-            self,
-            message: Message,
-            widget: Any,
-            dialog_manager: DialogManager,
-            text: str
-    ) -> None: pass
-
-    @abstractmethod
-    async def handle_edit_content_save(
+    async def handle_edit_text(
             self,
             message: Message,
             widget: Any,
@@ -218,13 +186,6 @@ class IGeneratePublicationService(Protocol):
             dialog_manager: DialogManager
     ) -> None: pass
 
-    @abstractmethod
-    async def handle_publish_with_selected_networks(
-            self,
-            callback: CallbackQuery,
-            button: Any,
-            dialog_manager: DialogManager
-    ) -> None: pass
 
     @abstractmethod
     async def handle_toggle_social_network(
@@ -261,26 +222,9 @@ class IGeneratePublicationGetter(Protocol):
             dialog_manager: DialogManager,
     ) -> dict: pass
 
-    @abstractmethod
-    async def get_regenerate_data(
-            self,
-            dialog_manager: DialogManager,
-    ) -> dict: pass
 
     @abstractmethod
-    async def get_edit_title_data(
-            self,
-            dialog_manager: DialogManager,
-    ) -> dict: pass
-
-    @abstractmethod
-    async def get_edit_tags_data(
-            self,
-            dialog_manager: DialogManager,
-    ) -> dict: pass
-
-    @abstractmethod
-    async def get_edit_content_data(
+    async def get_edit_text_data(
             self,
             dialog_manager: DialogManager,
     ) -> dict: pass

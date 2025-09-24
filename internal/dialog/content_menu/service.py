@@ -1,4 +1,7 @@
 from typing import Any
+
+from aiogram import Bot
+
 from aiogram.types import CallbackQuery
 from aiogram_dialog import DialogManager, StartMode
 
@@ -18,6 +21,7 @@ class ContentMenuService(interface.IContentMenuService):
         self.logger = tel.logger()
         self.state_repo = state_repo
         self.kontur_employee_client = kontur_employee_client
+
 
     async def handle_go_to_publication_generation(
             self,
