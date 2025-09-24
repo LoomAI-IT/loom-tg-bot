@@ -352,10 +352,8 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 dialog_manager.show_mode = ShowMode.EDIT
 
                 await callback.answer()
-                await callback.message.edit_text(
-                    "🔄 Генерирую текст, это может занять время... Не совершайте никаких действий",
-                    reply_markup=None
-                )
+                dialog_manager.dialog_data["is_regenerating_text"] = True
+                await dialog_manager.show()
 
                 category_id = dialog_manager.dialog_data["category_id"]
                 current_text = dialog_manager.dialog_data["publication_text"]
@@ -365,6 +363,8 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                     publication_text=current_text,
                     prompt=None
                 )
+
+                dialog_manager.dialog_data["is_regenerating_text"] = True
 
                 dialog_manager.dialog_data["publication_text"] = regenerated_data["text"]
 
@@ -503,11 +503,11 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 await callback.answer()
-                await callback.message.edit_text(
-                    "🔄 Генерирую изображение, это может занять время...",
-                    reply_markup=None
-                )
+                dialog_manager.dialog_data["is_generating_image"] = True
+                await dialog_manager.show()
 
                 category_id = dialog_manager.dialog_data["category_id"]
                 publication_text = dialog_manager.dialog_data["publication_text"]
@@ -527,13 +527,14 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                     image_filename=current_image_filename,
                 )
 
+                dialog_manager.dialog_data["is_generating_image"] = False
                 dialog_manager.dialog_data["publication_images_url"] = images_url
                 dialog_manager.dialog_data["has_image"] = True
                 dialog_manager.dialog_data["is_custom_image"] = False
                 dialog_manager.dialog_data["current_image_index"] = 0
                 dialog_manager.dialog_data.pop("custom_image_file_id", None)
 
-                await dialog_manager.switch_to(model.GeneratePublicationStates.preview, show_mode=ShowMode.DELETE_AND_SEND)
+                await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
