@@ -79,7 +79,10 @@ class IAddEmployeeService(Protocol):
 
 class IAddEmployeeGetter(Protocol):
     @abstractmethod
-    async def get_enter_account_id_data(self) -> dict: pass
+    async def get_enter_account_id_data(
+            self,
+            dialog_manager: DialogManager,
+    ) -> dict: pass
 
     @abstractmethod
     async def get_enter_name_data(

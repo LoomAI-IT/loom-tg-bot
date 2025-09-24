@@ -33,20 +33,46 @@ class AddEmployeeService(interface.IAddEmployeeService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 await message.delete()
-                account_id = utils.Validator.validate_account_id(account_id)
+                account_id = account_id.strip()
 
-                dialog_manager.dialog_data["account_id"] = str(account_id)
+                error_flags = [
+                    "has_void_account_id",
+                    "has_invalid_account_id",
+                    "has_account_id_processing_error"
+                ]
+                for flag in error_flags:
+                    dialog_manager.dialog_data.pop(flag, None)
 
-                await dialog_manager.switch_to(model.AddEmployeeStates.enter_name, ShowMode.EDIT)
-                span.set_status(Status(StatusCode.OK))
+                # Validation
+                if not account_id:
+                    dialog_manager.dialog_data["has_void_account_id"] = True
+                    return
 
-            except common.ValidationError as e:
-                await message.answer(f"❌ {str(e)} Попробуйте снова.")
+                try:
+                    account_id_int = int(account_id)
+                    if account_id_int <= 0:
+                        dialog_manager.dialog_data["has_invalid_account_id"] = True
+                        return
+                except ValueError:
+                    dialog_manager.dialog_data["has_invalid_account_id"] = True
+                    return
+
+                # Success - save data and update UI
+                dialog_manager.dialog_data["account_id"] = str(account_id_int)
+                dialog_manager.dialog_data["has_account_id"] = True
+
+                self.logger.info("Account ID успешно введен")
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                await self._handle_unexpected_error(err, span, message)
+                dialog_manager.dialog_data["has_account_id_processing_error"] = True
+
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
+                raise
 
     async def handle_name_input(
             self,
@@ -60,21 +86,40 @@ class AddEmployeeService(interface.IAddEmployeeService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-
+                dialog_manager.show_mode = ShowMode.EDIT
                 await message.delete()
-                validated_name = utils.Validator.validate_name(name)
+                name = name.strip()
 
-                dialog_manager.dialog_data["name"] = validated_name
+                error_flags = [
+                    "has_void_name",
+                    "has_invalid_name_length",
+                    "has_name_processing_error"
+                ]
+                for flag in error_flags:
+                    dialog_manager.dialog_data.pop(flag, None)
 
-                await dialog_manager.switch_to(model.AddEmployeeStates.enter_role, ShowMode.EDIT)
-                span.set_status(Status(StatusCode.OK))
+                # Validation
+                if not name:
+                    dialog_manager.dialog_data["has_void_name"] = True
+                    return
 
-            except common.ValidationError as e:
-                await message.answer(f"❌ {str(e)} Попробуйте снова.")
+                if len(name) < 2 or len(name) > 100:
+                    dialog_manager.dialog_data["has_invalid_name_length"] = True
+                    return
+
+                # Success - save data and update UI
+                dialog_manager.dialog_data["name"] = name
+                dialog_manager.dialog_data["has_name"] = True
+
+                self.logger.info("Имя сотрудника успешно введено")
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                await self._handle_unexpected_error(err, span, message)
+                dialog_manager.dialog_data["has_name_processing_error"] = True
+
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
+                raise
 
     async def handle_role_selection(
             self,
@@ -88,18 +133,28 @@ class AddEmployeeService(interface.IAddEmployeeService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 selected_role = common.Role(role)
                 dialog_manager.dialog_data["role"] = selected_role.value
+                dialog_manager.dialog_data["has_selected_role"] = True
+                dialog_manager.dialog_data["selected_role_display"] = utils.RoleDisplayHelper.get_display_name(
+                    selected_role)
 
                 # Устанавливаем разрешения по умолчанию
                 default_permissions = utils.PermissionManager.get_default_permissions(selected_role)
                 dialog_manager.dialog_data["permissions"] = default_permissions.to_dict()
 
-                await dialog_manager.switch_to(model.AddEmployeeStates.set_permissions)
+                await callback.answer(f"✅ Выбрана роль: {utils.RoleDisplayHelper.get_display_name(selected_role)}")
+                self.logger.info(f"Роль выбрана: {selected_role.value}")
+
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                await self._handle_unexpected_error(err, span, callback=callback)
+                await callback.answer("❌ Ошибка при выборе роли", show_alert=True)
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
+                raise
 
     async def handle_toggle_permission(
             self,
@@ -112,6 +167,8 @@ class AddEmployeeService(interface.IAddEmployeeService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 button_id = button.widget_id
                 permission_key = utils.PermissionManager.get_permission_key(button_id)
 
@@ -129,11 +186,20 @@ class AddEmployeeService(interface.IAddEmployeeService):
 
                 dialog_manager.dialog_data["permissions"] = permissions.to_dict()
 
-                await dialog_manager.update(dialog_manager.dialog_data)
+                # Показываем пользователю что изменилось
+                permission_name = utils.PermissionManager.get_permission_name(permission_key)
+                new_value = getattr(permissions, permission_key)
+                status = "включено" if new_value else "выключено"
+
+                await callback.answer(f"{'✅' if new_value else '❌'} {permission_name}: {status}")
+
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                await self._handle_unexpected_error(err, span, callback=callback)
+                await callback.answer("❌ Ошибка при изменении разрешения", show_alert=True)
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
+                raise
 
     async def handle_create_employee(
             self,
@@ -146,6 +212,12 @@ class AddEmployeeService(interface.IAddEmployeeService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
+                # Clear previous errors and set loading state
+                dialog_manager.dialog_data.pop("has_creation_error", None)
+                dialog_manager.dialog_data["is_creating_employee"] = True
+
                 employee_data = utils.EmployeeData.from_dialog_data(dialog_manager.dialog_data)
 
                 # Получаем информацию о текущем пользователе
@@ -174,14 +246,16 @@ class AddEmployeeService(interface.IAddEmployeeService):
                     sign_up_social_net_permission=employee_data.permissions.sign_up_social_networks,
                 )
 
-                await callback.answer(
-                    f"✅ Сотрудник {employee_data.name} успешно добавлен!",
-                    show_alert=True
-                )
+                # Success - clear loading state
+                dialog_manager.dialog_data["is_creating_employee"] = False
+
+                await callback.answer("Сотрудник {employee_data.name} успешно добавлен!")
+                self.logger.info(f"Сотрудник успешно создан: {employee_data.name}")
 
                 if await self._check_alerts(dialog_manager):
                     return
 
+                # Navigate back to organization menu
                 await dialog_manager.start(
                     model.OrganizationMenuStates.organization_menu,
                     mode=StartMode.RESET_STACK
@@ -190,12 +264,14 @@ class AddEmployeeService(interface.IAddEmployeeService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                await self._handle_unexpected_error(
-                    err,
-                    span,
-                    callback=callback,
-                    error_message="Ошибка при создании сотрудника"
-                )
+                dialog_manager.dialog_data["is_creating_employee"] = False
+                dialog_manager.dialog_data["has_creation_error"] = True
+
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
+
+                self.logger.error(f"Ошибка при создании сотрудника: {str(err)}")
+                raise
 
     async def handle_go_to_organization_menu(
             self,
@@ -208,6 +284,8 @@ class AddEmployeeService(interface.IAddEmployeeService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 if await self._check_alerts(dialog_manager):
                     return
 
@@ -219,7 +297,11 @@ class AddEmployeeService(interface.IAddEmployeeService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                await self._handle_unexpected_error(err, span)
+                await callback.answer("❌ Ошибка при переходе в меню", show_alert=True)
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
+                raise
+
 
     async def _check_alerts(self, dialog_manager: DialogManager) -> bool:
         state = await self._get_state(dialog_manager)
@@ -239,24 +321,6 @@ class AddEmployeeService(interface.IAddEmployeeService):
             return True
 
         return False
-
-    async def _handle_unexpected_error(
-            self,
-            error: Exception,
-            span,
-            message: Message = None,
-            callback: CallbackQuery = None,
-            error_message: str = "Произошла ошибка. Попробуйте снова."
-    ) -> None:
-        span.record_exception(error)
-        span.set_status(Status(StatusCode.ERROR, str(error)))
-
-        if message:
-            await message.answer(f"❌ {error_message}")
-        elif callback:
-            await callback.answer(f"❌ {error_message}", show_alert=True)
-
-        raise error
 
     async def _get_state(self, dialog_manager: DialogManager) -> model.UserState:
         if hasattr(dialog_manager.event, 'message') and dialog_manager.event.message:

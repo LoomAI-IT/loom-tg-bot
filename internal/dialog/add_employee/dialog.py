@@ -1,5 +1,5 @@
-from aiogram_dialog import Window, Dialog
-from aiogram_dialog.widgets.text import Const, Format, Multi
+from aiogram_dialog import Window, Dialog, ShowMode
+from aiogram_dialog.widgets.text import Const, Format, Multi, Case
 from aiogram_dialog.widgets.kbd import Button, Column, Row, Back, Select
 from aiogram_dialog.widgets.input import TextInput
 
@@ -30,19 +30,64 @@ class AddEmployeeDialog(interface.IAddEmployeeDialog):
 
     def get_enter_account_id_window(self) -> Window:
         return Window(
-            Const("👤 <b>Добавление нового сотрудника</b>\n\n"),
-            Const("📝 <b>Шаг 1/4: Введите ID аккаунта сотрудника</b>\n\n"),
-            Const("⚠️ <i>Убедитесь, что пользователь уже зарегистрирован в системе</i>"),
+            Multi(
+                Const("👤 <b>Добавление нового сотрудника</b>\n\n"),
+                Const("📝 <b>Шаг 1/4: Введите ID аккаунта сотрудника</b>\n\n"),
+                Const("⚠️ <i>Убедитесь, что пользователь уже зарегистрирован в системе</i>\n\n"),
+
+                # Validation error messages
+                Case(
+                    {
+                        True: Const("⚠️ <b>Ошибка:</b> ID аккаунта не может быть пустым\n\n"),
+                        False: Const(""),
+                    },
+                    selector="has_void_account_id"
+                ),
+                Case(
+                    {
+                        True: Const("⚠️ <b>Ошибка:</b> ID аккаунта должен быть положительным числом\n\n"),
+                        False: Const(""),
+                    },
+                    selector="has_invalid_account_id"
+                ),
+                Case(
+                    {
+                        True: Const("⚠️ <b>Ошибка:</b> Не удалось обработать ID аккаунта. Попробуйте еще раз\n\n"),
+                        False: Const(""),
+                    },
+                    selector="has_account_id_processing_error"
+                ),
+
+                Const("💡 <b>Введите ID аккаунта:</b>\n"),
+
+                # Show entered account ID if valid
+                Case(
+                    {
+                        True: Format("📌 <b>ID аккаунта:</b> {account_id}"),
+                        False: Const("💬 Ожидание ввода ID аккаунта..."),
+                    },
+                    selector="has_account_id"
+                ),
+                sep="",
+            ),
 
             TextInput(
                 id="account_id_input",
                 on_success=self.add_employee_service.handle_account_id_input,
             ),
 
-            Button(
-                Const("⬅️ Вернуться в меню организации"),
-                id="go_to_organization_menu",
-                on_click=self.add_employee_service.handle_go_to_organization_menu,
+            Row(
+                Button(
+                    Const("➡️ Далее"),
+                    id="next_to_name",
+                    on_click=lambda c, b, d: d.switch_to(model.AddEmployeeStates.enter_name, ShowMode.EDIT),
+                    when="has_account_id"
+                ),
+                Button(
+                    Const("⬅️ Вернуться в меню организации"),
+                    id="go_to_organization_menu",
+                    on_click=self.add_employee_service.handle_go_to_organization_menu,
+                ),
             ),
 
             state=model.AddEmployeeStates.enter_account_id,
@@ -56,7 +101,40 @@ class AddEmployeeDialog(interface.IAddEmployeeDialog):
                 Const("👤 <b>Добавление нового сотрудника</b>\n\n"),
                 Const("📝 <b>Шаг 2/4: Введите имя сотрудника</b>\n\n"),
                 Format("ID Аккаунта: <b>{account_id}</b>\n\n"),
-                Const("Введите полное имя сотрудника:"),
+
+                # Validation error messages
+                Case(
+                    {
+                        True: Const("⚠️ <b>Ошибка:</b> Имя не может быть пустым\n\n"),
+                        False: Const(""),
+                    },
+                    selector="has_void_name"
+                ),
+                Case(
+                    {
+                        True: Const("⚠️ <b>Ошибка:</b> Имя должно быть от 2 до 100 символов\n\n"),
+                        False: Const(""),
+                    },
+                    selector="has_invalid_name_length"
+                ),
+                Case(
+                    {
+                        True: Const("⚠️ <b>Ошибка:</b> Не удалось обработать имя. Попробуйте еще раз\n\n"),
+                        False: Const(""),
+                    },
+                    selector="has_name_processing_error"
+                ),
+
+                Const("💡 <b>Введите полное имя сотрудника:</b>\n"),
+
+                # Show entered name if valid
+                Case(
+                    {
+                        True: Format("📌 <b>Имя:</b> {name}"),
+                        False: Const("💬 Ожидание ввода имени..."),
+                    },
+                    selector="has_name"
+                ),
                 sep="",
             ),
 
@@ -65,7 +143,15 @@ class AddEmployeeDialog(interface.IAddEmployeeDialog):
                 on_success=self.add_employee_service.handle_name_input,
             ),
 
-            Back(Const("◀️ Назад")),
+            Row(
+                Button(
+                    Const("➡️ Далее"),
+                    id="next_to_role",
+                    on_click=lambda c, b, d: d.switch_to(model.AddEmployeeStates.enter_role, ShowMode.EDIT),
+                    when="has_name"
+                ),
+                Back(Const("◀️ Назад")),
+            ),
 
             state=model.AddEmployeeStates.enter_name,
             getter=self.add_employee_getter.get_enter_name_data,
@@ -79,7 +165,16 @@ class AddEmployeeDialog(interface.IAddEmployeeDialog):
                 Const("📝 <b>Шаг 3/4: Выберите роль сотрудника</b>\n\n"),
                 Format("ID Аккаунта: <b>{account_id}</b>\n"),
                 Format("Имя: <b>{name}</b>\n\n"),
-                Const("Выберите роль для сотрудника:"),
+                Const("💡 <b>Выберите роль для сотрудника:</b>\n"),
+
+                # Show selected role
+                Case(
+                    {
+                        True: Format("📌 <b>Выбранная роль:</b> {selected_role_display}"),
+                        False: Const("💬 Выберите роль из списка ниже..."),
+                    },
+                    selector="has_selected_role"
+                ),
                 sep="",
             ),
 
@@ -93,7 +188,15 @@ class AddEmployeeDialog(interface.IAddEmployeeDialog):
                 ),
             ),
 
-            Back(Const("◀️ Назад")),
+            Row(
+                Button(
+                    Const("➡️ Далее"),
+                    id="next_to_permissions",
+                    on_click=lambda c, b, d: d.switch_to(model.AddEmployeeStates.set_permissions, ShowMode.EDIT),
+                    when="has_selected_role"
+                ),
+                Back(Const("◀️ Назад")),
+            ),
 
             state=model.AddEmployeeStates.enter_role,
             getter=self.add_employee_getter.get_enter_role_data,
@@ -109,7 +212,7 @@ class AddEmployeeDialog(interface.IAddEmployeeDialog):
                 Format("Имя: <b>{name}</b>\n"),
                 Format("Роль: <b>{role}</b>\n\n"),
                 Const("⚙️ <b>Разрешения:</b>\n"),
-                Const("<i>Нажмите на правило, чтобы включить/выключить его</i>"),
+                Const("<i>Нажмите на разрешение, чтобы включить/выключить его</i>"),
                 sep="",
             ),
 
@@ -155,14 +258,16 @@ class AddEmployeeDialog(interface.IAddEmployeeDialog):
                     id="toggle_sign_up_social_networks",
                     on_click=self.add_employee_service.handle_toggle_permission,
                 ),
-                Button(
-                    Const("➡️ Далее"),
-                    id="next_to_confirm",
-                    on_click=lambda c, b, d: d.switch_to(model.AddEmployeeStates.confirm_employee),
-                ),
             ),
 
-            Back(Const("◀️ Назад")),
+            Row(
+                Button(
+                    Const("➡️ К подтверждению"),
+                    id="next_to_confirm",
+                    on_click=lambda c, b, d: d.switch_to(model.AddEmployeeStates.confirm_employee, ShowMode.EDIT),
+                ),
+                Back(Const("◀️ Назад")),
+            ),
 
             state=model.AddEmployeeStates.set_permissions,
             getter=self.add_employee_getter.get_permissions_data,
@@ -173,13 +278,37 @@ class AddEmployeeDialog(interface.IAddEmployeeDialog):
         return Window(
             Multi(
                 Const("👤 <b>Подтверждение создания сотрудника</b>\n\n"),
-                Const("📋 <b>Проверьте введенные данные:</b>\n\n"),
-                Format("ID Аккаунта: <b>{account_id}</b>\n"),
-                Format("Имя: <b>{name}</b>\n"),
-                Format("Роль: <b>{role}</b>\n\n"),
-                Const("⚙️ <b>Разрешения:</b>\n"),
-                Format("{permissions_text}\n\n"),
-                Const("❓ Всё правильно?"),
+
+                # Показываем состояние создания
+                Case(
+                    {
+                        True: Multi(
+                            Const("⏳ <b>Создаю сотрудника...</b>\n"),
+                            Const("Это может занять время. Пожалуйста, ожидайте."),
+                        ),
+                        False: Multi(
+                            Const("📋 <b>Проверьте введенные данные:</b>\n\n"),
+                            Format("ID Аккаунта: <b>{account_id}</b>\n"),
+                            Format("Имя: <b>{name}</b>\n"),
+                            Format("Роль: <b>{role}</b>\n\n"),
+                            Const("⚙️ <b>Разрешения:</b>\n"),
+                            Format("{permissions_text}\n\n"),
+
+                            # Показываем ошибки создания если есть
+                            Case(
+                                {
+                                    True: Const(
+                                        "⚠️ <b>Ошибка:</b> Не удалось создать сотрудника. Попробуйте еще раз\n\n"),
+                                    False: Const(""),
+                                },
+                                selector="has_creation_error"
+                            ),
+
+                            Const("❓ Всё правильно?"),
+                        ),
+                    },
+                    selector="is_creating_employee"
+                ),
                 sep="",
             ),
 
@@ -188,8 +317,12 @@ class AddEmployeeDialog(interface.IAddEmployeeDialog):
                     Const("✅ Создать сотрудника"),
                     id="create_employee",
                     on_click=self.add_employee_service.handle_create_employee,
+                    when="~is_creating_employee",  # Отключаем во время создания
                 ),
-                Back(Const("✏️ Изменить")),
+                Back(
+                    Const("✏️ Изменить"),
+                    when="~is_creating_employee",  # Отключаем во время создания
+                ),
             ),
 
             state=model.AddEmployeeStates.confirm_employee,
