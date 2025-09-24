@@ -28,9 +28,12 @@ class MainMenuGetter(interface.IMainMenuGetter):
                 state = await self._get_state(dialog_manager)
                 user = dialog_manager.event.from_user
 
+                show_error_recovery = bool(
+                    state.show_error_recovery) if state.show_error_recovery is not None else False
+
                 data = {
                     "name": user.first_name or "Пользователь",
-                    "show_error_recovery": state.show_error_recovery,
+                    "show_error_recovery": show_error_recovery,
                 }
 
                 await self.state_repo.change_user_state(
