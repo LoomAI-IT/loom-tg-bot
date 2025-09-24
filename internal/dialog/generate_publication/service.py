@@ -364,7 +364,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                     prompt=None
                 )
 
-                dialog_manager.dialog_data["is_regenerating_text"] = True
+                dialog_manager.dialog_data["is_regenerating_text"] = False
 
                 dialog_manager.dialog_data["publication_text"] = regenerated_data["text"]
 
