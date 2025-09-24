@@ -29,7 +29,6 @@ class AddEmployeeGetter(interface.IAddEmployeeGetter):
             # Validation error flags
             "has_void_account_id": dialog_manager.dialog_data.get("has_void_account_id", False),
             "has_invalid_account_id": dialog_manager.dialog_data.get("has_invalid_account_id", False),
-            "has_account_id_processing_error": dialog_manager.dialog_data.get("has_account_id_processing_error", False),
         }
 
     async def get_enter_name_data(
@@ -46,7 +45,6 @@ class AddEmployeeGetter(interface.IAddEmployeeGetter):
             # Validation error flags
             "has_void_name": dialog_manager.dialog_data.get("has_void_name", False),
             "has_invalid_name_length": dialog_manager.dialog_data.get("has_invalid_name_length", False),
-            "has_name_processing_error": dialog_manager.dialog_data.get("has_name_processing_error", False),
         }
 
     async def get_enter_role_data(
@@ -109,10 +107,6 @@ class AddEmployeeGetter(interface.IAddEmployeeGetter):
             "name": employee_data.name or "",
             "role": utils.RoleDisplayHelper.get_display_name(employee_data.role) if employee_data.role else "",
             "permissions_text": permissions_text,
-
-            # Process state flags
-            "is_creating_employee": dialog_manager.dialog_data.get("is_creating_employee", False),
-            "has_creation_error": dialog_manager.dialog_data.get("has_creation_error", False),
         }
 
     def _format_permissions_text(self, permissions: utils.Permissions) -> str:

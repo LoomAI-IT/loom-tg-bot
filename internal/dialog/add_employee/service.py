@@ -68,8 +68,6 @@ class AddEmployeeService(interface.IAddEmployeeService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                dialog_manager.dialog_data["has_account_id_processing_error"] = True
-
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
@@ -115,8 +113,6 @@ class AddEmployeeService(interface.IAddEmployeeService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                dialog_manager.dialog_data["has_name_processing_error"] = True
-
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
@@ -264,12 +260,8 @@ class AddEmployeeService(interface.IAddEmployeeService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                dialog_manager.dialog_data["is_creating_employee"] = False
-                dialog_manager.dialog_data["has_creation_error"] = True
-
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-
                 raise
 
     async def handle_go_to_organization_menu(
