@@ -1,6 +1,7 @@
 from aiogram.types import ContentType
 from aiogram_dialog import DialogManager
 from aiogram_dialog.api.entities import MediaAttachment, MediaId
+from aiogram_dialog.widgets.kbd import ManagedCheckbox
 
 from opentelemetry.trace import SpanKind, Status, StatusCode
 
@@ -43,11 +44,18 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
                 selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
                 has_selected_networks = any(selected_networks.values())
 
+                vkontakte_checkbox: ManagedCheckbox = dialog_manager.find("vkontakte_checkbox")
+                if social_networks["vkontakte"][0].get("autoselect", False):
+                    vkontakte_checkbox.is_checked()
+
+                telegram_checkbox: ManagedCheckbox = dialog_manager.find("telegram_checkbox")
+                if social_networks["telegram"][0].get("autoselect", False):
+                    # telegram_checkbox.is_checked()
+                    pass
+
                 data = {
                     "telegram_connected": telegram_connected,
                     "vkontakte_connected": vkontakte_connected,
-                    "telegram_default": social_networks["telegram"][0].get("autoselect", False),
-                    "vkontakte_default": social_networks["vkontakte"][0].get("autoselect", False),
                     "all_networks_connected": telegram_connected and vkontakte_connected,
                     "no_connected_networks": not telegram_connected and not vkontakte_connected,
                     "has_available_networks": telegram_connected or vkontakte_connected,
