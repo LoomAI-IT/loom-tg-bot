@@ -126,12 +126,12 @@ class GenerateVideoCutDialog(interface.IGenerateVideoCutDialog):
             Column(
                 Button(
                     Const("📝 Черновики нарезок"),
-                    id="to_video_drafts",
+                    id="to_video_drafts_from_alert",
                     on_click=self.generate_video_cut_service.handle_go_to_video_drafts,
                 ),
                 Button(
                     Const("🏠 Главное меню"),
-                    id="to_main_menu",
+                    id="to_main_menu_from_alert",
                     on_click=self.generate_video_cut_service.handle_go_to_main_menu,
                 ),
             ),

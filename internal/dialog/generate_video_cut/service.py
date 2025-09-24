@@ -85,6 +85,9 @@ class GenerateVideoCutService(interface.IGenerateVideoCutService):
             try:
                 dialog_manager.show_mode = ShowMode.EDIT
 
+                if await self._check_alerts(dialog_manager):
+                    return
+
                 await dialog_manager.start(
                     model.ContentMenuStates.content_menu,
                     mode=StartMode.RESET_STACK,
@@ -108,6 +111,12 @@ class GenerateVideoCutService(interface.IGenerateVideoCutService):
         ) as span:
             try:
                 dialog_manager.show_mode = ShowMode.EDIT
+
+                state = await self._get_state(dialog_manager)
+
+                await self.state_repo.delete_vizard_video_cut_alert(
+                    state.id
+                )
 
                 await dialog_manager.start(
                     model.VideoCutsDraftStates.video_cut_list,
@@ -135,6 +144,12 @@ class GenerateVideoCutService(interface.IGenerateVideoCutService):
             try:
                 dialog_manager.show_mode = ShowMode.EDIT
 
+                state = await self._get_state(dialog_manager)
+
+                await self.state_repo.delete_vizard_video_cut_alert(
+                    state.id
+                )
+
                 await dialog_manager.start(
                     model.MainMenuStates.main_menu,
                     mode=StartMode.RESET_STACK
@@ -147,6 +162,22 @@ class GenerateVideoCutService(interface.IGenerateVideoCutService):
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
+
+    async def _check_alerts(self, dialog_manager: DialogManager) -> bool:
+        state = await self._get_state(dialog_manager)
+
+        vizard_alerts = await self.state_repo.get_vizard_video_cut_alert_by_state_id(
+            state_id=state.id
+        )
+        if vizard_alerts:
+            await dialog_manager.start(
+                model.GenerateVideoCutStates.video_generated_alert,
+                mode=StartMode.RESET_STACK,
+                show_mode=ShowMode.EDIT,
+            )
+            return True
+
+        return False
 
     def _is_valid_youtube_url(self, url: str) -> bool:
         youtube_regex = re.compile(

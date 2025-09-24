@@ -856,6 +856,10 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 self.logger.info("Публикация сохранена в черновики")
 
                 await callback.answer("💾 Сохранено в черновики!", show_alert=True)
+
+                if await self._check_alerts(dialog_manager):
+                    return
+
                 await dialog_manager.start(
                     model.ContentMenuStates.content_menu,
                     mode=StartMode.RESET_STACK
@@ -920,6 +924,10 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 self.logger.info("Отправлено на модерацию")
 
                 await callback.answer("💾 Отправлено на модерацию!", show_alert=True)
+
+                if await self._check_alerts(dialog_manager):
+                    return
+
                 await dialog_manager.start(
                     model.ContentMenuStates.content_menu,
                     mode=StartMode.RESET_STACK
@@ -1047,6 +1055,9 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
                 await callback.answer("💾 Опубликовано!")
 
+                if await self._check_alerts(dialog_manager):
+                    return
+
                 await dialog_manager.start(
                     model.ContentMenuStates.content_menu,
                     mode=StartMode.RESET_STACK
@@ -1071,6 +1082,11 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
+                if await self._check_alerts(dialog_manager):
+                    return
+                
                 await dialog_manager.start(
                     model.ContentMenuStates.content_menu,
                     mode=StartMode.RESET_STACK
@@ -1083,6 +1099,22 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
                 await callback.answer("❌ Ошибка", show_alert=True)
                 raise
+            
+    async def _check_alerts(self, dialog_manager: DialogManager) -> bool:
+        state = await self._get_state(dialog_manager)
+
+        vizard_alerts = await self.state_repo.get_vizard_video_cut_alert_by_state_id(
+            state_id=state.id
+        )
+        if vizard_alerts:
+            await dialog_manager.start(
+                model.GenerateVideoCutStates.video_generated_alert,
+                mode=StartMode.RESET_STACK,
+                show_mode=ShowMode.EDIT,
+            )
+            return True
+
+        return False
 
     async def _get_current_image_data(self, dialog_manager: DialogManager) -> tuple[bytes, str] | None:
         try:

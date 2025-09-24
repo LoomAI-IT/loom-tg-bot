@@ -4,7 +4,7 @@ from typing import Any
 from aiogram.enums import ParseMode
 from aiogram import Bot
 from aiogram.types import CallbackQuery, Message
-from aiogram_dialog import DialogManager, StartMode
+from aiogram_dialog import DialogManager, StartMode, ShowMode
 from aiogram_dialog.widgets.kbd import ManagedCheckbox
 
 from opentelemetry.trace import SpanKind, Status, StatusCode
@@ -423,73 +423,6 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
                     )
                     return
 
-                await self._publish_moderated_video_cut(callback, dialog_manager)
-                span.set_status(Status(StatusCode.OK))
-            except Exception as err:
-                span.record_exception(err)
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                await callback.answer("❌ Ошибка при публикации", show_alert=True)
-                raise
-
-    async def handle_back_to_content_menu(
-            self,
-            callback: CallbackQuery,
-            button: Any,
-            dialog_manager: DialogManager
-    ) -> None:
-        with self.tracer.start_as_current_span(
-                "VideoCutModerationService.handle_back_to_content_menu",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                await dialog_manager.start(
-                    model.ContentMenuStates.content_menu,
-                    mode=StartMode.RESET_STACK
-                )
-
-                span.set_status(Status(StatusCode.OK))
-
-            except Exception as err:
-                span.record_exception(err)
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                raise
-
-    def _has_changes(self, dialog_manager: DialogManager) -> bool:
-        original = dialog_manager.dialog_data.get("original_video_cut", {})
-        working = dialog_manager.dialog_data.get("working_video_cut", {})
-
-        if not original or not working:
-            return False
-
-        # Сравниваем основные поля
-        fields_to_compare = ["name", "description", "tags"]
-        for field in fields_to_compare:
-            if original.get(field) != working.get(field):
-                return True
-
-        return False
-
-    async def _save_video_cut_changes(self, dialog_manager: DialogManager) -> None:
-        working_video_cut = dialog_manager.dialog_data["working_video_cut"]
-        video_cut_id = working_video_cut["id"]
-
-        await self.kontur_content_client.change_video_cut(
-            video_cut_id=video_cut_id,
-            name=working_video_cut["name"],
-            description=working_video_cut["description"],
-            tags=working_video_cut.get("tags", []),
-        )
-
-    async def _publish_moderated_video_cut(
-            self,
-            callback: CallbackQuery,
-            dialog_manager: DialogManager
-    ) -> None:
-        with self.tracer.start_as_current_span(
-                "VideoCutModerationService._publish_moderated_video_cut",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
                 await callback.answer()
                 loading_message = await callback.message.answer("🚀 Публикую видео...")
 
@@ -564,7 +497,76 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
+                await callback.answer("❌ Ошибка при публикации", show_alert=True)
                 raise
+
+    async def handle_back_to_content_menu(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        with self.tracer.start_as_current_span(
+                "VideoCutModerationService.handle_back_to_content_menu",
+                kind=SpanKind.INTERNAL
+        ) as span:
+            try:
+                if await self._check_alerts(dialog_manager):
+                    return
+
+                await dialog_manager.start(
+                    model.ContentMenuStates.content_menu,
+                    mode=StartMode.RESET_STACK
+                )
+
+                span.set_status(Status(StatusCode.OK))
+
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
+                raise
+
+    def _has_changes(self, dialog_manager: DialogManager) -> bool:
+        original = dialog_manager.dialog_data.get("original_video_cut", {})
+        working = dialog_manager.dialog_data.get("working_video_cut", {})
+
+        if not original or not working:
+            return False
+
+        # Сравниваем основные поля
+        fields_to_compare = ["name", "description", "tags"]
+        for field in fields_to_compare:
+            if original.get(field) != working.get(field):
+                return True
+
+        return False
+
+    async def _save_video_cut_changes(self, dialog_manager: DialogManager) -> None:
+        working_video_cut = dialog_manager.dialog_data["working_video_cut"]
+        video_cut_id = working_video_cut["id"]
+
+        await self.kontur_content_client.change_video_cut(
+            video_cut_id=video_cut_id,
+            name=working_video_cut["name"],
+            description=working_video_cut["description"],
+            tags=working_video_cut.get("tags", []),
+        )
+
+    async def _check_alerts(self, dialog_manager: DialogManager) -> bool:
+        state = await self._get_state(dialog_manager)
+
+        vizard_alerts = await self.state_repo.get_vizard_video_cut_alert_by_state_id(
+            state_id=state.id
+        )
+        if vizard_alerts:
+            await dialog_manager.start(
+                model.GenerateVideoCutStates.video_generated_alert,
+                mode=StartMode.RESET_STACK,
+                show_mode=ShowMode.EDIT,
+            )
+            return True
+
+        return False
 
     async def _get_state(self, dialog_manager: DialogManager) -> model.UserState:
         if hasattr(dialog_manager.event, 'message') and dialog_manager.event.message:
