@@ -436,6 +436,11 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                 when=~F["is_generating_image"]
             ),
 
+            DynamicMedia(
+                selector="preview_image_media",
+                when="has_image",
+            ),
+
             TextInput(
                 id="image_prompt_input",
                 on_success=self.generate_publication_service.handle_generate_image_with_prompt,
