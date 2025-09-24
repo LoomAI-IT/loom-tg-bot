@@ -220,6 +220,7 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
         return {
             "publication_text": dialog_manager.dialog_data.get("publication_text", ""),
             "regenerate_prompt": dialog_manager.dialog_data.get("regenerate_prompt", ""),
+            "has_regenerate_prompt": bool(dialog_manager.dialog_data.get("regenerate_prompt", "")),
             "is_regenerating_text": dialog_manager.dialog_data.get("is_regenerating_text", False),
             # Error flags
             "has_void_text": dialog_manager.dialog_data.get("has_void_text", False),
