@@ -41,23 +41,28 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             try:
                 dialog_manager.show_mode = ShowMode.EDIT
 
+                dialog_manager.dialog_data.pop("has_invalid_voice_type", None)
+                dialog_manager.dialog_data.pop("has_long_voice_duration", None)
+                dialog_manager.dialog_data.pop("has_empty_voice_text", None)
+                dialog_manager.dialog_data.pop("has_small_input_text", None)
+                dialog_manager.dialog_data.pop("has_big_input_text", None)
+
                 await message.delete()
 
                 text = text.strip()
                 if not text:
                     dialog_manager.dialog_data["has_void_input_text"] = True
                     return
+                dialog_manager.dialog_data.pop("has_void_input_text", None)
 
                 if len(text) < 10:
                     dialog_manager.dialog_data["has_small_input_text"] = True
                     return
+                dialog_manager.dialog_data.pop("has_small_input_text", None)
 
                 if len(text) > 2000:
                     dialog_manager.dialog_data["has_big_input_text"] = True
                     return
-
-                dialog_manager.dialog_data.pop("has_void_input_text", None)
-                dialog_manager.dialog_data.pop("has_small_input_text", None)
                 dialog_manager.dialog_data.pop("has_big_input_text", None)
 
                 dialog_manager.dialog_data["input_text"] = text
@@ -84,11 +89,17 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         ) as span:
             try:
                 dialog_manager.show_mode = ShowMode.EDIT
+
+                dialog_manager.dialog_data.pop("has_void_input_text", None)
+                dialog_manager.dialog_data.pop("has_small_input_text", None)
+                dialog_manager.dialog_data.pop("has_big_input_text", None)
+
                 state = await self._get_state(dialog_manager)
 
                 if message.content_type not in [ContentType.VOICE, ContentType.AUDIO]:
                     dialog_manager.dialog_data["has_invalid_voice_type"] = True
                     return
+                dialog_manager.dialog_data.pop("has_invalid_voice_type", None)
 
                 if message.voice:
                     file_id = message.voice.file_id
@@ -100,12 +111,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 if duration > 300:  # 5 minutes max
                     dialog_manager.dialog_data["has_long_voice_duration"] = True
                     return
-
-                # Clear error flags
-                dialog_manager.dialog_data.pop("has_invalid_voice_type", None)
                 dialog_manager.dialog_data.pop("has_long_voice_duration", None)
-                dialog_manager.dialog_data.pop("has_voice_recognition_error", None)
-                dialog_manager.dialog_data.pop("has_empty_voice_text", None)
 
                 file = await self.bot.get_file(file_id)
                 file_data = await self.bot.download_file(file.file_path)
@@ -121,16 +127,20 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 if not text or not text.strip():
                     dialog_manager.dialog_data["has_empty_voice_text"] = True
                     return
+                dialog_manager.dialog_data.pop("has_empty_voice_text", None)
 
                 text = text.strip()
 
                 if len(text) < 10:
                     dialog_manager.dialog_data["has_small_input_text"] = True
                     return
+                dialog_manager.dialog_data.pop("has_small_input_text", None)
 
                 if len(text) > 2000:
                     dialog_manager.dialog_data["has_big_input_text"] = True
                     return
+                dialog_manager.dialog_data.pop("has_big_input_text", None)
+
 
                 dialog_manager.dialog_data["input_text"] = text
                 dialog_manager.dialog_data["has_input_text"] = True
