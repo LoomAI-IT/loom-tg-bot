@@ -317,11 +317,9 @@ class AddEmployeeDialog(interface.IAddEmployeeDialog):
                     Const("✅ Создать сотрудника"),
                     id="create_employee",
                     on_click=self.add_employee_service.handle_create_employee,
-                    when="is_creating_employee",  # Отключаем во время создания
                 ),
                 Back(
                     Const("✏️ Изменить"),
-                    when="~is_creating_employee",  # Отключаем во время создания
                 ),
             ),
 
