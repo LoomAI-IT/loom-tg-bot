@@ -361,6 +361,7 @@ tg_middleware = TgMiddleware(
     tel,
     state_service,
     bot,
+    dialog_bg_factory
 )
 http_middleware = HttpMiddleware(
     tel,
