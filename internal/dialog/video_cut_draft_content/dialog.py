@@ -347,7 +347,6 @@ class VideoCutsDraftDialog(interface.IVideoCutsDraftDialog):
                 Const("◀️ Назад к списку"),
                 id="back_to_video_cut_list_no_networks",
                 on_click=lambda c, b, d: d.switch_to(model.VideoCutsDraftStates.video_cut_list),
-                when="no_connected_networks",
             ),
 
             state=model.VideoCutsDraftStates.social_network_select,
