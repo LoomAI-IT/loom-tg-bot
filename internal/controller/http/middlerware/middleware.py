@@ -196,10 +196,6 @@ class HttpMiddleware(interface.IHttpMiddleware):
     def logger_middleware03(self, app: FastAPI):
         @app.middleware("http")
         async def _logger_middleware03(request: Request, call_next: Callable):
-            # не логируем телеграм запросы, они логируются в мидлеваре телеграма
-            if request.url.path == self.prefix + "/update":
-                return await call_next(request)
-
             with self.tracer.start_as_current_span(
                     "HttpMiddleware._logger_middleware03",
                     kind=SpanKind.INTERNAL
