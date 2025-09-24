@@ -40,7 +40,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                     {
                         True: Const("<b>Актуальные рубрики</b>:"),
                         False: Multi(
-                            Const("⚠️ <b>В организации нет созданных рубрик</b>"),
+                            Const("⚠️ <b>В организации нет созданных рубрик</b>\n"),
                             Const("Обратитесь к администратору для создания рубрик"),
                         ),
                     },
@@ -77,7 +77,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                 Const("📝 Отправь мне текст или голосовое сообщение — я превращу его в контент."),
                 Case(
                     {
-                        True: Format("Ваш введенный текст: {input_text}"),
+                        True: Format("\nВаш введенный текст: {input_text}"),
                         False: Const(""),
                     },
                     selector="has_input_text"
@@ -183,10 +183,10 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
     def get_preview_window(self) -> Window:
         return Window(
             Multi(
-                Format("{publication_text}\n"),
+                Format("{publication_text}"),
                 Case(
                     {
-                        True: Format("🖼 Изображение {current_image_index} из {total_images}"),
+                        True: Format("\n\n🖼 Изображение {current_image_index} из {total_images}"),
                         False: Const(""),
                     },
                     selector="has_multiple_images"
@@ -272,7 +272,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                 Case(
                     {
                         False: Multi(
-                            Const("✏️ <b>Редактирование текста</b>"),
+                            Const("✏️ <b>Редактирование текста</b>\n"),
                             Const("📌 Напишите, что нужно изменить в тексте -- и отредактирую его!"),
                         ),
                         True: Multi(
@@ -310,6 +310,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             ),
 
             state=model.GeneratePublicationStates.edit_text_menu,
+            getter=self.generate_publication_getter.get_edit_text_data,
             parse_mode="HTML",
         )
 
@@ -366,16 +367,15 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                         Case(
                             {
                                 True: Multi(
-                                    Const("Опиши, как изменить картинку. Я внесу твои правки в текущую фотографию.")
-
+                                    Const("Опиши, как изменить картинку. Я внесу твои правки в текущую фотографию.\n")
                                 ),
                                 False: Const("Опиши, какую картинку мне создать."),
                             },
                             selector="has_image"
                         ),
-                        Const("Объекты и персонажи (кто или что на картинке)"),
-                        Const("Стиль и настроение (реалистично, мультяшно, минимализм, тёплые или холодные цвета)"),
-                        Const("Фон или окружение (улица, природа, офис и т.д.)"),
+                        Const("Объекты и персонажи (кто или что на картинке)\n"),
+                        Const("Стиль и настроение (реалистично, мультяшно, минимализм, тёплые или холодные цвета)\n"),
+                        Const("Фон или окружение (улица, природа, офис и т.д.)\n"),
                         Const("Дополнительные детали (например, освещение, поза, аксессуары)"),
                     ),
                     True: Multi(

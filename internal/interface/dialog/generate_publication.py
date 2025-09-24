@@ -240,9 +240,3 @@ class IGeneratePublicationGetter(Protocol):
             self,
             dialog_manager: DialogManager,
     ) -> dict: pass
-
-    @abstractmethod
-    async def get_image_prompt_data(
-            self,
-            dialog_manager: DialogManager,
-    ) -> dict: pass

@@ -199,6 +199,7 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
     ) -> dict:
         return {
             "publication_text": dialog_manager.dialog_data.get("publication_text", ""),
+            "regenerate_prompt": dialog_manager.dialog_data.get("regenerate_prompt", ""),
             # Error flags
             "has_void_text": dialog_manager.dialog_data.get("has_void_text", False),
             "has_small_text": dialog_manager.dialog_data.get("has_small_text", False),
