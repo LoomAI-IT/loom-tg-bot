@@ -101,9 +101,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                dialog_manager.dialog_data["has_input_text_error"] = True
-                await dialog_manager.show()
-
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
@@ -177,9 +174,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                dialog_manager.dialog_data["has_input_voice_error"] = True
-                await dialog_manager.show()
-
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
@@ -447,10 +441,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                dialog_manager.dialog_data["is_regenerating_text"] = False
-                dialog_manager.dialog_data["has_regenerate_text_error"] = True
-                await dialog_manager.show()
-
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
@@ -490,8 +480,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
-                dialog_manager.dialog_data["has_edit_title_error"] = True
-                await dialog_manager.show()
 
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
@@ -534,9 +522,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                dialog_manager.dialog_data["has_edit_tags_error"] = True
-                await dialog_manager.show()
-
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
@@ -582,9 +567,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                dialog_manager.dialog_data["has_edit_content_error"] = True
-                await dialog_manager.show()
-
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
@@ -714,10 +696,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                dialog_manager.dialog_data["is_generating_image"] = False
-                dialog_manager.dialog_data["has_regenerate_image_error"] = True
-                await dialog_manager.show()
-
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
@@ -767,9 +745,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                     dialog_manager.dialog_data["has_image_processing_error"] = True
 
             except Exception as err:
-                dialog_manager.dialog_data["has_image_upload_error"] = True
-                await dialog_manager.show()
-
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
