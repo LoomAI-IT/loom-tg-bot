@@ -1,3 +1,4 @@
+from aiogram import F
 from aiogram_dialog import Window, Dialog, ShowMode
 from aiogram_dialog.widgets.text import Const, Format, Multi, Case
 from aiogram_dialog.widgets.kbd import Button, Column, Row, Back, Select, Checkbox, Next
@@ -292,20 +293,20 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                     Const("Перегенерировать текст"),
                     id="regenerate_all",
                     on_click=self.generate_publication_service.handle_regenerate_text,
-                    when="~is_regenerating_text"
+                    when=~F["is_regenerating_text"]
                 ),
                 Button(
                     Const("Написать свой текст"),
                     id="edit_content",
                     on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.edit_text, ShowMode.EDIT),
-                    when="~is_regenerating_text"
+                    when=~F["is_regenerating_text"]
                 ),
             ),
             Button(
                 Const("Назад"),
                 id="preview",
                 on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.preview, ShowMode.EDIT),
-                when="~is_regenerating_text"
+                when=~F["is_regenerating_text"]
             ),
 
             TextInput(
