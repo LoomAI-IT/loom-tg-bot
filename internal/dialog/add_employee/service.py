@@ -249,7 +249,7 @@ class AddEmployeeService(interface.IAddEmployeeService):
                 # Success - clear loading state
                 dialog_manager.dialog_data["is_creating_employee"] = False
 
-                await callback.answer("Сотрудник {employee_data.name} успешно добавлен!")
+                await callback.answer(f"Сотрудник {employee_data.name} успешно добавлен!", show_alert=True)
                 self.logger.info(f"Сотрудник успешно создан: {employee_data.name}")
 
                 if await self._check_alerts(dialog_manager):
