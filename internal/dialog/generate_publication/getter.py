@@ -43,20 +43,15 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
                 selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
                 has_selected_networks = any(selected_networks.values())
 
-                telegram_default = False
-                vkontakte_default = False
-
                 if telegram_connected and social_networks.get("telegram"):
-                    telegram_default = social_networks["telegram"][0].get("autoselect", False)
+                    dialog_manager.dialog_data["telegram_checkbox"] = social_networks["telegram"][0].get("autoselect", False)
 
                 if vkontakte_connected and social_networks.get("vkontakte"):
-                    vkontakte_default = social_networks["vkontakte"][0].get("autoselect", False)
+                    dialog_manager.dialog_data["vkontakte_checkbox"] = social_networks["vkontakte"][0].get("autoselect", False)
 
                 data = {
                     "telegram_connected": telegram_connected,
                     "vkontakte_connected": vkontakte_connected,
-                    "telegram_default": telegram_default,
-                    "vkontakte_default": vkontakte_default,
                     "all_networks_connected": telegram_connected and vkontakte_connected,
                     "no_connected_networks": not telegram_connected and not vkontakte_connected,
                     "has_available_networks": telegram_connected or vkontakte_connected,
