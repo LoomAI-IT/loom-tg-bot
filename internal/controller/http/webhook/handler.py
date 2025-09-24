@@ -298,16 +298,16 @@ class TelegramWebhookController(interface.ITelegramWebhookController):
                     target_state = model.MainMenuStates.main_menu
                     self.logger.info(f"Восстанавливаем в главное меню для пользователя {tg_chat_id}")
 
+                await self.state_service.change_user_state(
+                    state_id=user_state.id,
+                    show_error_recovery=True,
+                    can_show_alerts=True
+                )
+
                 # Запускаем соответствующий диалог
                 await dialog_manager.start(
                     target_state,
                     mode=StartMode.RESET_STACK
-                )
-
-                # Восстанавливаем флаг показа уведомлений
-                await self.state_service.change_user_state(
-                    state_id=user_state.id,
-                    can_show_alerts=True
                 )
 
                 self.logger.info(

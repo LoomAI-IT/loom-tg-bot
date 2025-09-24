@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS user_states (
     access_token TEXT DEFAULT '',
     refresh_token TEXT DEFAULT '',
     can_show_alerts BOOLEAN DEFAULT TRUE,
+    show_error_recovery BOOLEAN DEFAULT FALSE,
     
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

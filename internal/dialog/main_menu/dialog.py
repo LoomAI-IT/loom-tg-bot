@@ -1,5 +1,5 @@
 from aiogram_dialog import Window, Dialog
-from aiogram_dialog.widgets.text import Const, Format
+from aiogram_dialog.widgets.text import Const, Format, Case
 from aiogram_dialog.widgets.kbd import Button, Column, Row
 
 from internal import interface, model
@@ -24,6 +24,13 @@ class MainMenuDialog(interface.IMainMenuDialog):
 
     def get_main_menu_window(self) -> Window:
         return Window(
+            Case(
+                {
+                    True: Format("🔄 <b>Восстановление после ошибки</b>\n\n"),
+                    False: Const(""),
+                },
+                selector="show_error_recovery",
+            ),
             Format("🎉 <b>Добро пожаловать, {name}!</b>\n\n"),
             Format("🏢 <b>Я помогу тебе быстро создать и опубликовать пост с помощью искусственного интеллекта. </b>\n"),
             Format("💰 <b>Просто отправь текст или голосовое сообщение — и начнём магию! ✨</b>\n\n"),
