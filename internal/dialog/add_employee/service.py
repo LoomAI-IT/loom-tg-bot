@@ -179,6 +179,9 @@ class AddEmployeeService(interface.IAddEmployeeService):
                     show_alert=True
                 )
 
+                if await self._check_alerts(dialog_manager):
+                    return
+
                 await dialog_manager.start(
                     model.OrganizationMenuStates.organization_menu,
                     mode=StartMode.RESET_STACK

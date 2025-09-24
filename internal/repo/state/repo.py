@@ -112,6 +112,7 @@ class StateRepo(interface.IStateRepo):
             organization_id: int = None,
             access_token: str = None,
             refresh_token: str = None,
+            current_dialog: str = None,
     ) -> None:
         with self.tracer.start_as_current_span(
                 "StateRepo.change_status",
@@ -140,6 +141,10 @@ class StateRepo(interface.IStateRepo):
                 if refresh_token is not None:
                     update_fields.append("refresh_token = :refresh_token")
                     args['refresh_token'] = refresh_token
+
+                if current_dialog is not None:
+                    update_fields.append("current_dialog = :current_dialog")
+                    args['current_dialog'] = current_dialog
 
                 if not update_fields:
                     # Если нет полей для обновления, просто возвращаемся

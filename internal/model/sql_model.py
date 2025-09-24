@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS user_states (
     
     access_token TEXT DEFAULT '',
     refresh_token TEXT DEFAULT '',
+    current_dialog TEXT DEFAULT '',
     
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

@@ -11,6 +11,7 @@ class UserState:
 
     access_token: str
     refresh_token: str
+    current_dialog: str
 
     created_at: datetime
 
@@ -24,6 +25,7 @@ class UserState:
                 organization_id=row.organization_id,
                 access_token=row.access_token,
                 refresh_token=row.refresh_token,
+                current_dialog=row.current_dialog,
                 created_at=row.created_at,
             )
             for row in rows
