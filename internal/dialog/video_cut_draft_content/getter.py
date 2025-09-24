@@ -44,7 +44,9 @@ class VideoCutsDraftGetter(interface.IVideoCutsDraftGetter):
                 video_cuts = await self.kontur_content_client.get_video_cuts_by_organization(state.organization_id)
                 video_cuts = [
                     video_cut for video_cut in video_cuts if
-                    video_cut.video_fid != "" and video_cut.moderation_status == "draft"
+                    video_cut.video_fid != ""
+                    and video_cut.moderation_status == "draft"
+                    and video_cut.creator_id == state.account_id
                 ]
 
                 if not video_cuts:
