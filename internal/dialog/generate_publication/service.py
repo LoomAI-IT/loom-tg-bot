@@ -65,7 +65,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
                 self.logger.info("Текст для генерации введен")
 
-                await dialog_manager.switch_to(model.GeneratePublicationStates.select_category)
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
@@ -137,7 +136,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 dialog_manager.dialog_data["has_input_text"] = True
 
                 self.logger.info("Голосовое сообщение обработано")
-                await dialog_manager.switch_to(model.GeneratePublicationStates.select_category)
 
                 span.set_status(Status(StatusCode.OK))
 
