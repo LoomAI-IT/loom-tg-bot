@@ -31,6 +31,7 @@ from internal.controller.tg.dialog.generate_video_cut.dialog import GenerateVide
 from internal.controller.tg.dialog.moderation_publication.dialog import ModerationPublicationDialog
 from internal.controller.tg.dialog.video_cut_draft_content.dialog import VideoCutsDraftDialog
 from internal.controller.tg.dialog.moderation_video_cut.dialog import VideoCutModerationDialog
+from internal.controller.tg.dialog.publication_draft_content.dialog import PublicationDraftDialog
 
 from internal.service.state.service import StateService
 from internal.service.auth.service import AuthService
@@ -45,6 +46,7 @@ from internal.service.generate_video_cut.service import GenerateVideoCutService
 from internal.service.moderation_publication.service import ModerationPublicationService
 from internal.service.video_cut_draft_content.service import VideoCutsDraftService
 from internal.service.moderation_video_cut.service import VideoCutModerationService
+from internal.service.publication_draft_content.service import PublicationDraftService
 
 from internal.service.auth.getter import AuthGetter
 from internal.service.main_menu.getter import MainMenuGetter
@@ -58,6 +60,7 @@ from internal.service.moderation_publication.getter import ModerationPublication
 from internal.service.generate_video_cut.getter import GenerateVideoCutGetter
 from internal.service.video_cut_draft_content.getter import VideoCutsDraftGetter
 from internal.service.moderation_video_cut.getter import VideoCutModerationGetter
+from internal.service.publication_draft_content.getter import PublicationDraftGetter
 
 from internal.repo.state.repo import StateRepo
 
@@ -353,6 +356,12 @@ video_cut_moderation_dialog = VideoCutModerationDialog(
     video_cut_moderation_getter,
 )
 
+publication_draft_dialog = PublicationDraftDialog(
+    tel,
+    publication_draft_service,
+    publication_draft_getter,
+)
+
 # Инициализация middleware
 tg_middleware = TgMiddleware(
     tel,
@@ -377,10 +386,20 @@ tg_webhook_controller = TelegramWebhookController(
 
 if __name__ == "__main__":
     app = NewTg(
-        db,
         dp,
-        http_middleware,
-        tg_webhook_controller,
+        command_controller,
+        auth_dialog,
+        main_menu_dialog,
+        personal_profile_dialog,
+        organization_menu_dialog,
+        change_employee_dialog,
+        add_employee_dialog,
+        content_menu_dialog,
+        generate_publication_dialog,
+        generate_video_cut_dialog,
+        moderation_publication_dialog,
+        moderation_video_cut_dialog,
+        video_cuts_draft_dialog,
         publication_draft_dialog,
         cfg.prefix,
     )
