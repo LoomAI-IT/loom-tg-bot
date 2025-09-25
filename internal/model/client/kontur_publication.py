@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 
 @dataclass
@@ -11,10 +11,6 @@ class Publication:
 
     vk_source: bool | None
     tg_source: bool | None
-
-    # Опциональные поля, которые могут отсутствовать в ответе API
-    name: str | None = None
-    tags: list[str] = field(default_factory=list)
 
     text_reference: str
     text: str
