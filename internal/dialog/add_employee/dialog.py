@@ -32,32 +32,30 @@ class AddEmployeeDialog(interface.IAddEmployeeDialog):
         return Window(
             Multi(
                 Const("👤 <b>Добавление нового сотрудника</b>\n\n"),
-                Const("📝 <b>Шаг 1/4: Введите ID аккаунта сотрудника</b>\n\n"),
-                Const("⚠️ <i>Убедитесь, что пользователь уже зарегистрирован в системе</i>\n\n"),
-
-                # Validation error messages
+                Const("📝 <b>Шаг 1/4:</b> Введите ID аккаунта сотрудника\n\n"),
+                Const("💡 <b>Как найти ID аккаунта:</b>\n"),
+                Const("• Попросите пользователя написать боту любое сообщение\n"),
+                Const("• ID отобразится в системе после регистрации\n\n"),
+                Const("⚠️ <i>Убедитесь, что пользователь уже зарегистрирован в системе</i>"),
                 Case(
                     {
-                        True: Const("⚠️ <b>Ошибка:</b> ID аккаунта не может быть пустым\n\n"),
+                        True: Const("\n\n❌ <b>Ошибка:</b> ID аккаунта не может быть пустым"),
                         False: Const(""),
                     },
                     selector="has_void_account_id"
                 ),
                 Case(
                     {
-                        True: Const("⚠️ <b>Ошибка:</b> ID аккаунта должен быть положительным числом\n\n"),
+                        True: Const("\n\n❌ <b>Ошибка:</b> ID аккаунта должен быть положительным числом"),
                         False: Const(""),
                     },
                     selector="has_invalid_account_id"
                 ),
-
-                Const("💡 <b>Введите ID аккаунта:</b>\n"),
-
-                # Show entered account ID if valid
+                Const("\n\n🔢 <b>Введите ID аккаунта:</b>"),
                 Case(
                     {
-                        True: Format("📌 <b>ID аккаунта:</b> {account_id}"),
-                        False: Const("💬 Ожидание ввода ID аккаунта..."),
+                        True: Format("\n📌 <b>Введенный ID:</b> <code>{account_id}</code>"),
+                        False: Const("\n⌨️ <i>Ожидание ввода ID аккаунта...</i>"),
                     },
                     selector="has_account_id"
                 ),
@@ -77,7 +75,7 @@ class AddEmployeeDialog(interface.IAddEmployeeDialog):
                     when="has_account_id"
                 ),
                 Button(
-                    Const("⬅️ Вернуться в меню организации"),
+                    Const("◀️ К управлению организацией"),
                     id="go_to_organization_menu",
                     on_click=self.add_employee_service.handle_go_to_organization_menu,
                 ),
@@ -92,32 +90,28 @@ class AddEmployeeDialog(interface.IAddEmployeeDialog):
         return Window(
             Multi(
                 Const("👤 <b>Добавление нового сотрудника</b>\n\n"),
-                Const("📝 <b>Шаг 2/4: Введите имя сотрудника</b>\n\n"),
-                Format("ID Аккаунта: <b>{account_id}</b>\n\n"),
-
-                # Validation error messages
+                Const("📝 <b>Шаг 2/4:</b> Введите имя сотрудника\n\n"),
+                Format("🔢 <b>ID аккаунта:</b> <code>{account_id}</code>\n\n"),
+                Const("👋 <b>Введите полное имя сотрудника:</b>\n"),
+                Const("💡 <i>Это имя будет отображаться в системе и уведомлениях</i>"),
                 Case(
                     {
-                        True: Const("⚠️ <b>Ошибка:</b> Имя не может быть пустым\n\n"),
+                        True: Const("\n\n❌ <b>Ошибка:</b> Имя не может быть пустым"),
                         False: Const(""),
                     },
                     selector="has_void_name"
                 ),
                 Case(
                     {
-                        True: Const("⚠️ <b>Ошибка:</b> Имя должно быть от 2 до 100 символов\n\n"),
+                        True: Const("\n\n📏 <b>Неверная длина имени</b>\n⚠️ <i>Имя должно быть от 2 до 100 символов</i>"),
                         False: Const(""),
                     },
                     selector="has_invalid_name_length"
                 ),
-
-                Const("💡 <b>Введите полное имя сотрудника:</b>\n"),
-
-                # Show entered name if valid
                 Case(
                     {
-                        True: Format("📌 <b>Имя:</b> {name}"),
-                        False: Const("💬 Ожидание ввода имени..."),
+                        True: Format("\n\n📌 <b>Введенное имя:</b> {name}"),
+                        False: Const("\n\n⌨️ <i>Ожидание ввода имени...</i>"),
                     },
                     selector="has_name"
                 ),
@@ -148,16 +142,15 @@ class AddEmployeeDialog(interface.IAddEmployeeDialog):
         return Window(
             Multi(
                 Const("👤 <b>Добавление нового сотрудника</b>\n\n"),
-                Const("📝 <b>Шаг 3/4: Выберите роль сотрудника</b>\n\n"),
-                Format("ID Аккаунта: <b>{account_id}</b>\n"),
-                Format("Имя: <b>{name}</b>\n\n"),
-                Const("💡 <b>Выберите роль для сотрудника:</b>\n"),
-
-                # Show selected role
+                Const("📝 <b>Шаг 3/4:</b> Выберите роль сотрудника\n\n"),
+                Format("🔢 <b>ID аккаунта:</b> <code>{account_id}</code>\n"),
+                Format("👤 <b>Имя:</b> {name}\n\n"),
+                Const("🎭 <b>Выберите подходящую роль:</b>\n"),
+                Const("💡 <i>Роль определяет базовый набор разрешений сотрудника</i>"),
                 Case(
                     {
-                        True: Format("📌 <b>Выбранная роль:</b> {selected_role_display}"),
-                        False: Const("💬 Выберите роль из списка ниже..."),
+                        True: Format("\n\n📌 <b>Выбранная роль:</b> {selected_role_display}"),
+                        False: Const("\n\n👇 <i>Выберите роль из списка ниже...</i>"),
                     },
                     selector="has_selected_role"
                 ),
@@ -166,7 +159,7 @@ class AddEmployeeDialog(interface.IAddEmployeeDialog):
 
             Column(
                 Select(
-                    Format("{item[title]}"),
+                    Format("🎯 {item[title]}"),
                     id="role_select",
                     items="roles",
                     item_id_getter=lambda item: item["value"],
@@ -176,7 +169,7 @@ class AddEmployeeDialog(interface.IAddEmployeeDialog):
 
             Row(
                 Button(
-                    Const("➡️ Далее"),
+                    Const("➡️ Настроить разрешения"),
                     id="next_to_permissions",
                     on_click=lambda c, b, d: d.switch_to(model.AddEmployeeStates.set_permissions, ShowMode.EDIT),
                     when="has_selected_role"
@@ -193,54 +186,43 @@ class AddEmployeeDialog(interface.IAddEmployeeDialog):
         return Window(
             Multi(
                 Const("👤 <b>Добавление нового сотрудника</b>\n\n"),
-                Const("📝 <b>Шаг 4/4: Настройте разрешения сотрудника</b>\n\n"),
-                Format("ID Аккаунта: <b>{account_id}</b>\n"),
-                Format("Имя: <b>{name}</b>\n"),
-                Format("Роль: <b>{role}</b>\n\n"),
-                Const("⚙️ <b>Разрешения:</b>\n"),
-                Const("<i>Нажмите на разрешение, чтобы включить/выключить его</i>"),
+                Const("📝 <b>Шаг 4/4:</b> Настройте разрешения сотрудника\n\n"),
+                Format("🔢 <b>ID аккаунта:</b> <code>{account_id}</code>\n"),
+                Format("👤 <b>Имя:</b> {name}\n"),
+                Format("🎭 <b>Роль:</b> {role}\n\n"),
+                Const("⚙️ <b>Разрешения сотрудника:</b>\n"),
+                Const("👆 <i>Нажмите на разрешение, чтобы включить или выключить его</i>"),
                 sep="",
             ),
 
             Column(
-                # Публикации без одобрения
                 Button(
-                    Format("{required_moderation_icon} Публикации без одобрения"),
+                    Format("{required_moderation_icon} Публикации без модерации"),
                     id="toggle_required_moderation",
                     on_click=self.add_employee_service.handle_toggle_permission,
                 ),
-
-                # Включить авто-постинг
                 Button(
-                    Format("{autoposting_icon} Включить авто-постинг"),
+                    Format("{autoposting_icon} Автоматический постинг"),
                     id="toggle_autoposting",
                     on_click=self.add_employee_service.handle_toggle_permission,
                 ),
-
-                # Добавлять сотрудников
                 Button(
-                    Format("{add_employee_icon} Добавлять сотрудников"),
+                    Format("{add_employee_icon} Добавление сотрудников"),
                     id="toggle_add_employee",
                     on_click=self.add_employee_service.handle_toggle_permission,
                 ),
-
-                # Изменять разрешения сотрудников
                 Button(
-                    Format("{edit_permissions_icon} Изменять разрешения сотрудников"),
+                    Format("{edit_permissions_icon} Управление разрешениями"),
                     id="toggle_edit_permissions",
                     on_click=self.add_employee_service.handle_toggle_permission,
                 ),
-
-                # Пополнять баланс
                 Button(
-                    Format("{top_up_balance_icon} Пополнять баланс"),
+                    Format("{top_up_balance_icon} Пополнение баланса"),
                     id="toggle_top_up_balance",
                     on_click=self.add_employee_service.handle_toggle_permission,
                 ),
-
-                # Подключать социальные сети
                 Button(
-                    Format("{sign_up_social_networks_icon} Подключать социальные сети"),
+                    Format("{sign_up_social_networks_icon} Подключение соцсетей"),
                     id="toggle_sign_up_social_networks",
                     on_click=self.add_employee_service.handle_toggle_permission,
                 ),
@@ -263,16 +245,14 @@ class AddEmployeeDialog(interface.IAddEmployeeDialog):
     def get_confirm_employee_window(self) -> Window:
         return Window(
             Multi(
-                Const("👤 <b>Подтверждение создания сотрудника</b>\n\n"),
-                Multi(
-                    Const("📋 <b>Проверьте введенные данные:</b>\n\n"),
-                    Format("ID Аккаунта: <b>{account_id}</b>\n"),
-                    Format("Имя: <b>{name}</b>\n"),
-                    Format("Роль: <b>{role}</b>\n\n"),
-                    Const("⚙️ <b>Разрешения:</b>\n"),
-                    Format("{permissions_text}\n\n"),
-                    Const("❓ Всё правильно?"),
-                ),
+                Const("✅ <b>Подтверждение создания сотрудника</b>\n\n"),
+                Const("📋 <b>Проверьте введенные данные:</b>\n\n"),
+                Format("🔢 <b>ID аккаунта:</b> <code>{account_id}</code>\n"),
+                Format("👤 <b>Имя:</b> {name}\n"),
+                Format("🎭 <b>Роль:</b> {role}\n\n"),
+                Const("⚙️ <b>Разрешения сотрудника:</b>\n"),
+                Format("{permissions_text}\n\n"),
+                Const("❓ <b>Всё корректно? Создать сотрудника?</b>"),
                 sep="",
             ),
 
@@ -283,7 +263,7 @@ class AddEmployeeDialog(interface.IAddEmployeeDialog):
                     on_click=self.add_employee_service.handle_create_employee,
                 ),
                 Back(
-                    Const("✏️ Изменить"),
+                    Const("✏️ Изменить данные"),
                 ),
             ),
 
