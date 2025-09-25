@@ -8,7 +8,7 @@ class Publication:
     category_id: int
     creator_id: int
     moderator_id: int | None
-
+  
     name: str  
     tags: list[str] 
 
