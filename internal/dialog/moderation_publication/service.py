@@ -144,7 +144,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
                 if creator_state:
                     await self.bot.send_message(
                         chat_id=creator_state[0].tg_chat_id,
-                        text=f"Ваша публикация: <b>{original_pub["name"]}</b> была отклонена с комментарием:\n<b>{reject_comment}</b>",
+                        text=f"Ваша публикация была отклонена с комментарием:\n<b>{reject_comment}</b>",
                         parse_mode=ParseMode.HTML,
 
                     )
@@ -772,7 +772,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             return False
 
         # Сравниваем текстовые поля
-        fields_to_compare = ["name", "text", "tags"]
+        fields_to_compare = ["text",]
         for field in fields_to_compare:
             if original.get(field) != working.get(field):
                 return True
