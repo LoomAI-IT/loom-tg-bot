@@ -543,7 +543,7 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
                 Button(
                     Const("◀️ Назад"),
                     id="back_to_preview",
-                    on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.edit_preview, ShowMode.EDIT),
+                    on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.moderation_list, ShowMode.EDIT),
                 ),
             ),
 

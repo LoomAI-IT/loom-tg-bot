@@ -192,7 +192,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
 
                 # Обновляем данные
                 dialog_manager.dialog_data["working_publication"]["text"] = regenerated_data["text"]
-                dialog_manager.dialog_data["is_regenerating_text"] = True
+                dialog_manager.dialog_data["is_regenerating_text"] = False
 
                 await dialog_manager.switch_to(model.ModerationPublicationStates.edit_preview)
                 span.set_status(Status(StatusCode.OK))
