@@ -183,6 +183,7 @@ personal_profile_getter = PersonalProfileGetter(
     state_repo,
     kontur_employee_client,
     kontur_organization_client,
+    kontur_content_client
 )
 
 video_cuts_draft_getter = VideoCutsDraftGetter(

@@ -27,21 +27,21 @@ class PersonalProfileDialog(interface.IPersonalProfileDialog):
 
     def get_personal_profile_window(self) -> Window:
         return Window(
-            Format("👤 <b>Личный профиль</b>\n\n"),
-            Format("🏢 <b>Организация:</b> {organization_name}\n"),
-            Format("👨‍💼 <b>Имя:</b> {employee_name}\n"),
-            Format("📱 <b>Телеграм:</b> @{employee_tg_username}\n"),
-            Format("🆔 <b>ID аккаунта:</b> <code>{account_id}</code>\n"),
-            Format("🎭 <b>Роль:</b> {role_display}\n"),
-            Format("📅 <b>В команде с:</b> {created_at}\n\n"),
+            Format("👤 <b>Личный профиль</b>\n"),
+            Format("🏢 <b>Организация:</b> {organization_name}"),
+            Format("👨‍💼 <b>Имя:</b> {employee_name}"),
+            Format("📱 <b>Телеграм:</b> @{employee_tg_username}"),
+            Format("🆔 <b>ID аккаунта:</b> <code>{account_id}</code>"),
+            Format("🎭 <b>Роль:</b> {role_display}"),
+            Format("📅 <b>В команде с:</b> {created_at}\n"),
 
-            Const("📊 <b>Статистика активности</b>\n"),
-            Format("✏️ <b>Создано публикаций:</b> {generated_publication_count}\n"),
-            Format("🚀 <b>Опубликовано:</b> {published_publication_count}\n"),
+            Const("📊 <b>Статистика активности</b>"),
+            Format("✏️ <b>Создано публикаций:</b> {generated_publication_count}"),
+            Format("🚀 <b>Опубликовано:</b> {published_publication_count}"),
             Case(
                 {
                     True: Multi(
-                        Format("❌ <b>Отклонено модерацией:</b> {rejected_publication_count}\n"),
+                        Format("❌ <b>Отклонено модерацией:</b> {rejected_publication_count}"),
                         Format("✅ <b>Одобрено модерацией:</b> {approved_publication_count}\n"),
                     ),
                     False: Const("")
