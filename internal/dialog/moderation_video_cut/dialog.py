@@ -459,7 +459,7 @@ class VideoCutModerationDialog(interface.IVideoCutModerationDialog):
                 on_click=lambda c, b, d: d.switch_to(model.VideoCutModerationStates.moderation_list),
             ),
 
-            state=model.VideoCutsDraftStates.social_network_select,
+            state=model.VideoCutModerationStates.social_network_select,
             getter=self.video_cut_moderation_getter.get_social_network_select_data,
             parse_mode="HTML",
         )
