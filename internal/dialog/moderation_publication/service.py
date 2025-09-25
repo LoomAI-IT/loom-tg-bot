@@ -88,21 +88,22 @@ class ModerationPublicationService(interface.IModerationPublicationService):
 
                 await message.delete()
 
+                dialog_manager.dialog_data.pop("has_void_reject_comment", None)
+                dialog_manager.dialog_data.pop("has_small_reject_comment", None)
+                dialog_manager.dialog_data.pop("has_big_reject_comment", None)
+
                 comment = comment.strip()
                 if not comment:
                     dialog_manager.dialog_data["has_void_reject_comment"] = True
                     return
-                dialog_manager.dialog_data.pop("has_void_reject_comment", None)
 
                 if len(comment) < 10:
                     dialog_manager.dialog_data["has_small_reject_comment"] = True
                     return
-                dialog_manager.dialog_data.pop("has_small_reject_comment", None)
 
                 if len(comment) > 500:
                     dialog_manager.dialog_data["has_big_reject_comment"] = True
                     return
-                dialog_manager.dialog_data.pop("has_big_reject_comment", None)
 
                 dialog_manager.dialog_data["reject_comment"] = comment
 
@@ -752,7 +753,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
                 self.logger.info("Публикация одобрена и опубликована")
 
                 await self._remove_current_publication_from_list(dialog_manager)
-                await callback.answer("Опубликовано")
+                await callback.answer("Опубликовано", show_alert=True)
                 await dialog_manager.switch_to(model.ModerationPublicationStates.moderation_list)
                 span.set_status(Status(StatusCode.OK))
 
