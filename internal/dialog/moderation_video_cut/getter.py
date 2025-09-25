@@ -163,6 +163,7 @@ class VideoCutModerationGetter(interface.IVideoCutModerationGetter):
                     "video_name": original_video_cut["name"] or "Без названия",
                     "creator_name": creator.name,
                     "has_comment": bool(dialog_manager.dialog_data.get("reject_comment")),
+                    "reject_comment": dialog_manager.dialog_data.get("reject_comment", ""),
                     "has_void_reject_comment": dialog_manager.dialog_data.get("has_void_reject_comment", False),
                     "has_small_reject_comment": dialog_manager.dialog_data.get("has_small_reject_comment", False),
                     "has_big_reject_comment": dialog_manager.dialog_data.get("has_big_reject_comment", False),
