@@ -83,21 +83,22 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
 
                 await message.delete()
 
+                dialog_manager.dialog_data.pop("has_void_reject_comment", None)
+                dialog_manager.dialog_data.pop("has_small_reject_comment", None)
+                dialog_manager.dialog_data.pop("has_big_reject_comment", None)
+
                 comment = comment.strip()
                 if not comment:
                     dialog_manager.dialog_data["has_void_reject_comment"] = True
                     return
-                dialog_manager.dialog_data.pop("has_void_reject_comment", None)
 
                 if len(comment) < 10:
                     dialog_manager.dialog_data["has_small_reject_comment"] = True
                     return
-                dialog_manager.dialog_data.pop("has_small_reject_comment", None)
 
                 if len(comment) > 500:
                     dialog_manager.dialog_data["has_big_reject_comment"] = True
                     return
-                dialog_manager.dialog_data.pop("has_big_reject_comment", None)
 
                 dialog_manager.dialog_data["reject_comment"] = comment
 
@@ -178,16 +179,17 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
 
                 await message.delete()
 
+                dialog_manager.dialog_data.pop("has_void_title", None)
+                dialog_manager.dialog_data.pop("has_big_title", None)
+
                 new_title = text.strip()
                 if not new_title:
                     dialog_manager.dialog_data["has_void_title"] = True
                     return
-                dialog_manager.dialog_data.pop("has_void_title", None)
 
                 if len(new_title) > 100:  # YouTube Shorts лимит
                     dialog_manager.dialog_data["has_big_title"] = True
                     return
-                dialog_manager.dialog_data.pop("has_big_title", None)
 
                 # Обновляем рабочую версию
                 dialog_manager.dialog_data["working_video_cut"]["name"] = new_title
@@ -216,16 +218,17 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
 
                 await message.delete()
 
+                dialog_manager.dialog_data.pop("has_void_description", None)
+                dialog_manager.dialog_data.pop("has_big_description", None)
+
                 new_description = text.strip()
                 if not new_description:
                     dialog_manager.dialog_data["has_void_description"] = True
                     return
-                dialog_manager.dialog_data.pop("has_void_description", None)
 
                 if len(new_description) > 1000:  # Instagram лимит
                     dialog_manager.dialog_data["has_big_description"] = True
                     return
-                dialog_manager.dialog_data.pop("has_big_description", None)
 
                 # Обновляем рабочую версию
                 dialog_manager.dialog_data["working_video_cut"]["description"] = new_description
@@ -255,6 +258,8 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
 
                 await message.delete()
 
+                dialog_manager.dialog_data.pop("has_void_tags", None)
+
                 tags_raw = text.strip()
                 if not tags_raw:
                     new_tags = []
@@ -266,7 +271,6 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
                     if len(new_tags) > 15:  # YouTube лимит
                         dialog_manager.dialog_data["has_void_tags"] = True
                         return
-                    dialog_manager.dialog_data.pop("has_void_tags", None)
 
                 # Обновляем рабочую версию
                 dialog_manager.dialog_data["working_video_cut"]["tags"] = new_tags
