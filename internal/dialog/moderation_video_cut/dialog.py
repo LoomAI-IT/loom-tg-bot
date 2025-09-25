@@ -99,7 +99,7 @@ class VideoCutModerationDialog(interface.IVideoCutModerationDialog):
                     Button(
                         Const("🌐 Выбрать соцсети"),
                         id="select_social_network",
-                        on_click=lambda c, b, d: d.switch_to(model.VideoCutsDraftStates.social_network_select,
+                        on_click=lambda c, b, d: d.switch_to(model.VideoCutModerationStates.social_network_select,
                                                              ShowMode.EDIT),
                         when="has_video_cuts",
                     ),
