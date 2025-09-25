@@ -4,6 +4,7 @@ from aiogram_dialog.api.entities import MediaId, MediaAttachment
 
 from aiogram.types import ContentType
 from aiogram_dialog import DialogManager
+from aiogram_dialog.widgets.kbd import ManagedCheckbox
 
 from opentelemetry.trace import SpanKind, Status, StatusCode
 
@@ -147,7 +148,6 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
                 )
 
                 data = {
-                    "publication_name": original_pub["name"],
                     "creator_name": creator.name,
                     "has_comment": bool(dialog_manager.dialog_data.get("reject_comment")),
                     "reject_comment": dialog_manager.dialog_data.get("reject_comment", ""),
@@ -266,6 +266,27 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
                 # Получаем текущие выбранные сети
                 selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
                 has_selected_networks = any(selected_networks.values())
+
+                if not has_selected_networks and not selected_networks:
+                    if vkontakte_connected:
+                        widget_id = "vkontakte_checkbox"
+                        autoselect = social_networks["vkontakte"][0].get("autoselect", False)
+
+                        vkontakte_checkbox: ManagedCheckbox = dialog_manager.find(widget_id)
+                        selected_networks[widget_id] = autoselect
+
+                        await vkontakte_checkbox.set_checked(autoselect)
+
+                    if telegram_connected:
+                        widget_id = "telegram_checkbox"
+                        autoselect = social_networks["telegram"][0].get("autoselect", False)
+
+                        telegram_checkbox: ManagedCheckbox = dialog_manager.find(widget_id)
+                        selected_networks[widget_id] = autoselect
+
+                        await telegram_checkbox.set_checked(autoselect)
+
+                    dialog_manager.dialog_data["selected_social_networks"] = selected_networks
 
                 data = {
                     "telegram_connected": telegram_connected,
