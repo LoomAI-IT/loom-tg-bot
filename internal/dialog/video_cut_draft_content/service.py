@@ -130,7 +130,7 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
                 await callback.answer("❌ Ошибка сохранения", show_alert=True)
                 raise
 
-    async def handle_edit_title_save(
+    async def handle_edit_title(
             self,
             message: Message,
             widget: Any,
@@ -167,7 +167,7 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
-    async def handle_edit_description_save(
+    async def handle_edit_description(
             self,
             message: Message,
             widget: Any,
@@ -204,7 +204,7 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
-    async def handle_edit_tags_save(
+    async def handle_edit_tags(
             self,
             message: Message,
             widget: Any,

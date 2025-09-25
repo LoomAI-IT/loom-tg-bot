@@ -218,10 +218,31 @@ class VideoCutsDraftDialog(interface.IVideoCutsDraftDialog):
                 Const("📱 Instagram Reels: <code>максимум 2200 символов</code>"),
                 sep="",
             ),
+            Case(
+                {
+                    True: Const("\n❌ <b>Ошибка:</b> Название не может быть пустым"),
+                    False: Const("")
+                },
+                selector="has_void_title"
+            ),
+            Case(
+                {
+                    True: Const("\n📏 <b>Слишком короткое название</b>\n<i>Минимум 5 символов</i>"),
+                    False: Const("")
+                },
+                selector="has_small_title"
+            ),
+            Case(
+                {
+                    True: Const("\n📏 <b>Слишком длинное название</b>\n<i>Максимум 500 символов</i>"),
+                    False: Const("")
+                },
+                selector="has_big_title"
+            ),
 
             TextInput(
                 id="title_input",
-                on_success=self.video_cut_draft_service.handle_edit_title_save,
+                on_success=self.video_cut_draft_service.handle_edit_title,
             ),
 
             Button(
@@ -248,10 +269,31 @@ class VideoCutsDraftDialog(interface.IVideoCutsDraftDialog):
                 Const("💡 <i>Чтобы просмотреть текущее описание, вернитесь назад</i>"),
                 sep="",
             ),
+            Case(
+                {
+                    True: Const("\n❌ <b>Ошибка:</b> Описание не может быть пустым"),
+                    False: Const("")
+                },
+                selector="has_void_description"
+            ),
+            Case(
+                {
+                    True: Const("\n📏 <b>Слишком короткое описание</b>\n<i>Минимум 5 символов</i>"),
+                    False: Const("")
+                },
+                selector="has_small_description"
+            ),
+            Case(
+                {
+                    True: Const("\n📏 <b>Слишком длинное описание</b>\n<i>Максимум 500 символов</i>"),
+                    False: Const("")
+                },
+                selector="has_big_description"
+            ),
 
             TextInput(
                 id="description_input",
-                on_success=self.video_cut_draft_service.handle_edit_description_save,
+                on_success=self.video_cut_draft_service.handle_edit_description,
             ),
 
             Button(
@@ -284,10 +326,17 @@ class VideoCutsDraftDialog(interface.IVideoCutsDraftDialog):
                 Const("🗑️ <i>Оставьте пустым для удаления всех тегов</i>"),
                 sep="",
             ),
+            Case(
+                {
+                    True: Const("\n❌ <b>Ошибка:</b> Тэги не может быть пустым"),
+                    False: Const("")
+                },
+                selector="has_void_tags"
+            ),
 
             TextInput(
                 id="tags_input",
-                on_success=self.video_cut_draft_service.handle_edit_tags_save,
+                on_success=self.video_cut_draft_service.handle_edit_tags,
             ),
 
             Button(

@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from aiogram_dialog.api.entities import MediaAttachment, MediaId
 from aiogram.types import ContentType
 from aiogram_dialog import DialogManager
+from aiogram_dialog.widgets.kbd import ManagedCheckbox
 
 from opentelemetry.trace import SpanKind, Status, StatusCode
 
@@ -64,7 +65,7 @@ class VideoCutModerationGetter(interface.IVideoCutModerationGetter):
                 current_video_cut = model.VideoCut(**moderation_video_cuts[current_index])
 
                 # Получаем информацию об авторе
-                author = await self.kontur_employee_client.get_employee_by_account_id(
+                creator = await self.kontur_employee_client.get_employee_by_account_id(
                     current_video_cut.creator_id
                 )
 
@@ -85,7 +86,7 @@ class VideoCutModerationGetter(interface.IVideoCutModerationGetter):
                     "has_video_cuts": True,
                     "video_cuts_count": len(moderation_video_cuts),
                     "period_text": period_text,
-                    "author_name": author.name,
+                    "creator_name": creator.name,
                     "created_at": self._format_datetime(current_video_cut.created_at),
                     "has_waiting_time": bool(waiting_time),
                     "waiting_time": waiting_time,
@@ -154,15 +155,18 @@ class VideoCutModerationGetter(interface.IVideoCutModerationGetter):
                 original_video_cut = dialog_manager.dialog_data.get("original_video_cut", {})
 
                 # Получаем информацию об авторе
-                author = await self.kontur_employee_client.get_employee_by_account_id(
+                creator = await self.kontur_employee_client.get_employee_by_account_id(
                     original_video_cut["creator_id"],
                 )
 
                 data = {
                     "video_name": original_video_cut["name"] or "Без названия",
-                    "author_name": author.name,
+                    "creator_name": creator.name,
                     "has_comment": bool(dialog_manager.dialog_data.get("reject_comment")),
                     "reject_comment": dialog_manager.dialog_data.get("reject_comment", ""),
+                    "has_void_reject_comment": dialog_manager.dialog_data.get("has_void_reject_comment", False),
+                    "has_small_reject_comment": dialog_manager.dialog_data.get("has_small_reject_comment", False),
+                    "has_big_reject_comment": dialog_manager.dialog_data.get("has_big_reject_comment", False),
                 }
 
                 span.set_status(Status(StatusCode.OK))
@@ -193,7 +197,7 @@ class VideoCutModerationGetter(interface.IVideoCutModerationGetter):
                 original_video_cut = dialog_manager.dialog_data["original_video_cut"]
 
                 # Получаем информацию об авторе
-                author = await self.kontur_employee_client.get_employee_by_account_id(
+                creator = await self.kontur_employee_client.get_employee_by_account_id(
                     working_video_cut["creator_id"]
                 )
 
@@ -205,16 +209,16 @@ class VideoCutModerationGetter(interface.IVideoCutModerationGetter):
                 video_media = await self._get_video_media(model.VideoCut(**working_video_cut))
 
                 data = {
-                    "author_name": author.name,
-                    "created_at": self._format_datetime(original_video_cut["created_at"]),
-                    "youtube_reference": working_video_cut["youtube_video_reference"] or "Не указан",
                     "video_name": working_video_cut["name"] or "Без названия",
                     "video_description": working_video_cut["description"] or "Описание отсутствует",
-                    "has_tags": bool(tags),
                     "video_tags": tags_text,
-                    "has_video": bool(working_video_cut.get("video_fid")),
+                    "youtube_reference": working_video_cut["youtube_video_reference"],
+                    "has_tags": bool(tags),
+                    "creator_name": creator.name,
+                    "created_at": self._format_datetime(original_video_cut["created_at"]),
                     "video_media": video_media,
                     "has_changes": self._has_changes(dialog_manager),
+                    "has_video": bool(working_video_cut.get("video_fid")),
                 }
 
                 span.set_status(Status(StatusCode.OK))
@@ -250,6 +254,27 @@ class VideoCutModerationGetter(interface.IVideoCutModerationGetter):
                 selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
                 has_selected_networks = any(selected_networks.values())
 
+                if not has_selected_networks and not selected_networks:
+                    if youtube_connected:
+                        widget_id = "youtube_checkbox"
+                        autoselect = social_networks["youtube"][0].get("autoselect", False)
+
+                        youtube_checkbox: ManagedCheckbox = dialog_manager.find(widget_id)
+                        selected_networks[widget_id] = autoselect
+
+                        await youtube_checkbox.set_checked(autoselect)
+
+                    if instagram_connected:
+                        widget_id = "instagram_checkbox"
+                        autoselect = social_networks["instagram"][0].get("autoselect", False)
+
+                        instagram_checkbox: ManagedCheckbox = dialog_manager.find(widget_id)
+                        selected_networks[widget_id] = autoselect
+
+                        await instagram_checkbox.set_checked(autoselect)
+
+                    dialog_manager.dialog_data["selected_social_networks"] = selected_networks
+
                 data = {
                     "youtube_connected": youtube_connected,
                     "instagram_connected": instagram_connected,
@@ -274,6 +299,9 @@ class VideoCutModerationGetter(interface.IVideoCutModerationGetter):
         working_video_cut = dialog_manager.dialog_data.get("working_video_cut", {})
         return {
             "current_title": working_video_cut.get("name", ""),
+            "has_void_title": dialog_manager.dialog_data.get("has_void_title", False),
+            "has_small_title": dialog_manager.dialog_data.get("has_small_title", False),
+            "has_big_title": dialog_manager.dialog_data.get("has_big_title", False),
         }
 
     async def get_edit_description_data(
@@ -285,6 +313,9 @@ class VideoCutModerationGetter(interface.IVideoCutModerationGetter):
         description = working_video_cut.get("description", "")
         return {
             "current_description_length": len(description),
+            "has_void_description": dialog_manager.dialog_data.get("has_void_description", False),
+            "has_small_description": dialog_manager.dialog_data.get("has_small_description", False),
+            "has_big_description": dialog_manager.dialog_data.get("has_big_description", False),
         }
 
     async def get_edit_tags_data(
@@ -297,10 +328,10 @@ class VideoCutModerationGetter(interface.IVideoCutModerationGetter):
         return {
             "has_tags": bool(tags),
             "current_tags": ", ".join(tags) if tags else "",
+            "has_void_tags": dialog_manager.dialog_data.get("has_void_tags", False),
         }
 
     # Вспомогательные методы
-
     def _has_changes(self, dialog_manager: DialogManager) -> bool:
         original = dialog_manager.dialog_data.get("original_video_cut", {})
         working = dialog_manager.dialog_data.get("working_video_cut", {})

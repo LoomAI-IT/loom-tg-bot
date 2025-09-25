@@ -165,6 +165,9 @@ class VideoCutsDraftGetter(interface.IVideoCutsDraftGetter):
         working_video_cut = dialog_manager.dialog_data.get("working_video_cut", {})
         return {
             "current_title": working_video_cut.get("name", ""),
+            "has_void_title": dialog_manager.dialog_data.get("has_void_title", False),
+            "has_small_title": dialog_manager.dialog_data.get("has_small_title", False),
+            "has_big_title": dialog_manager.dialog_data.get("has_big_title", False),
         }
 
     async def get_edit_description_data(
@@ -176,6 +179,9 @@ class VideoCutsDraftGetter(interface.IVideoCutsDraftGetter):
         description = working_video_cut.get("description", "")
         return {
             "current_description_length": len(description),
+            "has_void_description": dialog_manager.dialog_data.get("has_void_description", False),
+            "has_small_description": dialog_manager.dialog_data.get("has_small_description", False),
+            "has_big_description": dialog_manager.dialog_data.get("has_big_description", False),
         }
 
     async def get_edit_tags_data(
@@ -188,6 +194,7 @@ class VideoCutsDraftGetter(interface.IVideoCutsDraftGetter):
         return {
             "has_tags": bool(tags),
             "current_tags": ", ".join(tags) if tags else "",
+            "has_void_tags": dialog_manager.dialog_data.get("has_void_tags", False),
         }
 
     async def get_social_network_select_data(
@@ -252,7 +259,6 @@ class VideoCutsDraftGetter(interface.IVideoCutsDraftGetter):
                 raise
 
     # Вспомогательные методы
-
     async def _get_video_media(self, current_video_cut: model.VideoCut) -> MediaAttachment | None:
         video_media = None
         if current_video_cut.video_fid:
