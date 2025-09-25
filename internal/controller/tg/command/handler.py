@@ -23,10 +23,10 @@ class CommandController(interface.ICommandController):
             message: Message,
             dialog_manager: DialogManager
     ):
-        with self.tracer.start_as_current_span(
+        with (self.tracer.start_as_current_span(
                 "CommandController.start_handler",
                 kind=SpanKind.INTERNAL
-        ) as span:
+        ) as span):
             try:
                 await dialog_manager.reset_stack()
 
@@ -37,6 +37,11 @@ class CommandController(interface.ICommandController):
                     await self.state_service.create_state(tg_chat_id)
                     user_state = await self.state_service.state_by_id(tg_chat_id)
                 user_state = user_state[0]
+
+                await self.state_service.change_user_state(
+                    state_id=user_state.id,
+                    show_error_recovery=False
+                )
 
                 if user_state.organization_id == 0 and user_state.account_id == 0:
                     await dialog_manager.start(
