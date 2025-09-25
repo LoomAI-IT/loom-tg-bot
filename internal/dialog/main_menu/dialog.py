@@ -85,7 +85,7 @@ class MainMenuDialog(interface.IMainMenuDialog):
                             selector="has_empty_voice_text"
                         ),
                     ),
-                    True: Const("Обрабатываю ваш голос")
+                    True: Const("🔄 Распознавание речи...")
                 },
                 selector="voice_transcribe"
             ),

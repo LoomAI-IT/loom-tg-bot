@@ -119,6 +119,9 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                     dialog_manager.dialog_data["has_long_voice_duration"] = True
                     return
 
+                dialog_manager.dialog_data["voice_transcribe"] = True
+                await dialog_manager.show()
+
                 file = await self.bot.get_file(file_id)
                 file_data = await self.bot.download_file(file.file_path)
 
@@ -144,6 +147,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
                 dialog_manager.dialog_data["input_text"] = text
                 dialog_manager.dialog_data["has_input_text"] = True
+                dialog_manager.dialog_data["voice_transcribe"] = False
 
                 self.logger.info("Голосовое сообщение обработано")
                 await dialog_manager.switch_to(model.GeneratePublicationStates.generation)

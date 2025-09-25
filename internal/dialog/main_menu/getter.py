@@ -34,6 +34,7 @@ class MainMenuGetter(interface.IMainMenuGetter):
                 data = {
                     "name": user.first_name or "Пользователь",
                     "show_error_recovery": show_error_recovery,
+                    "voice_transcribe": dialog_manager.dialog_data.get("voice_transcribe", False),
 
                     "has_void_input_text": dialog_manager.dialog_data.get("has_void_input_text", False),
                     "has_small_input_text": dialog_manager.dialog_data.get("has_small_input_text", False),
