@@ -70,7 +70,6 @@ class MainMenuService(interface.IMainMenuService):
 
                 await dialog_manager.start(
                     model.GeneratePublicationStates.select_category,
-                    mode=StartMode.RESET_STACK,
                     data=dialog_manager.dialog_data,
                 )
                 span.set_status(Status(StatusCode.OK))
