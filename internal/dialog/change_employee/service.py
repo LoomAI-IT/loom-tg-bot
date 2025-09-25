@@ -2,7 +2,7 @@ from typing import Any
 
 from aiogram import Bot
 from aiogram.types import CallbackQuery, Message
-from aiogram_dialog import DialogManager, StartMode
+from aiogram_dialog import DialogManager, StartMode, ShowMode
 
 from opentelemetry.trace import SpanKind, Status, StatusCode
 
@@ -35,6 +35,8 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 # Сохраняем выбранного сотрудника
                 dialog_manager.dialog_data["selected_account_id"] = employee_id
 
@@ -43,14 +45,13 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
                 dialog_manager.dialog_data.pop("original_permissions", None)
 
                 self.logger.info("Выбран сотрудник для редактирования")
-
-                # Переходим к деталям
                 await dialog_manager.switch_to(model.ChangeEmployeeStates.employee_detail)
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
+
                 await callback.answer("❌ Ошибка при выборе сотрудника", show_alert=True)
                 raise
 
@@ -66,13 +67,13 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 # Сохраняем поисковый запрос
                 dialog_manager.dialog_data["search_query"] = search_query.strip()
 
                 self.logger.info("Поиск сотрудников")
 
-                # Обновляем окно
-                await dialog_manager.update(dialog_manager.dialog_data)
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
@@ -91,13 +92,14 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 # Очищаем поисковый запрос
                 dialog_manager.dialog_data.pop("search_query", None)
 
                 self.logger.info("Поиск очищен")
 
                 await callback.answer("🔄 Поиск очищен")
-                await dialog_manager.update(dialog_manager.dialog_data)
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
@@ -116,8 +118,8 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                # Обновляем список
-                await dialog_manager.update(dialog_manager.dialog_data)
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 await callback.answer("🔄 Список обновлен")
 
                 span.set_status(Status(StatusCode.OK))
@@ -137,6 +139,8 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 button_id = button.widget_id
                 all_employee_ids = dialog_manager.dialog_data.get("all_employee_ids", [])
                 current_account_id = int(dialog_manager.dialog_data.get("selected_account_id"))
@@ -161,8 +165,6 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
                 dialog_manager.dialog_data.pop("temp_permissions", None)
                 dialog_manager.dialog_data.pop("original_permissions", None)
 
-                await dialog_manager.update(dialog_manager.dialog_data)
-
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
                 span.record_exception(err)
@@ -180,6 +182,8 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 if await self._check_alerts(dialog_manager):
                     return
 
@@ -206,11 +210,13 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 button_id = button.widget_id
 
                 # Мапинг кнопок на ключи разрешений
                 permission_map = {
-                    "toggle_no_moderation": "no_moderation",
+                    "toggle_required_moderation": "required_moderation",
                     "toggle_autoposting": "autoposting",
                     "toggle_add_employee": "add_employee",
                     "toggle_edit_permissions": "edit_permissions",
@@ -231,7 +237,7 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
 
                 # Названия разрешений для уведомления
                 permission_names = {
-                    "no_moderation": "Публикации без модерации",
+                    "required_moderation": "Публикации без модерации",
                     "autoposting": "Авто-постинг",
                     "add_employee": "Добавление сотрудников",
                     "edit_permissions": "Изменение разрешений",
@@ -243,12 +249,12 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
                 permission_name = permission_names.get(permission_key, "Разрешение")
 
                 await callback.answer(f"{permission_name}: {status}")
-                await dialog_manager.update(dialog_manager.dialog_data)
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
+
                 await callback.answer("❌ Ошибка при изменении разрешения", show_alert=True)
                 raise
 
@@ -263,13 +269,15 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 selected_account_id = int(dialog_manager.dialog_data.get("selected_account_id"))
                 permissions = dialog_manager.dialog_data.get("temp_permissions", {})
 
                 # Обновляем разрешения через API
                 await self.kontur_employee_client.update_employee_permissions(
                     account_id=selected_account_id,
-                    required_moderation=not permissions.get("no_moderation", False),
+                    required_moderation=permissions.get("required_moderation", False),
                     autoposting_permission=permissions.get("autoposting", False),
                     add_employee_permission=permissions.get("add_employee", False),
                     edit_employee_perm_permission=permissions.get("edit_permissions", False),
@@ -294,13 +302,13 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
 
                 await callback.answer("✅ Разрешения успешно сохранены!", show_alert=True)
 
-                # Возвращаемся к деталям сотрудника
                 await dialog_manager.switch_to(model.ChangeEmployeeStates.employee_detail)
-
                 span.set_status(Status(StatusCode.OK))
+
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
+
                 await callback.answer("❌ Ошибка при сохранении разрешений", show_alert=True)
                 raise
 
@@ -315,17 +323,20 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 # Восстанавливаем оригинальные значения
                 original = dialog_manager.dialog_data.get("original_permissions", {})
                 dialog_manager.dialog_data["temp_permissions"] = original.copy()
 
-                await callback.answer("↩️ Изменения отменены")
-                await dialog_manager.update(dialog_manager.dialog_data)
-
+                await callback.answer("↩️ Изменения отменены", show_alert=True)
                 span.set_status(Status(StatusCode.OK))
+
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
+
+                await callback.answer("Ошибка", show_alert=True)
                 raise
 
     async def handle_show_role_change(
@@ -339,13 +350,153 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                # TODO: Реализовать диалог изменения роли
-                await callback.answer("🚧 Функция изменения роли в разработке", show_alert=True)
+                dialog_manager.show_mode = ShowMode.EDIT
+
+                dialog_manager.dialog_data.pop("selected_new_role", None)
+
+                await dialog_manager.switch_to(model.ChangeEmployeeStates.change_role)
+
+                self.logger.info("Переход к окну изменения роли")
+                span.set_status(Status(StatusCode.OK))
+
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
+
+                await callback.answer("❌ Ошибка при открытии окна изменения роли", show_alert=True)
+                raise
+
+    async def handle_select_role(
+            self,
+            callback: CallbackQuery,
+            widget: Any,
+            dialog_manager: DialogManager,
+            role: str
+    ) -> None:
+        with self.tracer.start_as_current_span(
+                "ChangeEmployeeService.handle_select_role",
+                kind=SpanKind.INTERNAL
+        ) as span:
+            try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
+                selected_account_id = int(dialog_manager.dialog_data.get("selected_account_id"))
+
+                # Получаем данные сотрудника для проверки текущей роли
+                employee = await self.kontur_employee_client.get_employee_by_account_id(
+                    selected_account_id
+                )
+
+                if employee.role == role:
+                    await callback.answer("ℹ️ Эта роль уже назначена сотруднику", show_alert=True)
+                    return
+
+                # Сохраняем выбранную роль во временные данные
+                dialog_manager.dialog_data["selected_new_role"] = role
+
+
+                await callback.answer(f"Выбрана роль: {self._get_role_display_name(role)}", show_alert=True)
+
+                self.logger.info(f"Выбрана новая роль: {role}")
+                span.set_status(Status(StatusCode.OK))
+
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
+
+                await callback.answer("❌ Ошибка при выборе роли", show_alert=True)
+                raise
+
+    async def handle_reset_role_selection(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        with self.tracer.start_as_current_span(
+                "ChangeEmployeeService.handle_reset_role_selection",
+                kind=SpanKind.INTERNAL
+        ) as span:
+            try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
+                # Очищаем выбранную роль
+                dialog_manager.dialog_data.pop("selected_new_role", None)
+
+                await callback.answer("Выбор роли сброшен", show_alert=True)
+
+                self.logger.info("Сброс выбора роли")
+                span.set_status(Status(StatusCode.OK))
+
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
+                raise
+
+    async def handle_confirm_role_change(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        with self.tracer.start_as_current_span(
+                "ChangeEmployeeService.handle_confirm_role_change",
+                kind=SpanKind.INTERNAL
+        ) as span:
+            try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
+                selected_account_id = int(dialog_manager.dialog_data.get("selected_account_id"))
+                new_role = dialog_manager.dialog_data.get("selected_new_role")
+
+                if not new_role:
+                    await callback.answer("❌ Роль не выбрана", show_alert=True)
+                    return
+
+                # Получаем данные сотрудника до изменения
+                employee = await self.kontur_employee_client.get_employee_by_account_id(
+                    selected_account_id
+                )
+                old_role = employee.role
+
+                # Обновляем роль через API
+                await self.kontur_employee_client.update_employee_role(
+                    account_id=selected_account_id,
+                    role=new_role
+                )
+
+                # Уведомляем сотрудника об изменении роли
+                employee_state = await self.state_repo.state_by_account_id(selected_account_id)
+                if employee_state:
+                    old_role_display = self._get_role_display_name(old_role)
+                    new_role_display = self._get_role_display_name(new_role)
+
+                    await self.bot.send_message(
+                        employee_state[0].tg_chat_id,
+                        f"ℹ️ Ваша роль в организации была изменена администратором.\n"
+                        f"Старая роль: {old_role_display}\n"
+                        f"Новая роль: {new_role_display}\n\n"
+                        f"Нажмите /start для обновления информации."
+                    )
+
+                self.logger.info(f"Роль сотрудника изменена: {old_role} -> {new_role}")
+
+                # Очищаем временные данные
+                dialog_manager.dialog_data.pop("selected_new_role", None)
+
+                await callback.answer(
+                    f"✅ Роль успешно изменена на '{self._get_role_display_name(new_role)}'!",
+                    show_alert=True
+                )
+
+                # Возвращаемся к деталям сотрудника
+                await dialog_manager.switch_to(model.ChangeEmployeeStates.employee_detail)
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
+                await callback.answer("❌ Ошибка при изменении роли", show_alert=True)
                 raise
 
     async def handle_delete_employee(
@@ -359,6 +510,8 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 selected_account_id = int(dialog_manager.dialog_data.get("selected_account_id"))
 
                 # Получаем данные удаляемого сотрудника для логирования
@@ -397,11 +550,12 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
 
                 # Возвращаемся к списку
                 await dialog_manager.switch_to(model.ChangeEmployeeStates.employee_list)
-
                 span.set_status(Status(StatusCode.OK))
+
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
+
                 await callback.answer("❌ Ошибка при удалении сотрудника", show_alert=True)
                 raise
 
@@ -423,6 +577,15 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
             return True
 
         return False
+
+    def _get_role_display_name(self, role: str) -> str:
+        role_names = {
+            "employee": "Сотрудник",
+            "moderator": "Модератор",
+            "admin": "Администратор",
+            "owner": "Владелец",
+        }
+        return role_names.get(role, role.capitalize())
 
     async def _get_state(self, dialog_manager: DialogManager) -> model.UserState:
         if hasattr(dialog_manager.event, 'message') and dialog_manager.event.message:
