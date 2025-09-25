@@ -128,7 +128,6 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
         return Window(
             Multi(
                 Const("❌ <b>Отклонение публикации</b>\n\n"),
-                Format("📝 <b>Публикация:</b> {publication_name}\n"),
                 Format("👤 <b>Автор:</b> {creator_name}\n\n"),
                 Const("💬 <b>Укажите причину отклонения:</b>\n"),
                 Const("💌 <i>Автор получит уведомление с вашим комментарием</i>\n\n"),

@@ -1,6 +1,6 @@
 create_state = """
-INSERT INTO user_states (tg_chat_id)
-VALUES (:tg_chat_id)
+INSERT INTO user_states (tg_chat_id, tg_username)
+VALUES (:tg_chat_id, :tg_username)
 RETURNING id;
 """
 

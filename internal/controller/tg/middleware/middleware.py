@@ -57,7 +57,7 @@ class TgMiddleware(interface.ITelegramMiddleware):
             event: Update,
             data: dict[str, Any]
     ):
-        message, event_type, message_text, user_username, tg_chat_id, message_id = self.__extract_metadata(event)
+        message, event_type, message_text, tg_username, tg_chat_id, message_id = self.__extract_metadata(event)
 
         callback_query_data = event.callback_query.data if event.callback_query is not None else ""
 
@@ -67,7 +67,7 @@ class TgMiddleware(interface.ITelegramMiddleware):
                 attributes={
                     common.TELEGRAM_EVENT_TYPE_KEY: event_type,
                     common.TELEGRAM_CHAT_ID_KEY: tg_chat_id,
-                    common.TELEGRAM_USER_USERNAME_KEY: user_username,
+                    common.TELEGRAM_USER_USERNAME_KEY: tg_username,
                     common.TELEGRAM_USER_MESSAGE_KEY: message_text,
                     common.TELEGRAM_MESSAGE_ID_KEY: message_id,
                     common.TELEGRAM_CALLBACK_QUERY_DATA_KEY: callback_query_data,
@@ -88,7 +88,7 @@ class TgMiddleware(interface.ITelegramMiddleware):
                 root_span.set_status(Status(StatusCode.ERROR, str(err)))
 
                 # При критической ошибке пытаемся восстановить пользователя
-                await self._recovery_start_functionality(tg_chat_id)
+                await self._recovery_start_functionality(tg_chat_id, tg_username)
                 raise err
 
     async def metric_middleware02(
@@ -104,14 +104,14 @@ class TgMiddleware(interface.ITelegramMiddleware):
             start_time = time.time()
             self.active_messages.add(1)
 
-            message, event_type, message_text, user_username, tg_chat_id, message_id = self.__extract_metadata(event)
+            message, event_type, message_text, tg_username, tg_chat_id, message_id = self.__extract_metadata(event)
 
             callback_query_data = event.callback_query.data if event.callback_query is not None else ""
 
             request_attrs: dict = {
                 common.TELEGRAM_EVENT_TYPE_KEY: event_type,
                 common.TELEGRAM_CHAT_ID_KEY: tg_chat_id,
-                common.TELEGRAM_USER_USERNAME_KEY: user_username,
+                common.TELEGRAM_USER_USERNAME_KEY: tg_username,
                 common.TELEGRAM_USER_MESSAGE_KEY: message_text,
                 common.TELEGRAM_MESSAGE_ID_KEY: message_id,
                 common.TELEGRAM_CALLBACK_QUERY_DATA_KEY: callback_query_data,
@@ -156,14 +156,14 @@ class TgMiddleware(interface.ITelegramMiddleware):
         ) as span:
             start_time = time.time()
 
-            message, event_type, message_text, user_username, tg_chat_id, message_id = self.__extract_metadata(event)
+            message, event_type, message_text, tg_username, tg_chat_id, message_id = self.__extract_metadata(event)
 
             callback_query_data = event.callback_query.data if event.callback_query is not None else ""
 
             extra_log: dict = {
                 common.TELEGRAM_EVENT_TYPE_KEY: event_type,
                 common.TELEGRAM_CHAT_ID_KEY: tg_chat_id,
-                common.TELEGRAM_USER_USERNAME_KEY: user_username,
+                common.TELEGRAM_USER_USERNAME_KEY: tg_username,
                 common.TELEGRAM_USER_MESSAGE_KEY: message_text,
                 common.TELEGRAM_MESSAGE_ID_KEY: message_id,
                 common.TELEGRAM_CALLBACK_QUERY_DATA_KEY: callback_query_data,
@@ -205,7 +205,7 @@ class TgMiddleware(interface.ITelegramMiddleware):
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise err
 
-    async def _recovery_start_functionality(self, tg_chat_id: int):
+    async def _recovery_start_functionality(self, tg_chat_id: int, tg_username: str):
         """
         Функция восстановления, повторяющая функционал команды /start
         Вызывается при критических ошибках для восстановления состояния пользователя
@@ -223,7 +223,7 @@ class TgMiddleware(interface.ITelegramMiddleware):
                 # Получаем или создаем состояние пользователя
                 user_state = await self.state_service.state_by_id(tg_chat_id)
                 if not user_state:
-                    await self.state_service.create_state(tg_chat_id)
+                    await self.state_service.create_state(tg_chat_id, tg_username)
                     user_state = await self.state_service.state_by_id(tg_chat_id)
 
                 user_state = user_state[0]
@@ -298,9 +298,11 @@ class TgMiddleware(interface.ITelegramMiddleware):
         event_type = "message" if event.message is not None else "callback_query"
 
         if event_type == "message":
-            user_username = message.from_user.username
+            tg_username = message.from_user.username
         else:
-            user_username = event.callback_query.from_user.username
+            tg_username = event.callback_query.from_user.username
+
+        tg_username = tg_username if tg_username is not None else ""
         tg_chat_id = message.chat.id
         if message.text is not None:
             message_text = message.text
@@ -308,7 +310,7 @@ class TgMiddleware(interface.ITelegramMiddleware):
             message_text = "Изображение"
 
         message_id = message.message_id
-        return message, event_type, message_text, user_username, tg_chat_id, message_id
+        return message, event_type, message_text, tg_username, tg_chat_id, message_id
 
     def _get_chat_id(self, event: Update) -> int:
         if event.message:

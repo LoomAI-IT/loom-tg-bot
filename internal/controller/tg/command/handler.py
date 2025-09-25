@@ -34,8 +34,10 @@ class CommandController(interface.ICommandController):
 
                 user_state = await self.state_service.state_by_id(tg_chat_id)
                 if not user_state:
-                    await self.state_service.create_state(tg_chat_id)
+                    tg_username = message.from_user.username if message.from_user.username else "отсутвует username"
+                    await self.state_service.create_state(tg_chat_id, tg_username)
                     user_state = await self.state_service.state_by_id(tg_chat_id)
+
                 user_state = user_state[0]
 
                 await self.state_service.change_user_state(

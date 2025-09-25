@@ -25,18 +25,19 @@ class ChangeEmployeeDialog(interface.IChangeEmployeeDialog):
             self.get_employee_detail_window(),
             self.get_change_permissions_window(),
             self.get_confirm_delete_window(),
+            self.get_change_role_window()
         )
 
     def get_employee_list_window(self) -> Window:
         return Window(
             Multi(
-                Const("👥 <b>Управление сотрудниками</b>\n\n"),
-                Format("🏢 Организация: <b>{organization_name}</b>\n"),
-                Format("👤 Всего сотрудников: <b>{employees_count}</b>\n\n"),
+                Const("👥 <b>Управление командой</b>\n\n"),
+                Format("🏢 <b>Организация:</b> {organization_name}\n"),
+                Format("👤 <b>Всего сотрудников:</b> {employees_count}\n\n"),
                 Case(
                     {
-                        True: Const("🔍 <i>Результаты поиска:</i>\n"),
-                        False: Const("📋 <i>Выберите сотрудника для управления:</i>"),
+                        True: Const("🔍 <b>Результаты поиска:</b>\n"),
+                        False: Const("📋 <b>Выберите сотрудника для управления:</b>"),
                     },
                     selector="has_search"
                 ),
@@ -52,7 +53,7 @@ class ChangeEmployeeDialog(interface.IChangeEmployeeDialog):
             # Список сотрудников с прокруткой
             ScrollingGroup(
                 Select(
-                    Format("👤 {item[name]} ({item[role_display]})"),
+                    Format("👤 {item[name]} • {item[role_display]}"),
                     id="employee_select",
                     items="employees",
                     item_id_getter=lambda item: str(item["account_id"]),
@@ -72,7 +73,7 @@ class ChangeEmployeeDialog(interface.IChangeEmployeeDialog):
 
             Row(
                 Button(
-                    Const("🔄 Обновить"),
+                    Const("🔄 Обновить список"),
                     id="refresh_list",
                     on_click=self.change_employee_service.handle_refresh_list,
                 ),
@@ -91,7 +92,7 @@ class ChangeEmployeeDialog(interface.IChangeEmployeeDialog):
             ),
 
             Button(
-                Const("⬅️ Вернуться в меню организации"),
+                Const("◀️ Меню организации"),
                 id="go_to_organization_menu",
                 on_click=self.change_employee_service.handle_go_to_organization_menu,
             ),
@@ -104,23 +105,34 @@ class ChangeEmployeeDialog(interface.IChangeEmployeeDialog):
     def get_employee_detail_window(self) -> Window:
         return Window(
             Multi(
-                Const("👤 <b>Информация о сотруднике</b>\n\n"),
-                Const("📋 <b>Основные данные:</b>\n"),
-                Format("• Имя: <b>{employee_name}</b>\n"),
-                Format("• ID аккаунта: <code>{account_id}</code>\n"),
-                Format("• Роль: <b>{role_display}</b>\n"),
-                Format("• Добавлен: {created_at}\n\n"),
+                Const("👤 <b>Профиль сотрудника</b>\n\n"),
+                Const("📋 <b>Основная информация:</b>\n"),
+                Format("• <b>Имя:</b> {employee_name}\n"),
+                Format("• <b>Телеграм аккаунт:</b> @{employee_tg_username}\n"),
+                Format("• <b>ID аккаунта:</b> <code>{account_id}</code>\n"),
+                Format("• <b>Роль:</b> {role_display}\n"),
+                Format("• <b>В команде с:</b> {created_at}\n\n"),
 
-                Const("📊 <b>Статистика:</b>\n"),
-                Format("• Публикаций: <b>{publications_count}</b>\n"),
-                Format("• Генераций контента: <b>{generations_count}</b>\n\n"),
+                Const("📊 <b>Активность:</b>\n"),
+                Format("• <b>Сгенерировано публикаций:</b> {generated_publication_count}\n"),
+                Format("• <b>Опубликовано публикаций:</b> {published_publication_count}\n"),
+                Case(
+                    {
+                        True: Multi(
+                            Format("• <b>Отклонено в ходе модерации:</b> {rejected_publication_count}"),
+                            Format("• <b>Опубликовано в ходе модерации:</b> {approved_publication_count}\n\n"),
+                        ),
+                        False: Const("")
+                    },
+                    selector="has_moderated_publications"
+                ),
 
-                Const("⚙️ <b>Текущие разрешения:</b>\n"),
+                Const("🔐 <b>Права доступа:</b>\n"),
                 Format("{permissions_text}\n"),
 
                 Case(
                     {
-                        True: Const("\n⚠️ <i>Это ваш аккаунт</i>"),
+                        True: Const("\n👆 <i>Это ваш профиль</i>"),
                         False: Const(""),
                     },
                     selector="is_current_user"
@@ -136,7 +148,7 @@ class ChangeEmployeeDialog(interface.IChangeEmployeeDialog):
                     when="has_prev",
                 ),
                 Button(
-                    Format("📍 {current_index}/{total_count}"),
+                    Format("📍 {current_index} из {total_count}"),
                     id="current_position",
                     on_click=None,
                 ),
@@ -150,25 +162,25 @@ class ChangeEmployeeDialog(interface.IChangeEmployeeDialog):
 
             Column(
                 Button(
-                    Const("✏️ Изменить разрешения"),
+                    Const("⚙️ Настроить права"),
                     id="edit_permissions",
                     on_click=lambda c, b, d: d.switch_to(model.ChangeEmployeeStates.change_permissions),
                     when="can_edit_permissions",
                 ),
                 Button(
-                    Const("🔄 Изменить роль"),
+                    Const("🔄 Сменить роль"),
                     id="change_role",
                     on_click=self.change_employee_service.handle_show_role_change,
                     when="can_change_role",
                 ),
                 Button(
-                    Const("🗑 Удалить сотрудника"),
+                    Const("🗑️ Исключить из команды"),
                     id="delete_employee",
                     on_click=lambda c, b, d: d.switch_to(model.ChangeEmployeeStates.confirm_delete),
                     when="can_delete",
                 ),
 
-                Back(Const("◀️ К списку")),
+                Back(Const("◀️ К списку команды")),
             ),
 
             state=model.ChangeEmployeeStates.employee_detail,
@@ -179,15 +191,15 @@ class ChangeEmployeeDialog(interface.IChangeEmployeeDialog):
     def get_change_permissions_window(self) -> Window:
         return Window(
             Multi(
-                Const("⚙️ <b>Изменение разрешений</b>\n\n"),
-                Format("👤 Сотрудник: <b>{employee_name}</b>\n"),
-                Format("🏷 Роль: <b>{role_display}</b>\n\n"),
-                Const("📝 <b>Настройка разрешений:</b>\n"),
-                Const("<i>Нажмите на правило для включения/выключения</i>\n\n"),
+                Const("⚙️ <b>Настройка прав доступа</b>\n\n"),
+                Format("👤 <b>Сотрудник:</b> {employee_name}\n"),
+                Format("🏷️ <b>Роль:</b> {role_display}\n\n"),
+                Const("🔐 <b>Управление правами:</b>\n"),
+                Const("💡 <i>Нажмите на право для включения/отключения</i>\n\n"),
 
                 Case(
                     {
-                        True: Const("⚠️ <b>Внимание:</b> есть несохраненные изменения"),
+                        True: Const("⚠️ <b>Есть несохраненные изменения</b>\n"),
                         False: Const(""),
                     },
                     selector="has_changes"
@@ -197,32 +209,32 @@ class ChangeEmployeeDialog(interface.IChangeEmployeeDialog):
 
             Column(
                 Button(
-                    Format("{no_moderation_icon} Публикации без модерации"),
-                    id="toggle_no_moderation",
+                    Format("{required_moderation_icon} Публикация без модерации"),
+                    id="toggle_required_moderation",
                     on_click=self.change_employee_service.handle_toggle_permission,
                 ),
                 Button(
-                    Format("{autoposting_icon} Авто-постинг"),
+                    Format("{autoposting_icon} Автоматический постинг"),
                     id="toggle_autoposting",
                     on_click=self.change_employee_service.handle_toggle_permission,
                 ),
                 Button(
-                    Format("{add_employee_icon} Добавление сотрудников"),
+                    Format("{add_employee_icon} Приглашение сотрудников"),
                     id="toggle_add_employee",
                     on_click=self.change_employee_service.handle_toggle_permission,
                 ),
                 Button(
-                    Format("{edit_permissions_icon} Изменение разрешений"),
+                    Format("{edit_permissions_icon} Управление правами доступа"),
                     id="toggle_edit_permissions",
                     on_click=self.change_employee_service.handle_toggle_permission,
                 ),
                 Button(
-                    Format("{top_up_balance_icon} Пополнение баланса"),
+                    Format("{top_up_balance_icon} Пополнение баланса организации"),
                     id="toggle_top_up_balance",
                     on_click=self.change_employee_service.handle_toggle_permission,
                 ),
                 Button(
-                    Format("{social_networks_icon} Подключение соцсетей"),
+                    Format("{social_networks_icon} Управление соцсетями"),
                     id="toggle_social_networks",
                     on_click=self.change_employee_service.handle_toggle_permission,
                 ),
@@ -230,18 +242,18 @@ class ChangeEmployeeDialog(interface.IChangeEmployeeDialog):
 
             Row(
                 Button(
-                    Const("💾 Сохранить"),
+                    Const("💾 Сохранить изменения"),
                     id="save_permissions",
                     on_click=self.change_employee_service.handle_save_permissions,
                     when="has_changes",
                 ),
                 Button(
-                    Const("↩️ Сбросить"),
+                    Const("🔄 Сбросить изменения"),
                     id="reset_permissions",
                     on_click=self.change_employee_service.handle_reset_permissions,
                     when="has_changes",
                 ),
-                Back(Const("❌ Отмена")),
+                Back(Const("❌ Отменить")),
             ),
 
             state=model.ChangeEmployeeStates.change_permissions,
@@ -249,26 +261,95 @@ class ChangeEmployeeDialog(interface.IChangeEmployeeDialog):
             parse_mode="HTML",
         )
 
+    def get_change_role_window(self) -> Window:
+        """Единое окно для выбора и подтверждения изменения роли"""
+        return Window(
+            Multi(
+                Const("🔄 <b>Изменение роли сотрудника</b>\n\n"),
+                Format("👤 Сотрудник: <b>{employee_name}</b>\n"),
+                Format("🏷 Текущая роль: <b>{current_role_display}</b>\n\n"),
+
+                # Показываем разные блоки в зависимости от того, выбрана ли роль
+                Case(
+                    {
+                        True: Multi(
+                            Const("✅ <b>Выбранная роль:</b>\n"),
+                            Format("🔄 Новая роль: <b>{selected_role_display}</b>\n\n"),
+                            Const("ℹ️ <b>Внимание:</b>\n"),
+                            Const("• Изменение роли может повлиять на разрешения сотрудника\n"),
+                            Const("• Сотрудник получит уведомление об изменении\n"),
+                            Const("• Это действие можно будет отменить позже\n\n"),
+                            Const("❓ <b>Подтвердить изменение роли?</b>"),
+                            sep="",
+                        ),
+                        False: Multi(
+                            Const("📋 <b>Выберите новую роль:</b>\n"),
+                            Const("<i>Доступные роли для назначения:</i>\n"),
+                            sep="",
+                        ),
+                    },
+                    selector="has_selected_role"
+                ),
+                sep="",
+            ),
+
+            # Список ролей (показывается только если роль не выбрана)
+            Column(
+                Select(
+                    Format("🔹 {item[display_name]}"),
+                    id="role_select",
+                    items="available_roles",
+                    item_id_getter=lambda item: item["role"],
+                    on_click=self.change_employee_service.handle_select_role,
+                ),
+                when="show_role_list",
+            ),
+
+            # Кнопки подтверждения (показываются только если роль выбрана)
+            Row(
+                Button(
+                    Const("✅ Да, изменить роль"),
+                    id="confirm_role_change",
+                    on_click=self.change_employee_service.handle_confirm_role_change,
+                    when="has_selected_role",
+                ),
+                Button(
+                    Const("↩️ Выбрать другую"),
+                    id="reset_role_selection",
+                    on_click=self.change_employee_service.handle_reset_role_selection,
+                    when="has_selected_role",
+                ),
+                when="has_selected_role",
+            ),
+
+            # Кнопка отмены (всегда видна)
+            Back(Const("❌ Отмена")),
+
+            state=model.ChangeEmployeeStates.change_role,
+            getter=self.change_employee_getter.get_role_change_data,
+            parse_mode="HTML",
+        )
+
     def get_confirm_delete_window(self) -> Window:
         return Window(
             Multi(
-                Const("⚠️ <b>Подтверждение удаления</b>\n\n"),
-                Format("Вы действительно хотите удалить сотрудника?\n\n"),
-                Format("👤 <b>{employee_name}</b>\n"),
-                Format("ID: {account_id}\n"),
-                Format("Роль: {role_display}\n\n"),
-                Const("❗ <b>Это действие необратимо!</b>\n"),
-                Const("Сотрудник потеряет доступ к организации."),
+                Const("⚠️ <b>Подтверждение исключения</b>\n\n"),
+                Format("Вы уверены, что хотите исключить сотрудника из команды?\n\n"),
+                Format("👤 <b>Имя:</b> {employee_name}\n"),
+                Format("🆔 <b>ID:</b> <code>{account_id}</code>\n"),
+                Format("🏷️ <b>Роль:</b> {role_display}\n\n"),
+                Const("🚨 <b>Внимание:</b> <i>Действие необратимо!</i>\n"),
+                Const("Сотрудник потеряет доступ к организации и всем её ресурсам."),
                 sep="",
             ),
 
             Row(
                 Button(
-                    Const("🗑 Да, удалить"),
+                    Const("🗑️ Исключить из команды"),
                     id="confirm_delete",
                     on_click=self.change_employee_service.handle_delete_employee,
                 ),
-                Back(Const("❌ Отмена")),
+                Back(Const("❌ Отменить")),
             ),
 
             state=model.ChangeEmployeeStates.confirm_delete,

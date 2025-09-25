@@ -60,7 +60,13 @@ class TelegramWebhookController(interface.ITelegramWebhookController):
                 try:
                     self.logger.error("Ошибка", {"traceback": traceback.format_exc()})
                     chat_id = self._get_chat_id(telegram_update)
-                    await self._recovery_start_functionality(chat_id)
+
+                    if telegram_update.message:
+                        tg_username = telegram_update.message.from_user.username
+                    elif telegram_update.callback_query and telegram_update.callback_query.message:
+                        tg_username = telegram_update.callback_query.message.from_user.username
+
+                    await self._recovery_start_functionality(chat_id, tg_username)
                 except Exception as err:
                     raise err
 
@@ -262,7 +268,7 @@ class TelegramWebhookController(interface.ITelegramWebhookController):
 
         return message_text
 
-    async def _recovery_start_functionality(self, tg_chat_id: int):
+    async def _recovery_start_functionality(self, tg_chat_id: int, tg_username: str):
         with self.tracer.start_as_current_span(
                 "TelegramWebhookController._recovery_start_functionality",
                 kind=SpanKind.INTERNAL
@@ -276,7 +282,7 @@ class TelegramWebhookController(interface.ITelegramWebhookController):
                 # Получаем или создаем состояние пользователя
                 user_state = await self.state_service.state_by_id(tg_chat_id)
                 if not user_state:
-                    await self.state_service.create_state(tg_chat_id)
+                    await self.state_service.create_state(tg_chat_id, tg_username)
                     user_state = await self.state_service.state_by_id(tg_chat_id)
 
                 user_state = user_state[0]

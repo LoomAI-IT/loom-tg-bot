@@ -10,7 +10,7 @@ class StateRepo(interface.IStateRepo):
         self.db = db
         self.tracer = tel.tracer()
 
-    async def create_state(self, tg_chat_id: int) -> int:
+    async def create_state(self, tg_chat_id: int, tg_username: str) -> int:
         with self.tracer.start_as_current_span(
                 "StateRepo.create_state",
                 kind=SpanKind.INTERNAL,
@@ -21,6 +21,7 @@ class StateRepo(interface.IStateRepo):
             try:
                 args = {
                     'tg_chat_id': tg_chat_id,
+                    'tg_username': tg_username,
                 }
                 state_id = await self.db.insert(create_state, args)
 

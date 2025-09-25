@@ -14,12 +14,14 @@ class ChangeEmployeeGetter(interface.IChangeEmployeeGetter):
             state_repo: interface.IStateRepo,
             kontur_employee_client: interface.IKonturEmployeeClient,
             kontur_organization_client: interface.IKonturOrganizationClient,
+            kontur_content_client: interface.IKonturContentClient,
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
         self.state_repo = state_repo
         self.kontur_employee_client = kontur_employee_client
         self.kontur_organization_client = kontur_organization_client
+        self.kontur_content_client = kontur_content_client
 
     async def get_employee_list_data(
             self,
@@ -112,10 +114,32 @@ class ChangeEmployeeGetter(interface.IChangeEmployeeGetter):
                 employee = await self.kontur_employee_client.get_employee_by_account_id(
                     selected_account_id
                 )
+                employee_state = (await self.state_repo.state_by_account_id(selected_account_id))[0]
 
-                # Получаем статистику (заглушка, замените на реальные вызовы API)
-                publications_count = 0  # TODO: await self.kontur_content_client.get_publications_count(selected_account_id)
-                generations_count = 0  # TODO: await self.kontur_content_client.get_generations_count(selected_account_id)
+                # Получаем статистику публикаций
+                publications = await self.kontur_content_client.get_publications_by_organization(
+                    employee.organization_id
+                )
+
+                generated_publication_count = 0
+                published_publication_count = 0
+
+                rejected_publication_count = 0
+                approved_publication_count = 0
+
+                for pub in publications:
+                    if pub.moderator_id == employee.account_id:
+                        if pub.moderation_status == "approved":
+                            approved_publication_count += 1
+                        elif pub.moderation_status == "rejected":
+                            rejected_publication_count += 1
+
+                    if pub.creator_id == employee.account_id:
+                        generated_publication_count += 1
+
+                        if pub.moderation_status == "approved":
+                            published_publication_count += 1
+
 
                 # Формируем список разрешений
                 permissions_list = []
@@ -159,12 +183,11 @@ class ChangeEmployeeGetter(interface.IChangeEmployeeGetter):
 
                 data = {
                     "employee_name": employee.name,
+                    "employee_tg_username": employee_state.tg_username,
                     "account_id": employee.account_id,
                     "role": employee.role,
                     "role_display": self._get_role_display_name(employee.role),
                     "created_at": created_at,
-                    "publications_count": publications_count,
-                    "generations_count": generations_count,
                     "permissions_text": permissions_text,
                     "is_current_user": is_current_user,
                     "can_edit_permissions": can_edit,
@@ -174,10 +197,16 @@ class ChangeEmployeeGetter(interface.IChangeEmployeeGetter):
                     "total_count": len(all_employee_ids),
                     "has_prev": current_index > 1,
                     "has_next": current_index < len(all_employee_ids),
+                    "generated_publication_count": generated_publication_count,
+                    "published_publication_count": published_publication_count,
+                    "rejected_publication_count": rejected_publication_count,
+                    "approved_publication_count": approved_publication_count,
+                    "has_moderated_publications": rejected_publication_count or approved_publication_count,
                 }
 
                 span.set_status(Status(StatusCode.OK))
                 return data
+
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
@@ -203,7 +232,7 @@ class ChangeEmployeeGetter(interface.IChangeEmployeeGetter):
                 # Если нет сохраненных изменений, берем текущие значения
                 if "temp_permissions" not in dialog_manager.dialog_data:
                     dialog_manager.dialog_data["temp_permissions"] = {
-                        "no_moderation": not employee.required_moderation,
+                        "required_moderation": employee.required_moderation,
                         "autoposting": employee.autoposting_permission,
                         "add_employee": employee.add_employee_permission,
                         "edit_permissions": employee.edit_employee_perm_permission,
@@ -223,7 +252,7 @@ class ChangeEmployeeGetter(interface.IChangeEmployeeGetter):
                     "employee_name": employee.name,
                     "role": employee.role,
                     "role_display": self._get_role_display_name(employee.role),
-                    "no_moderation_icon": "✅" if permissions["no_moderation"] else "❌",
+                    "required_moderation_icon": "✅" if not permissions["required_moderation"] else "❌",
                     "autoposting_icon": "✅" if permissions["autoposting"] else "❌",
                     "add_employee_icon": "✅" if permissions["add_employee"] else "❌",
                     "edit_permissions_icon": "✅" if permissions["edit_permissions"] else "❌",
@@ -234,6 +263,7 @@ class ChangeEmployeeGetter(interface.IChangeEmployeeGetter):
 
                 span.set_status(Status(StatusCode.OK))
                 return data
+
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
@@ -265,10 +295,92 @@ class ChangeEmployeeGetter(interface.IChangeEmployeeGetter):
 
                 span.set_status(Status(StatusCode.OK))
                 return data
+
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
+
+    async def get_role_change_data(
+            self,
+            dialog_manager: DialogManager,
+            **kwargs
+    ) -> dict:
+        with self.tracer.start_as_current_span(
+                "ChangeEmployeeGetter.get_role_change_data",
+                kind=SpanKind.INTERNAL
+        ) as span:
+            try:
+                selected_account_id = int(dialog_manager.dialog_data.get("selected_account_id"))
+                selected_new_role = dialog_manager.dialog_data.get("selected_new_role")
+
+                # Получаем данные сотрудника
+                employee = await self.kontur_employee_client.get_employee_by_account_id(
+                    selected_account_id
+                )
+
+                # Получаем данные текущего пользователя для определения доступных ролей
+                state = await self._get_state(dialog_manager)
+                current_employee = await self.kontur_employee_client.get_employee_by_account_id(
+                    state.account_id
+                )
+
+                # Определяем доступные роли
+                available_roles = self._get_available_roles_for_assignment(
+                    current_user_role=current_employee.role,
+                    target_employee_role=employee.role
+                )
+
+                # Определяем состояние окна
+                has_selected_role = selected_new_role is not None
+                show_role_list = not has_selected_role
+
+                data = {
+                    "employee_name": employee.name,
+                    "current_role": employee.role,
+                    "current_role_display": self._get_role_display_name(employee.role),
+                    "available_roles": available_roles,
+                    "has_selected_role": has_selected_role,
+                    "show_role_list": show_role_list,
+                }
+
+                # Если роль выбрана, добавляем информацию о ней
+                if selected_new_role:
+                    data.update({
+                        "selected_role": selected_new_role,
+                        "selected_role_display": self._get_role_display_name(selected_new_role),
+                    })
+
+                span.set_status(Status(StatusCode.OK))
+                return data
+            
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
+
+                raise
+
+    def _get_available_roles_for_assignment(self, current_user_role: str, target_employee_role: str) -> list[dict]:
+        all_roles = {
+            "employee": {"role": "employee", "display_name": "Сотрудник"},
+            "moderator": {"role": "moderator", "display_name": "Модератор"},
+            "admin": {"role": "admin", "display_name": "Администратор"},
+            "owner": {"role": "owner", "display_name": "Владелец"},
+        }
+
+        available_roles = []
+
+        if current_user_role == "owner":
+            available_roles = [all_roles[role] for role in ["employee", "moderator", "admin"]]
+        elif current_user_role == "admin":
+            available_roles = [all_roles[role] for role in ["employee", "moderator"]]
+        elif current_user_role == "moderator":
+            available_roles = [all_roles["employee"]]
+
+        # Исключаем текущую роль из доступных
+        available_roles = [role for role in available_roles if role["role"] != target_employee_role]
+
+        return available_roles
 
     def _get_role_display_name(self, role: str) -> str:
         role_names = {
