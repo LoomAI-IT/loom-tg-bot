@@ -1,5 +1,7 @@
+from aiogram import F
 from aiogram_dialog import Window, Dialog
-from aiogram_dialog.widgets.text import Const, Format, Case
+from aiogram_dialog.widgets.input import TextInput, MessageInput
+from aiogram_dialog.widgets.text import Const, Format, Case, Multi
 from aiogram_dialog.widgets.kbd import Button, Column, Row
 
 from internal import interface, model
@@ -26,14 +28,75 @@ class MainMenuDialog(interface.IMainMenuDialog):
         return Window(
             Case(
                 {
-                    True: Format("🔄 <b>Восстановление после ошибки</b>\n\n"),
-                    False: Const(""),
+                    False: Multi(
+                        Case(
+                            {
+                                True: Format("🔄 <b>Восстановление после ошибки</b>\n\n"),
+                                False: Const(""),
+                            },
+                            selector="show_error_recovery",
+                        ),
+                        Format("👋 Привет, {name}! Я буду создавать контент для твоей компании вместе с тобой."),
+                        Const("Расскажи мне о чём-нибудь текстом или голосом — и начнём ✨"),
+                        Const("Готов? Жду твоё сообщение! Или воспользуйся кнопками ниже👇"),
+                        # Text input error messages
+                        Case(
+                            {
+                                True: Const("\n❌ <b>Ошибка:</b> Текст не может быть пустым"),
+                                False: Const(""),
+                            },
+                            selector="has_void_input_text"
+                        ),
+                        Case(
+                            {
+                                True: Const("\n📏 <b>Слишком короткий текст</b>\n<i>Минимум 10 символов</i>"),
+                                False: Const(""),
+                            },
+                            selector="has_small_input_text"
+                        ),
+                        Case(
+                            {
+                                True: Const("\n📏 <b>Слишком длинный текст</b>\n<i>Максимум 2000 символов</i>"),
+                                False: Const(""),
+                            },
+                            selector="has_big_input_text"
+                        ),
+                        # Voice input error messages
+                        Case(
+                            {
+                                True: Const(
+                                    "\n🎤 <b>Неверный формат</b>\n<i>Отправьте голосовое сообщение или аудиофайл</i>"),
+                                False: Const(""),
+                            },
+                            selector="has_invalid_voice_type"
+                        ),
+                        Case(
+                            {
+                                True: Const("\n⏱️ <b>Слишком длинное сообщение</b>\n<i>Максимум 5 минут</i>"),
+                                False: Const(""),
+                            },
+                            selector="has_long_voice_duration"
+                        ),
+                        Case(
+                            {
+                                True: Const(
+                                    "\n🔍 <b>Не удалось распознать речь</b>\n<i>Попробуйте записать заново или введите текст</i>"),
+                                False: Const(""),
+                            },
+                            selector="has_empty_voice_text"
+                        ),
+                        Case(
+                            {
+                                True: Const("❌ <b>Ошибка:</b> <i>Неверная ссылка на YouTube</i>\n\n"),
+                                False: Const(""),
+                            },
+                            selector="has_invalid_youtube_url"
+                        ),
+                    ),
+                    True: Const("🔄 Распознавание речи...")
                 },
-                selector="show_error_recovery",
+                selector="voice_transcribe"
             ),
-            Format("👋 Привет, {name}! Я буду создавать контент для твоей компании вместе с тобой."),
-            Const("Расскажи мне о чём-нибудь текстом или голосом — и начнём ✨"),
-            Const("Готов? Жду твоё сообщение! Или воспользуйся кнопками ниже👇"),
             Column(
                 Row(
                     Button(
@@ -47,12 +110,24 @@ class MainMenuDialog(interface.IMainMenuDialog):
                         on_click=self.main_menu_service.handle_go_to_organization,
                     ),
                 ),
+
                 Button(
                     Const("📝 Контент"),
                     id="content_generation",
                     on_click=self.main_menu_service.handle_go_to_content,
-                )
+                ),
+                when=~F["voice_transcribe"]
             ),
+            TextInput(
+                id="text_input",
+                on_success=self.main_menu_service.handle_text_input,
+            ),
+
+            MessageInput(
+                func=self.main_menu_service.handle_voice_input,
+                content_types=["voice", "audio"],
+            ),
+
             state=model.MainMenuStates.main_menu,
             getter=self.main_menu_getter.get_main_menu_data,
             parse_mode="HTML",

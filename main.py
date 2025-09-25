@@ -221,7 +221,9 @@ auth_service = AuthService(
 )
 main_menu_service = MainMenuService(
     tel,
+    bot,
     state_repo,
+    kontur_content_client,
 )
 organization_menu_service = OrganizationMenuService(
     tel,

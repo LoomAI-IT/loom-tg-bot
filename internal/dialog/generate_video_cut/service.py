@@ -36,12 +36,7 @@ class GenerateVideoCutService(interface.IGenerateVideoCutService):
                 await message.delete()
                 youtube_url = message.text.strip()
 
-                # Очищаем предыдущие ошибки
                 dialog_manager.dialog_data.pop("has_invalid_youtube_url", None)
-                dialog_manager.dialog_data.pop("has_processing_error", None)
-
-                # Сохраняем URL для отображения
-                dialog_manager.dialog_data["youtube_url"] = youtube_url
 
                 # Валидация YouTube ссылки
                 if not self._is_valid_youtube_url(youtube_url):
@@ -51,7 +46,6 @@ class GenerateVideoCutService(interface.IGenerateVideoCutService):
                 # Получаем состояние пользователя
                 state = await self._get_state(dialog_manager)
 
-                # Устанавливаем состояние обработки и показываем индикатор загрузки
                 dialog_manager.dialog_data["is_processing_video"] = True
 
                 await self.kontur_content_client.generate_video_cut(
@@ -64,10 +58,6 @@ class GenerateVideoCutService(interface.IGenerateVideoCutService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                dialog_manager.dialog_data["is_processing_video"] = False
-                dialog_manager.dialog_data["has_processing_error"] = True
-                await dialog_manager.show()
-
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise

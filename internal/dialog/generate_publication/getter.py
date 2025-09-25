@@ -161,6 +161,7 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
             "category_name": dialog_manager.dialog_data.get("category_name", ""),
             "input_text": dialog_manager.dialog_data.get("input_text", ""),
             "has_input_text": dialog_manager.dialog_data.get("has_input_text", False),
+            "voice_transcribe": dialog_manager.dialog_data.get("voice_transcribe", False),
             # Text input error flags
             "has_void_input_text": dialog_manager.dialog_data.get("has_void_input_text", False),
             "has_small_input_text": dialog_manager.dialog_data.get("has_small_input_text", False),
