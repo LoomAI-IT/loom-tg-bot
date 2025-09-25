@@ -357,6 +357,9 @@ dialog_bg_factory = NewTg(
     moderation_publication_dialog,
     video_cut_moderation_dialog,
     video_cuts_draft_dialog,
+    publication_draft_dialog,
+    prefix
+
 )
 
 # Инициализация middleware
