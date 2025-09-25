@@ -32,7 +32,7 @@ class ContentMenuDialog(interface.IContentMenuDialog):
             Format("📊 <b>Ваша статистика:</b>"),
             Format("📝 Черновиков: <b>{drafts_count}</b>"),
             Format("⏳ На модерации: <b>{moderation_count}</b>"),
-            Format("✅ Опубликовано: <b>{published_count}</b>"),
+            Format("✅ Опубликовано: <b>{approved_count}</b>"),
 
             Column(
                 Button(

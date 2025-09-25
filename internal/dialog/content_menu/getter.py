@@ -45,7 +45,6 @@ class ContentMenuGetter(interface.IContentMenuGetter):
                 drafts_count = 0
                 moderation_count = 0
                 approved_count = 0
-                published_count = 0
                 total_generations = 0
 
                 video_cut_count = 0
@@ -63,8 +62,7 @@ class ContentMenuGetter(interface.IContentMenuGetter):
                             moderation_count += 1
                         elif pub.moderation_status == "approved":
                             approved_count += 1
-                        elif pub.moderation_status == "published":
-                            published_count += 1
+
 
                 # Статистика видео-нарезок
                 for video in video_cuts:
@@ -78,14 +76,11 @@ class ContentMenuGetter(interface.IContentMenuGetter):
                             moderation_count += 1
                         elif video.moderation_status == "approved":
                             approved_count += 1
-                        elif video.moderation_status == "published":
-                            published_count += 1
 
                 data = {
                     "drafts_count": drafts_count,
                     "moderation_count": moderation_count,
                     "approved_count": approved_count,
-                    "published_count": published_count,
                     "total_generations": total_generations,
                     "video_cut_count": video_cut_count,
                     "publication_count": publication_count,
