@@ -178,6 +178,9 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 self.logger.info("Категория выбрана")
 
                 if dialog_manager.start_data.get("has_input_text"):
+                    dialog_manager.dialog_data["has_input_text"] = True
+                    dialog_manager.dialog_data["input_text"] = dialog_manager.start_data["input_text"]
+
                     await dialog_manager.switch_to(model.GeneratePublicationStates.generation)
                 else:
                     await dialog_manager.switch_to(model.GeneratePublicationStates.input_text)
