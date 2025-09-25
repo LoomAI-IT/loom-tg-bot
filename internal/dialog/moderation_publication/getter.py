@@ -343,6 +343,7 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
     async def get_upload_image_data(
             self,
             dialog_manager: DialogManager,
+            **kwargs
     ) -> dict:
         working_pub = dialog_manager.dialog_data.get("working_publication", {})
         return {
