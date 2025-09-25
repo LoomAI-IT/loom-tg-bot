@@ -43,6 +43,7 @@ class MainMenuGetter(interface.IMainMenuGetter):
                     "has_invalid_voice_type": dialog_manager.dialog_data.get("has_invalid_voice_type", False),
                     "has_long_voice_duration": dialog_manager.dialog_data.get("has_long_voice_duration", False),
                     "has_empty_voice_text": dialog_manager.dialog_data.get("has_empty_voice_text", False),
+                    "has_invalid_youtube_url": dialog_manager.dialog_data.get("has_invalid_youtube_url", False),
                 }
 
                 await self.state_repo.change_user_state(

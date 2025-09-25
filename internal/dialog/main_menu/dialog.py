@@ -85,6 +85,13 @@ class MainMenuDialog(interface.IMainMenuDialog):
                             },
                             selector="has_empty_voice_text"
                         ),
+                        Case(
+                            {
+                                True: Const("❌ <b>Ошибка:</b> <i>Неверная ссылка на YouTube</i>\n\n"),
+                                False: Const(""),
+                            },
+                            selector="has_invalid_youtube_url"
+                        ),
                     ),
                     True: Const("🔄 Распознавание речи...")
                 },
