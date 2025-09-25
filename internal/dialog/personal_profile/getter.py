@@ -38,6 +38,10 @@ class PersonalProfileGetter(interface.IPersonalProfileGetter):
                     state.account_id
                 )
 
+                organization = await self.kontur_organization_client.get_organization_by_id(
+                    state.organization_id
+                )
+
                 publications = await self.kontur_content_client.get_publications_by_organization(
                     state.organization_id
                 )
@@ -97,6 +101,7 @@ class PersonalProfileGetter(interface.IPersonalProfileGetter):
                     "employee_tg_username": state.tg_username,
                     "account_id": employee.account_id,
                     "role": employee.role,
+                    "organization_name": organization.name,
                     "role_display": self._get_role_display_name(employee.role),
                     "created_at": created_at,
                     "permissions_text": permissions_text,
