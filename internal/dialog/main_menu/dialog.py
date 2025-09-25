@@ -1,3 +1,4 @@
+from aiogram import F
 from aiogram_dialog import Window, Dialog
 from aiogram_dialog.widgets.input import TextInput, MessageInput
 from aiogram_dialog.widgets.text import Const, Format, Case, Multi
@@ -107,7 +108,8 @@ class MainMenuDialog(interface.IMainMenuDialog):
                     Const("📝 Контент"),
                     id="content_generation",
                     on_click=self.main_menu_service.handle_go_to_content,
-                )
+                ),
+                when=~F["voice_transcribe"]
             ),
             TextInput(
                 id="text_input",
