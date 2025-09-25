@@ -1,6 +1,6 @@
 from typing import Any
 from aiogram.types import CallbackQuery
-from aiogram_dialog import DialogManager, StartMode
+from aiogram_dialog import DialogManager, StartMode, ShowMode
 from opentelemetry.trace import SpanKind, Status, StatusCode
 
 from internal import interface, model
@@ -25,6 +25,8 @@ class PersonalProfileService(interface.IPersonalProfileService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 await dialog_manager.switch_to(model.PersonalProfileStates.faq)
 
                 self.logger.info("Переход в FAQ")
@@ -46,6 +48,8 @@ class PersonalProfileService(interface.IPersonalProfileService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 await dialog_manager.switch_to(model.PersonalProfileStates.support)
 
                 self.logger.info("Переход в техподдержку")
@@ -67,6 +71,8 @@ class PersonalProfileService(interface.IPersonalProfileService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 await dialog_manager.switch_to(model.PersonalProfileStates.personal_profile)
 
                 self.logger.info("Возврат к личному профилю")
@@ -88,6 +94,8 @@ class PersonalProfileService(interface.IPersonalProfileService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 await dialog_manager.start(
                     model.MainMenuStates.main_menu,
                     mode=StartMode.RESET_STACK
