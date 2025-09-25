@@ -175,6 +175,7 @@ change_employee_getter = ChangeEmployeeGetter(
     state_repo,
     kontur_employee_client,
     kontur_organization_client,
+    kontur_content_client
 )
 
 personal_profile_getter = PersonalProfileGetter(
