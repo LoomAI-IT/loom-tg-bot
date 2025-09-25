@@ -114,6 +114,7 @@ class ChangeEmployeeGetter(interface.IChangeEmployeeGetter):
                 employee = await self.kontur_employee_client.get_employee_by_account_id(
                     selected_account_id
                 )
+                employee_state = (await self.state_repo.state_by_account_id(selected_account_id))[0]
 
                 # Получаем статистику публикаций
                 publications = await self.kontur_content_client.get_publications_by_organization(
@@ -182,6 +183,7 @@ class ChangeEmployeeGetter(interface.IChangeEmployeeGetter):
 
                 data = {
                     "employee_name": employee.name,
+                    "employee_tg_username": employee_state.tg_username,
                     "account_id": employee.account_id,
                     "role": employee.role,
                     "role_display": self._get_role_display_name(employee.role),

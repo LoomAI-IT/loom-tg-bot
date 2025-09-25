@@ -108,6 +108,7 @@ class ChangeEmployeeDialog(interface.IChangeEmployeeDialog):
                 Const("👤 <b>Профиль сотрудника</b>\n\n"),
                 Const("📋 <b>Основная информация:</b>\n"),
                 Format("• <b>Имя:</b> {employee_name}\n"),
+                Format("• <b>Телеграм аккаунт:</b> @{employee_tg_username}\n"),
                 Format("• <b>ID аккаунта:</b> <code>{account_id}</code>\n"),
                 Format("• <b>Роль:</b> {role_display}\n"),
                 Format("• <b>В команде с:</b> {created_at}\n\n"),

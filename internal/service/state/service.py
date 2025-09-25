@@ -9,7 +9,7 @@ class StateService(interface.IStateService):
         self.logger = tel.logger()
         self.state_repo = state_repo
 
-    async def create_state(self, tg_chat_id: int) -> int:
+    async def create_state(self, tg_chat_id: int, tg_username: str) -> int:
         with self.tracer.start_as_current_span(
                 "StateService.create_state",
                 kind=SpanKind.INTERNAL,
@@ -18,7 +18,7 @@ class StateService(interface.IStateService):
                 }
         ) as span:
             try:
-                state_id = await self.state_repo.create_state(tg_chat_id)
+                state_id = await self.state_repo.create_state(tg_chat_id, tg_username)
 
                 span.set_status(StatusCode.OK)
                 return state_id

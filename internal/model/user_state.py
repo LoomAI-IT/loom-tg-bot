@@ -11,6 +11,7 @@ class UserState:
 
     access_token: str
     refresh_token: str
+    tg_username: str
     can_show_alerts: bool
     show_error_recovery: bool
 
@@ -26,6 +27,7 @@ class UserState:
                 organization_id=row.organization_id,
                 access_token=row.access_token,
                 refresh_token=row.refresh_token,
+                tg_username=row.tg_username,
                 can_show_alerts=row.can_show_alerts,
                 show_error_recovery=row.show_error_recovery,
                 created_at=row.created_at,

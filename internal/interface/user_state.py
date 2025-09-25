@@ -7,7 +7,7 @@ from internal import model
 class IStateService(Protocol):
 
     @abstractmethod
-    async def create_state(self, tg_chat_id: int) -> int: pass
+    async def create_state(self, tg_chat_id: int, tg_username: str) -> int: pass
 
     @abstractmethod
     async def state_by_id(self, tg_chat_id: int) -> list[model.UserState]: pass
@@ -55,7 +55,7 @@ class IStateService(Protocol):
 class IStateRepo(Protocol):
 
     @abstractmethod
-    async def create_state(self, tg_chat_id: int) -> int: pass
+    async def create_state(self, tg_chat_id: int, tg_username: str) -> int: pass
 
     @abstractmethod
     async def state_by_id(self, tg_chat_id: int) -> list[model.UserState]: pass
