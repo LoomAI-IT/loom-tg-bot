@@ -34,7 +34,7 @@ class VideoCutModerationDialog(interface.IVideoCutModerationDialog):
     def get_moderation_list_window(self) -> Window:
         return Window(
             Multi(
-                Const("📹 <b>Видео на модерации</b>\n\n"),
+                Const("🎬 <b>Модерация видео</b>\n\n"),
                 Case(
                     {
                         True: Multi(
@@ -43,17 +43,17 @@ class VideoCutModerationDialog(interface.IVideoCutModerationDialog):
                             Case(
                                 {
                                     True: Format("🏷️ <b>Теги:</b> <code>{video_tags}</code>\n"),
-                                    False: Const("🏷️ <b>Теги:</b> <i>❌ отсутствуют</i>\n"),
+                                    False: Const("🏷️ <b>Теги:</b> <i>не указаны</i>\n"),
                                 },
                                 selector="has_tags"
                             ),
-                            Format("<b>Автор:</b> <code>{creator_name}</code>\n\n"),
+                            Format("👤 <b>Автор:</b> <code>{creator_name}</code>\n"),
                             Format("📅 <b>Создано:</b> <code>{created_at}</code>\n"),
                             Format("🔗 <b>Источник:</b> <a href='{youtube_reference}'>YouTube</a>\n\n"),
                         ),
                         False: Multi(
-                            Const("✅ <b>Нет видео-нарезок на модерации</b>\n\n"),
-                            Const("<i>Все видео обработаны или еще не поступали</i>"),
+                            Const("📂 <b>Очередь модерации пуста</b>\n\n"),
+                            Const("💡 <i>Все видео обработаны или ещё не поступали на проверку</i>"),
                         ),
                     },
                     selector="has_video_cuts"
@@ -68,19 +68,19 @@ class VideoCutModerationDialog(interface.IVideoCutModerationDialog):
 
             Row(
                 Button(
-                    Const("⬅️"),
+                    Const("⬅️ Пред"),
                     id="prev_video_cut",
                     on_click=self.video_cut_moderation_service.handle_navigate_video_cut,
                     when="has_prev",
                 ),
                 Button(
-                    Format("{current_index}/{total_count}"),
+                    Format("📊 {current_index}/{total_count}"),
                     id="counter",
-                    on_click=lambda c, b, d: c.answer(),
+                    on_click=lambda c, b, d: c.answer("📈 Навигация по видео на модерации"),
                     when="has_video_cuts",
                 ),
                 Button(
-                    Const("➡️"),
+                    Const("➡️ След"),
                     id="next_video_cut",
                     on_click=self.video_cut_moderation_service.handle_navigate_video_cut,
                     when="has_next",
@@ -103,27 +103,25 @@ class VideoCutModerationDialog(interface.IVideoCutModerationDialog):
                                                              ShowMode.EDIT),
                         when="has_video_cuts",
                     ),
-                    Button(
-                        Const("✅ Опубликовать"),
-                        id="approve",
-                        on_click=self.video_cut_moderation_service.handle_publish_now,
-                        when="has_video_cuts",
-                    ),
                 ),
-                Row(
-                    Button(
-                        Const("💬 Отклонить"),
-                        id="reject_with_comment",
-                        on_click=lambda c, b, d: d.switch_to(model.VideoCutModerationStates.reject_comment),
-                        when="has_video_cuts",
-                    ),
+                Button(
+                    Const("✅ Одобрить и опубликовать"),
+                    id="approve",
+                    on_click=self.video_cut_moderation_service.handle_publish_now,
+                    when="has_video_cuts",
+                ),
+                Button(
+                    Const("❌ Отклонить с комментарием"),
+                    id="reject_with_comment",
+                    on_click=lambda c, b, d: d.switch_to(model.VideoCutModerationStates.reject_comment),
+                    when="has_video_cuts",
                 ),
                 when="has_video_cuts",
             ),
 
             Row(
                 Button(
-                    Const("◀️ В меню контента"),
+                    Const("◀️ Меню контента"),
                     id="back_to_content_menu",
                     on_click=self.video_cut_moderation_service.handle_back_to_content_menu,
                 ),
@@ -137,43 +135,43 @@ class VideoCutModerationDialog(interface.IVideoCutModerationDialog):
     def get_reject_comment_window(self) -> Window:
         return Window(
             Multi(
-                Const("❌ <b>Отклонение видео-нарезки</b>\n\n"),
-                Format("🎬 Видео: <b>{video_name}</b>\n"),
-                Format("👤 Автор: <b>{creator_name}</b>\n\n"),
+                Const("❌ <b>Отклонение видео</b>\n\n"),
+                Format("🎬 <b>Видео:</b> {video_name}\n"),
+                Format("👤 <b>Автор:</b> {creator_name}\n\n"),
                 Const("💬 <b>Укажите причину отклонения:</b>\n"),
-                Const("<i>Автор получит уведомление с вашим комментарием</i>\n\n"),
+                Const("📨 <i>Автор получит уведомление с вашим комментарием</i>\n\n"),
                 Case(
                     {
                         True: Multi(
                             Const("📝 <b>Ваш комментарий:</b>\n"),
-                            Format("<i>{reject_comment}</i>"),
+                            Format("<code>{reject_comment}</code>"),
                         ),
-                        False: Const("💭 Ожидание ввода комментария..."),
+                        False: Const("⌨️ <i>Введите комментарий...</i>"),
                     },
                     selector="has_comment"
                 ),
-                Case(
-                    {
-                        True: Const("\n❌ <b>Ошибка:</b> Комментарий не может быть пустым"),
-                        False: Const("")
-                    },
-                    selector="has_void_reject_comment"
-                ),
-                Case(
-                    {
-                        True: Const("\n📏 <b>Слишком короткий комментарий</b>\n<i>Минимум 5 символов</i>"),
-                        False: Const("")
-                    },
-                    selector="has_small_reject_comment"
-                ),
-                Case(
-                    {
-                        True: Const("\n📏 <b>Слишком длинный комментарий</b>\n<i>Максимум 500 символов</i>"),
-                        False: Const("")
-                    },
-                    selector="has_big_reject_comment"
-                ),
                 sep="",
+            ),
+            Case(
+                {
+                    True: Const("\n\n⚠️ <b>Комментарий не может быть пустым</b>"),
+                    False: Const("")
+                },
+                selector="has_void_reject_comment"
+            ),
+            Case(
+                {
+                    True: Const("\n\n📏 <b>Слишком короткий комментарий</b>\n<i>Минимум 10 символов для информативности</i>"),
+                    False: Const("")
+                },
+                selector="has_small_reject_comment"
+            ),
+            Case(
+                {
+                    True: Const("\n\n📏 <b>Слишком длинный комментарий</b>\n<i>Максимум 500 символов</i>"),
+                    False: Const("")
+                },
+                selector="has_big_reject_comment"
             ),
 
             TextInput(
@@ -183,13 +181,13 @@ class VideoCutModerationDialog(interface.IVideoCutModerationDialog):
 
             Row(
                 Button(
-                    Const("📤 Отклонить"),
+                    Const("📤 Отправить отклонение"),
                     id="send_rejection",
                     on_click=self.video_cut_moderation_service.handle_send_rejection,
                     when="has_comment",
                 ),
                 Button(
-                    Const("Назад"),
+                    Const("◀️ Назад"),
                     id="back_to_moderation_list",
                     on_click=lambda c, b, d: d.switch_to(model.VideoCutModerationStates.moderation_list),
                 ),
@@ -203,29 +201,29 @@ class VideoCutModerationDialog(interface.IVideoCutModerationDialog):
     def get_edit_preview_window(self) -> Window:
         return Window(
             Multi(
-                Const("✏️ <b>Редактирование видео-нарезки</b>\n\n"),
+                Const("✏️ <b>Редактирование видео на модерации</b>\n\n"),
                 Multi(
                     Format("📽️ <b>{video_name}</b>\n"),
                     Format("📝 {video_description}\n\n"),
                     Case(
                         {
                             True: Format("🏷️ <b>Теги:</b> <code>{video_tags}</code>\n"),
-                            False: Const("🏷️ <b>Теги:</b> <i>❌ отсутствуют</i>\n"),
+                            False: Const("🏷️ <b>Теги:</b> <i>не указаны</i>\n"),
                         },
                         selector="has_tags"
                     ),
-                    Format("<b>Автор:</b> <code>{creator_name}</code>\n\n"),
+                    Format("👤 <b>Автор:</b> <code>{creator_name}</code>\n"),
                     Format("📅 <b>Создано:</b> <code>{created_at}</code>\n"),
-                    Format("🔗 <b>Источник:</b> <a href='{youtube_reference}'>YouTube</a>\n\n"),
+                    Format("🔗 <b>Источник:</b> <a href='{youtube_reference}'>YouTube</a>\n"),
                 ),
                 Case(
                     {
-                        True: Const("\n\n<i>❗️ Есть несохраненные изменения</i>"),
+                        True: Const("\n⚠️ <b><i>Есть несохранённые изменения!</i></b>\n"),
                         False: Const(""),
                     },
                     selector="has_changes"
                 ),
-                Const("📌 <b>Выберите, что изменить:</b>"),
+                Const("\n📌 <b>Что требуется изменить?</b>"),
                 sep="",
             ),
 
@@ -246,7 +244,7 @@ class VideoCutModerationDialog(interface.IVideoCutModerationDialog):
                     on_click=lambda c, b, d: d.switch_to(model.VideoCutModerationStates.edit_description),
                 ),
                 Button(
-                    Const("🏷 Изменить теги"),
+                    Const("🏷️ Изменить теги"),
                     id="edit_tags",
                     on_click=lambda c, b, d: d.switch_to(model.VideoCutModerationStates.edit_tags),
                 ),
@@ -260,7 +258,7 @@ class VideoCutModerationDialog(interface.IVideoCutModerationDialog):
                     when="has_changes",
                 ),
                 Button(
-                    Const("Назад"),
+                    Const("◀️ Назад"),
                     id="back_to_moderation_list",
                     on_click=self.video_cut_moderation_service.handle_back_to_moderation_list,
                 ),
@@ -274,30 +272,31 @@ class VideoCutModerationDialog(interface.IVideoCutModerationDialog):
     def get_edit_title_window(self) -> Window:
         return Window(
             Multi(
-                Const("📝 <b>Изменение названия видео</b>\n\n"),
-                Format("Текущее: <b>{current_title}</b>\n\n"),
-                Const("✍️ <b>Введите новое название:</b>\n"),
-                Const("<i>Максимум 100 символов для YouTube Shorts</i>\n"),
-                Const("<i>Максимум 2200 символов для Instagram Reels</i>"),
+                Const("📝 <b>Изменение названия</b>\n\n"),
+                Format("📋 <b>Текущее название:</b>\n<i>{current_title}</i>\n\n"),
+                Const("✍️ <b>Введите новое название:</b>\n\n"),
+                Const("📏 <b>Ограничения по символам:</b>\n"),
+                Const("🎬 YouTube Shorts: <code>максимум 100 символов</code>\n"),
+                Const("📱 Instagram Reels: <code>максимум 2200 символов</code>"),
                 sep="",
             ),
             Case(
                 {
-                    True: Const("\n❌ <b>Ошибка:</b> Название не может быть пустым"),
+                    True: Const("\n\n⚠️ <b>Название не может быть пустым</b>"),
                     False: Const("")
                 },
                 selector="has_void_title"
             ),
             Case(
                 {
-                    True: Const("\n📏 <b>Слишком короткое название</b>\n<i>Минимум 5 символов</i>"),
+                    True: Const("\n\n📏 <b>Слишком короткое название</b>\n<i>Минимум 5 символов</i>"),
                     False: Const("")
                 },
                 selector="has_small_title"
             ),
             Case(
                 {
-                    True: Const("\n📏 <b>Слишком длинное название</b>\n<i>Максимум 500 символов</i>"),
+                    True: Const("\n\n📏 <b>Слишком длинное название</b>\n<i>Максимум 100 символов для YouTube Shorts</i>"),
                     False: Const("")
                 },
                 selector="has_big_title"
@@ -309,7 +308,7 @@ class VideoCutModerationDialog(interface.IVideoCutModerationDialog):
             ),
 
             Button(
-                Const("Назад"),
+                Const("◀️ Назад"),
                 id="back_to_edit_preview",
                 on_click=lambda c, b, d: d.switch_to(model.VideoCutModerationStates.edit_preview),
             ),
@@ -323,31 +322,32 @@ class VideoCutModerationDialog(interface.IVideoCutModerationDialog):
         """Окно редактирования описания видео"""
         return Window(
             Multi(
-                Const("📄 <b>Изменение описания видео</b>\n\n"),
-                Format("Длина текущего описания: <b>{current_description_length}</b> символов\n\n"),
-                Const("✍️ <b>Введите новое описание:</b>\n"),
-                Const("<i>Максимум 5000 символов для YouTube</i>\n"),
-                Const("<i>Максимум 2200 символов для Instagram</i>\n"),
-                Const("<i>Для просмотра текущего описания вернитесь назад</i>"),
+                Const("📄 <b>Изменение описания</b>\n\n"),
+                Format("📊 <b>Длина текущего описания:</b> <code>{current_description_length} символов</code>\n\n"),
+                Const("✍️ <b>Введите новое описание:</b>\n\n"),
+                Const("📏 <b>Ограничения по символам:</b>\n"),
+                Const("🎬 YouTube: <code>максимум 5000 символов</code>\n"),
+                Const("📱 Instagram: <code>максимум 2200 символов</code>\n\n"),
+                Const("💡 <i>Чтобы просмотреть текущее описание, вернитесь назад</i>"),
                 sep="",
             ),
             Case(
                 {
-                    True: Const("\n❌ <b>Ошибка:</b> Описание не может быть пустым"),
+                    True: Const("\n\n⚠️ <b>Описание не может быть пустым</b>"),
                     False: Const("")
                 },
                 selector="has_void_description"
             ),
             Case(
                 {
-                    True: Const("\n📏 <b>Слишком короткое описание</b>\n<i>Минимум 5 символов</i>"),
+                    True: Const("\n\n📏 <b>Слишком короткое описание</b>\n<i>Минимум 10 символов</i>"),
                     False: Const("")
                 },
                 selector="has_small_description"
             ),
             Case(
                 {
-                    True: Const("\n📏 <b>Слишком длинное описание</b>\n<i>Максимум 500 символов</i>"),
+                    True: Const("\n\n📏 <b>Слишком длинное описание</b>\n<i>Максимум 2200 символов для Instagram</i>"),
                     False: Const("")
                 },
                 selector="has_big_description"
@@ -359,7 +359,7 @@ class VideoCutModerationDialog(interface.IVideoCutModerationDialog):
             ),
 
             Button(
-                Const("Назад"),
+                Const("◀️ Назад"),
                 id="back_to_edit_preview",
                 on_click=lambda c, b, d: d.switch_to(model.VideoCutModerationStates.edit_preview),
             ),
@@ -372,24 +372,25 @@ class VideoCutModerationDialog(interface.IVideoCutModerationDialog):
     def get_edit_tags_window(self) -> Window:
         return Window(
             Multi(
-                Const("🏷 <b>Изменение тегов видео</b>\n\n"),
+                Const("🏷️ <b>Изменение тегов</b>\n\n"),
                 Case(
                     {
-                        True: Format("Текущие теги: <b>{current_tags}</b>\n\n"),
-                        False: Const("Теги отсутствуют\n\n"),
+                        True: Format("📋 <b>Текущие теги:</b>\n<code>{current_tags}</code>\n\n"),
+                        False: Const("📋 <b>Текущие теги:</b> <i>не указаны</i>\n\n"),
                     },
                     selector="has_tags"
                 ),
-                Const("✍️ <b>Введите теги через запятую:</b>\n"),
-                Const("<i>Например: технологии, обучение, shorts</i>\n"),
-                Const("<i>Максимум 15 тегов для YouTube</i>\n"),
-                Const("<i>Максимум 30 хештегов для Instagram</i>\n"),
-                Const("<i>Оставьте пустым для удаления всех тегов</i>"),
+                Const("✍️ <b>Введите теги через запятую:</b>\n\n"),
+                Const("💡 <b>Пример:</b> <code>технологии, обучение, shorts</code>\n\n"),
+                Const("📏 <b>Ограничения:</b>\n"),
+                Const("🎬 YouTube: <code>максимум 15 тегов</code>\n"),
+                Const("📱 Instagram: <code>максимум 30 хештегов</code>\n\n"),
+                Const("🗑️ <i>Оставьте поле пустым для удаления всех тегов</i>"),
                 sep="",
             ),
             Case(
                 {
-                    True: Const("\n❌ <b>Ошибка:</b> Тэги не может быть пустым"),
+                    True: Const("\n\n⚠️ <b>Теги не могут быть пустыми</b>\n<i>Или оставьте поле пустым для удаления</i>"),
                     False: Const("")
                 },
                 selector="has_void_tags"
@@ -401,7 +402,7 @@ class VideoCutModerationDialog(interface.IVideoCutModerationDialog):
             ),
 
             Button(
-                Const("Назад"),
+                Const("◀️ Назад"),
                 id="back_to_edit_preview",
                 on_click=lambda c, b, d: d.switch_to(model.VideoCutModerationStates.edit_preview),
             ),
@@ -414,18 +415,17 @@ class VideoCutModerationDialog(interface.IVideoCutModerationDialog):
     def get_social_network_select_window(self) -> Window:
         return Window(
             Multi(
-                Const("🌐 <b>Выбор социальных сетей</b>\n\n"),
+                Const("🌐 <b>Выбор социальных сетей для публикации</b>\n\n"),
                 Case(
                     {
                         True: Multi(
-                            Const("⚠️ <b>Нет подключенных соцсетей!</b>\n\n"),
-                            Const(
-                                "🔗 <i>Для публикации видео-нарезок необходимо подключить хотя бы одну социальную сеть в настройках организации.</i>\n\n"),
-                            Const("👨‍💼 Обратитесь к администратору для подключения социальных сетей."),
+                            Const("⚠️ <b>Нет подключённых соцсетей!</b>\n\n"),
+                            Const("🔗 <i>Для публикации видео необходимо подключить хотя бы одну социальную сеть.</i>\n\n"),
+                            Const("👨‍💼 <b>Обратитесь к администратору</b> для настройки интеграции с соцсетями."),
                         ),
                         False: Multi(
                             Const("📱 <b>Выберите платформы для публикации:</b>\n\n"),
-                            Const("💡 <i>Можно выбрать несколько вариантов одновременно</i>"),
+                            Const("💡 <i>Можно выбрать несколько платформ одновременно</i>"),
                         ),
                     },
                     selector="no_connected_networks"
@@ -454,7 +454,7 @@ class VideoCutModerationDialog(interface.IVideoCutModerationDialog):
             ),
 
             Button(
-                Const("◀️ Назад к списку"),
+                Const("◀️ Назад к модерации"),
                 id="back_to_video_cut_list_no_networks",
                 on_click=lambda c, b, d: d.switch_to(model.VideoCutModerationStates.moderation_list),
             ),
