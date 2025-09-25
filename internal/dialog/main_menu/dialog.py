@@ -1,6 +1,6 @@
 from aiogram_dialog import Window, Dialog
 from aiogram_dialog.widgets.input import TextInput, MessageInput
-from aiogram_dialog.widgets.text import Const, Format, Case
+from aiogram_dialog.widgets.text import Const, Format, Case, Multi
 from aiogram_dialog.widgets.kbd import Button, Column, Row
 
 from internal import interface, model
@@ -27,58 +27,67 @@ class MainMenuDialog(interface.IMainMenuDialog):
         return Window(
             Case(
                 {
-                    True: Format("🔄 <b>Восстановление после ошибки</b>\n\n"),
-                    False: Const(""),
+                    False: Multi(
+                        Case(
+                            {
+                                True: Format("🔄 <b>Восстановление после ошибки</b>\n\n"),
+                                False: Const(""),
+                            },
+                            selector="show_error_recovery",
+                        ),
+                        Format("👋 Привет, {name}! Я буду создавать контент для твоей компании вместе с тобой."),
+                        Const("Расскажи мне о чём-нибудь текстом или голосом — и начнём ✨"),
+                        Const("Готов? Жду твоё сообщение! Или воспользуйся кнопками ниже👇"),
+                        # Text input error messages
+                        Case(
+                            {
+                                True: Const("\n❌ <b>Ошибка:</b> Текст не может быть пустым"),
+                                False: Const(""),
+                            },
+                            selector="has_void_input_text"
+                        ),
+                        Case(
+                            {
+                                True: Const("\n📏 <b>Слишком короткий текст</b>\n<i>Минимум 10 символов</i>"),
+                                False: Const(""),
+                            },
+                            selector="has_small_input_text"
+                        ),
+                        Case(
+                            {
+                                True: Const("\n📏 <b>Слишком длинный текст</b>\n<i>Максимум 2000 символов</i>"),
+                                False: Const(""),
+                            },
+                            selector="has_big_input_text"
+                        ),
+                        # Voice input error messages
+                        Case(
+                            {
+                                True: Const(
+                                    "\n🎤 <b>Неверный формат</b>\n<i>Отправьте голосовое сообщение или аудиофайл</i>"),
+                                False: Const(""),
+                            },
+                            selector="has_invalid_voice_type"
+                        ),
+                        Case(
+                            {
+                                True: Const("\n⏱️ <b>Слишком длинное сообщение</b>\n<i>Максимум 5 минут</i>"),
+                                False: Const(""),
+                            },
+                            selector="has_long_voice_duration"
+                        ),
+                        Case(
+                            {
+                                True: Const(
+                                    "\n🔍 <b>Не удалось распознать речь</b>\n<i>Попробуйте записать заново или введите текст</i>"),
+                                False: Const(""),
+                            },
+                            selector="has_empty_voice_text"
+                        ),
+                    ),
+                    True: Const("Обрабатываю ваш голос")
                 },
-                selector="show_error_recovery",
-            ),
-            Format("👋 Привет, {name}! Я буду создавать контент для твоей компании вместе с тобой."),
-            Const("Расскажи мне о чём-нибудь текстом или голосом — и начнём ✨"),
-            Const("Готов? Жду твоё сообщение! Или воспользуйся кнопками ниже👇"),
-            # Text input error messages
-            Case(
-                {
-                    True: Const("\n❌ <b>Ошибка:</b> Текст не может быть пустым"),
-                    False: Const(""),
-                },
-                selector="has_void_input_text"
-            ),
-            Case(
-                {
-                    True: Const("\n📏 <b>Слишком короткий текст</b>\n<i>Минимум 10 символов</i>"),
-                    False: Const(""),
-                },
-                selector="has_small_input_text"
-            ),
-            Case(
-                {
-                    True: Const("\n📏 <b>Слишком длинный текст</b>\n<i>Максимум 2000 символов</i>"),
-                    False: Const(""),
-                },
-                selector="has_big_input_text"
-            ),
-            # Voice input error messages
-            Case(
-                {
-                    True: Const("\n🎤 <b>Неверный формат</b>\n<i>Отправьте голосовое сообщение или аудиофайл</i>"),
-                    False: Const(""),
-                },
-                selector="has_invalid_voice_type"
-            ),
-            Case(
-                {
-                    True: Const("\n⏱️ <b>Слишком длинное сообщение</b>\n<i>Максимум 5 минут</i>"),
-                    False: Const(""),
-                },
-                selector="has_long_voice_duration"
-            ),
-            Case(
-                {
-                    True: Const(
-                        "\n🔍 <b>Не удалось распознать речь</b>\n<i>Попробуйте записать заново или введите текст</i>"),
-                    False: Const(""),
-                },
-                selector="has_empty_voice_text"
+                selector="voice_transcribe"
             ),
             Column(
                 Row(
