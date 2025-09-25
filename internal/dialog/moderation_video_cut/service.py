@@ -223,7 +223,7 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
                     return
                 dialog_manager.dialog_data.pop("has_void_description", None)
 
-                if len(new_description) > 2200:  # Instagram лимит
+                if len(new_description) > 1000:  # Instagram лимит
                     dialog_manager.dialog_data["has_big_description"] = True
                     return
                 dialog_manager.dialog_data.pop("has_big_description", None)
@@ -253,6 +253,8 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
         ) as span:
             try:
                 dialog_manager.show_mode = ShowMode.EDIT
+
+                await message.delete()
 
                 tags_raw = text.strip()
                 if not tags_raw:

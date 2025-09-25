@@ -101,7 +101,7 @@ class VideoCutModerationDialog(interface.IVideoCutModerationDialog):
                         id="select_social_network",
                         on_click=lambda c, b, d: d.switch_to(model.VideoCutsDraftStates.social_network_select,
                                                              ShowMode.EDIT),
-                        when="can_publish",
+                        when="has_video_cuts",
                     ),
                     Button(
                         Const("✅ Опубликовать"),
