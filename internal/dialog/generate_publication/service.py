@@ -41,29 +41,29 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             try:
                 dialog_manager.show_mode = ShowMode.EDIT
 
+                await message.delete()
+
                 dialog_manager.dialog_data.pop("has_invalid_voice_type", None)
                 dialog_manager.dialog_data.pop("has_long_voice_duration", None)
                 dialog_manager.dialog_data.pop("has_empty_voice_text", None)
                 dialog_manager.dialog_data.pop("has_small_input_text", None)
                 dialog_manager.dialog_data.pop("has_big_input_text", None)
-
-                await message.delete()
+                dialog_manager.dialog_data.pop("has_void_input_text", None)
+                dialog_manager.dialog_data.pop("has_small_input_text", None)
+                dialog_manager.dialog_data.pop("has_big_input_text", None)
 
                 text = text.strip()
                 if not text:
                     dialog_manager.dialog_data["has_void_input_text"] = True
                     return
-                dialog_manager.dialog_data.pop("has_void_input_text", None)
 
                 if len(text) < 10:
                     dialog_manager.dialog_data["has_small_input_text"] = True
                     return
-                dialog_manager.dialog_data.pop("has_small_input_text", None)
 
                 if len(text) > 2000:
                     dialog_manager.dialog_data["has_big_input_text"] = True
                     return
-                dialog_manager.dialog_data.pop("has_big_input_text", None)
 
                 dialog_manager.dialog_data["input_text"] = text
                 dialog_manager.dialog_data["has_input_text"] = True
@@ -91,7 +91,14 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             try:
                 dialog_manager.show_mode = ShowMode.EDIT
 
+                await message.delete()
+
                 dialog_manager.dialog_data.pop("has_void_input_text", None)
+                dialog_manager.dialog_data.pop("has_small_input_text", None)
+                dialog_manager.dialog_data.pop("has_big_input_text", None)
+                dialog_manager.dialog_data.pop("has_invalid_voice_type", None)
+                dialog_manager.dialog_data.pop("has_long_voice_duration", None)
+                dialog_manager.dialog_data.pop("has_empty_voice_text", None)
                 dialog_manager.dialog_data.pop("has_small_input_text", None)
                 dialog_manager.dialog_data.pop("has_big_input_text", None)
 
@@ -100,7 +107,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 if message.content_type not in [ContentType.VOICE, ContentType.AUDIO]:
                     dialog_manager.dialog_data["has_invalid_voice_type"] = True
                     return
-                dialog_manager.dialog_data.pop("has_invalid_voice_type", None)
 
                 if message.voice:
                     file_id = message.voice.file_id
@@ -112,12 +118,9 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 if duration > 300:  # 5 minutes max
                     dialog_manager.dialog_data["has_long_voice_duration"] = True
                     return
-                dialog_manager.dialog_data.pop("has_long_voice_duration", None)
 
                 file = await self.bot.get_file(file_id)
                 file_data = await self.bot.download_file(file.file_path)
-
-                await message.delete()
 
                 text = await self.kontur_content_client.transcribe_audio(
                     state.organization_id,
@@ -128,20 +131,16 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 if not text or not text.strip():
                     dialog_manager.dialog_data["has_empty_voice_text"] = True
                     return
-                dialog_manager.dialog_data.pop("has_empty_voice_text", None)
 
                 text = text.strip()
 
                 if len(text) < 10:
                     dialog_manager.dialog_data["has_small_input_text"] = True
                     return
-                dialog_manager.dialog_data.pop("has_small_input_text", None)
 
                 if len(text) > 2000:
                     dialog_manager.dialog_data["has_big_input_text"] = True
                     return
-                dialog_manager.dialog_data.pop("has_big_input_text", None)
-
 
                 dialog_manager.dialog_data["input_text"] = text
                 dialog_manager.dialog_data["has_input_text"] = True
@@ -416,6 +415,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
                 # Сохраняем промпт и устанавливаем состояние загрузки
                 dialog_manager.dialog_data["regenerate_prompt"] = prompt
+                dialog_manager.dialog_data["has_regenerate_prompt"] = True
                 dialog_manager.dialog_data["is_regenerating_text"] = True
 
                 # Обновляем UI для показа индикатора загрузки
@@ -435,6 +435,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
                 # Отключаем индикатор загрузки
                 dialog_manager.dialog_data["is_regenerating_text"] = False
+                dialog_manager.dialog_data["has_regenerate_prompt"] = False
 
                 # Переходим к превью
                 await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
@@ -462,8 +463,12 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 dialog_manager.show_mode = ShowMode.EDIT
 
                 await message.delete()
-                new_text = text.strip()
 
+                dialog_manager.dialog_data.pop("has_void_text", None)
+                dialog_manager.dialog_data.pop("has_big_text", None)
+                dialog_manager.dialog_data.pop("has_small_text", None)
+
+                new_text = text.strip()
                 if not new_text:
                     dialog_manager.dialog_data["has_void_text"] = True
                     return
@@ -475,10 +480,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 if len(new_text) < 50:
                     dialog_manager.dialog_data["has_small_text"] = True
                     return
-
-                dialog_manager.dialog_data.pop("has_void_text", None)
-                dialog_manager.dialog_data.pop("has_big_text", None)
-                dialog_manager.dialog_data.pop("has_small_text", None)
 
                 dialog_manager.dialog_data["publication_text"] = new_text
 
@@ -559,8 +560,13 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 dialog_manager.show_mode = ShowMode.EDIT
 
                 await message.delete()
-                prompt = prompt.strip()
 
+                dialog_manager.dialog_data.pop("has_void_image_prompt", None)
+                dialog_manager.dialog_data.pop("has_small_image_prompt", None)
+                dialog_manager.dialog_data.pop("has_big_image_prompt", None)
+                dialog_manager.dialog_data.pop("has_image_generation_error", None)
+
+                prompt = prompt.strip()
                 if not prompt:
                     dialog_manager.dialog_data["has_void_image_prompt"] = True
                     return
@@ -573,16 +579,11 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                     dialog_manager.dialog_data["has_big_image_prompt"] = True
                     return
 
-                # Clear error flags
-                dialog_manager.dialog_data.pop("has_void_image_prompt", None)
-                dialog_manager.dialog_data.pop("has_small_image_prompt", None)
-                dialog_manager.dialog_data.pop("has_big_image_prompt", None)
-                dialog_manager.dialog_data.pop("has_image_generation_error", None)
 
                 dialog_manager.dialog_data["image_prompt"] = prompt
                 dialog_manager.dialog_data["is_generating_image"] = True
 
-                await dialog_manager.show(ShowMode.EDIT)
+                await dialog_manager.show()
 
                 category_id = dialog_manager.dialog_data["category_id"]
                 publication_text = dialog_manager.dialog_data["publication_text"]
@@ -635,6 +636,9 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
                 await message.delete()
 
+                dialog_manager.dialog_data.pop("has_invalid_image_type", None)
+                dialog_manager.dialog_data.pop("has_big_image_size", None)
+
                 if message.content_type != ContentType.PHOTO:
                     dialog_manager.dialog_data["has_invalid_image_type"] = True
                     return
@@ -646,9 +650,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                         if photo.file_size > 10 * 1024 * 1024:  # 10 MB
                             dialog_manager.dialog_data["has_big_image_size"] = True
                             return
-
-                    dialog_manager.dialog_data.pop("has_invalid_image_type", None)
-                    dialog_manager.dialog_data.pop("has_big_image_size", None)
 
                     dialog_manager.dialog_data["custom_image_file_id"] = photo.file_id
                     dialog_manager.dialog_data["has_image"] = True
@@ -946,7 +947,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
                 if await self._check_alerts(dialog_manager):
                     return
-                
+
                 await dialog_manager.start(
                     model.ContentMenuStates.content_menu,
                     mode=StartMode.RESET_STACK

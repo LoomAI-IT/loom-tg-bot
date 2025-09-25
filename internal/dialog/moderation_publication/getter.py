@@ -1,14 +1,14 @@
 import time
-from datetime import datetime, timezone
+from datetime import datetime
 from aiogram_dialog.api.entities import MediaId, MediaAttachment
 
-from aiogram import Bot
 from aiogram.types import ContentType
 from aiogram_dialog import DialogManager
 
 from opentelemetry.trace import SpanKind, Status, StatusCode
 
 from internal import interface, model
+
 
 class ModerationPublicationGetter(interface.IModerationPublicationGetter):
     def __init__(
@@ -67,7 +67,7 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
                 current_pub = model.Publication(**moderation_publications[current_index])
 
                 # Получаем информацию об авторе
-                author = await self.kontur_employee_client.get_employee_by_account_id(
+                creator = await self.kontur_employee_client.get_employee_by_account_id(
                     current_pub.creator_id
                 )
 
@@ -75,13 +75,6 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
                 category = await self.kontur_content_client.get_category_by_id(
                     current_pub.category_id
                 )
-
-                # Форматируем теги
-                tags = current_pub.tags or []
-                tags_text = ", ".join(tags) if tags else ""
-
-                # Рассчитываем время ожидания
-                waiting_time = self._calculate_waiting_time_text(current_pub.created_at)
 
                 # Подготавливаем медиа для изображения
                 preview_image_media = None
@@ -95,22 +88,12 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
                         type=ContentType.PHOTO
                     )
 
-                # Определяем период
-                period_text = self._get_period_text(moderation_publications)
-
                 data = {
                     "has_publications": True,
-                    "publications_count": len(moderation_publications),
-                    "period_text": period_text,
-                    "author_name": author.name,
+                    "creator_name": creator.name,
                     "category_name": category.name,
                     "created_at": self._format_datetime(current_pub.created_at),
-                    "has_waiting_time": bool(waiting_time),
-                    "waiting_time": waiting_time,
-                    "publication_name": current_pub.name,
                     "publication_text": current_pub.text,
-                    "has_tags": bool(tags),
-                    "publication_tags": tags_text,
                     "has_image": bool(current_pub.image_fid),
                     "preview_image_media": preview_image_media,
                     "current_index": current_index + 1,
@@ -123,9 +106,7 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
                 dialog_manager.dialog_data["original_publication"] = {
                     "id": current_pub.id,
                     "creator_id": current_pub.creator_id,
-                    "name": current_pub.name,
                     "text": current_pub.text,
-                    "tags": current_pub.tags or [],
                     "category_id": current_pub.category_id,
                     "image_url": image_url,
                     "has_image": bool(current_pub.image_fid),
@@ -138,7 +119,7 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
                     dialog_manager.dialog_data["working_publication"] = dict(
                         dialog_manager.dialog_data["original_publication"])
 
-                self.logger.info("Список модерации загружен" )
+                self.logger.info("Список модерации загружен")
 
                 span.set_status(Status(StatusCode.OK))
                 return data
@@ -161,13 +142,13 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
                 original_pub = dialog_manager.dialog_data.get("original_publication", {})
 
                 # Получаем информацию об авторе
-                author = await self.kontur_employee_client.get_employee_by_account_id(
+                creator = await self.kontur_employee_client.get_employee_by_account_id(
                     original_pub["creator_id"],
                 )
 
                 data = {
                     "publication_name": original_pub["name"],
-                    "author_name": author.name,
+                    "creator_name": creator.name,
                     "has_comment": bool(dialog_manager.dialog_data.get("reject_comment")),
                     "reject_comment": dialog_manager.dialog_data.get("reject_comment", ""),
                 }
@@ -179,8 +160,6 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
-
-
 
     async def get_edit_preview_data(
             self,
@@ -202,7 +181,7 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
                 original_pub = dialog_manager.dialog_data["original_publication"]
 
                 # Получаем информацию об авторе
-                author = await self.kontur_employee_client.get_employee_by_account_id(
+                creator = await self.kontur_employee_client.get_employee_by_account_id(
                     working_pub["creator_id"]
                 )
 
@@ -210,10 +189,6 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
                 category = await self.kontur_content_client.get_category_by_id(
                     working_pub["category_id"]
                 )
-
-                # Форматируем теги
-                tags = working_pub.get("tags", [])
-                tags_text = ", ".join(tags) if tags else ""
 
                 # Подготавливаем медиа для изображения
                 preview_image_media = None
@@ -247,13 +222,10 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
                         )
 
                 data = {
-                    "author_name": author.name,
+                    "creator_name": creator.name,
                     "category_name": category.name,
                     "created_at": self._format_datetime(original_pub["created_at"]),
-                    "publication_name": working_pub["name"],
                     "publication_text": working_pub["text"],
-                    "has_tags": bool(tags),
-                    "publication_tags": tags_text,
                     "has_image": working_pub.get("has_image", False),
                     "preview_image_media": preview_image_media,
                     "has_changes": self._has_changes(dialog_manager),
@@ -269,13 +241,6 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
-
-    async def get_regenerate_data(
-            self,
-            dialog_manager: DialogManager,
-            **kwargs
-    ) -> dict:
-        return {"regenerate_prompt": dialog_manager.dialog_data.get("regenerate_prompt", "")}
 
     async def get_social_network_select_data(
             self,
@@ -319,42 +284,18 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
-    def _is_network_connected(self, social_networks: dict, network_type: str) -> bool:
-        if not social_networks:
-            return False
-        return network_type in social_networks and len(social_networks[network_type]) > 0
-
-    async def get_edit_title_data(
+    async def get_edit_text_data(
             self,
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        working_pub = dialog_manager.dialog_data.get("working_publication", {})
         return {
-            "current_title": working_pub.get("name", ""),
-        }
-
-    async def get_edit_tags_data(
-            self,
-            dialog_manager: DialogManager,
-            **kwargs
-    ) -> dict:
-        working_pub = dialog_manager.dialog_data.get("working_publication", {})
-        tags = working_pub.get("tags", [])
-        return {
-            "has_tags": bool(tags),
-            "current_tags": ", ".join(tags) if tags else "",
-        }
-
-    async def get_edit_content_data(
-            self,
-            dialog_manager: DialogManager,
-            **kwargs
-    ) -> dict:
-        working_pub = dialog_manager.dialog_data.get("working_publication", {})
-        text = working_pub.get("text", "")
-        return {
-            "current_text_length": len(text),
+            "has_void_text": dialog_manager.dialog_data.get("has_void_text", False),
+            "has_small_text": dialog_manager.dialog_data.get("has_small_text", False),
+            "has_big_text": dialog_manager.dialog_data.get("has_big_text", False),
+            "is_regenerating_text": dialog_manager.dialog_data.get("is_regenerating_text", False),
+            "regenerate_prompt": dialog_manager.dialog_data.get("regenerate_prompt", ""),
+            "has_regenerate_prompt": bool(dialog_manager.dialog_data.get("regenerate_prompt", "")),
         }
 
     async def get_image_menu_data(
@@ -362,24 +303,58 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
+        preview_image_media = None
+
         working_pub = dialog_manager.dialog_data.get("working_publication", {})
+        if working_pub.get("has_image"):
+            # Приоритет: пользовательское > сгенерированные множественные > одиночное
+            if working_pub.get("custom_image_file_id"):
+                preview_image_media = MediaAttachment(
+                    file_id=MediaId(working_pub["custom_image_file_id"]),
+                    type=ContentType.PHOTO
+                )
+            elif working_pub.get("generated_images_url"):
+                # Множественные сгенерированные изображения
+                images_url = working_pub["generated_images_url"]
+                current_image_index = working_pub.get("current_image_index", 0)
+
+                if current_image_index < len(images_url):
+                    preview_image_media = MediaAttachment(
+                        url=images_url[current_image_index],
+                        type=ContentType.PHOTO
+                    )
+            elif working_pub.get("image_url"):
+                preview_image_media = MediaAttachment(
+                    url=working_pub["image_url"],
+                    type=ContentType.PHOTO
+                )
+
+
         return {
+            "preview_image_media": preview_image_media,
+            "has_void_image_prompt": dialog_manager.dialog_data.get("has_void_image_prompt", False),
+            "has_small_image_prompt": dialog_manager.dialog_data.get("has_small_image_prompt", False),
+            "has_big_image_prompt": dialog_manager.dialog_data.get("has_big_image_prompt", False),
+            "is_generating_image": dialog_manager.dialog_data.get("is_generating_image", False),
             "has_image": working_pub.get("has_image", False),
             "is_custom_image": working_pub.get("is_custom_image", False),
         }
 
-    async def get_image_prompt_data(
+    async def get_upload_image_data(
             self,
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
+        working_pub = dialog_manager.dialog_data.get("working_publication", {})
         return {
-            "has_image_prompt": bool(dialog_manager.dialog_data.get("image_prompt")),
-            "image_prompt": dialog_manager.dialog_data.get("image_prompt", ""),
+            "has_invalid_image_type": dialog_manager.dialog_data.get("has_invalid_image_type", False),
+            "has_big_image_size": dialog_manager.dialog_data.get("has_big_image_size", False),
+            "has_image_processing_error": dialog_manager.dialog_data.get("has_image_processing_error", False),
+            "has_image": working_pub.get("has_image", False),
+            "is_custom_image": working_pub.get("is_custom_image", False),
         }
 
     # Вспомогательные методы
-
     def _has_changes(self, dialog_manager: DialogManager) -> bool:
         original = dialog_manager.dialog_data.get("original_publication", {})
         working = dialog_manager.dialog_data.get("working_publication", {})
@@ -420,6 +395,11 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
 
         return False
 
+    def _is_network_connected(self, social_networks: dict, network_type: str) -> bool:
+        if not social_networks:
+            return False
+        return network_type in social_networks and len(social_networks[network_type]) > 0
+
     def _format_datetime(self, dt: str) -> str:
         try:
             if isinstance(dt, str):
@@ -429,59 +409,6 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
             return dt.strftime("%d.%m.%Y %H:%M")
         except:
             return dt
-
-    def _calculate_waiting_hours(self, created_at: str) -> int:
-        try:
-            if isinstance(created_at, str):
-                created_at = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
-
-            now = datetime.now(timezone.utc)
-            delta = now - created_at
-            return int(delta.total_seconds() / 3600)
-        except:
-            return 0
-
-    def _calculate_waiting_time_text(self, created_at: str) -> str:
-        hours = self._calculate_waiting_hours(created_at)
-
-        if hours == 0:
-            return "менее часа"
-        elif hours == 1:
-            return "1 час"
-        elif hours < 24:
-            return f"{hours} часов"
-        else:
-            days = hours // 24
-            if days == 1:
-                return "1 день"
-            else:
-                return f"{days} дней"
-
-    def _get_period_text(self, publications: list) -> str:
-        if not publications:
-            return "Нет данных"
-
-        # Находим самую старую и новую публикацию
-        dates = []
-        for pub in publications:
-            if hasattr(pub, 'created_at') and pub.created_at:
-                dates.append(pub.created_at)
-
-        if not dates:
-            return "Сегодня"
-
-        # Простое определение периода на основе самой старой публикации
-        oldest_date = min(dates)
-        waiting_hours = self._calculate_waiting_hours(oldest_date)
-
-        if waiting_hours < 24:
-            return "За сегодня"
-        elif waiting_hours < 48:
-            return "За последние 2 дня"
-        elif waiting_hours < 168:  # неделя
-            return "За неделю"
-        else:
-            return "За месяц"
 
     async def _get_state(self, dialog_manager: DialogManager) -> model.UserState:
         if hasattr(dialog_manager.event, 'message') and dialog_manager.event.message:

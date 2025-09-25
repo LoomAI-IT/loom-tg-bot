@@ -39,6 +39,8 @@ class ModerationPublicationService(interface.IModerationPublicationService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 current_index = dialog_manager.dialog_data.get("current_index", 0)
                 moderation_list = dialog_manager.dialog_data.get("moderation_list", [])
 
@@ -58,7 +60,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
                 # Сбрасываем рабочие данные для новой публикации
                 dialog_manager.dialog_data.pop("working_publication", None)
 
-                self.logger.info( "Навигация по публикациям")
+                self.logger.info("Навигация по публикациям")
 
                 await callback.answer()
                 span.set_status(Status(StatusCode.OK))
@@ -66,9 +68,9 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
+
                 await callback.answer("❌ Ошибка навигации", show_alert=True)
                 raise
-
 
     async def handle_reject_comment_input(
             self,
@@ -82,33 +84,34 @@ class ModerationPublicationService(interface.IModerationPublicationService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                comment = comment.strip()
+                dialog_manager.show_mode = ShowMode.EDIT
 
+                await message.delete()
+
+                comment = comment.strip()
                 if not comment:
-                    await message.answer("❌ Комментарий не может быть пустым")
+                    dialog_manager.dialog_data["has_void_reject_comment"] = True
                     return
+                dialog_manager.dialog_data.pop("has_void_reject_comment", None)
 
                 if len(comment) < 10:
-                    await message.answer("❌ Слишком короткий комментарий. Укажите причину подробнее.")
+                    dialog_manager.dialog_data["has_small_reject_comment"] = True
                     return
+                dialog_manager.dialog_data.pop("has_small_reject_comment", None)
 
                 if len(comment) > 500:
-                    await message.answer("❌ Слишком длинный комментарий (макс. 500 символов)")
+                    dialog_manager.dialog_data["has_big_reject_comment"] = True
                     return
+                dialog_manager.dialog_data.pop("has_big_reject_comment", None)
 
                 dialog_manager.dialog_data["reject_comment"] = comment
 
-                # Удаляем сообщение с комментарием
-                await message.delete()
-
                 self.logger.info("Комментарий отклонения введен")
-
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-                await message.answer("❌ Ошибка при сохранении комментария")
                 raise
 
     async def handle_send_rejection(
@@ -122,6 +125,8 @@ class ModerationPublicationService(interface.IModerationPublicationService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 state = await self._get_state(dialog_manager)
                 original_pub = dialog_manager.dialog_data["original_publication"]
                 publication_id = original_pub["id"]
@@ -144,37 +149,20 @@ class ModerationPublicationService(interface.IModerationPublicationService):
 
                     )
 
-                self.logger.info("Публикация отклонена" )
+                await self._remove_current_publication_from_list(dialog_manager)
 
+                self.logger.info("Публикация отклонена")
                 await callback.answer("❌ Публикация отклонена", show_alert=True)
 
-                # Удаляем отклоненную публикацию из списка
-                moderation_list = dialog_manager.dialog_data.get("moderation_list", [])
-                current_index = dialog_manager.dialog_data.get("current_index", 0)
-
-                if moderation_list and current_index < len(moderation_list):
-                    moderation_list.pop(current_index)
-
-                    # Корректируем индекс если нужно
-                    if current_index >= len(moderation_list) and moderation_list:
-                        dialog_manager.dialog_data["current_index"] = len(moderation_list) - 1
-                    elif not moderation_list:
-                        dialog_manager.dialog_data["current_index"] = 0
-
-                    # Сбрасываем рабочие данные
-                    dialog_manager.dialog_data.pop("working_publication", None)
-
-                # Возвращаемся к основному окну
                 await dialog_manager.switch_to(model.ModerationPublicationStates.moderation_list)
-
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
+
                 await callback.answer("❌ Ошибка при отклонении", show_alert=True)
                 raise
-
 
     async def handle_regenerate_text(
             self,
@@ -187,8 +175,11 @@ class ModerationPublicationService(interface.IModerationPublicationService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 await callback.answer()
-                loading_message = await callback.message.answer("🔄 Перегенерирую текст, это может занять время...")
+                dialog_manager.dialog_data["is_regenerating_text"] = True
+                await dialog_manager.show()
 
                 working_pub = dialog_manager.dialog_data["working_publication"]
 
@@ -200,24 +191,16 @@ class ModerationPublicationService(interface.IModerationPublicationService):
                 )
 
                 # Обновляем данные
-                dialog_manager.dialog_data["working_publication"]["name"] = regenerated_data["name"]
                 dialog_manager.dialog_data["working_publication"]["text"] = regenerated_data["text"]
-                dialog_manager.dialog_data["working_publication"]["tags"] = regenerated_data["tags"]
-
-
-                await loading_message.edit_text("✅ Пост успешно сгенерирован!")
-                await asyncio.sleep(3)
-                try:
-                    await loading_message.delete()
-                except:
-                    pass
+                dialog_manager.dialog_data["is_regenerating_text"] = False
 
                 await dialog_manager.switch_to(model.ModerationPublicationStates.edit_preview)
-
                 span.set_status(Status(StatusCode.OK))
+
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
+
                 await callback.answer("❌ Ошибка при перегенерации", show_alert=True)
                 raise
 
@@ -229,11 +212,33 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             prompt: str
     ) -> None:
         with self.tracer.start_as_current_span(
-                "ModerationPublicationDialogService.handle_regenerate_text",
+                "ModerationPublicationDialogService.handle_regenerate_text_with_prompt",
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                loading_message = await message.answer("🔄 Перегенерирую с учетом ваших пожеланий...")
+                dialog_manager.show_mode = ShowMode.EDIT
+
+                await message.delete()
+
+                dialog_manager.dialog_data.pop("has_void_regenerate_prompt", None)
+                dialog_manager.dialog_data.pop("has_small_regenerate_prompt", None)
+                dialog_manager.dialog_data.pop("has_big_regenerate_prompt", None)
+
+                if not prompt:
+                    dialog_manager.dialog_data["has_void_regenerate_prompt"] = True
+                    return
+
+                if len(prompt) < 5:
+                    dialog_manager.dialog_data["has_small_regenerate_prompt"] = True
+                    return
+
+                if len(prompt) > 500:
+                    dialog_manager.dialog_data["has_big_regenerate_prompt"] = True
+                    return
+
+                dialog_manager.dialog_data["is_regenerating_text"] = True
+                dialog_manager.dialog_data["has_regenerate_prompt"] = True
+                await dialog_manager.show()
 
                 working_pub = dialog_manager.dialog_data["working_publication"]
 
@@ -245,18 +250,10 @@ class ModerationPublicationService(interface.IModerationPublicationService):
                 )
 
                 # Обновляем данные
-                dialog_manager.dialog_data["working_publication"]["name"] = regenerated_data["name"]
                 dialog_manager.dialog_data["working_publication"]["text"] = regenerated_data["text"]
-                dialog_manager.dialog_data["working_publication"]["tags"] = regenerated_data["tags"]
                 dialog_manager.dialog_data["regenerate_prompt"] = prompt
-                dialog_manager.dialog_data["has_regenerate_prompt"] = True
-
-                await loading_message.edit_text("✅ Пост успешно сгенерирован!")
-                await asyncio.sleep(3)
-                try:
-                    await loading_message.delete()
-                except:
-                    pass
+                dialog_manager.dialog_data["is_regenerating_text"] = False
+                dialog_manager.dialog_data["has_regenerate_prompt"] = False
 
                 await dialog_manager.switch_to(model.ModerationPublicationStates.edit_preview)
 
@@ -266,7 +263,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
-    async def handle_edit_title_save(
+    async def handle_edit_text(
             self,
             message: Message,
             widget: Any,
@@ -274,111 +271,40 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             text: str
     ) -> None:
         with self.tracer.start_as_current_span(
-                "ModerationPublicationDialogService.handle_edit_title_save",
+                "ModerationPublicationDialogService.handle_edit_text",
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                new_title = text.strip()
+                dialog_manager.show_mode = ShowMode.EDIT
 
-                if not new_title:
-                    await message.answer("❌ Название не может быть пустым")
-                    return
+                await message.delete()
 
-                if len(new_title) > 200:
-                    await message.answer("❌ Слишком длинное название (макс. 200 символов)")
-                    return
+                dialog_manager.dialog_data.pop("has_void_text", None)
+                dialog_manager.dialog_data.pop("has_big_text", None)
+                dialog_manager.dialog_data.pop("has_small_text", None)
 
-                # Обновляем рабочую версию
-                dialog_manager.dialog_data["working_publication"]["name"] = new_title
-
-                await message.answer("✅ Название обновлено!")
-                await dialog_manager.switch_to(model.ModerationPublicationStates.edit_preview)
-
-                span.set_status(Status(StatusCode.OK))
-
-            except Exception as err:
-                span.record_exception(err)
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                await message.answer("❌ Ошибка при сохранении названия")
-                raise
-
-    async def handle_edit_tags_save(
-            self,
-            message: Message,
-            widget: Any,
-            dialog_manager: DialogManager,
-            text: str
-    ) -> None:
-        with self.tracer.start_as_current_span(
-                "ModerationPublicationDialogService.handle_edit_tags_save",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                tags_raw = text.strip()
-
-                if not tags_raw:
-                    new_tags = []
-                else:
-                    # Парсим теги
-                    new_tags = [tag.strip() for tag in tags_raw.split(",")]
-                    new_tags = [tag for tag in new_tags if tag]
-
-                    if len(new_tags) > 10:
-                        await message.answer("❌ Слишком много тегов (макс. 10)")
-                        return
-
-                # Обновляем рабочую версию
-                dialog_manager.dialog_data["working_publication"]["tags"] = new_tags
-
-                await message.answer(f"✅ Теги обновлены ({len(new_tags)} шт.)")
-                await dialog_manager.switch_to(model.ModerationPublicationStates.edit_preview)
-
-                span.set_status(Status(StatusCode.OK))
-
-            except Exception as err:
-                span.record_exception(err)
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                await message.answer("❌ Ошибка при сохранении тегов")
-                raise
-
-    async def handle_edit_content_save(
-            self,
-            message: Message,
-            widget: Any,
-            dialog_manager: DialogManager,
-            text: str
-    ) -> None:
-        with self.tracer.start_as_current_span(
-                "ModerationPublicationDialogService.handle_edit_content_save",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
                 new_text = text.strip()
-
                 if not new_text:
-                    await message.answer("❌ Текст не может быть пустым")
-                    return
-
-                if len(new_text) < 50:
-                    await message.answer("❌ Слишком короткий текст (мин. 50 символов)")
+                    dialog_manager.dialog_data["has_void_text"] = True
                     return
 
                 if len(new_text) > 4000:
-                    await message.answer("❌ Слишком длинный текст (макс. 4000 символов)")
+                    dialog_manager.dialog_data["has_big_text"] = True
+                    return
+
+                if len(new_text) < 50:
+                    dialog_manager.dialog_data["has_small_text"] = True
                     return
 
                 # Обновляем рабочую версию
                 dialog_manager.dialog_data["working_publication"]["text"] = new_text
 
-                await message.answer("✅ Текст обновлен!")
                 await dialog_manager.switch_to(model.ModerationPublicationStates.edit_preview)
-
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-                await message.answer("❌ Ошибка при сохранении текста")
                 raise
 
     async def handle_generate_new_image(
@@ -392,8 +318,11 @@ class ModerationPublicationService(interface.IModerationPublicationService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 await callback.answer()
-                loading_message = await callback.message.answer("🔄 Генерирую изображения, это может занять время...")
+                dialog_manager.dialog_data["is_generating_image"] = True
+                await dialog_manager.show()
 
                 working_pub = dialog_manager.dialog_data["working_publication"]
                 category_id = working_pub["category_id"]
@@ -424,21 +353,15 @@ class ModerationPublicationService(interface.IModerationPublicationService):
                 dialog_manager.dialog_data["working_publication"].pop("custom_image_file_id", None)
                 dialog_manager.dialog_data["working_publication"].pop("is_custom_image", None)
                 dialog_manager.dialog_data["working_publication"].pop("image_url", None)
-
-                await loading_message.edit_text("✅ Изображения успешно сгенерированы!")
-                await asyncio.sleep(2)
-                try:
-                    await loading_message.delete()
-                except:
-                    pass
+                dialog_manager.dialog_data["is_generating_image"] = False
 
                 await dialog_manager.switch_to(model.ModerationPublicationStates.edit_preview)
-
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
+
                 await callback.answer("❌ Ошибка генерации", show_alert=True)
                 raise
 
@@ -454,11 +377,32 @@ class ModerationPublicationService(interface.IModerationPublicationService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                if not prompt.strip():
-                    await message.answer("❌ Введите описание изображения")
+                dialog_manager.show_mode = ShowMode.EDIT
+
+                await message.delete()
+
+                dialog_manager.dialog_data.pop("has_void_image_prompt", None)
+                dialog_manager.dialog_data.pop("has_small_image_prompt", None)
+                dialog_manager.dialog_data.pop("has_big_image_prompt", None)
+                dialog_manager.dialog_data.pop("has_image_generation_error", None)
+
+                prompt = prompt.strip()
+                if not prompt:
+                    dialog_manager.dialog_data["has_void_image_prompt"] = True
                     return
 
-                loading_message = await message.answer("🔄 Генерирую изображения по вашему описанию...")
+                if len(prompt) < 5:
+                    dialog_manager.dialog_data["has_small_image_prompt"] = True
+                    return
+
+                if len(prompt) > 500:
+                    dialog_manager.dialog_data["has_big_image_prompt"] = True
+                    return
+
+                dialog_manager.dialog_data["image_prompt"] = prompt
+                dialog_manager.dialog_data["is_generating_image"] = True
+
+                await dialog_manager.show()
 
                 working_pub = dialog_manager.dialog_data["working_publication"]
                 category_id = working_pub["category_id"]
@@ -490,22 +434,14 @@ class ModerationPublicationService(interface.IModerationPublicationService):
                 dialog_manager.dialog_data["working_publication"].pop("custom_image_file_id", None)
                 dialog_manager.dialog_data["working_publication"].pop("is_custom_image", None)
                 dialog_manager.dialog_data["working_publication"].pop("image_url", None)
-
-                await loading_message.edit_text("✅ Изображения успешно сгенерированы!")
-                await asyncio.sleep(2)
-                try:
-                    await loading_message.delete()
-                except:
-                    pass
+                dialog_manager.dialog_data["is_generating_image"] = False
 
                 await dialog_manager.switch_to(model.ModerationPublicationStates.edit_preview)
-
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-                await message.answer("❌ Ошибка генерации")
                 raise
 
     async def handle_image_upload(
@@ -519,8 +455,15 @@ class ModerationPublicationService(interface.IModerationPublicationService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
+                await message.delete()
+
+                dialog_manager.dialog_data.pop("has_invalid_image_type", None)
+                dialog_manager.dialog_data.pop("has_big_image_size", None)
+
                 if message.content_type != ContentType.PHOTO:
-                    await message.answer("❌ Пожалуйста, отправьте изображение")
+                    dialog_manager.dialog_data["has_invalid_image_type"] = True
                     return
 
                 if message.photo:
@@ -529,10 +472,8 @@ class ModerationPublicationService(interface.IModerationPublicationService):
                     # Проверяем размер
                     if hasattr(photo, 'file_size') and photo.file_size:
                         if photo.file_size > 10 * 1024 * 1024:  # 10 МБ
-                            await message.answer("❌ Файл слишком большой (макс. 10 МБ)")
+                            dialog_manager.dialog_data["has_big_image_size"] = True
                             return
-
-                    await message.answer("📸 Загружаю изображение...")
 
                     # Обновляем рабочую версию
                     dialog_manager.dialog_data["working_publication"]["custom_image_file_id"] = photo.file_id
@@ -541,23 +482,17 @@ class ModerationPublicationService(interface.IModerationPublicationService):
                     # Удаляем URL если был
                     dialog_manager.dialog_data["working_publication"].pop("image_url", None)
 
-                    self.logger.info(
-                        "Изображение загружено для модерации",
-                        {
-                            common.TELEGRAM_CHAT_ID_KEY: message.chat.id,
-                            "file_id": photo.file_id,
-                        }
-                    )
+                    self.logger.info("Изображение загружено для модерации")
 
-                    await message.answer("✅ Изображение загружено!")
                     await dialog_manager.switch_to(model.ModerationPublicationStates.edit_preview)
+                else:
+                    dialog_manager.dialog_data["has_image_processing_error"] = True
 
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-                await message.answer("❌ Ошибка загрузки")
                 raise
 
     async def handle_remove_image(
@@ -571,26 +506,22 @@ class ModerationPublicationService(interface.IModerationPublicationService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                working_pub = dialog_manager.dialog_data["working_publication"]
+                dialog_manager.show_mode = ShowMode.EDIT
 
-                if working_pub.get("has_image"):
-                    # Удаляем все данные об изображении из рабочей версии
-                    dialog_manager.dialog_data["working_publication"]["has_image"] = False
-                    dialog_manager.dialog_data["working_publication"].pop("image_url", None)
-                    dialog_manager.dialog_data["working_publication"].pop("custom_image_file_id", None)
-                    dialog_manager.dialog_data["working_publication"].pop("is_custom_image", None)
+                dialog_manager.dialog_data["working_publication"]["has_image"] = False
+                dialog_manager.dialog_data["working_publication"].pop("image_url", None)
+                dialog_manager.dialog_data["working_publication"].pop("custom_image_file_id", None)
+                dialog_manager.dialog_data["working_publication"].pop("is_custom_image", None)
 
-                    await callback.answer("✅ Изображение удалено", show_alert=True)
-                else:
-                    await callback.answer("ℹ️ Изображение отсутствует", show_alert=True)
+                await callback.answer("✅ Изображение удалено", show_alert=True)
 
                 await dialog_manager.switch_to(model.ModerationPublicationStates.edit_preview)
-
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
+
                 await callback.answer("❌ Ошибка удаления", show_alert=True)
                 raise
 
@@ -605,12 +536,11 @@ class ModerationPublicationService(interface.IModerationPublicationService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 if not self._has_changes(dialog_manager):
                     await callback.answer("ℹ️ Нет изменений для сохранения", show_alert=True)
                     return
-
-                await callback.answer()
-                loading_message = await callback.message.answer("💾 Сохраняю изменения...")
 
                 # Сохраняем изменения
                 await self._save_publication_changes(dialog_manager)
@@ -620,21 +550,14 @@ class ModerationPublicationService(interface.IModerationPublicationService):
 
                 del dialog_manager.dialog_data["working_publication"]
 
-
-                await loading_message.edit_text("✅ Изменения сохранены!")
-                await asyncio.sleep(2)
-                try:
-                    await loading_message.delete()
-                except:
-                    pass
-
+                await callback.answer("Изменения сохранены", show_alert=True)
                 await dialog_manager.switch_to(model.ModerationPublicationStates.moderation_list)
-
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
+
                 await callback.answer("❌ Ошибка сохранения", show_alert=True)
                 raise
 
@@ -649,11 +572,14 @@ class ModerationPublicationService(interface.IModerationPublicationService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 await dialog_manager.switch_to(model.ModerationPublicationStates.moderation_list)
 
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
+
                 await callback.answer("❌ Ошибка сохранения", show_alert=True)
                 raise
 
@@ -668,6 +594,8 @@ class ModerationPublicationService(interface.IModerationPublicationService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 if await self._check_alerts(dialog_manager):
                     return
 
@@ -681,6 +609,8 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
+
+                await callback.answer("❌ Ошибка", show_alert=True)
                 raise
 
     async def handle_toggle_social_network(
@@ -704,21 +634,16 @@ class ModerationPublicationService(interface.IModerationPublicationService):
                 # Сохраняем состояние чекбокса
                 dialog_manager.dialog_data["selected_social_networks"][network_id] = is_checked
 
-                self.logger.info(
-                    "Социальная сеть переключена в модерации",
-                    {
-                        common.TELEGRAM_CHAT_ID_KEY: callback.message.chat.id,
-                        "network": network_id,
-                        "selected": is_checked,
-                        "all_selected": dialog_manager.dialog_data["selected_social_networks"]
-                    }
-                )
+                self.logger.info("Социальная сеть переключена в модерации")
 
                 await callback.answer()
                 span.set_status(Status(StatusCode.OK))
+
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
+
+                await callback.answer("❌ Ошибка", show_alert=True)
                 raise
 
     async def handle_prev_image(
@@ -743,6 +668,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
 
                 await callback.answer()
                 span.set_status(Status(StatusCode.OK))
+
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
@@ -775,7 +701,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
-    async def handle_publish_with_selected_networks(
+    async def handle_publish_now(
             self,
             callback: CallbackQuery,
             button: Any,
@@ -797,28 +723,6 @@ class ModerationPublicationService(interface.IModerationPublicationService):
                     )
                     return
 
-                await self._publish_moderated_publication(callback, dialog_manager)
-                span.set_status(Status(StatusCode.OK))
-            except Exception as err:
-                span.record_exception(err)
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                await callback.answer("❌ Ошибка при публикации", show_alert=True)
-                raise
-
-    async def _publish_moderated_publication(
-            self,
-            callback: CallbackQuery,
-            dialog_manager: DialogManager
-    ) -> None:
-        with self.tracer.start_as_current_span(
-                "ModerationPublicationDialogService._publish_moderated_publication",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                await callback.answer()
-                loading_message = await callback.message.answer("🚀 Публикую пост...")
-
-                # Если есть несохраненные изменения, сохраняем их перед публикацией
                 if self._has_changes(dialog_manager):
                     await self._save_publication_changes(dialog_manager)
 
@@ -845,60 +749,18 @@ class ModerationPublicationService(interface.IModerationPublicationService):
                     moderation_status="approved",
                 )
 
-                # Формируем сообщение о публикации
-                published_networks = []
-                if tg_source:
-                    published_networks.append("📺 Telegram")
-                if vk_source:
-                    published_networks.append("🔗 VKontakte")
+                self.logger.info("Публикация одобрена и опубликована")
 
-                networks_text = ", ".join(published_networks)
-
-                self.logger.info(
-                    "Публикация одобрена и опубликована",
-                    {
-                        common.TELEGRAM_CHAT_ID_KEY: callback.message.chat.id,
-                        "publication_id": publication_id,
-                        "tg_source": tg_source,
-                        "vk_source": vk_source,
-                    }
-                )
-
-                await loading_message.edit_text(
-                    f"🚀 Публикация успешно опубликована!\n\n"
-                    f"📋 Опубликовано в: {networks_text}"
-                )
-
-                await asyncio.sleep(3)
-                try:
-                    await loading_message.delete()
-                except:
-                    pass
-
-                # Удаляем опубликованную публикацию из списка
-                moderation_list = dialog_manager.dialog_data.get("moderation_list", [])
-                current_index = dialog_manager.dialog_data.get("current_index", 0)
-
-                if moderation_list and current_index < len(moderation_list):
-                    moderation_list.pop(current_index)
-
-                    # Корректируем индекс если нужно
-                    if current_index >= len(moderation_list) and moderation_list:
-                        dialog_manager.dialog_data["current_index"] = len(moderation_list) - 1
-                    elif not moderation_list:
-                        dialog_manager.dialog_data["current_index"] = 0
-
-                    # Сбрасываем рабочие данные
-                    dialog_manager.dialog_data.pop("working_publication", None)
-                    dialog_manager.dialog_data.pop("selected_social_networks", None)
-
-                # Возвращаемся к списку модерации
+                await self._remove_current_publication_from_list(dialog_manager)
+                await callback.answer("Опубликовано")
                 await dialog_manager.switch_to(model.ModerationPublicationStates.moderation_list)
-
                 span.set_status(Status(StatusCode.OK))
+
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
+
+                await callback.answer("❌ Ошибка при публикации", show_alert=True)
                 raise
 
     # Вспомогательные методы
@@ -1051,6 +913,23 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             return None
         except Exception as err:
             return None
+
+    async def _remove_current_publication_from_list(self, dialog_manager: DialogManager) -> None:
+        moderation_list = dialog_manager.dialog_data.get("moderation_list", [])
+        current_index = dialog_manager.dialog_data.get("current_index", 0)
+
+        if moderation_list and current_index < len(moderation_list):
+            moderation_list.pop(current_index)
+
+            # Корректируем индекс если нужно
+            if current_index >= len(moderation_list) and moderation_list:
+                dialog_manager.dialog_data["current_index"] = len(moderation_list) - 1
+            elif not moderation_list:
+                dialog_manager.dialog_data["current_index"] = 0
+
+            # Сбрасываем рабочие данные
+            dialog_manager.dialog_data.pop("working_publication", None)
+            dialog_manager.dialog_data.pop("selected_networks", None)
 
     async def _check_alerts(self, dialog_manager: DialogManager) -> bool:
         state = await self._get_state(dialog_manager)
