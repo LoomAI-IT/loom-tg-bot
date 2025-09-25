@@ -1,4 +1,3 @@
-import asyncio
 from typing import Any
 
 from aiogram.enums import ParseMode
@@ -9,7 +8,7 @@ from aiogram_dialog.widgets.kbd import ManagedCheckbox
 
 from opentelemetry.trace import SpanKind, Status, StatusCode
 
-from internal import interface, model, common
+from internal import interface, model
 
 
 class VideoCutModerationService(interface.IVideoCutModerationService):
@@ -56,14 +55,7 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
                 # Сбрасываем рабочие данные для нового видео
                 dialog_manager.dialog_data.pop("working_video_cut", None)
 
-                self.logger.info(
-                    "Навигация по видео на модерации",
-                    {
-                        common.TELEGRAM_CHAT_ID_KEY: callback.message.chat.id,
-                        "from_index": current_index,
-                        "to_index": new_index,
-                    }
-                )
+                self.logger.info("Навигация по видео на модерации")
 
                 await callback.answer()
                 span.set_status(Status(StatusCode.OK))
@@ -71,6 +63,7 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
+
                 await callback.answer("❌ Ошибка навигации", show_alert=True)
                 raise
 
@@ -86,38 +79,35 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                comment = comment.strip()
+                dialog_manager.show_mode = ShowMode.EDIT
 
+                await message.delete()
+
+                comment = comment.strip()
                 if not comment:
-                    await message.answer("❌ Комментарий не может быть пустым")
+                    dialog_manager.dialog_data["has_void_reject_comment"] = True
                     return
+                dialog_manager.dialog_data.pop("has_void_reject_comment", None)
 
                 if len(comment) < 10:
-                    await message.answer("❌ Слишком короткий комментарий. Укажите причину подробнее.")
+                    dialog_manager.dialog_data["has_small_reject_comment"] = True
                     return
+                dialog_manager.dialog_data.pop("has_small_reject_comment", None)
 
                 if len(comment) > 500:
-                    await message.answer("❌ Слишком длинный комментарий (макс. 500 символов)")
+                    dialog_manager.dialog_data["has_big_reject_comment"] = True
                     return
+                dialog_manager.dialog_data.pop("has_big_reject_comment", None)
 
                 dialog_manager.dialog_data["reject_comment"] = comment
 
-                # Удаляем сообщение с комментарием
-                await message.delete()
-
-                self.logger.info(
-                    "Комментарий отклонения видео введен",
-                    {
-                        common.TELEGRAM_CHAT_ID_KEY: message.chat.id,
-                        "comment_length": len(comment),
-                    }
-                )
-
+                self.logger.info("Комментарий отклонения видео введен")
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
+
                 await message.answer("❌ Ошибка при сохранении комментария")
                 raise
 
@@ -132,7 +122,10 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 state = await self._get_state(dialog_manager)
+
                 original_video_cut = dialog_manager.dialog_data["original_video_cut"]
                 video_cut_id = original_video_cut["id"]
                 reject_comment = dialog_manager.dialog_data.get("reject_comment", "Нет комментария")
@@ -154,34 +147,11 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
                         parse_mode=ParseMode.HTML,
                     )
 
-                self.logger.info(
-                    "Видео-нарезка отклонена",
-                    {
-                        common.TELEGRAM_CHAT_ID_KEY: callback.message.chat.id,
-                        "video_cut_id": video_cut_id,
-                        "reason": reject_comment,
-                    }
-                )
+                self.logger.info("Видео-нарезка отклонена")
 
                 await callback.answer("❌ Видео-нарезка отклонена", show_alert=True)
 
-                # Удаляем отклоненное видео из списка
-                moderation_list = dialog_manager.dialog_data.get("moderation_list", [])
-                current_index = dialog_manager.dialog_data.get("current_index", 0)
-
-                if moderation_list and current_index < len(moderation_list):
-                    moderation_list.pop(current_index)
-
-                    # Корректируем индекс если нужно
-                    if current_index >= len(moderation_list) and moderation_list:
-                        dialog_manager.dialog_data["current_index"] = len(moderation_list) - 1
-                    elif not moderation_list:
-                        dialog_manager.dialog_data["current_index"] = 0
-
-                    # Сбрасываем рабочие данные
-                    dialog_manager.dialog_data.pop("working_video_cut", None)
-
-                # Возвращаемся к основному окну
+                await self._remove_current_video_cut_from_list(dialog_manager)
                 await dialog_manager.switch_to(model.VideoCutModerationStates.moderation_list)
 
                 span.set_status(Status(StatusCode.OK))
@@ -189,10 +159,11 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
+
                 await callback.answer("❌ Ошибка при отклонении", show_alert=True)
                 raise
 
-    async def handle_edit_title_save(
+    async def handle_edit_title(
             self,
             message: Message,
             widget: Any,
@@ -200,35 +171,37 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
             text: str
     ) -> None:
         with self.tracer.start_as_current_span(
-                "VideoCutModerationService.handle_edit_title_save",
+                "VideoCutModerationService.handle_edit_title",
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                new_title = text.strip()
+                dialog_manager.show_mode = ShowMode.EDIT
 
+                await message.delete()
+
+                new_title = text.strip()
                 if not new_title:
-                    await message.answer("❌ Название не может быть пустым")
+                    dialog_manager.dialog_data["has_void_title"] = True
                     return
+                dialog_manager.dialog_data.pop("has_void_title", None)
 
                 if len(new_title) > 100:  # YouTube Shorts лимит
-                    await message.answer("❌ Слишком длинное название (макс. 100 символов для YouTube)")
+                    dialog_manager.dialog_data["has_big_title"] = True
                     return
+                dialog_manager.dialog_data.pop("has_big_title", None)
 
                 # Обновляем рабочую версию
                 dialog_manager.dialog_data["working_video_cut"]["name"] = new_title
 
-                await message.answer("✅ Название обновлено!")
                 await dialog_manager.switch_to(model.VideoCutModerationStates.edit_preview)
-
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-                await message.answer("❌ Ошибка при сохранении названия")
                 raise
 
-    async def handle_edit_description_save(
+    async def handle_edit_description(
             self,
             message: Message,
             widget: Any,
@@ -236,24 +209,28 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
             text: str
     ) -> None:
         with self.tracer.start_as_current_span(
-                "VideoCutModerationService.handle_edit_description_save",
+                "VideoCutModerationService.handle_edit_description",
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                new_description = text.strip()
+                dialog_manager.show_mode = ShowMode.EDIT
 
+                await message.delete()
+
+                new_description = text.strip()
                 if not new_description:
-                    await message.answer("❌ Описание не может быть пустым")
+                    dialog_manager.dialog_data["has_void_description"] = True
                     return
+                dialog_manager.dialog_data.pop("has_void_description", None)
 
                 if len(new_description) > 2200:  # Instagram лимит
-                    await message.answer("❌ Слишком длинное описание (макс. 2200 символов для Instagram)")
+                    dialog_manager.dialog_data["has_big_description"] = True
                     return
+                dialog_manager.dialog_data.pop("has_big_description", None)
 
                 # Обновляем рабочую версию
                 dialog_manager.dialog_data["working_video_cut"]["description"] = new_description
 
-                await message.answer("✅ Описание обновлено!")
                 await dialog_manager.switch_to(model.VideoCutModerationStates.edit_preview)
 
                 span.set_status(Status(StatusCode.OK))
@@ -261,10 +238,9 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-                await message.answer("❌ Ошибка при сохранении описания")
                 raise
 
-    async def handle_edit_tags_save(
+    async def handle_edit_tags(
             self,
             message: Message,
             widget: Any,
@@ -272,12 +248,13 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
             text: str
     ) -> None:
         with self.tracer.start_as_current_span(
-                "VideoCutModerationService.handle_edit_tags_save",
+                "VideoCutModerationService.handle_edit_tags",
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                tags_raw = text.strip()
+                dialog_manager.show_mode = ShowMode.EDIT
 
+                tags_raw = text.strip()
                 if not tags_raw:
                     new_tags = []
                 else:
@@ -286,13 +263,12 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
                     new_tags = [tag for tag in new_tags if tag]
 
                     if len(new_tags) > 15:  # YouTube лимит
-                        await message.answer("❌ Слишком много тегов (макс. 15 для YouTube)")
+                        dialog_manager.dialog_data["has_void_tags"] = True
                         return
+                    dialog_manager.dialog_data.pop("has_void_tags", None)
 
                 # Обновляем рабочую версию
                 dialog_manager.dialog_data["working_video_cut"]["tags"] = new_tags
-
-                await message.answer(f"✅ Теги обновлены ({len(new_tags)} шт.)")
                 await dialog_manager.switch_to(model.VideoCutModerationStates.edit_preview)
 
                 span.set_status(Status(StatusCode.OK))
@@ -300,7 +276,6 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-                await message.answer("❌ Ошибка при сохранении тегов")
                 raise
 
     async def handle_save_edits(
@@ -314,33 +289,26 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 if not self._has_changes(dialog_manager):
                     await callback.answer("ℹ️ Нет изменений для сохранения", show_alert=True)
                     return
 
-                await callback.answer()
-                loading_message = await callback.message.answer("💾 Сохраняю изменения...")
-
-                # Сохраняем изменения
                 await self._save_video_cut_changes(dialog_manager)
 
                 # Обновляем оригинальную версию
                 dialog_manager.dialog_data["original_video_cut"] = dict(dialog_manager.dialog_data["working_video_cut"])
 
-                await loading_message.edit_text("✅ Изменения сохранены!")
-                await asyncio.sleep(2)
-                try:
-                    await loading_message.delete()
-                except:
-                    pass
+                await callback.answer("Изменения сохранены", show_alert=True)
 
                 await dialog_manager.switch_to(model.VideoCutModerationStates.moderation_list)
-
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
+
                 await callback.answer("❌ Ошибка сохранения", show_alert=True)
                 raise
 
@@ -355,6 +323,8 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 await dialog_manager.switch_to(model.VideoCutModerationStates.moderation_list)
                 span.set_status(Status(StatusCode.OK))
 
@@ -384,35 +354,29 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
                 # Сохраняем состояние чекбокса
                 dialog_manager.dialog_data["selected_social_networks"][network_id] = is_checked
 
-                self.logger.info(
-                    "Видео-платформа переключена в модерации",
-                    {
-                        common.TELEGRAM_CHAT_ID_KEY: callback.message.chat.id,
-                        "network": network_id,
-                        "selected": is_checked,
-                        "all_selected": dialog_manager.dialog_data["selected_social_networks"]
-                    }
-                )
+                self.logger.info("Видео-платформа переключена в модерации")
 
                 await callback.answer()
                 span.set_status(Status(StatusCode.OK))
+
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
-    async def handle_publish_with_selected_networks(
+    async def handle_publish_now(
             self,
             callback: CallbackQuery,
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
         with self.tracer.start_as_current_span(
-                "VideoCutModerationService.handle_publish_with_selected_networks",
+                "VideoCutModerationService.handle_publish_now",
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                # Проверяем, что выбрана хотя бы одна платформа
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
                 has_selected_networks = any(selected_networks.values())
 
@@ -423,10 +387,6 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
                     )
                     return
 
-                await callback.answer()
-                loading_message = await callback.message.answer("🚀 Публикую видео...")
-
-                # Если есть несохраненные изменения, сохраняем их перед публикацией
                 if self._has_changes(dialog_manager):
                     await self._save_video_cut_changes(dialog_manager)
 
@@ -453,50 +413,16 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
                     moderation_status="approved",
                 )
 
-                # Формируем сообщение о публикации
-                published_networks = []
-                if youtube_source:
-                    published_networks.append("📺 YouTube Shorts")
-                if inst_source:
-                    published_networks.append("📸 Instagram Reels")
+                await callback.answer("Опубликовано", show_alert=True)
 
-                networks_text = ", ".join(published_networks)
-
-                await loading_message.edit_text(
-                    f"🚀 Видео-нарезка успешно опубликована!\n\n"
-                    f"📋 Опубликовано в: {networks_text}"
-                )
-
-                await asyncio.sleep(3)
-                try:
-                    await loading_message.delete()
-                except:
-                    pass
-
-                # Удаляем опубликованное видео из списка
-                moderation_list = dialog_manager.dialog_data.get("moderation_list", [])
-                current_index = dialog_manager.dialog_data.get("current_index", 0)
-
-                if moderation_list and current_index < len(moderation_list):
-                    moderation_list.pop(current_index)
-
-                    # Корректируем индекс если нужно
-                    if current_index >= len(moderation_list) and moderation_list:
-                        dialog_manager.dialog_data["current_index"] = len(moderation_list) - 1
-                    elif not moderation_list:
-                        dialog_manager.dialog_data["current_index"] = 0
-
-                    # Сбрасываем рабочие данные
-                    dialog_manager.dialog_data.pop("working_video_cut", None)
-                    dialog_manager.dialog_data.pop("selected_social_networks", None)
-
-                # Возвращаемся к списку модерации
+                await self._remove_current_video_cut_from_list(dialog_manager)
                 await dialog_manager.switch_to(model.VideoCutModerationStates.moderation_list)
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
+
                 await callback.answer("❌ Ошибка при публикации", show_alert=True)
                 raise
 
@@ -511,6 +437,8 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 if await self._check_alerts(dialog_manager):
                     return
 
@@ -524,7 +452,26 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
+
+                await callback.answer("❌ Ошибка", show_alert=True)
                 raise
+
+    async def _remove_current_video_cut_from_list(self, dialog_manager: DialogManager) -> None:
+        moderation_list = dialog_manager.dialog_data.get("moderation_list", [])
+        current_index = dialog_manager.dialog_data.get("current_index", 0)
+
+        if moderation_list and current_index < len(moderation_list):
+            moderation_list.pop(current_index)
+
+            # Корректируем индекс если нужно
+            if current_index >= len(moderation_list) and moderation_list:
+                dialog_manager.dialog_data["current_index"] = len(moderation_list) - 1
+            elif not moderation_list:
+                dialog_manager.dialog_data["current_index"] = 0
+
+            # Сбрасываем рабочие данные
+            dialog_manager.dialog_data.pop("working_video_cut", None)
+            dialog_manager.dialog_data.pop("selected_social_networks", None)
 
     def _has_changes(self, dialog_manager: DialogManager) -> bool:
         original = dialog_manager.dialog_data.get("original_video_cut", {})

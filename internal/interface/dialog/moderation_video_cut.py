@@ -63,7 +63,7 @@ class IVideoCutModerationService(Protocol):
 
     # Обработчики редактирования полей
     @abstractmethod
-    async def handle_edit_title_save(
+    async def handle_edit_title(
             self,
             message: Message,
             widget: Any,
@@ -72,7 +72,7 @@ class IVideoCutModerationService(Protocol):
     ) -> None: pass
 
     @abstractmethod
-    async def handle_edit_description_save(
+    async def handle_edit_description(
             self,
             message: Message,
             widget: Any,
@@ -81,7 +81,7 @@ class IVideoCutModerationService(Protocol):
     ) -> None: pass
 
     @abstractmethod
-    async def handle_edit_tags_save(
+    async def handle_edit_tags(
             self,
             message: Message,
             widget: Any,
@@ -115,7 +115,7 @@ class IVideoCutModerationService(Protocol):
     ) -> None: pass
 
     @abstractmethod
-    async def handle_publish_with_selected_networks(
+    async def handle_publish_now(
             self,
             callback: CallbackQuery,
             button: Any,
