@@ -9,8 +9,8 @@ class Publication:
     creator_id: int
     moderator_id: int | None
   
-    name: str  
-    tags: list[str] 
+    name: str | None = None
+    tags: list[str] | None = None 
 
     vk_source: bool | None
     tg_source: bool | None
