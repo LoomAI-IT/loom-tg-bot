@@ -19,18 +19,18 @@ from internal.controller.tg.middleware.middleware import TgMiddleware
 from internal.controller.tg.command.handler import CommandController
 from internal.controller.http.webhook.handler import TelegramWebhookController
 
-from internal.controller.tg.dialog.auth.dialog import AuthDialog
-from internal.controller.tg.dialog.main_menu.dialog import MainMenuDialog
-from internal.controller.tg.dialog.organization_menu.dialog import OrganizationMenuDialog
-from internal.controller.tg.dialog.personal_profile.dialog import PersonalProfileDialog
-from internal.controller.tg.dialog.change_employee.dialog import ChangeEmployeeDialog
-from internal.controller.tg.dialog.add_employee.dialog import AddEmployeeDialog
-from internal.controller.tg.dialog.content_menu.dialog import ContentMenuDialog
-from internal.controller.tg.dialog.generate_publication.dialog import GeneratePublicationDialog
-from internal.controller.tg.dialog.generate_video_cut.dialog import GenerateVideoCutDialog
-from internal.controller.tg.dialog.moderation_publication.dialog import ModerationPublicationDialog
-from internal.controller.tg.dialog.video_cut_draft_content.dialog import VideoCutsDraftDialog
-from internal.controller.tg.dialog.moderation_video_cut.dialog import VideoCutModerationDialog
+from internal.dialog.auth.dialog import AuthDialog
+from internal.dialog.main_menu.dialog import MainMenuDialog
+from internal.dialog.organization_menu.dialog import OrganizationMenuDialog
+from internal.dialog.personal_profile.dialog import PersonalProfileDialog
+from internal.dialog.change_employee.dialog import ChangeEmployeeDialog
+from internal.dialog.add_employee.dialog import AddEmployeeDialog
+from internal.dialog.content_menu.dialog import ContentMenuDialog
+from internal.dialog.generate_publication.dialog import GeneratePublicationDialog
+from internal.dialog.generate_video_cut.dialog import GenerateVideoCutDialog
+from internal.dialog.moderation_publication.dialog import ModerationPublicationDialog
+from internal.dialog.video_cut_draft_content.dialog import VideoCutsDraftDialog
+from internal.dialog.moderation_video_cut.dialog import VideoCutModerationDialog
 from internal.controller.tg.dialog.publication_draft_content.dialog import PublicationDraftDialog
 
 from internal.service.state.service import StateService
