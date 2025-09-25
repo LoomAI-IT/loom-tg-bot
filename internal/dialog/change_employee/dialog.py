@@ -25,6 +25,7 @@ class ChangeEmployeeDialog(interface.IChangeEmployeeDialog):
             self.get_employee_detail_window(),
             self.get_change_permissions_window(),
             self.get_confirm_delete_window(),
+            self.get_change_role_window()
         )
 
     def get_employee_list_window(self) -> Window:
