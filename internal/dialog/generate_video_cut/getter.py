@@ -25,12 +25,15 @@ class GenerateVideoCutGetter(interface.IGenerateVideoCutGetter):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                is_processing_video = False
+                if dialog_manager.start_data:
+                    if dialog_manager.start_data.get("is_processing_video"):
+                        is_processing_video = True
+                else:
+                    is_processing_video = dialog_manager.dialog_data.get("is_processing_video", False)
+
                 data = {
-                    "youtube_url": dialog_manager.dialog_data.get("youtube_url", ""),
-                    "has_invalid_youtube_url": dialog_manager.dialog_data.get("has_invalid_youtube_url", False),
-                    "has_processing_error": dialog_manager.dialog_data.get("has_processing_error", False),
-                    "has_youtube_url": dialog_manager.dialog_data.get("has_youtube_url", False),
-                    "is_processing_video": dialog_manager.dialog_data.get("is_processing_video", False),
+                    "is_processing_video": is_processing_video,
                 }
 
                 self.logger.info("Данные окна ввода YouTube ссылки загружены")

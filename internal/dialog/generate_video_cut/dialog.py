@@ -42,14 +42,6 @@ class GenerateVideoCutDialog(interface.IGenerateVideoCutDialog):
                                 },
                                 selector="has_invalid_youtube_url"
                             ),
-                            Case(
-                                {
-                                    True: Const(
-                                        "❌ <b>Ошибка:</b> <i>Не удалось обработать видео.</i> 🔄 <u>Попробуйте еще раз</u>\n\n"),
-                                    False: Const(""),
-                                },
-                                selector="has_processing_error"
-                            ),
 
                             # Instructions
                             Const("📋 <b>Инструкция:</b>\n"),
@@ -59,13 +51,6 @@ class GenerateVideoCutDialog(interface.IGenerateVideoCutDialog):
                             Const("🎯 <b>Введите ссылку на YouTube видео:</b>\n"),
                             Const("💡 <i>Например:</i> <code>https://www.youtube.com/watch?v=VIDEO_ID</code>\n\n"),
 
-                            Case(
-                                {
-                                    True: Format("📌 <b>Введенная ссылка:</b>\n<code>{youtube_url}</code>"),
-                                    False: Const("⌨️ <i>Ожидание ввода ссылки на YouTube...</i>"),
-                                },
-                                selector="has_youtube_url"
-                            ),
                         ),
                     },
                     selector="is_processing_video"

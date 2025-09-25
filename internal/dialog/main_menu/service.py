@@ -1,3 +1,4 @@
+import re
 from typing import Any
 
 from aiogram import Bot
@@ -49,6 +50,26 @@ class MainMenuService(interface.IMainMenuService):
                 dialog_manager.dialog_data.pop("has_void_input_text", None)
                 dialog_manager.dialog_data.pop("has_small_input_text", None)
                 dialog_manager.dialog_data.pop("has_big_input_text", None)
+
+                if text.startswith("http"):
+                    if not self._is_valid_youtube_url(text):
+                        dialog_manager.dialog_data["has_invalid_youtube_url"] = True
+                        return
+
+                    dialog_manager.dialog_data["is_processing_video"] = True
+
+                    state = await self._get_state(dialog_manager)
+                    await self.kontur_content_client.generate_video_cut(
+                        state.organization_id,
+                        state.account_id,
+                        text,
+                    )
+
+                    await dialog_manager.start(
+                        model.GenerateVideoCutStates.input_youtube_link,
+                        data=dialog_manager.dialog_data,
+                    )
+                    return
 
                 text = text.strip()
                 if not text:
@@ -258,6 +279,13 @@ class MainMenuService(interface.IMainMenuService):
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 await callback.answer("Ошибка", show_alert=True)
                 raise
+
+    def _is_valid_youtube_url(self, url: str) -> bool:
+        youtube_regex = re.compile(
+            r'(https?://)?(www\.)?(youtube|youtu|youtube-nocookie)\.(com|be)/'
+            r'(watch\?v=|embed/|v/|.+\?v=)?([^&=%\?]{11})'
+        )
+        return bool(youtube_regex.match(url))
 
     async def _get_state(self, dialog_manager: DialogManager) -> model.UserState:
         if hasattr(dialog_manager.event, 'message') and dialog_manager.event.message:
