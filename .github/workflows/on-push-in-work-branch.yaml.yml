@@ -78,9 +78,20 @@ jobs:
                     fi
                     
                     if git show-ref --verify --quiet refs/heads/${{ env.BRANCH_NAME }}; then
-                        echo "Ветка существует локально, делаем pull"
+                        echo "Ветка существует локально, обновляем"
                         git checkout ${{ env.BRANCH_NAME }}
-                        git pull origin ${{ env.BRANCH_NAME }}
+                        
+                        # Проверяем, есть ли расхождения
+                        LOCAL_COMMIT=$(git rev-parse HEAD)
+                        REMOTE_COMMIT=$(git rev-parse origin/${{ env.BRANCH_NAME }})
+                        
+                        if [ "$LOCAL_COMMIT" != "$REMOTE_COMMIT" ]; then
+                            echo "⚠️ Обнаружены расходящиеся ветки, принудительно обновляем локальную ветку"
+                            # Принудительно обновляем до состояния remote
+                            git reset --hard origin/${{ env.BRANCH_NAME }}
+                        else
+                            echo "✅ Локальная ветка уже актуальна"
+                        fi
                     else
                         echo "Первый деплой ветки, создаем и переключаемся"
                         git checkout -b ${{ env.BRANCH_NAME }} origin/${{ env.BRANCH_NAME }}
