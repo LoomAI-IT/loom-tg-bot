@@ -25,22 +25,10 @@ class IModerationPublicationDialog(Protocol):
     def get_edit_text_menu_window(self) -> Window: pass
 
     @abstractmethod
-    def get_regenerate_text_window(self) -> Window: pass
-
-    @abstractmethod
-    def get_edit_title_window(self) -> Window: pass
-
-    @abstractmethod
-    def get_edit_tags_window(self) -> Window: pass
-
-    @abstractmethod
-    def get_edit_content_window(self) -> Window: pass
+    def get_edit_text_window(self) -> Window: pass
 
     @abstractmethod
     def get_edit_image_menu_window(self) -> Window: pass
-
-    @abstractmethod
-    def get_generate_image_window(self) -> Window: pass
 
     @abstractmethod
     def get_upload_image_window(self) -> Window: pass
@@ -84,7 +72,7 @@ class IModerationPublicationService(Protocol):
     ) -> None: pass
 
     @abstractmethod
-    async def handle_publish_with_selected_networks(
+    async def handle_publish_now(
             self,
             callback: CallbackQuery,
             button: Any,
@@ -126,25 +114,7 @@ class IModerationPublicationService(Protocol):
     ) -> None: pass
 
     @abstractmethod
-    async def handle_edit_title_save(
-            self,
-            message: Message,
-            widget: Any,
-            dialog_manager: DialogManager,
-            text: str
-    ) -> None: pass
-
-    @abstractmethod
-    async def handle_edit_tags_save(
-            self,
-            message: Message,
-            widget: Any,
-            dialog_manager: DialogManager,
-            text: str
-    ) -> None: pass
-
-    @abstractmethod
-    async def handle_edit_content_save(
+    async def handle_edit_text(
             self,
             message: Message,
             widget: Any,
@@ -237,25 +207,7 @@ class IModerationPublicationGetter(Protocol):
     ) -> dict: pass
 
     @abstractmethod
-    async def get_regenerate_data(
-            self,
-            dialog_manager: DialogManager,
-    ) -> dict: pass
-
-    @abstractmethod
-    async def get_edit_title_data(
-            self,
-            dialog_manager: DialogManager,
-    ) -> dict: pass
-
-    @abstractmethod
-    async def get_edit_tags_data(
-            self,
-            dialog_manager: DialogManager,
-    ) -> dict: pass
-
-    @abstractmethod
-    async def get_edit_content_data(
+    async def get_edit_text_data(
             self,
             dialog_manager: DialogManager,
     ) -> dict: pass
@@ -266,8 +218,9 @@ class IModerationPublicationGetter(Protocol):
             dialog_manager: DialogManager,
     ) -> dict: pass
 
+
     @abstractmethod
-    async def get_image_prompt_data(
+    async def get_upload_image_data(
             self,
             dialog_manager: DialogManager,
     ) -> dict: pass

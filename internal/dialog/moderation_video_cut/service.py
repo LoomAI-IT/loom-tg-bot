@@ -108,7 +108,6 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
 
-                await message.answer("❌ Ошибка при сохранении комментария")
                 raise
 
     async def handle_send_rejection(
@@ -333,6 +332,8 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
+
+                await callback.answer("❌ Ошибка", show_alert=True)
                 raise
 
     async def handle_toggle_social_network(

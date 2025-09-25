@@ -1,4 +1,5 @@
-from aiogram_dialog import Window, Dialog
+from aiogram import F
+from aiogram_dialog import Window, Dialog, ShowMode
 from aiogram_dialog.widgets.text import Const, Format, Multi, Case
 from aiogram_dialog.widgets.kbd import Button, Column, Row, Checkbox
 from aiogram_dialog.widgets.input import TextInput, MessageInput
@@ -25,13 +26,9 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
             self.get_moderation_list_window(),
             self.get_reject_comment_window(),
             self.get_edit_preview_window(),
-            self.get_regenerate_text_window(),
             self.get_edit_text_menu_window(),
-            self.get_edit_title_window(),
-            self.get_edit_tags_window(),
-            self.get_edit_content_window(),
+            self.get_edit_text_window(),
             self.get_edit_image_menu_window(),
-            self.get_generate_image_window(),
             self.get_upload_image_window(),
             self.get_social_network_select_window(),
         )
@@ -43,30 +40,11 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
                 Case(
                     {
                         True: Multi(
-                            Format("📊 Всего на модерации: <b>{publications_count}</b>\n"),
-                            Format("📅 Период: <b>{period_text}</b>\n\n"),
-                            # Показываем информацию о текущей публикации
-                            Format("👤 Автор: <b>{author_name}</b>\n"),
+                            Format("{publication_text}\n\n"),
+                            Format("👤 Автор: <b>{creator_name}</b>\n"),
                             Format("🏷 Рубрика: <b>{category_name}</b>\n"),
                             Format("📅 Создано: {created_at}\n"),
-                            Case(
-                                {
-                                    True: Format("⏰ Ожидает модерации: <b>{waiting_time}</b>\n"),
-                                    False: Const(""),
-                                },
-                                selector="has_waiting_time"
-                            ),
-                            Const("━━━━━━━━━━━━━━━━━━━━\n"),
-                            Format("<b>{publication_name}</b>\n\n"),
-                            Format("{publication_text}\n\n"),
-                            Case(
-                                {
-                                    True: Format("🏷 Теги: {publication_tags}"),
-                                    False: Const(""),
-                                },
-                                selector="has_tags"
-                            ),
-                            Const("\n━━━━━━━━━━━━━━━━━━━━"),
+
                         ),
                         False: Multi(
                             Const("✅ <b>Нет публикаций на модерации</b>\n\n"),
@@ -83,7 +61,6 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
                 when="has_image",
             ),
 
-            # Навигация со счетчиком в одной строке
             Row(
                 Button(
                     Const("⬅️"),
@@ -94,7 +71,7 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
                 Button(
                     Format("{current_index}/{total_count}"),
                     id="counter",
-                    on_click=lambda c, b, d: c.answer(),  # Просто показываем позицию
+                    on_click=lambda c, b, d: c.answer(),
                     when="has_publications",
                 ),
                 Button(
@@ -106,20 +83,23 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
                 when="has_publications",
             ),
 
-            # Основные действия
             Column(
                 Row(
                     Button(
                         Const("✏️ Редактировать"),
                         id="edit",
                         on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.edit_preview),
-                        when="has_publications",
+                    ),
+                    Button(
+                        Const("🌐 Выбрать место публикации"),
+                        id="select_social_network",
+                        on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.social_network_select,
+                                                             ShowMode.EDIT),
                     ),
                     Button(
                         Const("✅ Опубликовать"),
                         id="approve",
-                        on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.social_network_select),
-                        when="has_publications",
+                        on_click=self.moderation_publication_service.handle_publish_now,
                     ),
                 ),
                 Row(
@@ -127,7 +107,6 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
                         Const("💬 Отклонить"),
                         id="reject_with_comment",
                         on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.reject_comment),
-                        when="has_publications",
                     ),
                 ),
                 when="has_publications",
@@ -151,7 +130,7 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
             Multi(
                 Const("❌ <b>Отклонение публикации</b>\n\n"),
                 Format("📄 Публикация: <b>{publication_name}</b>\n"),
-                Format("👤 Автор: <b>{author_name}</b>\n\n"),
+                Format("👤 Автор: <b>{creator_name}</b>\n\n"),
                 Const("💬 <b>Укажите причину отклонения:</b>\n"),
                 Const("<i>Автор получит уведомление с вашим комментарием</i>\n\n"),
                 Case(
@@ -195,21 +174,11 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
         return Window(
             Multi(
                 Const("✏️ <b>Редактирование публикации</b>\n\n"),
-                # Показываем саму публикацию
-                Format("👤 Автор: <b>{author_name}</b>\n"),
+                Format("{publication_text}\n\n"),
+                Format("👤 Автор: <b>{creator_name}</b>\n"),
                 Format("🏷 Рубрика: <b>{category_name}</b>\n"),
                 Format("📅 Создано: {created_at}\n\n"),
-                Const("━━━━━━━━━━━━━━━━━━━━\n"),
-                Format("<b>{publication_name}</b>\n\n"),
-                Format("{publication_text}\n\n"),
-                Case(
-                    {
-                        True: Format("🏷 Теги: {publication_tags}"),
-                        False: Const("🏷 Теги: <i>отсутствуют</i>"),
-                    },
-                    selector="has_tags"
-                ),
-                # Добавляем информацию о множественных изображениях
+
                 Case(
                     {
                         True: Format("\n\n🖼 Изображение {current_image_index} из {total_images}"),
@@ -224,7 +193,6 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
                     },
                     selector="has_changes"
                 ),
-                Const("\n━━━━━━━━━━━━━━━━━━━━\n\n"),
                 Const("📌 <b>Выберите, что изменить:</b>"),
                 sep="",
             ),
@@ -234,7 +202,7 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
                 when="has_image",
             ),
 
-            # Добавляем кнопки навигации по изображениям
+
             Row(
                 Button(
                     Const("⬅️"),
@@ -286,212 +254,193 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
     def get_edit_text_menu_window(self) -> Window:
         return Window(
             Multi(
-                Const("✏️ <b>Редактирование текста</b>\n\n"),
-                Const("📌 <b>Выберите, что изменить:</b>"),
+                Case(
+                    {
+                        False: Multi(
+                            Const("✏️ <b>Редактирование текста</b>\n"),
+                            Const("💭 <i>Напишите, что нужно изменить в тексте — я отредактирую его!</i>"),
+                        ),
+                        True: Case(
+                            {
+                                True: Multi(
+                                    Format("📝 <b>Ваши указания:</b>\n<code>{regenerate_prompt}</code>\n"),
+                                    Const("⏳ <b>Перегенерирую текст...</b>\n"),
+                                    Const("🕐 <i>Это может занять время. Пожалуйста, подождите.</i>"),
+                                ),
+                                False: Multi(
+                                    Const("⏳ <b>Перегенерирую текст...</b>\n"),
+                                    Const("🕐 <i>Это может занять время. Пожалуйста, подождите.</i>"),
+                                ),
+                            },
+                            selector="has_regenerate_prompt"
+                        )
+                    },
+                    selector="is_regenerating_text"
+                ),
                 sep="",
             ),
 
             Column(
                 Button(
-                    Const("🔄 Перегенерировать всё"),
+                    Const("🔄 Перегенерировать текст"),
                     id="regenerate_all",
                     on_click=self.moderation_publication_service.handle_regenerate_text,
+                    when=~F["is_regenerating_text"]
                 ),
                 Button(
-                    Const("🔄 Перегенерировать с промптом"),
-                    id="regenerate_with_prompt",
-                    on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.regenerate_text),
-                ),
-                Button(
-                    Const("📝 Изменить название"),
-                    id="edit_title",
-                    on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.edit_title),
-                ),
-                Button(
-                    Const("🏷 Изменить теги"),
-                    id="edit_tags",
-                    on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.edit_tags),
-                ),
-                Button(
-                    Const("📄 Изменить текст"),
+                    Const("✍️ Написать свой текст"),
                     id="edit_content",
-                    on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.edit_content),
+                    on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.edit_text, ShowMode.EDIT),
+                    when=~F["is_regenerating_text"]
                 ),
             ),
             Button(
-                Const("📄 ◀️ Назад к превью"),
-                id="edit_preview",
-                on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.edit_preview),
-            ),
-
-            state=model.ModerationPublicationStates.edit_text_menu,
-            parse_mode="HTML",
-        )
-
-    def get_regenerate_text_window(self) -> Window:
-        return Window(
-            Multi(
-                Const("🔄 <b>Перегенерация с дополнительными указаниями</b>\n\n"),
-                Const("💡 <b>Введите дополнительные пожелания:</b>\n"),
-                Const(
-                    "<i>Например: сделай текст короче, добавь больше эмоций, убери технические термины и т.д.</i>\n\n"),
-                Const("💬 Ожидание ввода..."),
-                sep="",
+                Const("◀️ Назад"),
+                id="preview",
+                on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.edit_preview, ShowMode.EDIT),
+                when=~F["is_regenerating_text"]
             ),
 
             TextInput(
                 id="regenerate_prompt_input",
                 on_success=self.moderation_publication_service.handle_regenerate_text_with_prompt,
             ),
-            Button(
-                Const("📄 ◀️ Назад"),
-                id="edit_text_menu",
-                on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.edit_text_menu),
-            ),
 
-            state=model.ModerationPublicationStates.regenerate_text,
-            getter=self.moderation_publication_getter.get_regenerate_data,
+            state=model.ModerationPublicationStates.edit_text_menu,
+            getter=self.moderation_publication_getter.get_edit_text_data,
             parse_mode="HTML",
         )
 
-    def get_edit_title_window(self) -> Window:
+    def get_edit_text_window(self) -> Window:
         return Window(
             Multi(
-                Const("📝 <b>Изменение названия</b>\n\n"),
-                Format("Текущее: <b>{current_title}</b>\n\n"),
-                Const("✍️ <b>Введите новое название:</b>\n"),
-                Const("<i>Максимум 200 символов</i>"),
-                sep="",
-            ),
-
-            TextInput(
-                id="title_input",
-                on_success=self.moderation_publication_service.handle_edit_title_save,
-            ),
-
-            Button(
-                Const("Назад"),
-                id="back_to_edit_preview",
-                on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.edit_preview),
-            ),
-
-            state=model.ModerationPublicationStates.edit_title,
-            getter=self.moderation_publication_getter.get_edit_title_data,
-            parse_mode="HTML",
-        )
-
-    def get_edit_tags_window(self) -> Window:
-        return Window(
-            Multi(
-                Const("🏷 <b>Изменение тегов</b>\n\n"),
+                Const("✍️ <b>Редактирование текста</b>\n"),
+                Const("📝 <i>Напишите итоговый текст публикации</i>"),
+                # Add error messages
                 Case(
                     {
-                        True: Format("Текущие теги: <b>{current_tags}</b>\n\n"),
-                        False: Const("Теги отсутствуют\n\n"),
+                        True: Const("\n❌ <b>Ошибка:</b> Текст не может быть пустым"),
+                        False: Const(""),
                     },
-                    selector="has_tags"
+                    selector="has_void_text"
                 ),
-                Const("✍️ <b>Введите теги через запятую:</b>\n"),
-                Const("<i>Например: маркетинг, продажи, SMM</i>\n"),
-                Const("<i>Оставьте пустым для удаления всех тегов</i>"),
+                Case(
+                    {
+                        True: Const("\n📏 <b>Слишком короткий текст</b>\n<i>Минимум 50 символов</i>"),
+                        False: Const(""),
+                    },
+                    selector="has_small_text"
+                ),
+                Case(
+                    {
+                        True: Const("\n📏 <b>Слишком длинный текст</b>\n<i>Максимум 4000 символов</i>"),
+                        False: Const(""),
+                    },
+                    selector="has_big_text"
+                ),
                 sep="",
             ),
 
             TextInput(
-                id="tags_input",
-                on_success=self.moderation_publication_service.handle_edit_tags_save,
+                id="text_input",
+                on_success=self.moderation_publication_service.handle_edit_text,
             ),
 
             Button(
-                Const("Назад"),
-                id="back_to_edit_preview",
-                on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.edit_preview),
+                Const("◀️ Назад"),
+                id="edit_text_menu",
+                on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.edit_text_menu, ShowMode.EDIT),
             ),
 
-            state=model.ModerationPublicationStates.edit_tags,
-            getter=self.moderation_publication_getter.get_edit_tags_data,
-            parse_mode="HTML",
-        )
-
-    def get_edit_content_window(self) -> Window:
-        return Window(
-            Multi(
-                Const("📄 <b>Изменение текста публикации</b>\n\n"),
-                Format("Длина текущего текста: <b>{current_text_length}</b> символов\n\n"),
-                Const("✍️ <b>Введите новый текст:</b>\n"),
-                Const("<i>Минимум 50, максимум 4000 символов</i>\n"),
-                Const("<i>Для просмотра текущего текста вернитесь назад</i>"),
-                sep="",
-            ),
-
-            TextInput(
-                id="content_input",
-                on_success=self.moderation_publication_service.handle_edit_content_save,
-            ),
-
-            Button(
-                Const("Назад"),
-                id="back_to_edit_preview",
-                on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.edit_preview),
-            ),
-
-            state=model.ModerationPublicationStates.edit_content,
-            getter=self.moderation_publication_getter.get_edit_content_data,
+            state=model.ModerationPublicationStates.edit_text,
+            getter=self.moderation_publication_getter.get_edit_text_data,
             parse_mode="HTML",
         )
 
     def get_edit_image_menu_window(self) -> Window:
         return Window(
-            Multi(
-                Const("🖼 <b>Управление изображением</b>\n\n"),
-                Case(
-                    {
-                        True: Multi(
-                            Const("✅ <b>Изображение присутствует</b>\n"),
-                            Case(
-                                {
-                                    True: Const("📸 Тип: пользовательское\n"),
-                                    False: Const("🎨 Тип: сгенерированное\n"),
-                                },
-                                selector="is_custom_image"
-                            ),
+            Case(
+                {
+                    False: Multi(
+                        Const("🎨 <b>Настройка изображения</b>\n"),
+                        Case(
+                            {
+                                True: Multi(
+                                    Const(
+                                        "✏️ <i>Опишите, как изменить картинку. Я внесу ваши правки в текущее изображение.</i>\n\n")
+                                ),
+                                False: Const("🖼️ <i>Опишите, какую картинку создать.</i>\n\n"),
+                            },
+                            selector="has_image"
                         ),
-                        False: Const("❌ <b>Изображение отсутствует</b>\n"),
-                    },
-                    selector="has_image"
-                ),
-                Const("\n📌 <b>Выберите действие:</b>"),
-                sep="",
+                        Const("📋 <b>Что указать в описании:</b>\n"),
+                        Const("• 👥 <b>Объекты и персонажи</b> — кто или что на картинке\n"),
+                        Const("• 🎭 <b>Стиль и настроение</b> — реалистично, мультяшно, минимализм, цветовая гамма\n"),
+                        Const("• 🌍 <b>Фон и окружение</b> — улица, природа, офис и т.д.\n"),
+                        Const("• ✨ <b>Детали</b> — освещение, поза, аксессуары"),
+                    ),
+                    True: Multi(
+                        Const("🪄 <b>Создаю изображение...</b>\n"),
+                        Const("⏳ <i>Это займет около минуты</i>"),
+                    ),
+                },
+                selector="is_generating_image"
             ),
-
+            Case(
+                {
+                    True: Const("\n❌ <b>Ошибка:</b> Описание изображения не может быть пустым"),
+                    False: Const(""),
+                },
+                selector="has_void_image_prompt"
+            ),
+            Case(
+                {
+                    True: Const("\n📏 <b>Слишком короткое описание</b>\n<i>Минимум 5 символов</i>"),
+                    False: Const(""),
+                },
+                selector="has_small_image_prompt"
+            ),
+            Case(
+                {
+                    True: Const("\n📏 <b>Слишком длинное описание</b>\n<i>Максимум 500 символов</i>"),
+                    False: Const(""),
+                },
+                selector="has_big_image_prompt"
+            ),
             Column(
                 Button(
-                    Const("🎨 Сгенерировать новое"),
+                    Const("🎨 Сгенерировать картинку"),
                     id="generate_image",
                     on_click=self.moderation_publication_service.handle_generate_new_image,
                 ),
                 Button(
-                    Const("🎨 Сгенерировать с описанием"),
-                    id="generate_image_prompt",
-                    on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.generate_image),
-                ),
-                Button(
-                    Const("📤 Загрузить изображение"),
+                    Const("📷 Использовать своё фото"),
                     id="upload_image",
-                    on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.upload_image),
+                    on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.upload_image, ShowMode.EDIT),
                 ),
                 Button(
-                    Const("🗑 Удалить изображение"),
+                    Const("🗑️ Удалить изображение"),
                     id="remove_image",
                     on_click=self.moderation_publication_service.handle_remove_image,
                     when="has_image",
                 ),
+                when=~F["is_generating_image"]
             ),
 
+            DynamicMedia(
+                selector="preview_image_media",
+                when="has_image",
+            ),
+
+            TextInput(
+                id="image_prompt_input",
+                on_success=self.moderation_publication_service.handle_generate_image_with_prompt,
+            ),
             Button(
-                Const("Назад"),
-                id="back_to_edit_preview",
-                on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.edit_preview),
+                Const("◀️ Назад"),
+                id="preview",
+                on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.edit_preview, ShowMode.EDIT),
+                when=~F["is_generating_image"]
             ),
 
             state=model.ModerationPublicationStates.edit_image_menu,
@@ -499,95 +448,68 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
             parse_mode="HTML",
         )
 
-    def get_generate_image_window(self) -> Window:
-        return Window(
-            Multi(
-                Const("🎨 <b>Генерация изображения</b>\n\n"),
-                Const("💡 <b>Опишите желаемое изображение:</b>\n"),
-                Const("<i>Например: минималистичная иллюстрация в синих тонах, деловой стиль</i>\n"),
-                Const("<i>Или: абстрактная композиция с элементами технологий</i>\n\n"),
-                Case(
-                    {
-                        True: Format("📌 <b>Ваше описание:</b>\n<i>{image_prompt}</i>"),
-                        False: Const("💬 Ожидание ввода описания..."),
-                    },
-                    selector="has_image_prompt"
-                ),
-                sep="",
-            ),
-
-            TextInput(
-                id="image_prompt_input",
-                on_success=self.moderation_publication_service.handle_generate_image_with_prompt,
-            ),
-
-            Button(
-                Const("Назад"),
-                id="edit_image_menu",
-                on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.edit_image_menu),
-            ),
-
-            state=model.ModerationPublicationStates.generate_image,
-            getter=self.moderation_publication_getter.get_image_prompt_data,
-            parse_mode="HTML",
-        )
-
     def get_upload_image_window(self) -> Window:
         return Window(
             Multi(
-                Const("📤 <b>Загрузка изображения</b>\n\n"),
-                Const("📸 <b>Отправьте изображение для публикации:</b>\n\n"),
-                Const("✅ Поддерживаемые форматы: JPG, PNG, GIF\n"),
-                Const("📏 Максимальный размер: 10 МБ\n"),
-                Const("📐 Рекомендуемое соотношение: 16:9 или 1:1\n\n"),
-                Const("<i>Изображение будет автоматически оптимизировано</i>"),
+                Const("📷 <b>Загрузка изображения</b>\n"),
+                Const("📤 <i>Отправьте своё изображение</i>"),
+                # Add error messages
+                Case(
+                    {
+                        True: Const(
+                            "\n❌ <b>Неверный формат файла</b>\n<i>Отправьте изображение (не другой тип файла)</i>"),
+                        False: Const(""),
+                    },
+                    selector="has_invalid_image_type"
+                ),
+                Case(
+                    {
+                        True: Const("\n📁 <b>Файл слишком большой</b>\n<i>Максимум 10 МБ</i>"),
+                        False: Const(""),
+                    },
+                    selector="has_big_image_size"
+                ),
+                Case(
+                    {
+                        True: Const(
+                            "\n⚠️ <b>Ошибка обработки</b>\n<i>Не удалось обработать изображение, попробуйте другое</i>"),
+                        False: Const(""),
+                    },
+                    selector="has_image_processing_error"
+                ),
                 sep="",
             ),
 
             MessageInput(
                 func=self.moderation_publication_service.handle_image_upload,
-                content_types=["photo"],
             ),
 
             Button(
-                Const("Назад"),
-                id="edit_image_menu",
-                on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.edit_image_menu),
+                Const("◀️ Назад"),
+                id="image_menu",
+                on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.edit_image_menu, ShowMode.EDIT),
             ),
 
             state=model.ModerationPublicationStates.upload_image,
+            getter=self.moderation_publication_getter.get_upload_image_data,
             parse_mode="HTML",
         )
 
     def get_social_network_select_window(self) -> Window:
         return Window(
             Multi(
-                Const("🌐 <b>Выбор социальных сетей</b>\n\n"),
+                Const("🌐 <b>Выбор платформы для публикации</b>\n"),
                 Case(
                     {
                         True: Multi(
-                            Const("⚠️ <b>Нет подключенных социальных сетей!</b>\n\n"),
+                            Const("⚠️ <b>Социальные сети не подключены</b>\n"),
                             Const(
-                                "🔗 <i>Для публикации постов необходимо подключить хотя бы одну социальную сеть в настройках организации.</i>\n\n"),
-                            Const("Обратитесь к администратору для подключения социальных сетей."),
+                                "🔗 <i>Для публикации необходимо подключить хотя бы одну социальную сеть в настройках организации</i>\n"),
+                            Const("💡 <b>Обратитесь к администратору для настройки подключений</b>"),
                         ),
                         False: Multi(
-                            Const("📋 <b>Доступные социальные сети:</b>\n\n"),
-                            Case(
-                                {
-                                    True: Const("📺 Telegram - <b>подключен</b>\n"),
-                                    False: Const("📺 Telegram - <b>не подключен</b>\n"),
-                                },
-                                selector="telegram_connected"
-                            ),
-                            Case(
-                                {
-                                    True: Const("🔗 VKontakte - <b>подключен</b>\n\n"),
-                                    False: Const("🔗 VKontakte - <b>не подключен</b>\n\n"),
-                                },
-                                selector="vkontakte_connected"
-                            ),
-                            Const("✅ <b>Выберите, где опубликовать:</b>"),
+                            Const("📱 <b>Выберите платформы для публикации:</b>\n"),
+                            Const("💡 <i>Можно выбрать несколько вариантов</i>"),
                         ),
                     },
                     selector="no_connected_networks"
@@ -598,16 +520,16 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
             # Чекбоксы для выбора платформ (только для подключенных)
             Column(
                 Checkbox(
-                    Const("✅ Telegram"),
-                    Const("❌ Telegram"),
+                    Const("✅ 📱 Telegram"),
+                    Const("⬜ 📱 Telegram"),
                     id="telegram_checkbox",
                     default=False,
                     on_state_changed=self.moderation_publication_service.handle_toggle_social_network,
                     when="telegram_connected",
                 ),
                 Checkbox(
-                    Const("✅ VKontakte"),
-                    Const("❌ VKontakte"),
+                    Const("✅ 🔵 ВКонтакте"),
+                    Const("⬜ 🔵 ВКонтакте"),
                     id="vkontakte_checkbox",
                     default=False,
                     on_state_changed=self.moderation_publication_service.handle_toggle_social_network,
@@ -619,24 +541,10 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
             # Кнопки действий
             Row(
                 Button(
-                    Const("🚀 Опубликовать"),
-                    id="publish_with_networks",
-                    on_click=self.moderation_publication_service.handle_publish_with_selected_networks,
-                    when="has_available_networks",
-                ),
-                Button(
                     Const("◀️ Назад"),
-                    id="back_to_moderation_list",
-                    on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.moderation_list),
+                    id="back_to_preview",
+                    on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.edit_preview, ShowMode.EDIT),
                 ),
-            ),
-
-            # Кнопка назад для случая когда нет доступных сетей
-            Button(
-                Const("◀️ Назад к списку"),
-                id="back_to_moderation_list_no_networks",
-                on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.moderation_list),
-                when="no_connected_networks",
             ),
 
             state=model.ModerationPublicationStates.social_network_select,
