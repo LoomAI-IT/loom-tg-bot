@@ -29,10 +29,10 @@ class ContentMenuDialog(interface.IContentMenuDialog):
             Const("✍️ <b>Контент-студия</b>\n\n"
                   "💡 Создавайте новый контент или работайте с черновиками\n"),
 
-            Format("📊 <b>Ваша статистика:</b>\n"),
-            Format("📝 Черновиков: <b>{drafts_count}</b>\n"),
-            Format("⏳ На модерации: <b>{moderation_count}</b>\n"),
-            Format("✅ Опубликовано: <b>{published_count}</b>\n"),
+            Format("📊 <b>Ваша статистика:</b>"),
+            Format("📝 Черновиков: <b>{drafts_count}</b>"),
+            Format("⏳ На модерации: <b>{moderation_count}</b>"),
+            Format("✅ Опубликовано: <b>{approved_count}</b>"),
 
             Column(
                 Button(
@@ -97,9 +97,9 @@ class ContentMenuDialog(interface.IContentMenuDialog):
             Const("📝 <b>Ваши черновики</b>\n\n"
                   "Выберите тип черновиков для просмотра:\n"),
 
-            Format("📊 <b>Статистика черновиков:</b>\n"),
-            Format("📰 Публикации: <b>{publication_drafts_count}</b>\n"),
-            Format("🎬 Видео-нарезки: <b>{video_drafts_count}</b>\n"),
+            Format("📊 <b>Статистика черновиков:</b>"),
+            Format("📰 Публикации: <b>{publication_drafts_count}</b>"),
+            Format("🎬 Видео-нарезки: <b>{video_drafts_count}</b>"),
 
             Column(
                 Button(
@@ -130,9 +130,9 @@ class ContentMenuDialog(interface.IContentMenuDialog):
             Const("👀 <b>Модерация контента</b>\n\n"
                   "Выберите тип контента для модерации:\n"),
 
-            Format("📊 <b>Статистика модерации:</b>\n"),
-            Format("📰 Публикации на модерации: <b>{publication_moderation_count}</b>\n"),
-            Format("🎬 Видео на модерации: <b>{video_moderation_count}</b>\n"),
+            Format("📊 <b>Статистика модерации:</b>"),
+            Format("📰 Публикации на модерации: <b>{publication_moderation_count}</b>"),
+            Format("🎬 Видео на модерации: <b>{video_moderation_count}</b>"),
 
             Column(
                 Button(

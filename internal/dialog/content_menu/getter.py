@@ -31,26 +31,20 @@ class ContentMenuGetter(interface.IContentMenuGetter):
             try:
                 state = await self._get_state(dialog_manager)
 
-                # Получаем данные сотрудника
-                employee = await self.kontur_employee_client.get_employee_by_account_id(
-                    state.account_id
-                )
-
                 # Получаем статистику публикаций
                 publications = await self.kontur_content_client.get_publications_by_organization(
-                    employee.organization_id
+                    state.organization_id
                 )
 
                 # Получаем статистику видео-нарезок
                 video_cuts = await self.kontur_content_client.get_video_cuts_by_organization(
-                    employee.organization_id
+                    state.organization_id
                 )
 
                 # Подсчитываем статистику
                 drafts_count = 0
                 moderation_count = 0
                 approved_count = 0
-                published_count = 0
                 total_generations = 0
 
                 video_cut_count = 0
@@ -58,37 +52,35 @@ class ContentMenuGetter(interface.IContentMenuGetter):
 
                 # Статистика публикаций
                 for pub in publications:
-                    total_generations += 1
-                    publication_count += 1
+                    if pub.creator_id == state.account_id:
+                        total_generations += 1
+                        publication_count += 1
 
-                    if pub.moderation_status == "draft":
-                        drafts_count += 1
-                    elif pub.moderation_status == "moderation":
-                        moderation_count += 1
-                    elif pub.moderation_status == "approved":
-                        approved_count += 1
-                    elif pub.moderation_status == "published":
-                        published_count += 1
+                        if pub.moderation_status == "draft":
+                            drafts_count += 1
+                        elif pub.moderation_status == "moderation":
+                            moderation_count += 1
+                        elif pub.moderation_status == "approved":
+                            approved_count += 1
+
 
                 # Статистика видео-нарезок
                 for video in video_cuts:
-                    total_generations += 1
-                    video_cut_count += 1
+                    if video.creator_id == state.account_id:
+                        total_generations += 1
+                        video_cut_count += 1
 
-                    if video.moderation_status == "draft":
-                        drafts_count += 1
-                    elif video.moderation_status == "moderation":
-                        moderation_count += 1
-                    elif video.moderation_status == "approved":
-                        approved_count += 1
-                    elif video.moderation_status == "published":
-                        published_count += 1
+                        if video.moderation_status == "draft":
+                            drafts_count += 1
+                        elif video.moderation_status == "moderation":
+                            moderation_count += 1
+                        elif video.moderation_status == "approved":
+                            approved_count += 1
 
                 data = {
                     "drafts_count": drafts_count,
                     "moderation_count": moderation_count,
                     "approved_count": approved_count,
-                    "published_count": published_count,
                     "total_generations": total_generations,
                     "video_cut_count": video_cut_count,
                     "publication_count": publication_count,
@@ -102,7 +94,7 @@ class ContentMenuGetter(interface.IContentMenuGetter):
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-                self.logger.error("Ошибка при загрузке данных меню контента")
+
                 raise err
 
     async def get_drafts_type_data(
@@ -117,24 +109,21 @@ class ContentMenuGetter(interface.IContentMenuGetter):
             try:
                 state = await self._get_state(dialog_manager)
 
-                # Получаем данные сотрудника
-                employee = await self.kontur_employee_client.get_employee_by_account_id(
-                    state.account_id
-                )
-
                 # Получаем публикации организации
                 publications = await self.kontur_content_client.get_publications_by_organization(
-                    employee.organization_id
+                    state.organization_id
                 )
 
                 # Получаем видео-нарезки организации
                 video_cuts = await self.kontur_content_client.get_video_cuts_by_organization(
-                    employee.organization_id
+                    state.organization_id
                 )
 
                 # Подсчитываем черновики
-                publication_drafts_count = sum(1 for pub in publications if pub.moderation_status == "draft")
-                video_drafts_count = sum(1 for video in video_cuts if video.moderation_status == "draft")
+                publication_drafts_count = sum(1 for pub in publications if pub.moderation_status == "draft"
+                                               and pub.creator_id == state.account_id)
+                video_drafts_count = sum(1 for video in video_cuts if video.moderation_status == "draft"
+                                         and video.creator_id == state.account_id)
 
                 data = {
                     "publication_drafts_count": publication_drafts_count,
@@ -163,24 +152,19 @@ class ContentMenuGetter(interface.IContentMenuGetter):
             try:
                 state = await self._get_state(dialog_manager)
 
-                # Получаем данные сотрудника
-                employee = await self.kontur_employee_client.get_employee_by_account_id(
-                    state.account_id
-                )
-
                 # Получаем публикации организации
                 publications = await self.kontur_content_client.get_publications_by_organization(
-                    employee.organization_id
+                    state.organization_id
                 )
 
                 # Получаем видео-нарезки организации
                 video_cuts = await self.kontur_content_client.get_video_cuts_by_organization(
-                    employee.organization_id
+                    state.organization_id
                 )
 
                 # Подсчитываем элементы на модерации
-                publication_moderation_count = sum(1 for pub in publications if pub.moderation_status == "pending")
-                video_moderation_count = sum(1 for video in video_cuts if video.moderation_status == "pending")
+                publication_moderation_count = sum(1 for pub in publications if pub.moderation_status == "moderation")
+                video_moderation_count = sum(1 for video in video_cuts if video.moderation_status == "moderation")
 
                 data = {
                     "publication_moderation_count": publication_moderation_count,
