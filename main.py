@@ -31,6 +31,7 @@ from internal.dialog.generate_video_cut.dialog import GenerateVideoCutDialog
 from internal.dialog.moderation_publication.dialog import ModerationPublicationDialog
 from internal.dialog.video_cut_draft_content.dialog import VideoCutsDraftDialog
 from internal.dialog.moderation_video_cut.dialog import VideoCutModerationDialog
+from internal.dialog.publication_draft_content.dialog import PublicationDraftDialog
 
 from internal.service.state.service import StateService
 from internal.dialog.auth.service import AuthService
@@ -45,6 +46,7 @@ from internal.dialog.generate_video_cut.service import GenerateVideoCutService
 from internal.dialog.moderation_publication.service import ModerationPublicationService
 from internal.dialog.video_cut_draft_content.service import VideoCutsDraftService
 from internal.dialog.moderation_video_cut.service import VideoCutModerationService
+from internal.dialog.publication_draft_content.service import PublicationDraftService
 
 from internal.dialog.auth.getter import AuthGetter
 from internal.dialog.main_menu.getter import MainMenuGetter
@@ -58,6 +60,7 @@ from internal.dialog.moderation_publication.getter import ModerationPublicationG
 from internal.dialog.generate_video_cut.getter import GenerateVideoCutGetter
 from internal.dialog.video_cut_draft_content.getter import VideoCutsDraftGetter
 from internal.dialog.moderation_video_cut.getter import VideoCutModerationGetter
+from internal.dialog.publication_draft_content.getter import PublicationDraftGetter
 
 from internal.repo.state.repo import StateRepo
 
@@ -194,6 +197,14 @@ video_cuts_draft_getter = VideoCutsDraftGetter(
     kontur_content_client,
 )
 
+publication_draft_getter = PublicationDraftGetter(
+    tel,
+    state_repo,
+    kontur_employee_client,
+    kontur_content_client,
+    cfg.domain,
+)
+
 add_employee_getter = AddEmployeeGetter(
     tel,
     state_repo,
@@ -260,6 +271,13 @@ moderation_publication_service = ModerationPublicationService(
 
 video_cuts_draft_service = VideoCutsDraftService(
     tel,
+    state_repo,
+    kontur_content_client,
+)
+
+publication_draft_service = PublicationDraftService(
+    tel,
+    bot,
     state_repo,
     kontur_content_client,
 )
@@ -334,6 +352,12 @@ video_cuts_draft_dialog = VideoCutsDraftDialog(
     video_cuts_draft_getter
 )
 
+publication_draft_dialog = PublicationDraftDialog(
+    tel,
+    publication_draft_service,
+    publication_draft_getter,
+)
+
 video_cut_moderation_dialog = VideoCutModerationDialog(
     tel,
     video_cut_moderation_service,
@@ -357,9 +381,7 @@ dialog_bg_factory = NewTg(
     moderation_publication_dialog,
     video_cut_moderation_dialog,
     video_cuts_draft_dialog,
-    publication_draft_dialog,
-    prefix
-
+    publication_draft_dialog
 )
 
 # Инициализация middleware
