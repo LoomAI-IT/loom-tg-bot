@@ -1,6 +1,7 @@
 from aiogram.filters import Command
 from aiogram_dialog import setup_dialogs, BgManagerFactory
 from aiogram import Dispatcher, Router
+from fastapi import FastAPI
 
 from internal import interface
 
@@ -20,7 +21,9 @@ def NewTg(
         moderation_publication_dialog: interface.IModerationPublicationDialog,
         moderation_video_cut_dialog: interface.IVideoCutModerationDialog,
         video_cuts_draft_dialog: interface.IVideoCutsDraftDialog,
-) -> BgManagerFactory:
+        publication_draft_dialog: interface.IPublicationDraftDialog,
+        prefix: str
+):
     include_command_handlers(
         dp,
         command_controller
@@ -38,7 +41,8 @@ def NewTg(
         generate_video_cut_dialog,
         moderation_publication_dialog,
         moderation_video_cut_dialog,
-        video_cuts_draft_dialog
+        video_cuts_draft_dialog,
+        publication_draft_dialog
     )
 
     return dialog_bg_factory
@@ -77,8 +81,8 @@ def include_dialogs(
         moderation_publication_dialog: interface.IModerationPublicationDialog,
         moderation_video_cut_dialog: interface.IVideoCutModerationDialog,
         video_cuts_draft_dialog: interface.IVideoCutsDraftDialog,
-) -> BgManagerFactory:
-
+        publication_draft_dialog: interface.IPublicationDraftDialog,
+):
     dialog_router = Router()
     dialog_router.include_routers(
         auth_dialog.get_dialog(),
@@ -92,7 +96,8 @@ def include_dialogs(
         moderation_publication_dialog.get_dialog(),
         generate_video_cut_dialog.get_dialog(),
         moderation_video_cut_dialog.get_dialog(),
-        video_cuts_draft_dialog.get_dialog()
+        video_cuts_draft_dialog.get_dialog(),
+        publication_draft_dialog.get_dialog()
     )
 
     dp.include_routers(dialog_router)
