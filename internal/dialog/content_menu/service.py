@@ -3,7 +3,7 @@ from typing import Any
 from aiogram import Bot
 
 from aiogram.types import CallbackQuery
-from aiogram_dialog import DialogManager, StartMode
+from aiogram_dialog import DialogManager, StartMode, ShowMode
 
 from opentelemetry.trace import SpanKind, Status, StatusCode
 
@@ -34,6 +34,8 @@ class ContentMenuService(interface.IContentMenuService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 state = await self._get_state(dialog_manager)
                 await self.state_repo.change_user_state(
                     state_id=state.id,
@@ -47,11 +49,12 @@ class ContentMenuService(interface.IContentMenuService):
                 )
 
                 self.logger.info("Пользователь перешел к созданию публикации")
-
                 span.set_status(Status(StatusCode.OK))
+
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
+
                 await callback.answer("❌ Ошибка при переходе к созданию публикации", show_alert=True)
                 raise
 
@@ -66,6 +69,8 @@ class ContentMenuService(interface.IContentMenuService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 state = await self._get_state(dialog_manager)
                 await self.state_repo.change_user_state(
                     state_id=state.id,
@@ -79,11 +84,12 @@ class ContentMenuService(interface.IContentMenuService):
                 )
 
                 self.logger.info("Пользователь перешел к созданию видео-нарезки")
-
                 span.set_status(Status(StatusCode.OK))
+
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
+
                 await callback.answer("❌ Ошибка при переходе к созданию видео-нарезки", show_alert=True)
                 raise
 
@@ -98,6 +104,8 @@ class ContentMenuService(interface.IContentMenuService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 state = await self._get_state(dialog_manager)
                 await self.state_repo.change_user_state(
                     state_id=state.id,
@@ -111,11 +119,12 @@ class ContentMenuService(interface.IContentMenuService):
                 )
 
                 self.logger.info("Пользователь перешел к черновикам публикаций")
-
                 span.set_status(Status(StatusCode.OK))
+
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
+
                 await callback.answer("❌ Ошибка при переходе к черновикам публикаций", show_alert=True)
                 raise
 
@@ -130,6 +139,8 @@ class ContentMenuService(interface.IContentMenuService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 state = await self._get_state(dialog_manager)
                 await self.state_repo.change_user_state(
                     state_id=state.id,
@@ -143,11 +154,12 @@ class ContentMenuService(interface.IContentMenuService):
                 )
 
                 self.logger.info("Пользователь перешел к черновикам видео-нарезок")
-
                 span.set_status(Status(StatusCode.OK))
+
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
+
                 await callback.answer("❌ Ошибка при переходе к черновикам видео", show_alert=True)
                 raise
 
@@ -162,6 +174,8 @@ class ContentMenuService(interface.IContentMenuService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 state = await self._get_state(dialog_manager)
 
                 # Проверяем права доступа к модерации
@@ -170,7 +184,7 @@ class ContentMenuService(interface.IContentMenuService):
                 )
 
                 can_moderate = (
-                        employee.role in ["moderator", "admin", "owner"] or
+                        employee.role in ["moderator", "admin",] or
                         employee.edit_employee_perm_permission
                 )
 
@@ -194,11 +208,12 @@ class ContentMenuService(interface.IContentMenuService):
                 )
 
                 self.logger.info("Пользователь перешел к модерации публикаций")
-
                 span.set_status(Status(StatusCode.OK))
+
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
+
                 await callback.answer("❌ Ошибка при переходе к модерации публикаций", show_alert=True)
                 raise
 
@@ -213,6 +228,8 @@ class ContentMenuService(interface.IContentMenuService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 state = await self._get_state(dialog_manager)
 
                 # Проверяем права доступа к модерации
@@ -221,7 +238,7 @@ class ContentMenuService(interface.IContentMenuService):
                 )
 
                 can_moderate = (
-                        employee.role in ["moderator", "admin", "owner"] or
+                        employee.role in ["moderator", "admin"] or
                         employee.edit_employee_perm_permission
                 )
 
@@ -245,11 +262,12 @@ class ContentMenuService(interface.IContentMenuService):
                 )
 
                 self.logger.info("Пользователь перешел к модерации видео-нарезок")
-
                 span.set_status(Status(StatusCode.OK))
+
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
+
                 await callback.answer("❌ Ошибка при переходе к модерации видео", show_alert=True)
                 raise
 
@@ -264,14 +282,16 @@ class ContentMenuService(interface.IContentMenuService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 await dialog_manager.start(
                     model.MainMenuStates.main_menu,
                     mode=StartMode.RESET_STACK
                 )
 
                 self.logger.info("Пользователь перешел в главное меню")
-
                 span.set_status(Status(StatusCode.OK))
+
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
@@ -288,21 +308,22 @@ class ContentMenuService(interface.IContentMenuService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 await dialog_manager.start(
                     model.ContentMenuStates.content_menu,
                     mode=StartMode.RESET_STACK
                 )
 
                 self.logger.info("Пользователь перешел в контент меню")
-
                 span.set_status(Status(StatusCode.OK))
+
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
     async def _get_state(self, dialog_manager: DialogManager) -> model.UserState:
-        """Получить состояние текущего пользователя"""
         if hasattr(dialog_manager.event, 'message') and dialog_manager.event.message:
             chat_id = dialog_manager.event.message.chat.id
         elif hasattr(dialog_manager.event, 'chat'):
