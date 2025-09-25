@@ -47,6 +47,7 @@ class MainMenuDialog(interface.IMainMenuDialog):
                         on_click=self.main_menu_service.handle_go_to_organization,
                     ),
                 ),
+
                 Button(
                     Const("📝 Контент"),
                     id="content_generation",
