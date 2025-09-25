@@ -57,11 +57,11 @@ class KonturContentClient(interface.IKonturContentClient):
                     "category_id": category_id,
                     "text_reference": text_reference,
                 }
-                # response = await self.client.post("/publication/text/generate", json=body)
-                # json_response = response.json()
+                response = await self.client.post("/publication/text/generate", json=body)
+                json_response = response.json()
 
                 span.set_status(Status(StatusCode.OK))
-                return {"text": "мок текста в клиенте"}
+                return json_response
 
             except Exception as e:
                 span.record_exception(e)
@@ -84,11 +84,11 @@ class KonturContentClient(interface.IKonturContentClient):
                     "publication_text": publication_text,
                     "prompt": prompt,
                 }
-                # response = await self.client.post("/publication/text/regenerate", json=body)
-                # json_response = response.json()
+                response = await self.client.post("/publication/text/regenerate", json=body)
+                json_response = response.json()
 
                 span.set_status(Status(StatusCode.OK))
-                return {"text": "мок перегенерированного текста в клиенте"}
+                return json_response
 
             except Exception as e:
                 span.record_exception(e)
