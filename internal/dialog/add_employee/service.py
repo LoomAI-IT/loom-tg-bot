@@ -36,7 +36,6 @@ class AddEmployeeService(interface.IAddEmployeeService):
                 dialog_manager.show_mode = ShowMode.EDIT
 
                 await message.delete()
-                account_id = account_id.strip()
 
                 error_flags = [
                     "has_void_account_id",
@@ -47,6 +46,7 @@ class AddEmployeeService(interface.IAddEmployeeService):
                     dialog_manager.dialog_data.pop(flag, None)
 
                 # Validation
+                account_id = account_id.strip()
                 if not account_id:
                     dialog_manager.dialog_data["has_void_account_id"] = True
                     return
@@ -85,8 +85,8 @@ class AddEmployeeService(interface.IAddEmployeeService):
         ) as span:
             try:
                 dialog_manager.show_mode = ShowMode.EDIT
+
                 await message.delete()
-                name = name.strip()
 
                 error_flags = [
                     "has_void_name",
@@ -97,6 +97,7 @@ class AddEmployeeService(interface.IAddEmployeeService):
                     dialog_manager.dialog_data.pop(flag, None)
 
                 # Validation
+                name = name.strip()
                 if not name:
                     dialog_manager.dialog_data["has_void_name"] = True
                     return
@@ -141,15 +142,19 @@ class AddEmployeeService(interface.IAddEmployeeService):
                 default_permissions = utils.PermissionManager.get_default_permissions(selected_role)
                 dialog_manager.dialog_data["permissions"] = default_permissions.to_dict()
 
-                await callback.answer(f"✅ Выбрана роль: {utils.RoleDisplayHelper.get_display_name(selected_role)}")
+                await callback.answer(
+                    f"✅ Выбрана роль: {utils.RoleDisplayHelper.get_display_name(selected_role)}",
+                    show_alert=True
+                )
                 self.logger.info(f"Роль выбрана: {selected_role.value}")
 
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                await callback.answer("❌ Ошибка при выборе роли", show_alert=True)
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
+
+                await callback.answer("❌ Ошибка", show_alert=True)
                 raise
 
     async def handle_toggle_permission(
@@ -182,19 +187,15 @@ class AddEmployeeService(interface.IAddEmployeeService):
 
                 dialog_manager.dialog_data["permissions"] = permissions.to_dict()
 
-                # Показываем пользователю что изменилось
-                permission_name = utils.PermissionManager.get_permission_name(permission_key)
-                new_value = getattr(permissions, permission_key)
-                status = "включено" if new_value else "выключено"
-
-                await callback.answer(f"{'✅' if new_value else '❌'} {permission_name}: {status}")
+                await callback.answer()
 
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                await callback.answer("❌ Ошибка при изменении разрешения", show_alert=True)
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
+
+                await callback.answer("❌ Ошибка при изменении разрешения", show_alert=True)
                 raise
 
     async def handle_create_employee(
@@ -234,7 +235,7 @@ class AddEmployeeService(interface.IAddEmployeeService):
 
                 await self.kontur_employee_client.update_employee_permissions(
                     account_id=employee_data.account_id,
-                    required_moderation=not employee_data.permissions.required_moderation,
+                    required_moderation=employee_data.permissions.required_moderation,
                     autoposting_permission=employee_data.permissions.autoposting,
                     add_employee_permission=employee_data.permissions.add_employee,
                     edit_employee_perm_permission=employee_data.permissions.edit_permissions,
@@ -288,11 +289,11 @@ class AddEmployeeService(interface.IAddEmployeeService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                await callback.answer("❌ Ошибка при переходе в меню", show_alert=True)
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-                raise
 
+                await callback.answer("❌ Ошибка при переходе в меню", show_alert=True)
+                raise
 
     async def _check_alerts(self, dialog_manager: DialogManager) -> bool:
         state = await self._get_state(dialog_manager)

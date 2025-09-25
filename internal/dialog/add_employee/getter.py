@@ -81,7 +81,7 @@ class AddEmployeeGetter(interface.IAddEmployeeGetter):
             "role": utils.RoleDisplayHelper.get_display_name(employee_data.role) if employee_data.role else "",
 
             # Permission icons (✅ = enabled, ❌ = disabled)
-            "required_moderation_icon": "✅" if not permissions.required_moderation else "❌",
+            "required_moderation_icon": "✅" if permissions.required_moderation else "❌",
             "autoposting_icon": "✅" if permissions.autoposting else "❌",
             "add_employee_icon": "✅" if permissions.add_employee else "❌",
             "edit_permissions_icon": "✅" if permissions.edit_permissions else "❌",
