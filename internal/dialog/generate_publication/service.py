@@ -177,7 +177,10 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
                 self.logger.info("Категория выбрана")
 
-                await dialog_manager.switch_to(model.GeneratePublicationStates.input_text)
+                if dialog_manager.dialog_data.get("has_input_text"):
+                    await dialog_manager.switch_to(model.GeneratePublicationStates.generation)
+                else:
+                    await dialog_manager.switch_to(model.GeneratePublicationStates.input_text)
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
