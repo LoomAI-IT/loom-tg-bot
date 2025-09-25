@@ -127,13 +127,13 @@ class ChangeEmployeeGetter(interface.IChangeEmployeeGetter):
                 approved_publication_count = 0
 
                 for pub in publications:
-                    if pub.moderator_id == current_employee.account_id:
+                    if pub.moderator_id == employee.account_id:
                         if pub.moderation_status == "approved":
                             approved_publication_count += 1
                         elif pub.moderation_status == "rejected":
                             rejected_publication_count += 1
 
-                    if pub.creator_id == current_employee.account_id:
+                    if pub.creator_id == employee.account_id:
                         generated_publication_count += 1
 
                         if pub.moderation_status == "approved":

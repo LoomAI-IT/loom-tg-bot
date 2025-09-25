@@ -173,7 +173,6 @@ class IChangeEmployeeGetter(Protocol):
     async def get_employee_list_data(
             self,
             dialog_manager: DialogManager,
-            **kwargs
     ) -> dict:
         pass
 
@@ -181,7 +180,6 @@ class IChangeEmployeeGetter(Protocol):
     async def get_employee_detail_data(
             self,
             dialog_manager: DialogManager,
-            **kwargs
     ) -> dict:
         pass
 
@@ -189,7 +187,6 @@ class IChangeEmployeeGetter(Protocol):
     async def get_permissions_data(
             self,
             dialog_manager: DialogManager,
-            **kwargs
     ) -> dict:
         pass
 
@@ -197,7 +194,6 @@ class IChangeEmployeeGetter(Protocol):
     async def get_delete_confirmation_data(
             self,
             dialog_manager: DialogManager,
-            **kwargs
     ) -> dict:
         pass
 
@@ -205,6 +201,5 @@ class IChangeEmployeeGetter(Protocol):
     async def get_role_change_data(
             self,
             dialog_manager: DialogManager,
-            **kwargs
     ) -> dict:
         pass
