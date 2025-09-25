@@ -25,12 +25,10 @@ class OrganizationMenuDialog(interface.IOrganizationMenuDialog):
 
     def get_organization_menu_window(self) -> Window:
         return Window(
-            Const("🏢 <b>Профиль организации</b>\n\n"),
-            Format("• Название: <b>{organization_name}</b>\n"),
-            Format("• Баланс: <b>{balance}</b> руб.\n"),
-            Format("📍 <b>Доступные платформы для публикаций:</b>\n"),
-            Format("{platforms_list}\n\n"),
-            Format("📊 <b>Рубрики:</b>\n"),
+            Const("🏢 <b>Профиль организации</b> ✨"),
+            Format("🏷️ Название: <code>{organization_name}</code>"),
+            Format("💰 Баланс: <code>{balance}</code> руб."),
+            Format("📊 <b>Рубрики:</b> 📝"),
             Format("{categories_list}"),
 
             Column(

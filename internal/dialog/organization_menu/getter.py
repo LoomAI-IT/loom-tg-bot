@@ -1,6 +1,4 @@
-from typing import Any
-from aiogram.types import CallbackQuery
-from aiogram_dialog import DialogManager, StartMode
+from aiogram_dialog import DialogManager
 
 from opentelemetry.trace import SpanKind, Status, StatusCode
 
@@ -35,33 +33,24 @@ class OrganizationMenuGetter(interface.IOrganizationMenuGetter):
             try:
                 state = await self.__get_state(dialog_manager)
 
-                # Получаем данные сотрудника
-                employee = await self.kontur_employee_client.get_employee_by_account_id(
-                    state.account_id
-                )
-
                 # Получаем данные организации
                 organization = await self.kontur_organization_client.get_organization_by_id(
-                    employee.organization_id
+                    state.organization_id
                 )
 
                 categories = await self.kontur_content_client.get_categories_by_organization(
-                    organization.id
+                    state.organization_id
                 )
-
-                # Форматируем список платформ (пока заглушка)
-                platforms_list = "• Telegram\n• Instagram\n• VKontakte\n• YouTube (короткие видео)"
 
                 # Форматируем список рубрик
                 if categories:
                     categories_list = "\n".join([f"• {category.name}" for category in categories])
                 else:
-                    categories_list = "• Краткое описание"
+                    categories_list = "Нет категорий"
 
                 data = {
                     "organization_name": organization.name,
                     "balance": organization.rub_balance,
-                    "platforms_list": platforms_list,
                     "categories_list": categories_list,
                 }
 
