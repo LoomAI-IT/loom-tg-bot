@@ -114,12 +114,12 @@ class ChangeEmployeeDialog(interface.IChangeEmployeeDialog):
 
                 Const("📊 <b>Активность:</b>\n"),
                 Format("• <b>Сгенерировано публикаций:</b> {generated_publication_count}\n"),
-                Format("• <b>Опубликовано публикаций:</b> {published_publication_count}\n\n"),
+                Format("• <b>Опубликовано публикаций:</b> {published_publication_count}\n"),
                 Case(
                     {
                         True: Multi(
-                            Format("• <b>Отклонено в ходе модерации:</b> {rejected_publication_count}\n"),
-                            Format("• <b>Опубликовано в ходе модерации:</b> {approved_publication_count}\n"),
+                            Format("• <b>Отклонено в ходе модерации:</b> {rejected_publication_count}"),
+                            Format("• <b>Опубликовано в ходе модерации:</b> {approved_publication_count}\n\n"),
                         ),
                         False: Const("")
                     },
