@@ -147,7 +147,7 @@ class StateRepo(interface.IStateRepo):
                     update_fields.append("can_show_alerts = :can_show_alerts")
                     args['can_show_alerts'] = can_show_alerts
 
-                if can_show_alerts is not None:
+                if show_error_recovery is not None:
                     update_fields.append("show_error_recovery = :show_error_recovery")
                     args['show_error_recovery'] = show_error_recovery
 
