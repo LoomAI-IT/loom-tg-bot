@@ -318,7 +318,6 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
             try:
                 dialog_manager.show_mode = ShowMode.EDIT
 
-                # Проверяем, что выбрана хотя бы одна соцсеть
                 selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
                 has_selected_networks = any(selected_networks.values())
 
