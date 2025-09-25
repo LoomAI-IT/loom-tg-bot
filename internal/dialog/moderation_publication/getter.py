@@ -181,7 +181,7 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
                 original_pub = dialog_manager.dialog_data["original_publication"]
 
                 # Получаем информацию об авторе
-                author = await self.kontur_employee_client.get_employee_by_account_id(
+                creator = await self.kontur_employee_client.get_employee_by_account_id(
                     working_pub["creator_id"]
                 )
 
@@ -222,7 +222,7 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
                         )
 
                 data = {
-                    "author_name": author.name,
+                    "creator_name": creator.name,
                     "category_name": category.name,
                     "created_at": self._format_datetime(original_pub["created_at"]),
                     "publication_text": working_pub["text"],
