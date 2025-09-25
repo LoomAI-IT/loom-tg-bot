@@ -1,8 +1,7 @@
 import time
-from datetime import datetime, timezone
+from datetime import datetime
 from aiogram_dialog.api.entities import MediaId, MediaAttachment
 
-from aiogram import Bot
 from aiogram.types import ContentType
 from aiogram_dialog import DialogManager
 
@@ -91,7 +90,6 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
 
                 data = {
                     "has_publications": True,
-                    "publications_count": len(moderation_publications),
                     "creator_name": creator.name,
                     "category_name": category.name,
                     "created_at": self._format_datetime(current_pub.created_at),
@@ -144,13 +142,13 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
                 original_pub = dialog_manager.dialog_data.get("original_publication", {})
 
                 # Получаем информацию об авторе
-                author = await self.kontur_employee_client.get_employee_by_account_id(
+                creator = await self.kontur_employee_client.get_employee_by_account_id(
                     original_pub["creator_id"],
                 )
 
                 data = {
                     "publication_name": original_pub["name"],
-                    "author_name": author.name,
+                    "creator_name": creator.name,
                     "has_comment": bool(dialog_manager.dialog_data.get("reject_comment")),
                     "reject_comment": dialog_manager.dialog_data.get("reject_comment", ""),
                 }
@@ -192,10 +190,6 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
                     working_pub["category_id"]
                 )
 
-                # Форматируем теги
-                tags = working_pub.get("tags", [])
-                tags_text = ", ".join(tags) if tags else ""
-
                 # Подготавливаем медиа для изображения
                 preview_image_media = None
                 has_multiple_images = False
@@ -231,10 +225,7 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
                     "author_name": author.name,
                     "category_name": category.name,
                     "created_at": self._format_datetime(original_pub["created_at"]),
-                    "publication_name": working_pub["name"],
                     "publication_text": working_pub["text"],
-                    "has_tags": bool(tags),
-                    "publication_tags": tags_text,
                     "has_image": working_pub.get("has_image", False),
                     "preview_image_media": preview_image_media,
                     "has_changes": self._has_changes(dialog_manager),
@@ -298,10 +289,13 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        working_pub = dialog_manager.dialog_data.get("working_publication", {})
-        text = working_pub.get("text", "")
         return {
-            "current_text_length": len(text),
+            "has_void_text": dialog_manager.dialog_data.get("has_void_text", False),
+            "has_small_text": dialog_manager.dialog_data.get("has_small_text", False),
+            "has_big_text": dialog_manager.dialog_data.get("has_big_text", False),
+            "is_regenerating_text": dialog_manager.dialog_data.get("is_regenerating_text", False),
+            "regenerate_prompt": dialog_manager.dialog_data.get("regenerate_prompt", ""),
+            "has_regenerate_prompt": bool(dialog_manager.dialog_data.get("regenerate_prompt", "")),
         }
 
     async def get_image_menu_data(
@@ -311,6 +305,10 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
     ) -> dict:
         working_pub = dialog_manager.dialog_data.get("working_publication", {})
         return {
+            "has_void_image_prompt": dialog_manager.dialog_data.get("has_void_image_prompt", False),
+            "has_small_image_prompt": dialog_manager.dialog_data.get("has_small_image_prompt", False),
+            "has_big_image_prompt": dialog_manager.dialog_data.get("has_big_image_prompt", False),
+            "is_generating_image": dialog_manager.dialog_data.get("is_generating_image", False),
             "has_image": working_pub.get("has_image", False),
             "is_custom_image": working_pub.get("is_custom_image", False),
         }
@@ -321,6 +319,9 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
     ) -> dict:
         working_pub = dialog_manager.dialog_data.get("working_publication", {})
         return {
+            "has_invalid_image_type": dialog_manager.dialog_data.get("has_invalid_image_type", False),
+            "has_big_image_size": dialog_manager.dialog_data.get("has_big_image_size", False),
+            "has_image_processing_error": dialog_manager.dialog_data.get("has_image_processing_error", False),
             "has_image": working_pub.get("has_image", False),
             "is_custom_image": working_pub.get("is_custom_image", False),
         }
