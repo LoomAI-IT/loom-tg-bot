@@ -8,8 +8,6 @@ class Publication:
     category_id: int
     creator_id: int
     moderator_id: int | None
-  
-
 
     vk_source: bool | None
     tg_source: bool | None
