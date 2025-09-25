@@ -303,8 +303,35 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
+        preview_image_media = None
+
         working_pub = dialog_manager.dialog_data.get("working_publication", {})
+        if working_pub.get("has_image"):
+            # Приоритет: пользовательское > сгенерированные множественные > одиночное
+            if working_pub.get("custom_image_file_id"):
+                preview_image_media = MediaAttachment(
+                    file_id=MediaId(working_pub["custom_image_file_id"]),
+                    type=ContentType.PHOTO
+                )
+            elif working_pub.get("generated_images_url"):
+                # Множественные сгенерированные изображения
+                images_url = working_pub["generated_images_url"]
+                current_image_index = working_pub.get("current_image_index", 0)
+
+                if current_image_index < len(images_url):
+                    preview_image_media = MediaAttachment(
+                        url=images_url[current_image_index],
+                        type=ContentType.PHOTO
+                    )
+            elif working_pub.get("image_url"):
+                preview_image_media = MediaAttachment(
+                    url=working_pub["image_url"],
+                    type=ContentType.PHOTO
+                )
+
+
         return {
+            "preview_image_media": preview_image_media,
             "has_void_image_prompt": dialog_manager.dialog_data.get("has_void_image_prompt", False),
             "has_small_image_prompt": dialog_manager.dialog_data.get("has_small_image_prompt", False),
             "has_big_image_prompt": dialog_manager.dialog_data.get("has_big_image_prompt", False),
