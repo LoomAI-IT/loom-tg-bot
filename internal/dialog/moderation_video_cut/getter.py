@@ -211,6 +211,7 @@ class VideoCutModerationGetter(interface.IVideoCutModerationGetter):
                     "video_name": working_video_cut["name"] or "Без названия",
                     "video_description": working_video_cut["description"] or "Описание отсутствует",
                     "video_tags": tags_text,
+                    "youtube_reference": working_video_cut["youtube_video_reference"],
                     "has_tags": bool(tags),
                     "creator_name": creator.name,
                     "created_at": self._format_datetime(original_video_cut["created_at"]),
