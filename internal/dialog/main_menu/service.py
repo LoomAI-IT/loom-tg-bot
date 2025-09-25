@@ -147,7 +147,10 @@ class MainMenuService(interface.IMainMenuService):
                 dialog_manager.dialog_data["has_input_text"] = True
 
                 self.logger.info("Голосовое сообщение обработано")
-                await dialog_manager.start(model.GeneratePublicationStates.select_category)
+                await dialog_manager.start(
+                    model.GeneratePublicationStates.select_category,
+                    data=dialog_manager.dialog_data,
+                )
 
                 span.set_status(Status(StatusCode.OK))
 
