@@ -907,7 +907,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                     state.account_id,
                     text_reference,
                     text,
-                    "published",
+                    "draft",
                     image_url=image_url,
                     image_content=image_content,
                     image_filename=image_filename,
@@ -921,6 +921,12 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                     publication_id=publication_data["publication_id"],
                     tg_source=tg_source,
                     vk_source=vk_source,
+                )
+
+                await self.kontur_content_client.moderate_publication(
+                    publication_data["publication_id"],
+                    state.account_id,
+                    "approved"
                 )
 
                 await callback.answer("💾 Опубликовано!", show_alert=True)
