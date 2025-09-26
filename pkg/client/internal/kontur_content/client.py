@@ -54,6 +54,7 @@ class KonturContentClient(interface.IKonturContentClient):
                 body = {
                     "organization_id": organization_id,
                     "tg_channel_username": tg_channel_username,
+                    "autoselect": autoselect,
                 }
                 await self.client.post(f"/social-network/telegram", json=body)
                 span.set_status(Status(StatusCode.OK))
