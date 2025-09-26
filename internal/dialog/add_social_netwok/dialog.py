@@ -344,13 +344,6 @@ class AddSocialNetworkDialog(interface.IAddSocialNetworkDialog):
                     },
                     selector="has_invalid_telegram_channel_username"
                 ),
-                Case(
-                    {
-                        True: Const("<br><br>❌ <b>Ошибка:</b> Канал не найден или бот не добавлен в администраторы"),
-                        False: Const(""),
-                    },
-                    selector="has_telegram_channel_not_found"
-                ),
                 sep="",
             ),
 
