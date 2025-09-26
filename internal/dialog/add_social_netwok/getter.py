@@ -106,7 +106,7 @@ class AddSocialNetworkGetter(interface.IAddSocialNetworkGetter):
                                                                                  False),
             "has_invalid_telegram_channel_username": dialog_manager.dialog_data.get(
                 "has_invalid_telegram_channel_username", False),
-            "has_telegram_channel_not_found": dialog_manager.dialog_data.get("has_telegram_channel_not_found", False),
+            "has_invalid_telegram_permission": dialog_manager.dialog_data.get("has_invalid_telegram_permission", False),
         }
 
     async def get_telegram_edit_data(
@@ -194,7 +194,7 @@ class AddSocialNetworkGetter(interface.IAddSocialNetworkGetter):
                     "has_invalid_telegram_channel_username": dialog_manager.dialog_data.get(
                         "has_invalid_telegram_channel_username",
                         False),
-                    "has_telegram_channel_not_found": dialog_manager.dialog_data.get("has_telegram_channel_not_found",
+                    "has_invalid_telegram_permission": dialog_manager.dialog_data.get("has_invalid_telegram_permission",
                                                                                      False),
                 }
 

@@ -6,6 +6,7 @@ from aiogram_dialog import DialogManager, StartMode, ShowMode
 from aiogram_dialog.widgets.kbd import ManagedCheckbox
 
 from opentelemetry.trace import SpanKind, Status, StatusCode
+from sqlalchemy.util import await_only
 
 from internal import interface, model
 
@@ -67,7 +68,7 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
                 error_flags = [
                     "has_void_telegram_channel_username",
                     "has_invalid_telegram_channel_username",
-                    "has_channel_not_found",
+                    "has_invalid_telegram_permission",
                 ]
                 for flag in error_flags:
                     dialog_manager.dialog_data.pop(flag, None)
@@ -82,6 +83,13 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
 
                 if not re.match(r"^[a-zA-Z][a-zA-Z0-9_]{4,31}$", telegram_channel_username):
                     dialog_manager.dialog_data["has_invalid_telegram_channel_username"] = True
+                    return
+
+                has_telegram_permission = await self.kontur_content_client.check_telegram_channel_permission(
+                    telegram_channel_username
+                )
+                if not has_telegram_permission:
+                    dialog_manager.dialog_data["has_invalid_telegram_permission"] = True
                     return
 
                 # TODO: Add channel verification here when bot integration is ready
@@ -286,6 +294,7 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
                 error_flags = [
                     "has_void_new_telegram_channel_username",
                     "has_invalid_new_telegram_channel_username",
+                    "has_invalid_telegram_permission",
                 ]
                 for flag in error_flags:
                     dialog_manager.dialog_data.pop(flag, None)
@@ -303,6 +312,13 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
                 # Validate username format
                 if not re.match(r"^[a-zA-Z][a-zA-Z0-9_]{4,31}$", new_telegram_channel_username):
                     dialog_manager.dialog_data["has_invalid_new_telegram_channel_username"] = True
+                    return
+
+                has_telegram_permission = await self.kontur_content_client.check_telegram_channel_permission(
+                    new_telegram_channel_username
+                )
+                if not has_telegram_permission:
+                    dialog_manager.dialog_data["has_invalid_telegram_permission"] = True
                     return
 
                 dialog_manager.dialog_data["working_state"]["telegram_channel_username"] = new_telegram_channel_username

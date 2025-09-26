@@ -64,6 +64,23 @@ class KonturContentClient(interface.IKonturContentClient):
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
+    async def check_telegram_channel_permission(self, telegram_channel_username: str) -> bool:
+        with self.tracer.start_as_current_span(
+                "KonturContentClient.check_telegram_channel_permission",
+                kind=SpanKind.CLIENT
+        ) as span:
+            try:
+                response = await self.client.get(f"/social-network/telegram/check-permission/{telegram_channel_username}")
+                json_response = response.json()
+
+                span.set_status(Status(StatusCode.OK))
+                return json_response["has_permission"]
+
+            except Exception as e:
+                span.record_exception(e)
+                span.set_status(Status(StatusCode.ERROR, str(e)))
+                raise
+
     async def update_telegram(
             self,
             organization_id: int,

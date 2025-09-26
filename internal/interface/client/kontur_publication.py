@@ -22,6 +22,9 @@ class IKonturContentClient(Protocol):
     ): pass
 
     @abstractmethod
+    async def check_telegram_channel_permission(self, telegram_channel_username: str) -> bool: pass
+
+    @abstractmethod
     async def delete_telegram(self, organization_id: int): pass
 
     # ПУБЛИКАЦИИ
