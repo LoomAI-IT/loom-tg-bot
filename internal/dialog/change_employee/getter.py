@@ -203,6 +203,7 @@ class ChangeEmployeeGetter(interface.IChangeEmployeeGetter):
                     "approved_publication_count": approved_publication_count,
                     "has_moderated_publications": rejected_publication_count or approved_publication_count,
                 }
+                print(data, flush=True)
 
                 span.set_status(Status(StatusCode.OK))
                 return data
