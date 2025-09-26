@@ -190,6 +190,7 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
                 await checkbox.set_checked(not is_checked)
 
                 dialog_manager.dialog_data["working_state"]["autoselect"] = is_checked
+                await dialog_manager.show()
 
                 await callback.answer()
                 span.set_status(Status(StatusCode.OK))
