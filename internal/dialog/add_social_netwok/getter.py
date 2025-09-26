@@ -136,18 +136,17 @@ class AddSocialNetworkGetter(interface.IAddSocialNetworkGetter):
                         "autoselect": original_autoselect,
                     }
 
-                if "working_state" not in dialog_manager.dialog_data:
                     dialog_manager.dialog_data["working_state"] = {
                         "telegram_channel_username": original_username,
                         "autoselect": original_autoselect,
                     }
 
-                    # Устанавливаем начальное состояние чекбокса только при первом входе
-                    autoselect_checkbox = dialog_manager.find("telegram_autoselect_checkbox")
-                    if autoselect_checkbox:
-                        await autoselect_checkbox.set_checked(original_autoselect)
-
                 working_state = dialog_manager.dialog_data["working_state"]
+
+                # Синхронизируем чекбокс с working_state
+                autoselect_checkbox = dialog_manager.find("telegram_autoselect_checkbox")
+                if autoselect_checkbox and autoselect_checkbox.is_checked() != working_state["autoselect"]:
+                    await autoselect_checkbox.set_checked(working_state["autoselect"])
 
                 data = {
                     "telegram_channel_username": working_state["telegram_channel_username"],

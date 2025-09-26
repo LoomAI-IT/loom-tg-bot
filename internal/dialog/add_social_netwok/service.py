@@ -185,16 +185,21 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                dialog_manager.show_mode = ShowMode.EDIT
-
                 new_value = checkbox.is_checked()
 
                 if "working_state" not in dialog_manager.dialog_data:
-                    return
+                    state = await self._get_state(dialog_manager)
+                    social_networks = await self.kontur_content_client.get_social_networks_by_organization(
+                        organization_id=state.organization_id
+                    )
+                    telegram_data = social_networks["telegram"][0]
 
-                dialog_manager.dialog_data["working_state"]["autoselect"] = new_value
-
-                await dialog_manager.show()
+                    dialog_manager.dialog_data["working_state"] = {
+                        "telegram_channel_username": telegram_data["tg_channel_username"],
+                        "autoselect": new_value,  # Используем новое значение
+                    }
+                else:
+                    dialog_manager.dialog_data["working_state"]["autoselect"] = new_value
 
                 self.logger.info(f"Telegram autoselect toggled to: {new_value}")
 
