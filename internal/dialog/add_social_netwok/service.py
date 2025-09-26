@@ -220,7 +220,7 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
                 # Get autoselect checkbox state
                 autoselect_checkbox: ManagedCheckbox = dialog_manager.find("autoselect_checkbox")
                 autoselect = autoselect_checkbox.is_checked() if autoselect_checkbox else False
-                new_telegram_channel_username = dialog_manager.dialog_data.get("new_telegram_channel_username", "")
+                new_telegram_channel_username = dialog_manager.dialog_data.get("new_telegram_channel_username", None)
 
                 # Get current user state
                 state = await self._get_state(dialog_manager)
@@ -235,7 +235,7 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
                 await callback.answer("✅ Настройки сохранены!", show_alert=True)
                 self.logger.info(f"telegram settings updated: autoselect={autoselect}")
 
-                dialog_manager.dialog_data.pop("has_changes", None)
+                await dialog_manager.switch_to(model.AddSocialNetworkStates.telegram_main)
 
                 span.set_status(Status(StatusCode.OK))
 

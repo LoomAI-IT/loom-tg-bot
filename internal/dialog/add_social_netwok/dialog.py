@@ -160,7 +160,11 @@ class AddSocialNetworkDialog(interface.IAddSocialNetworkDialog):
                 ),
             ),
 
-            Back(Const("◀️ Назад")),
+            Button(
+                Const("◀️ Назад"),
+                id="go_to_select_category",
+                on_click=lambda c, b, d: d.switch_to(model.AddSocialNetworkStates.select_network, ShowMode.EDIT),
+            ),
 
             state=model.AddSocialNetworkStates.telegram_main,
             getter=self.add_social_network_getter.get_telegram_main_data,
@@ -239,7 +243,11 @@ class AddSocialNetworkDialog(interface.IAddSocialNetworkDialog):
                 ),
             ),
 
-            Back(Const("◀️ Назад")),
+            Button(
+                Const("◀️ Назад"),
+                id="go_to_select_category",
+                on_click=lambda c, b, d: d.switch_to(model.AddSocialNetworkStates.telegram_main, ShowMode.EDIT),
+            ),
 
             state=model.AddSocialNetworkStates.telegram_connect,
             getter=self.add_social_network_getter.get_telegram_connect_data,
@@ -296,7 +304,11 @@ class AddSocialNetworkDialog(interface.IAddSocialNetworkDialog):
                 ),
             ),
 
-            Back(Const("◀️ Назад")),
+            Button(
+                Const("◀️ Назад"),
+                id="go_to_select_category",
+                on_click=lambda c, b, d: d.switch_to(model.AddSocialNetworkStates.telegram_main, ShowMode.EDIT),
+            ),
 
             state=model.AddSocialNetworkStates.telegram_edit,
             getter=self.add_social_network_getter.get_telegram_edit_data,
@@ -343,7 +355,11 @@ class AddSocialNetworkDialog(interface.IAddSocialNetworkDialog):
                 on_success=self.add_social_network_service.handle_new_telegram_channel_username_input,
             ),
 
-            Back(Const("◀️ Назад")),
+            Button(
+                Const("◀️ Назад"),
+                id="go_to_select_category",
+                on_click=lambda c, b, d: d.switch_to(model.AddSocialNetworkStates.telegram_edit, ShowMode.EDIT),
+            ),
 
             state=model.AddSocialNetworkStates.telegram_change_username,
             getter=self.add_social_network_getter.get_telegram_change_username_data,
@@ -363,7 +379,11 @@ class AddSocialNetworkDialog(interface.IAddSocialNetworkDialog):
                 sep="",
             ),
 
-            Back(Const("◀️ Назад")),
+            Button(
+                Const("◀️ Назад"),
+                id="go_to_select_category",
+                on_click=lambda c, b, d: d.switch_to(model.AddSocialNetworkStates.select_network, ShowMode.EDIT),
+            ),
 
             state=model.AddSocialNetworkStates.vkontakte_setup,
             getter=self.add_social_network_getter.get_vkontakte_setup_data,
@@ -383,7 +403,11 @@ class AddSocialNetworkDialog(interface.IAddSocialNetworkDialog):
                 sep="",
             ),
 
-            Back(Const("◀️ Назад")),
+            Button(
+                Const("◀️ Назад"),
+                id="go_to_select_category",
+                on_click=lambda c, b, d: d.switch_to(model.AddSocialNetworkStates.select_network, ShowMode.EDIT),
+            ),
 
             state=model.AddSocialNetworkStates.youtube_setup,
             getter=self.add_social_network_getter.get_youtube_setup_data,
@@ -403,7 +427,11 @@ class AddSocialNetworkDialog(interface.IAddSocialNetworkDialog):
                 sep="",
             ),
 
-            Back(Const("◀️ Назад")),
+            Button(
+                Const("◀️ Назад"),
+                id="go_to_select_category",
+                on_click=lambda c, b, d: d.switch_to(model.AddSocialNetworkStates.select_network, ShowMode.EDIT),
+            ),
 
             state=model.AddSocialNetworkStates.instagram_setup,
             getter=self.add_social_network_getter.get_instagram_setup_data,
