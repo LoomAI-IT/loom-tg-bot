@@ -282,7 +282,7 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
                     return
 
                 dialog_manager.dialog_data["working_state"]["telegram_channel_username"] = new_telegram_channel_username
-                dialog_manager.dialog_data["has_new_telegram_channel_username"] = new_telegram_channel_username
+                dialog_manager.dialog_data["has_new_telegram_channel_username"] = True
                 await dialog_manager.switch_to(model.AddSocialNetworkStates.telegram_edit)
 
                 span.set_status(Status(StatusCode.OK))
