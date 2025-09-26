@@ -125,30 +125,34 @@ class AddSocialNetworkGetter(interface.IAddSocialNetworkGetter):
                     organization_id=state.organization_id
                 )
 
-                autoselect = social_networks["telegram"][0]["autoselect"]
-                telegram_channel_username = social_networks["telegram"][0]["tg_channel_username"]
+                original_autoselect = social_networks["telegram"][0]["autoselect"]
+                original_username = social_networks["telegram"][0]["tg_channel_username"]
 
-                dialog_manager.dialog_data["original_state"] = {
-                    "telegram_channel_username": telegram_channel_username,
-                    "autoselect": autoselect,
-                }
+                # Инициализация при первом входе
+                if not dialog_manager.dialog_data.get("original_state"):
+                    dialog_manager.dialog_data["original_state"] = {
+                        "telegram_channel_username": original_username,
+                        "autoselect": original_autoselect,
+                    }
 
                 if not dialog_manager.dialog_data.get("working_state"):
-                    autoselect_checkbox: ManagedCheckbox = dialog_manager.find("telegram_autoselect_checkbox")
-                    if autoselect_checkbox:
-                        await autoselect_checkbox.set_checked(autoselect)
+                    dialog_manager.dialog_data["working_state"] = dialog_manager.dialog_data["original_state"].copy()
 
-                    dialog_manager.dialog_data["working_state"] = dialog_manager.dialog_data["original_state"]
-                else:
-                    autoselect = dialog_manager.dialog_data["working_state"]["autoselect"]
-                    telegram_channel_username = dialog_manager.dialog_data["working_state"]["telegram_channel_username"]
+                # ВСЕГДА синхронизируем чекбокс с working_state
+                current_autoselect = dialog_manager.dialog_data["working_state"]["autoselect"]
+                autoselect_checkbox: ManagedCheckbox = dialog_manager.find("telegram_autoselect_checkbox")
+                if autoselect_checkbox:
+                    await autoselect_checkbox.set_checked(current_autoselect)
 
                 data = {
-                    "telegram_channel_username": telegram_channel_username,
-                    "has_telegram_autoselect": autoselect,
+                    "telegram_channel_username": dialog_manager.dialog_data["working_state"][
+                        "telegram_channel_username"],
+                    "has_telegram_autoselect": current_autoselect,
                     "has_changes": self._has_changes(dialog_manager),
-                    "has_new_telegram_channel_username": dialog_manager.dialog_data.get(
-                        "has_new_telegram_channel_username", False),
+                    "has_new_telegram_channel_username": (
+                            dialog_manager.dialog_data["working_state"]["telegram_channel_username"] !=
+                            dialog_manager.dialog_data["original_state"]["telegram_channel_username"]
+                    ),
                 }
 
                 span.set_status(Status(StatusCode.OK))
@@ -228,9 +232,8 @@ class AddSocialNetworkGetter(interface.IAddSocialNetworkGetter):
         if not original or not working:
             return False
 
-        # Сравниваем текстовые поля
-        fields_to_compare = ["telegram_channel_username", "autoselect"]
-        for field in fields_to_compare:
+        # Сравниваем все поля
+        for field in ["telegram_channel_username", "autoselect"]:
             if original.get(field) != working.get(field):
                 return True
 

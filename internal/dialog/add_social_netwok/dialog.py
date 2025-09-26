@@ -307,8 +307,8 @@ class AddSocialNetworkDialog(interface.IAddSocialNetworkDialog):
 
             Button(
                 Const("◀️ Назад"),
-                id="go_to_select_category",
-                on_click=lambda c, b, d: d.switch_to(model.AddSocialNetworkStates.telegram_main, ShowMode.EDIT),
+                id="go_to_telegram_main",
+                on_click=self.add_social_network_service.handle_back_from_edit,
             ),
 
             state=model.AddSocialNetworkStates.telegram_edit,
