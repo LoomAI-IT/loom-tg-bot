@@ -22,6 +22,33 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
         self.state_repo = state_repo
         self.kontur_content_client = kontur_content_client
 
+    async def handle_go_to_connect_telegram(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        with self.tracer.start_as_current_span(
+                "AddSocialNetworkService.handle_go_to_connect_telegram",
+                kind=SpanKind.INTERNAL
+        ) as span:
+            try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
+                dialog_manager.dialog_data.pop("telegram_channel_username", None)
+                dialog_manager.dialog_data.pop("has_telegram_channel_username", None)
+                dialog_manager.dialog_data.pop("has_void_telegram_channel_username", None)
+                dialog_manager.dialog_data.pop("has_invalid_telegram_channel_username", None)
+                dialog_manager.dialog_data.pop("has_channel_not_found", None)
+
+                await dialog_manager.switch_to(model.AddSocialNetworkStates.telegram_connect, ShowMode.EDIT)
+                span.set_status(Status(StatusCode.OK))
+
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
+                raise
+
     async def handle_telegram_channel_username_input(
             self,
             message: Message,
@@ -158,6 +185,8 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
         ) as span:
             try:
                 dialog_manager.show_mode = ShowMode.EDIT
+
+                if
 
                 is_checked = checkbox.is_checked()
 

@@ -131,7 +131,7 @@ class AddSocialNetworkGetter(interface.IAddSocialNetworkGetter):
                     "autoselect": autoselect,
                 }
 
-                if "working_state" not in dialog_manager.dialog_data:
+                if not dialog_manager.dialog_data.get("working_state"):
                     autoselect_checkbox: ManagedCheckbox = dialog_manager.find("telegram_autoselect_checkbox")
                     if autoselect_checkbox:
                         await autoselect_checkbox.set_checked(autoselect)
