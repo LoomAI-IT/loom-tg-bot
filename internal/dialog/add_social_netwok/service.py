@@ -214,15 +214,12 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
             try:
                 dialog_manager.show_mode = ShowMode.EDIT
 
-                # Get autoselect checkbox state
                 autoselect_checkbox: ManagedCheckbox = dialog_manager.find("autoselect_checkbox")
                 autoselect = autoselect_checkbox.is_checked() if autoselect_checkbox else False
                 new_telegram_channel_username =  dialog_manager.dialog_data["working_state"]["telegram_channel_username"]
 
-                # Get current user state
                 state = await self._get_state(dialog_manager)
 
-                # Update telegram settings (only autoselect for now)
                 await self.kontur_content_client.update_telegram(
                     organization_id=state.organization_id,
                     autoselect=autoselect,
