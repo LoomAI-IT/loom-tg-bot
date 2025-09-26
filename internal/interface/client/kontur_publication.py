@@ -11,13 +11,13 @@ class IKonturContentClient(Protocol):
     async def get_social_networks_by_organization(self, organization_id: int) -> dict: pass
 
     @abstractmethod
-    async def create_telegram(self, organization_id: int, tg_channel_username: str, autoselect: bool): pass
+    async def create_telegram(self, organization_id: int, telegram_channel_username: str, autoselect: bool): pass
 
     @abstractmethod
     async def update_telegram(
             self,
             organization_id: int,
-            tg_channel_username: str = None,
+            telegram_channel_username: str = None,
             autoselect: bool = None
     ): pass
 

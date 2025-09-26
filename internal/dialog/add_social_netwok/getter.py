@@ -80,7 +80,7 @@ class AddSocialNetworkGetter(interface.IAddSocialNetworkGetter):
                 data = {
                     "telegram_connected": telegram_connected,
                     "telegram_not_connected": not telegram_connected,
-                    "tg_channel_username": telegram_data.get("tg_channel_username", ""),
+                    "telegram_channel_username": telegram_data.get("telegram_channel_username", ""),
                     "telegram_autoselect": telegram_data.get("autoselect", False),
                 }
 
@@ -98,12 +98,12 @@ class AddSocialNetworkGetter(interface.IAddSocialNetworkGetter):
             **kwargs
     ) -> dict:
         return {
-            "tg_channel_username": dialog_manager.dialog_data.get("tg_channel_username", ""),
-            "has_username": dialog_manager.dialog_data.get("has_username", False),
+            "telegram_channel_username": dialog_manager.dialog_data.get("telegram_channel_username", ""),
+            "has_telegram_channel_username": dialog_manager.dialog_data.get("has_telegram_channel_username", False),
 
             # Error flags
-            "has_void_tg_channel_username": dialog_manager.dialog_data.get("has_void_tg_channel_username", False),
-            "has_invalid_tg_channel_username": dialog_manager.dialog_data.get("has_invalid_tg_channel_username", False),
+            "has_void_telegram_channel_username": dialog_manager.dialog_data.get("has_void_telegram_channel_username", False),
+            "has_invalid_telegram_channel_username": dialog_manager.dialog_data.get("has_invalid_telegram_channel_username", False),
             "has_channel_not_found": dialog_manager.dialog_data.get("has_channel_not_found", False),
         }
 
@@ -119,26 +119,38 @@ class AddSocialNetworkGetter(interface.IAddSocialNetworkGetter):
             try:
                 state = await self._get_state(dialog_manager)
 
-                # Get social networks data
                 social_networks = await self.kontur_content_client.get_social_networks_by_organization(
                     organization_id=state.organization_id
                 )
 
-                telegram_data = social_networks.get("telegram", [{}])[0]
-                current_autoselect = telegram_data.get("autoselect", False)
+                autoselect = social_networks["telegram"][0]["autoselect"]
+                telegram_channel_username = social_networks["telegram"][0]["telegram_channel_username"]
 
-                # Set checkbox to current value if not already set
-                autoselect_checkbox: ManagedCheckbox = dialog_manager.find("telegram_autoselect_checkbox")
-                if autoselect_checkbox:
-                    await autoselect_checkbox.set_checked(current_autoselect)
+                dialog_manager.dialog_data["original_state"] = {
+                    "telegram_channel_username": telegram_channel_username,
+                    "autoselect": autoselect,
+                }
 
-                # Check if there are changes (this would be tracked by checkbox state change)
-                has_changes = dialog_manager.dialog_data.get("has_changes", False)
+                if "working_state" not in dialog_manager.dialog_data:
+                    autoselect_checkbox: ManagedCheckbox = dialog_manager.find("telegram_autoselect_checkbox")
+                    if autoselect_checkbox:
+                        await autoselect_checkbox.set_checked(autoselect)
+
+                    dialog_manager.dialog_data["working_state"] = dialog_manager.dialog_data["original_state"]
+                else:
+                    autoselect = dialog_manager.dialog_data["working_state"]["autoselect"]
+                    telegram_channel_username = dialog_manager.dialog_data["working_state"]["telegram_channel_username"]
+
+                    autoselect_checkbox: ManagedCheckbox = dialog_manager.find("telegram_autoselect_checkbox")
+
+                    if autoselect_checkbox:
+                        await autoselect_checkbox.set_checked(autoselect)
 
                 data = {
-                    "tg_channel_username": telegram_data.get("tg_channel_username", ""),
-                    "telegram_autoselect": current_autoselect,
-                    "has_changes": has_changes,
+                    "telegram_channel_username": telegram_channel_username,
+                    "has_new_telegram_channel_username": dialog_manager.dialog_data.get("has_new_telegram_channel_username", False),
+                    "has_telegram_autoselect": autoselect,
+                    "has_changes": self._has_changes(dialog_manager),
                 }
 
                 span.set_status(Status(StatusCode.OK))
@@ -169,12 +181,10 @@ class AddSocialNetworkGetter(interface.IAddSocialNetworkGetter):
                 telegram_data = social_networks.get("telegram", [{}])[0]
 
                 data = {
-                    "tg_channel_username": telegram_data.get("tg_channel_username", ""),
-
-                    # Error flags
-                    "has_void_tg_channel_username": dialog_manager.dialog_data.get("has_void_tg_channel_username",
+                    "telegram_channel_username": telegram_data.get("telegram_channel_username", ""),
+                    "has_void_telegram_channel_username": dialog_manager.dialog_data.get("has_void_telegram_channel_username",
                                                                                    False),
-                    "has_invalid_tg_channel_username": dialog_manager.dialog_data.get("has_invalid_tg_channel_username",
+                    "has_invalid_telegram_channel_username": dialog_manager.dialog_data.get("has_invalid_telegram_channel_username",
                                                                                       False),
                     "has_channel_not_found": dialog_manager.dialog_data.get("has_channel_not_found", False),
                 }
@@ -210,6 +220,21 @@ class AddSocialNetworkGetter(interface.IAddSocialNetworkGetter):
     ) -> dict:
         # Static data for development placeholder
         return {}
+
+    def _has_changes(self, dialog_manager: DialogManager) -> bool:
+        original = dialog_manager.dialog_data.get("original_state", {})
+        working = dialog_manager.dialog_data.get("working_state", {})
+
+        if not original or not working:
+            return False
+
+        # Сравниваем текстовые поля
+        fields_to_compare = ["telegram_channel_username", "autoselect"]
+        for field in fields_to_compare:
+            if original.get(field) != working.get(field):
+                return True
+
+        return False
 
     # Helper methods
     def _get_network_status(self, social_networks: dict, network_type: str) -> str:

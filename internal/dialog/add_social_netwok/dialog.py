@@ -111,7 +111,7 @@ class AddSocialNetworkDialog(interface.IAddSocialNetworkDialog):
                     {
                         True: Multi(
                             Const("✅ <b>Подключен</b>\n\n"),
-                            Format("📣 <b>Канал:</b> @{tg_channel_username}\n"),
+                            Format("📣 <b>Канал:</b> @{telegram_channel_username}\n"),
                             Case(
                                 {
                                     True: Const("🤖 <b>Автовыбор:</b> ✅ включен\n"),
@@ -170,15 +170,15 @@ class AddSocialNetworkDialog(interface.IAddSocialNetworkDialog):
     def get_telegram_connect_window(self) -> Window:
         return Window(
             Multi(
-                Const("🔗 <b>Подключение Telegram канала</b>\n\n"),
+                Const("🔗 <b>Подключение telegram канала</b>\n\n"),
 
                 # Шаг 1: Ввод логина
                 Case(
                     {
                         False: Const("📝 <b>Шаг 1:</b> Введите username канала (без @)\n\n⌨️ <i>Введите username:</i>"),
-                        True: Format("✅ <b>Шаг 1:</b> Username введен (@{tg_channel_username})\n\n"),
+                        True: Format("✅ <b>Шаг 1:</b> Username введен (@{telegram_channel_username})\n\n"),
                     },
-                    selector="has_username"
+                    selector="has_telegram_channel_username"
                 ),
 
                 # Шаг 2: Автовыбор (показывается только после ввода username)
@@ -188,7 +188,7 @@ class AddSocialNetworkDialog(interface.IAddSocialNetworkDialog):
                             "🤖 <b>Шаг 2:</b> Настройка автовыбора\n\n💡 <i>Если включить автовыбор, новый контент будет автоматически предназначен для этого канала</i>"),
                         False: Const(""),
                     },
-                    selector="has_username"
+                    selector="has_telegram_channel_username"
                 ),
 
                 # Ошибки валидации
@@ -197,7 +197,7 @@ class AddSocialNetworkDialog(interface.IAddSocialNetworkDialog):
                         True: Const("\n\n❌ <b>Ошибка:</b> Username канала не может быть пустым"),
                         False: Const(""),
                     },
-                    selector="has_void_tg_channel_username"
+                    selector="has_void_telegram_channel_username"
                 ),
                 Case(
                     {
@@ -205,21 +205,21 @@ class AddSocialNetworkDialog(interface.IAddSocialNetworkDialog):
                             "\n\n❌ <b>Ошибка:</b> Неверный формат username. Используйте латиницу, цифры и подчеркивания (5-32 символа)"),
                         False: Const(""),
                     },
-                    selector="has_invalid_tg_channel_username"
+                    selector="has_invalid_telegram_channel_username"
                 ),
                 Case(
                     {
                         True: Const("\n\n❌ <b>Ошибка:</b> Канал не найден или бот не добавлен в администраторы"),
                         False: Const(""),
                     },
-                    selector="has_channel_not_found"
+                    selector="has_telegram_channel_not_found"
                 ),
                 sep="",
             ),
 
             TextInput(
-                id="tg_channel_username_input",
-                on_success=self.add_social_network_service.handle_tg_channel_username_input,
+                id="telegram_channel_username_input",
+                on_success=self.add_social_network_service.handle_telegram_channel_username_input,
             ),
 
             Column(
@@ -228,14 +228,14 @@ class AddSocialNetworkDialog(interface.IAddSocialNetworkDialog):
                     Const("🤖 Включить автовыбор"),
                     id="autoselect_checkbox",
                     default=False,
-                    when="has_username"
+                    when="has_telegram_channel_username"
                 ),
 
                 Button(
                     Const("💾 Подключить канал"),
                     id="save_telegram_connection",
                     on_click=self.add_social_network_service.handle_save_telegram_connection,
-                    when="has_username"
+                    when="has_telegram_channel_username"
                 ),
             ),
 
@@ -249,14 +249,21 @@ class AddSocialNetworkDialog(interface.IAddSocialNetworkDialog):
     def get_telegram_edit_window(self) -> Window:
         return Window(
             Multi(
-                Const("✏️ <b>Редактирование Telegram канала</b>\n\n"),
-                Format("📣 <b>Текущий канал:</b> @{tg_channel_username}\n"),
+                Const("✏️ <b>Редактирование telegram канала</b>\n\n"),
+                Format("📣 <b>Текущий канал:</b> @{telegram_channel_username}\n"),
+                Case(
+                    {
+                        True: Format("🆕 <b>Новый канал:</b> @{new_telegram_channel_username}\n"),
+                        False: Const(""),
+                    },
+                    selector="has_new_telegram_channel_username"
+                ),
                 Case(
                     {
                         True: Const("🤖 <b>Автовыбор:</b> ✅ включен\n\n"),
                         False: Const("🤖 <b>Автовыбор:</b> ❌ выключен\n\n"),
                     },
-                    selector="telegram_autoselect"
+                    selector="has_telegram_autoselect"
                 ),
                 Const("⚙️ <b>Доступные настройки:</b>"),
                 sep="",
@@ -266,19 +273,21 @@ class AddSocialNetworkDialog(interface.IAddSocialNetworkDialog):
                 # Кнопка изменения логина
                 Button(
                     Const("📝 Изменить логин канала"),
-                    id="change_username",
-                    on_click=lambda c, b, d: d.switch_to(model.AddSocialNetworkStates.telegram_change_username, ShowMode.EDIT),
+                    id="change_telegram_channel_username",
+                    on_click=lambda c, b, d: d.switch_to(model.AddSocialNetworkStates.telegram_change_username,
+                                                         ShowMode.EDIT),
                 ),
 
-                # Чекбокс автовыбора
+                # Чекбокс автовыбора с обработчиком изменения
                 Checkbox(
-                    Const("🤖 Включить автовыбор"),
                     Const("🤖 Автовыбор включен"),
-                    id="autoselect_checkbox",
+                    Const("🤖 Включить автовыбор"),
+                    id="telegram_autoselect_checkbox",
                     default=False,
+                    on_state_changed=self.add_social_network_service.handle_telegram_autoselect_checkbox_change,
                 ),
 
-                # Кнопка сохранения изменений автовыбора
+                # Кнопка сохранения изменений (показывается только если есть изменения)
                 Button(
                     Const("💾 Сохранить изменения"),
                     id="save_changes",
@@ -298,7 +307,7 @@ class AddSocialNetworkDialog(interface.IAddSocialNetworkDialog):
         return Window(
             Multi(
                 Const("📝 <b>Изменение логина Telegram канала</b>\n\n"),
-                Format("📣 <b>Текущий канал:</b> @{tg_channel_username}\n\n"),
+                Format("📣 <b>Текущий канал:</b> @{telegram_channel_username}\n\n"),
                 Const("⌨️ <b>Введите новый username канала (без @):</b>\n"),
                 Const("💡 <i>Бот должен быть добавлен в администраторы нового канала</i>\n"),
 
@@ -308,7 +317,7 @@ class AddSocialNetworkDialog(interface.IAddSocialNetworkDialog):
                         True: Const("\n❌ <b>Ошибка:</b> Username канала не может быть пустым"),
                         False: Const(""),
                     },
-                    selector="has_void_tg_channel_username"
+                    selector="has_void_telegram_channel_username"
                 ),
                 Case(
                     {
@@ -316,22 +325,22 @@ class AddSocialNetworkDialog(interface.IAddSocialNetworkDialog):
                             "\n❌ <b>Ошибка:</b> Неверный формат username. Используйте латиницу, цифры и подчеркивания (5-32 символа)"),
                         False: Const(""),
                     },
-                    selector="has_invalid_tg_channel_username"
+                    selector="has_invalid_telegram_channel_username"
                 ),
                 Case(
                     {
                         True: Const("\n❌ <b>Ошибка:</b> Канал не найден или бот не добавлен в администраторы"),
                         False: Const(""),
                     },
-                    selector="has_channel_not_found"
+                    selector="has_telegram_channel_not_found"
                 ),
                 sep="",
             ),
 
             # Поле ввода нового username
             TextInput(
-                id="new_tg_channel_username_input",
-                on_success=self.add_social_network_service.handle_new_tg_channel_username_input,
+                id="new_telegram_channel_username_input",
+                on_success=self.add_social_network_service.handle_new_telegram_channel_username_input,
             ),
 
             Back(Const("◀️ Назад")),

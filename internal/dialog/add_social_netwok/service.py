@@ -22,15 +22,15 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
         self.state_repo = state_repo
         self.kontur_content_client = kontur_content_client
 
-    async def handle_tg_channel_username_input(
+    async def handle_telegram_channel_username_input(
             self,
             message: Message,
             widget: Any,
             dialog_manager: DialogManager,
-            tg_channel_username: str
+            telegram_channel_username: str
     ) -> None:
         with self.tracer.start_as_current_span(
-                "AddSocialNetworkService.handle_tg_channel_username_input",
+                "AddSocialNetworkService.handle_telegram_channel_username_input",
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
@@ -38,31 +38,31 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
                 await message.delete()
 
                 error_flags = [
-                    "has_void_tg_channel_username",
-                    "has_invalid_tg_channel_username",
+                    "has_void_telegram_channel_username",
+                    "has_invalid_telegram_channel_username",
                     "has_channel_not_found",
                 ]
                 for flag in error_flags:
                     dialog_manager.dialog_data.pop(flag, None)
 
-                tg_channel_username = tg_channel_username.strip()
-                if not tg_channel_username:
-                    dialog_manager.dialog_data["has_void_tg_channel_username"] = True
+                telegram_channel_username = telegram_channel_username.strip()
+                if not telegram_channel_username:
+                    dialog_manager.dialog_data["has_void_telegram_channel_username"] = True
                     return
 
-                if tg_channel_username.startswith("@"):
-                    tg_channel_username = tg_channel_username[1:]
+                if telegram_channel_username.startswith("@"):
+                    telegram_channel_username = telegram_channel_username[1:]
 
-                if not re.match(r"^[a-zA-Z][a-zA-Z0-9_]{4,31}$", tg_channel_username):
-                    dialog_manager.dialog_data["has_invalid_tg_channel_username"] = True
+                if not re.match(r"^[a-zA-Z][a-zA-Z0-9_]{4,31}$", telegram_channel_username):
+                    dialog_manager.dialog_data["has_invalid_telegram_channel_username"] = True
                     return
 
                 # TODO: Add channel verification here when bot integration is ready
                 # For now, we just save the username
-                dialog_manager.dialog_data["tg_channel_username"] = tg_channel_username
-                dialog_manager.dialog_data["has_username"] = True
+                dialog_manager.dialog_data["telegram_channel_username"] = telegram_channel_username
+                dialog_manager.dialog_data["has_telegram_channel_username"] = True
 
-                self.logger.info(f"Telegram channel username entered: {tg_channel_username}")
+                self.logger.info(f"telegram channel username entered: {telegram_channel_username}")
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
@@ -83,8 +83,8 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
             try:
                 dialog_manager.show_mode = ShowMode.EDIT
 
-                tg_channel_username = dialog_manager.dialog_data.get("tg_channel_username", "")
-                if not tg_channel_username:
+                telegram_channel_username = dialog_manager.dialog_data.get("telegram_channel_username", "")
+                if not telegram_channel_username:
                     await callback.answer("❌ Сначала введите username канала", show_alert=True)
                     return
 
@@ -95,12 +95,12 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
 
                 await self.kontur_content_client.create_telegram(
                     organization_id=state.organization_id,
-                    tg_channel_username=tg_channel_username,
+                    telegram_channel_username=telegram_channel_username,
                     autoselect=autoselect
                 )
 
-                await callback.answer("✅ Telegram канал успешно подключен!", show_alert=True)
-                self.logger.info(f"Telegram channel connected: @{tg_channel_username}, autoselect: {autoselect}")
+                await callback.answer("✅ telegram канал успешно подключен!", show_alert=True)
+                self.logger.info(f"telegram channel connected: @{telegram_channel_username}, autoselect: {autoselect}")
 
                 await dialog_manager.switch_to(model.AddSocialNetworkStates.telegram_main)
 
@@ -134,8 +134,8 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
                     organization_id=state.organization_id
                 )
 
-                await callback.answer("✅ Telegram канал отключен", show_alert=True)
-                self.logger.info("Telegram channel disconnected")
+                await callback.answer("✅ telegram канал отключен", show_alert=True)
+                self.logger.info("telegram channel disconnected")
 
                 span.set_status(Status(StatusCode.OK))
 
@@ -162,7 +162,7 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
                 # Get autoselect checkbox state
                 autoselect_checkbox: ManagedCheckbox = dialog_manager.find("autoselect_checkbox")
                 autoselect = autoselect_checkbox.is_checked() if autoselect_checkbox else False
-                new_tg_channel_username = dialog_manager.dialog_data.get("new_tg_channel_username", "")
+                new_telegram_channel_username = dialog_manager.dialog_data.get("new_telegram_channel_username", "")
 
                 # Get current user state
                 state = await self._get_state(dialog_manager)
@@ -171,11 +171,11 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
                 await self.kontur_content_client.update_telegram(
                     organization_id=state.organization_id,
                     autoselect=autoselect,
-                    tg_channel_username=new_tg_channel_username,
+                    telegram_channel_username=new_telegram_channel_username,
                 )
 
                 await callback.answer("✅ Настройки сохранены!", show_alert=True)
-                self.logger.info(f"Telegram settings updated: autoselect={autoselect}")
+                self.logger.info(f"telegram settings updated: autoselect={autoselect}")
 
                 dialog_manager.dialog_data.pop("has_changes", None)
 
@@ -188,15 +188,15 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
                 await callback.answer("❌ Ошибка при сохранении", show_alert=True)
                 raise
 
-    async def handle_new_tg_channel_username_input(
+    async def handle_new_telegram_channel_username_input(
             self,
             message: Message,
             widget: Any,
             dialog_manager: DialogManager,
-            new_tg_channel_username: str
+            new_telegram_channel_username: str
     ) -> None:
         with self.tracer.start_as_current_span(
-                "AddSocialNetworkService.handle_new_tg_channel_username_input",
+                "AddSocialNetworkService.handle_new_telegram_channel_username_input",
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
@@ -205,30 +205,29 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
                 await message.delete()
 
                 error_flags = [
-                    "has_void_new_tg_channel_username",
-                    "has_invalid_new_tg_channel_username",
+                    "has_void_new_telegram_channel_username",
+                    "has_invalid_new_telegram_channel_username",
                 ]
                 for flag in error_flags:
                     dialog_manager.dialog_data.pop(flag, None)
 
                 # Validation
-                new_tg_channel_username = new_tg_channel_username.strip()
-                if not new_tg_channel_username:
-                    dialog_manager.dialog_data["has_void_new_tg_channel_username"] = True
+                new_telegram_channel_username = new_telegram_channel_username.strip()
+                if not new_telegram_channel_username:
+                    dialog_manager.dialog_data["has_void_new_telegram_channel_username"] = True
                     return
 
                 # Remove @ if present
-                if new_tg_channel_username.startswith("@"):
-                    new_tg_channel_username = new_tg_channel_username[1:]
+                if new_telegram_channel_username.startswith("@"):
+                    new_telegram_channel_username = new_telegram_channel_username[1:]
 
                 # Validate username format
-                if not re.match(r"^[a-zA-Z][a-zA-Z0-9_]{4,31}$", new_tg_channel_username):
-                    dialog_manager.dialog_data["has_invalid_new_tg_channel_username"] = True
+                if not re.match(r"^[a-zA-Z][a-zA-Z0-9_]{4,31}$", new_telegram_channel_username):
+                    dialog_manager.dialog_data["has_invalid_new_telegram_channel_username"] = True
                     return
 
-                dialog_manager.dialog_data["has_changes"] = True
-                dialog_manager.dialog_data["new_tg_channel_username"] = new_tg_channel_username
-
+                dialog_manager.dialog_data["working_state"]["telegram_channel_username"] = new_telegram_channel_username
+                dialog_manager.dialog_data["has_new_telegram_channel_username"] = new_telegram_channel_username
                 await dialog_manager.switch_to(model.AddSocialNetworkStates.telegram_edit)
 
                 span.set_status(Status(StatusCode.OK))

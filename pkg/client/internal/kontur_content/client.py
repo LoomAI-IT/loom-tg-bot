@@ -42,7 +42,7 @@ class KonturContentClient(interface.IKonturContentClient):
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
-    async def create_telegram(self, organization_id: int, tg_channel_username: str, autoselect: bool):
+    async def create_telegram(self, organization_id: int, telegram_channel_username: str, autoselect: bool):
         with self.tracer.start_as_current_span(
                 "KonturContentClient.create_telegram",
                 kind=SpanKind.CLIENT,
@@ -53,7 +53,7 @@ class KonturContentClient(interface.IKonturContentClient):
             try:
                 body = {
                     "organization_id": organization_id,
-                    "tg_channel_username": tg_channel_username,
+                    "tg_channel_username": telegram_channel_username,
                     "autoselect": autoselect,
                 }
                 await self.client.post(f"/social-network/telegram", json=body)
@@ -67,7 +67,7 @@ class KonturContentClient(interface.IKonturContentClient):
     async def update_telegram(
             self,
             organization_id: int,
-            tg_channel_username: str = None,
+            telegram_channel_username: str = None,
             autoselect: bool = None
     ):
         with self.tracer.start_as_current_span(
@@ -80,7 +80,7 @@ class KonturContentClient(interface.IKonturContentClient):
             try:
                 body = {
                     "organization_id": organization_id,
-                    "tg_channel_username": tg_channel_username,
+                    "tg_channel_username": telegram_channel_username,
                     "autoselect": autoselect,
                 }
                 await self.client.put(f"/social-network/telegram", json=body)

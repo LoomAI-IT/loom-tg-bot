@@ -39,28 +39,28 @@ class IAddSocialNetworkDialog(Protocol):
 
 
 class IAddSocialNetworkService(Protocol):
-    # Обработчики ввода данных для Telegram
+    # Обработчики ввода данных для telegram
     @abstractmethod
-    async def handle_tg_channel_username_input(
+    async def handle_telegram_channel_username_input(
             self,
             message: Message,
             widget: Any,
             dialog_manager: DialogManager,
-            tg_channel_username: str
+            telegram_channel_username: str
     ) -> None:
         pass
 
     @abstractmethod
-    async def handle_new_tg_channel_username_input(
+    async def handle_new_telegram_channel_username_input(
             self,
             message: Message,
             widget: Any,
             dialog_manager: DialogManager,
-            new_tg_channel_username: str
+            new_telegram_channel_username: str
     ) -> None:
         pass
 
-    # Обработчики подключения и сохранения Telegram
+    # Обработчики подключения и сохранения telegram
     @abstractmethod
     async def handle_save_telegram_connection(
             self,
@@ -79,7 +79,7 @@ class IAddSocialNetworkService(Protocol):
     ) -> None:
         pass
 
-    # Обработчик отключения Telegram
+    # Обработчик отключения telegram
     @abstractmethod
     async def handle_disconnect_telegram(
             self,
