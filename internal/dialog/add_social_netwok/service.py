@@ -27,7 +27,7 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
             message: Message,
             widget: Any,
             dialog_manager: DialogManager,
-            username: str
+            tg_channel_username: str
     ) -> None:
         with self.tracer.start_as_current_span(
                 "AddSocialNetworkService.handle_tg_channel_username_input",
@@ -45,24 +45,24 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
                 for flag in error_flags:
                     dialog_manager.dialog_data.pop(flag, None)
 
-                username = username.strip()
-                if not username:
+                tg_channel_username = tg_channel_username.strip()
+                if not tg_channel_username:
                     dialog_manager.dialog_data["has_void_tg_channel_username"] = True
                     return
 
-                if username.startswith("@"):
-                    username = username[1:]
+                if not tg_channel_username.startswith("@"):
+                    tg_channel_username = tg_channel_username[1:]
 
-                if not re.match(r"^[a-zA-Z][a-zA-Z0-9_]{4,31}$", username):
+                if not re.match(r"^[a-zA-Z][a-zA-Z0-9_]{4,31}$", tg_channel_username):
                     dialog_manager.dialog_data["has_invalid_tg_channel_username"] = True
                     return
 
                 # TODO: Add channel verification here when bot integration is ready
                 # For now, we just save the username
-                dialog_manager.dialog_data["tg_channel_username"] = username
+                dialog_manager.dialog_data["tg_channel_username"] = tg_channel_username
                 dialog_manager.dialog_data["has_username"] = True
 
-                self.logger.info(f"Telegram channel username entered: {username}")
+                self.logger.info(f"Telegram channel username entered: {tg_channel_username}")
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
@@ -199,6 +199,7 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
         ) as span:
             try:
                 dialog_manager.show_mode = ShowMode.EDIT
+
                 await message.delete()
 
                 error_flags = [
@@ -225,6 +226,8 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
 
                 dialog_manager.dialog_data["has_changes"] = True
                 dialog_manager.dialog_data["new_tg_channel_username"] = new_tg_channel_username
+
+                await dialog_manager.switch_to(model.AddSocialNetworkStates.telegram_edit)
 
                 span.set_status(Status(StatusCode.OK))
 

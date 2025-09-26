@@ -224,8 +224,8 @@ class AddSocialNetworkDialog(interface.IAddSocialNetworkDialog):
 
             Column(
                 Checkbox(
-                    Const("🤖 Включить автовыбор"),
                     Const("🤖 Автовыбор включен"),
+                    Const("🤖 Включить автовыбор"),
                     id="autoselect_checkbox",
                     default=False,
                     when="has_username"
@@ -274,7 +274,7 @@ class AddSocialNetworkDialog(interface.IAddSocialNetworkDialog):
                 Checkbox(
                     Const("🤖 Включить автовыбор"),
                     Const("🤖 Автовыбор включен"),
-                    id="telegram_autoselect_checkbox",
+                    id="autoselect_checkbox",
                     default=False,
                 ),
 
