@@ -187,6 +187,7 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
                 dialog_manager.show_mode = ShowMode.EDIT
 
                 is_checked = checkbox.is_checked()
+                await checkbox.set_checked(not is_checked)
 
                 dialog_manager.dialog_data["working_state"]["autoselect"] = is_checked
 

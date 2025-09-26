@@ -143,17 +143,11 @@ class AddSocialNetworkGetter(interface.IAddSocialNetworkGetter):
                     autoselect = dialog_manager.dialog_data["working_state"]["autoselect"]
                     telegram_channel_username = dialog_manager.dialog_data["working_state"]["telegram_channel_username"]
 
-                    autoselect_checkbox: ManagedCheckbox = dialog_manager.find("telegram_autoselect_checkbox")
-
-                    if autoselect_checkbox:
-                        await autoselect_checkbox.set_checked(autoselect)
-
                 data = {
                     "telegram_channel_username": telegram_channel_username,
-                    "has_new_telegram_channel_username": dialog_manager.dialog_data.get(
-                        "has_new_telegram_channel_username", False),
                     "has_telegram_autoselect": autoselect,
                     "has_changes": self._has_changes(dialog_manager),
+                    "has_new_telegram_channel_username": self._has_changes(dialog_manager),
                 }
 
                 span.set_status(Status(StatusCode.OK))
