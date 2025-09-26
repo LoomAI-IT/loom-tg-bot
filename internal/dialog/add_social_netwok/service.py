@@ -188,7 +188,7 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
                 new_value = checkbox.is_checked()
 
                 if "working_state" not in dialog_manager.dialog_data:
-                    dialog_manager.dialog_data["working_state"] = {}
+                    return
 
                 dialog_manager.dialog_data["working_state"]["autoselect"] = new_value
 
