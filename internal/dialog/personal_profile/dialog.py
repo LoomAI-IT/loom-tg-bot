@@ -29,16 +29,16 @@ class PersonalProfileDialog(interface.IPersonalProfileDialog):
     def get_personal_profile_window(self) -> Window:
         return Window(
             Format("👤 <b>Личный профиль</b><br>"),
-            Format("🏢 <b>Организация:</b> {organization_name}"),
-            Format("👨‍💼 <b>Имя:</b> {employee_name}"),
-            Format("📱 <b>Телеграм:</b> @{employee_tg_username}"),
-            Format("🆔 <b>ID аккаунта:</b> <code>{account_id}</code>"),
-            Format("🎭 <b>Роль:</b> {role_display}"),
-            Format("📅 <b>В команде с:</b> {created_at}<br>"),
+            Format("🏢 <b>Организация:</b> {organization_name}<br>"),
+            Format("👨‍💼 <b>Имя:</b> {employee_name}<br>"),
+            Format("📱 <b>Телеграм:</b> @{employee_tg_username}<br>"),
+            Format("🆔 <b>ID аккаунта:</b> <code>{account_id}</code><br>"),
+            Format("🎭 <b>Роль:</b> {role_display}<br>"),
+            Format("📅 <b>В команде с:</b> {created_at}<br><br>"),
 
-            Const("📊 <b>Статистика активности</b>"),
-            Format("✏️ <b>Создано публикаций:</b> {generated_publication_count}"),
-            Format("🚀 <b>Опубликовано:</b> {published_publication_count}"),
+            Const("📊 <b>Статистика активности</b><br>"),
+            Format("✏️ <b>Создано публикаций:</b> {generated_publication_count}<br>"),
+            Format("🚀 <b>Опубликовано:</b> {published_publication_count}<br><br>"),
             Case(
                 {
                     True: Multi(
@@ -87,7 +87,7 @@ class PersonalProfileDialog(interface.IPersonalProfileDialog):
                 on_click=self.personal_profile_service.handle_back_to_profile,
             ),
             state=model.PersonalProfileStates.faq,
-            # parse_mode="HTML",  # Закомментировал старый режим
+            parse_mode=SULGUK_PARSE_MODE,
         )
 
     def get_support_window(self) -> Window:
