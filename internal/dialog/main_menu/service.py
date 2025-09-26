@@ -38,7 +38,7 @@ class MainMenuService(interface.IMainMenuService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                print(f"Текст: {message.html_text}")
+                print(f"Текст: {message.html_text}", flush=True)
 
                 dialog_manager.show_mode = ShowMode.EDIT
 
