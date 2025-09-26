@@ -292,7 +292,7 @@ class AddSocialNetworkDialog(interface.IAddSocialNetworkDialog):
                     Const("🤖 Включить автовыбор"),
                     id="telegram_autoselect_checkbox",
                     default=False,
-                    on_state_changed=self.add_social_network_service.handle_toggle_telegram_autoselect,
+                    on_click=self.add_social_network_service.handle_toggle_telegram_autoselect,
                 ),
 
                 # Кнопка сохранения изменений (показывается только если есть изменения)
