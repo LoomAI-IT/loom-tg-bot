@@ -28,7 +28,7 @@ class PersonalProfileDialog(interface.IPersonalProfileDialog):
 
     def get_personal_profile_window(self) -> Window:
         return Window(
-            Format("👤 <b>Личный профиль</b><br>"),
+            Format("👤 <b>Личный профиль:</b><br>"),
             Format("🏢 <b>Организация:</b> {organization_name}<br>"),
             Format("👨‍💼 <b>Имя:</b> {employee_name}<br>"),
             Format("📱 <b>Телеграм:</b> @{employee_tg_username}<br>"),
@@ -36,20 +36,20 @@ class PersonalProfileDialog(interface.IPersonalProfileDialog):
             Format("🎭 <b>Роль:</b> {role_display}<br>"),
             Format("📅 <b>В команде с:</b> {created_at}<br><br>"),
 
-            Const("📊 <b>Статистика активности</b><br>"),
+            Const("📊 <b>Статистика активности:</b><br>"),
             Format("✏️ <b>Создано публикаций:</b> {generated_publication_count}<br>"),
             Format("🚀 <b>Опубликовано:</b> {published_publication_count}<br><br>"),
             Case(
                 {
                     True: Multi(
-                        Format("❌ <b>Отклонено модерацией:</b> {rejected_publication_count}"),
-                        Format("✅ <b>Одобрено модерацией:</b> {approved_publication_count}<br>"),
+                        Format("❌ <b>Отклонено модерацией:</b> {rejected_publication_count}<br>"),
+                        Format("✅ <b>Одобрено модерацией:</b> {approved_publication_count}<br><br>"),
                     ),
                     False: Const("")
                 },
                 selector="has_moderated_publications"
             ),
-            Const("🔐 <b>Права доступа</b><br>"),
+            Const("🔐 <b>Права доступа:</b><br>"),
             Format("{permissions_text}<br>"),
 
             Column(
