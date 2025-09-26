@@ -477,7 +477,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 dialog_manager.dialog_data.pop("has_big_text", None)
                 dialog_manager.dialog_data.pop("has_small_text", None)
 
-                new_text = text.strip()
+                new_text = message.html_text
                 if not new_text:
                     dialog_manager.dialog_data["has_void_text"] = True
                     return
