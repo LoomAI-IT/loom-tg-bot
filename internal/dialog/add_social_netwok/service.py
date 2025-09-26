@@ -185,14 +185,16 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                dialog_manager.show_mode = ShowMode.EDIT
+                new_value = checkbox.is_checked()
 
-                # НЕ вызываем set_checked вручную - чекбокс сам переключается
-                is_checked = checkbox.is_checked()
+                if "working_state" not in dialog_manager.dialog_data:
+                    dialog_manager.dialog_data["working_state"] = {}
 
-                # Обновляем working_state с новым значением
-                dialog_manager.dialog_data["working_state"]["autoselect"] = is_checked
+                dialog_manager.dialog_data["working_state"]["autoselect"] = new_value
 
+                self.logger.info(f"Telegram autoselect toggled to: {new_value}")
+
+                await callback.answer()
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
@@ -230,7 +232,6 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
                 # Очищаем dialog_data после успешного сохранения
                 dialog_manager.dialog_data.pop("original_state", None)
                 dialog_manager.dialog_data.pop("working_state", None)
-                dialog_manager.dialog_data.pop("has_new_telegram_channel_username", None)
 
                 await callback.answer("✅ Настройки сохранены!", show_alert=True)
                 self.logger.info(
@@ -254,7 +255,6 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
         # Очищаем временные данные при выходе без сохранения
         dialog_manager.dialog_data.pop("original_state", None)
         dialog_manager.dialog_data.pop("working_state", None)
-        dialog_manager.dialog_data.pop("has_new_telegram_channel_username", None)
 
         await dialog_manager.switch_to(model.AddSocialNetworkStates.telegram_main, ShowMode.EDIT)
 
@@ -297,7 +297,6 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
                     return
 
                 dialog_manager.dialog_data["working_state"]["telegram_channel_username"] = new_telegram_channel_username
-                dialog_manager.dialog_data["has_new_telegram_channel_username"] = True
                 await dialog_manager.switch_to(model.AddSocialNetworkStates.telegram_edit)
 
                 span.set_status(Status(StatusCode.OK))

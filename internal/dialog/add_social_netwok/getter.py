@@ -125,32 +125,36 @@ class AddSocialNetworkGetter(interface.IAddSocialNetworkGetter):
                     organization_id=state.organization_id
                 )
 
-                original_autoselect = social_networks["telegram"][0]["autoselect"]
-                original_username = social_networks["telegram"][0]["tg_channel_username"]
+                telegram_data = social_networks["telegram"][0]
+                original_autoselect = telegram_data["autoselect"]
+                original_username = telegram_data["tg_channel_username"]
 
-                # Инициализация при первом входе
-                if not dialog_manager.dialog_data.get("original_state"):
+                # Инициализация состояний при первом входе
+                if "original_state" not in dialog_manager.dialog_data:
                     dialog_manager.dialog_data["original_state"] = {
                         "telegram_channel_username": original_username,
                         "autoselect": original_autoselect,
                     }
 
-                if not dialog_manager.dialog_data.get("working_state"):
-                    dialog_manager.dialog_data["working_state"] = dialog_manager.dialog_data["original_state"].copy()
+                if "working_state" not in dialog_manager.dialog_data:
+                    dialog_manager.dialog_data["working_state"] = {
+                        "telegram_channel_username": original_username,
+                        "autoselect": original_autoselect,
+                    }
 
-                # ВСЕГДА синхронизируем чекбокс с working_state
-                current_autoselect = dialog_manager.dialog_data["working_state"]["autoselect"]
-                autoselect_checkbox: ManagedCheckbox = dialog_manager.find("telegram_autoselect_checkbox")
-                if autoselect_checkbox:
-                    await autoselect_checkbox.set_checked(current_autoselect)
+                    # Устанавливаем начальное состояние чекбокса только при первом входе
+                    autoselect_checkbox = dialog_manager.find("telegram_autoselect_checkbox")
+                    if autoselect_checkbox:
+                        await autoselect_checkbox.set_checked(original_autoselect)
+
+                working_state = dialog_manager.dialog_data["working_state"]
 
                 data = {
-                    "telegram_channel_username": dialog_manager.dialog_data["working_state"][
-                        "telegram_channel_username"],
-                    "has_telegram_autoselect": current_autoselect,
+                    "telegram_channel_username": working_state["telegram_channel_username"],
+                    "has_telegram_autoselect": working_state["autoselect"],
                     "has_changes": self._has_changes(dialog_manager),
                     "has_new_telegram_channel_username": (
-                            dialog_manager.dialog_data["working_state"]["telegram_channel_username"] !=
+                            working_state["telegram_channel_username"] !=
                             dialog_manager.dialog_data["original_state"]["telegram_channel_username"]
                     ),
                 }
