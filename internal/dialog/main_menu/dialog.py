@@ -3,6 +3,7 @@ from aiogram_dialog import Window, Dialog
 from aiogram_dialog.widgets.input import TextInput, MessageInput
 from aiogram_dialog.widgets.text import Const, Format, Case, Multi
 from aiogram_dialog.widgets.kbd import Button, Column, Row
+from sulguk import SULGUK_PARSE_MODE
 
 from internal import interface, model
 
@@ -130,5 +131,5 @@ class MainMenuDialog(interface.IMainMenuDialog):
 
             state=model.MainMenuStates.main_menu,
             getter=self.main_menu_getter.get_main_menu_data,
-            parse_mode="HTML",
+            parse_mode=SULGUK_PARSE_MODE,
         )
