@@ -120,7 +120,7 @@ class ChangeEmployeeDialog(interface.IChangeEmployeeDialog):
                 Case(
                     {
                         True: Multi(
-                            Format("• <b>Отклонено в ходе модерации:</b> {rejected_publication_count}"),
+                            Format("• <b>Отклонено в ходе модерации:</b> {rejected_publication_count}<br>"),
                             Format("• <b>Опубликовано в ходе модерации:</b> {approved_publication_count}<br><br>"),
                         ),
                         False: Const("")
