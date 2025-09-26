@@ -104,7 +104,7 @@ class AddSocialNetworkGetter(interface.IAddSocialNetworkGetter):
             # Error flags
             "has_void_telegram_channel_username": dialog_manager.dialog_data.get("has_void_telegram_channel_username", False),
             "has_invalid_telegram_channel_username": dialog_manager.dialog_data.get("has_invalid_telegram_channel_username", False),
-            "has_channel_not_found": dialog_manager.dialog_data.get("has_channel_not_found", False),
+            "has_telegram_channel_not_found": dialog_manager.dialog_data.get("has_channel_not_found", False),
         }
 
     async def get_telegram_edit_data(
