@@ -69,14 +69,14 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
 
                 selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
 
-                social_networks = await self.kontur_content_client.get_social_networks_by_organization(
-                    organization_id=state.organization_id
-                )
-
-                telegram_connected = self._is_network_connected(social_networks, "telegram")
-                vkontakte_connected = self._is_network_connected(social_networks, "vkontakte")
-
                 if not selected_networks:
+                    social_networks = await self.kontur_content_client.get_social_networks_by_organization(
+                        organization_id=state.organization_id
+                    )
+
+                    telegram_connected = self._is_network_connected(social_networks, "telegram")
+                    vkontakte_connected = self._is_network_connected(social_networks, "vkontakte")
+
                     if vkontakte_connected:
                         widget_id = "vkontakte_checkbox"
                         autoselect = social_networks["vkontakte"][0].get("autoselect", False)

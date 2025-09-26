@@ -115,6 +115,28 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
                     "created_at": current_pub.created_at,
                 }
 
+                selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
+
+                if not selected_networks:
+                    social_networks = await self.kontur_content_client.get_social_networks_by_organization(
+                        organization_id=state.organization_id
+                    )
+
+                    telegram_connected = self._is_network_connected(social_networks, "telegram")
+                    vkontakte_connected = self._is_network_connected(social_networks, "vkontakte")
+
+                    if vkontakte_connected:
+                        widget_id = "vkontakte_checkbox"
+                        autoselect = social_networks["vkontakte"][0].get("autoselect", False)
+                        selected_networks[widget_id] = autoselect
+
+                    if telegram_connected:
+                        widget_id = "telegram_checkbox"
+                        autoselect = social_networks["telegram"][0].get("autoselect", False)
+                        selected_networks[widget_id] = autoselect
+
+                    dialog_manager.dialog_data["selected_social_networks"] = selected_networks
+
                 # Копируем в рабочую версию, если ее еще нет
                 if "working_publication" not in dialog_manager.dialog_data:
                     dialog_manager.dialog_data["working_publication"] = dict(
@@ -220,29 +242,6 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
                             url=working_pub["image_url"],
                             type=ContentType.PHOTO
                         )
-
-                state = await self._get_state(dialog_manager)
-                selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
-
-                social_networks = await self.kontur_content_client.get_social_networks_by_organization(
-                    organization_id=state.organization_id
-                )
-
-                telegram_connected = self._is_network_connected(social_networks, "telegram")
-                vkontakte_connected = self._is_network_connected(social_networks, "vkontakte")
-
-                if not selected_networks:
-                    if vkontakte_connected:
-                        widget_id = "vkontakte_checkbox"
-                        autoselect = social_networks["vkontakte"][0].get("autoselect", False)
-                        selected_networks[widget_id] = autoselect
-
-                    if telegram_connected:
-                        widget_id = "telegram_checkbox"
-                        autoselect = social_networks["telegram"][0].get("autoselect", False)
-                        selected_networks[widget_id] = autoselect
-
-                    dialog_manager.dialog_data["selected_social_networks"] = selected_networks
 
                 data = {
                     "creator_name": creator.name,

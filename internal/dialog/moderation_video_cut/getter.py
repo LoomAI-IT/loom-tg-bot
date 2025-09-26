@@ -127,6 +127,28 @@ class VideoCutModerationGetter(interface.IVideoCutModerationGetter):
                     "inst_source": current_video_cut.inst_source,
                 }
 
+                selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
+
+                if not selected_networks:
+                    social_networks = await self.kontur_content_client.get_social_networks_by_organization(
+                        organization_id=state.organization_id
+                    )
+
+                    youtube_connected = self._is_network_connected(social_networks, "youtube")
+                    instagram_connected = self._is_network_connected(social_networks, "instagram")
+
+                    if youtube_connected:
+                        widget_id = "youtube_checkbox"
+                        autoselect = social_networks["youtube"][0].get("autoselect", False)
+                        selected_networks[widget_id] = autoselect
+
+                    if instagram_connected:
+                        widget_id = "instagram_checkbox"
+                        autoselect = social_networks["instagram"][0].get("autoselect", False)
+                        selected_networks[widget_id] = autoselect
+
+                    dialog_manager.dialog_data["selected_social_networks"] = selected_networks
+
                 # Копируем в рабочую версию, если ее еще нет
                 if "working_video_cut" not in dialog_manager.dialog_data:
                     dialog_manager.dialog_data["working_video_cut"] = dict(
@@ -254,26 +276,17 @@ class VideoCutModerationGetter(interface.IVideoCutModerationGetter):
                 selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
                 has_selected_networks = any(selected_networks.values())
 
-                if not has_selected_networks and not selected_networks:
-                    if youtube_connected:
-                        widget_id = "youtube_checkbox"
-                        autoselect = social_networks["youtube"][0].get("autoselect", False)
+                if youtube_connected:
+                    widget_id = "youtube_checkbox"
+                    youtube_checkbox: ManagedCheckbox = dialog_manager.find(widget_id)
+                    await youtube_checkbox.set_checked(selected_networks[widget_id])
 
-                        youtube_checkbox: ManagedCheckbox = dialog_manager.find(widget_id)
-                        selected_networks[widget_id] = autoselect
+                if instagram_connected:
+                    widget_id = "instagram_checkbox"
+                    instagram_checkbox: ManagedCheckbox = dialog_manager.find(widget_id)
+                    await instagram_checkbox.set_checked(selected_networks[widget_id])
 
-                        await youtube_checkbox.set_checked(autoselect)
-
-                    if instagram_connected:
-                        widget_id = "instagram_checkbox"
-                        autoselect = social_networks["instagram"][0].get("autoselect", False)
-
-                        instagram_checkbox: ManagedCheckbox = dialog_manager.find(widget_id)
-                        selected_networks[widget_id] = autoselect
-
-                        await instagram_checkbox.set_checked(autoselect)
-
-                    dialog_manager.dialog_data["selected_social_networks"] = selected_networks
+                dialog_manager.dialog_data["selected_social_networks"] = selected_networks
 
                 data = {
                     "youtube_connected": youtube_connected,
