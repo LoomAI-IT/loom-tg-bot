@@ -50,7 +50,7 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
                     dialog_manager.dialog_data["has_void_tg_channel_username"] = True
                     return
 
-                if not tg_channel_username.startswith("@"):
+                if tg_channel_username.startswith("@"):
                     tg_channel_username = tg_channel_username[1:]
 
                 if not re.match(r"^[a-zA-Z][a-zA-Z0-9_]{4,31}$", tg_channel_username):
@@ -160,8 +160,9 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
                 dialog_manager.show_mode = ShowMode.EDIT
 
                 # Get autoselect checkbox state
-                autoselect_checkbox: ManagedCheckbox = dialog_manager.find("telegram_autoselect_checkbox")
+                autoselect_checkbox: ManagedCheckbox = dialog_manager.find("autoselect_checkbox")
                 autoselect = autoselect_checkbox.is_checked() if autoselect_checkbox else False
+                new_tg_channel_username = dialog_manager.dialog_data.get("new_tg_channel_username", "")
 
                 # Get current user state
                 state = await self._get_state(dialog_manager)
@@ -169,7 +170,8 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
                 # Update telegram settings (only autoselect for now)
                 await self.kontur_content_client.update_telegram(
                     organization_id=state.organization_id,
-                    autoselect=autoselect
+                    autoselect=autoselect,
+                    tg_channel_username=new_tg_channel_username,
                 )
 
                 await callback.answer("✅ Настройки сохранены!", show_alert=True)
@@ -184,6 +186,40 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
                 span.set_status(Status(StatusCode.ERROR, str(err)))
 
                 await callback.answer("❌ Ошибка при сохранении", show_alert=True)
+                raise
+
+    async def handle_telegram_autoselect_changed(
+            self,
+            callback: CallbackQuery,
+            checkbox: ManagedCheckbox,
+            dialog_manager: DialogManager
+    ) -> None:
+        """Обработчик изменения состояния чекбокса автовыбора"""
+        with self.tracer.start_as_current_span(
+                "AddSocialNetworkService.handle_telegram_autoselect_changed",
+                kind=SpanKind.INTERNAL
+        ) as span:
+            try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
+                current_state = checkbox.is_checked()
+
+                initial_state = dialog_manager.dialog_data.get("initial_autoselect", False)
+
+                username_changed = bool(dialog_manager.dialog_data.get("new_tg_channel_username"))
+
+                # Устанавливаем флаг изменений
+                autoselect_changed = current_state != initial_state
+                has_changes = autoselect_changed or username_changed
+
+                dialog_manager.dialog_data["has_changes"] = has_changes
+
+                self.logger.info(f"Telegram autoselect changed: {current_state}, has_changes: {has_changes}")
+                span.set_status(Status(StatusCode.OK))
+
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
     async def handle_new_tg_channel_username_input(
