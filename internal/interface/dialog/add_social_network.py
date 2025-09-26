@@ -80,6 +80,14 @@ class IAddSocialNetworkService(Protocol):
     ) -> None:
         pass
 
+    @abstractmethod
+    async def handle_back_from_edit(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
 
     @abstractmethod
     async def handle_toggle_telegram_autoselect(

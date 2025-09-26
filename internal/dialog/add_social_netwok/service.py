@@ -153,23 +153,24 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
             try:
                 dialog_manager.show_mode = ShowMode.EDIT
 
-                # Get current user state
                 state = await self._get_state(dialog_manager)
 
-                # Delete telegram connection
                 await self.kontur_content_client.delete_telegram(
                     organization_id=state.organization_id
                 )
 
-                await callback.answer("✅ telegram канал отключен", show_alert=True)
-                self.logger.info("telegram channel disconnected")
+                # Очищаем dialog_data после удаления
+                dialog_manager.dialog_data.clear()
+
+                await callback.answer("✅ Telegram канал отключен", show_alert=True)
+                self.logger.info("Telegram channel disconnected")
+
 
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-
                 await callback.answer("❌ Ошибка при отключении канала", show_alert=True)
                 raise
 
@@ -184,12 +185,23 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                dialog_manager.show_mode = ShowMode.EDIT
+                new_value = checkbox.is_checked()
 
-                is_checked = checkbox.is_checked()
-                await checkbox.set_checked(not is_checked)
+                if "working_state" not in dialog_manager.dialog_data:
+                    state = await self._get_state(dialog_manager)
+                    social_networks = await self.kontur_content_client.get_social_networks_by_organization(
+                        organization_id=state.organization_id
+                    )
+                    telegram_data = social_networks["telegram"][0]
 
-                dialog_manager.dialog_data["working_state"]["autoselect"] = not is_checked
+                    dialog_manager.dialog_data["working_state"] = {
+                        "telegram_channel_username": telegram_data["tg_channel_username"],
+                        "autoselect": new_value,  # Используем новое значение
+                    }
+                else:
+                    dialog_manager.dialog_data["working_state"]["autoselect"] = new_value
+
+                self.logger.info(f"Telegram autoselect toggled to: {new_value}")
 
                 await callback.answer()
                 span.set_status(Status(StatusCode.OK))
@@ -197,7 +209,6 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-
                 await callback.answer("❌ Ошибка", show_alert=True)
                 raise
 
@@ -214,9 +225,10 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
             try:
                 dialog_manager.show_mode = ShowMode.EDIT
 
-                autoselect_checkbox: ManagedCheckbox = dialog_manager.find("autoselect_checkbox")
-                autoselect = autoselect_checkbox.is_checked() if autoselect_checkbox else False
-                new_telegram_channel_username =  dialog_manager.dialog_data["working_state"]["telegram_channel_username"]
+                # Берем данные из working_state, а не из чекбокса
+                working_state = dialog_manager.dialog_data.get("working_state", {})
+                autoselect = working_state.get("autoselect", None)
+                new_telegram_channel_username = working_state.get("telegram_channel_username", None)
 
                 state = await self._get_state(dialog_manager)
 
@@ -226,19 +238,34 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
                     telegram_channel_username=new_telegram_channel_username,
                 )
 
+                # Очищаем dialog_data после успешного сохранения
+                dialog_manager.dialog_data.pop("original_state", None)
+                dialog_manager.dialog_data.pop("working_state", None)
+
                 await callback.answer("✅ Настройки сохранены!", show_alert=True)
-                self.logger.info(f"telegram settings updated: autoselect={autoselect}")
+                self.logger.info(
+                    f"Telegram settings updated: username={new_telegram_channel_username}, autoselect={autoselect}")
 
                 await dialog_manager.switch_to(model.AddSocialNetworkStates.telegram_main)
-
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-
                 await callback.answer("❌ Ошибка при сохранении", show_alert=True)
                 raise
+
+    async def handle_back_from_edit(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        # Очищаем временные данные при выходе без сохранения
+        dialog_manager.dialog_data.pop("original_state", None)
+        dialog_manager.dialog_data.pop("working_state", None)
+
+        await dialog_manager.switch_to(model.AddSocialNetworkStates.telegram_main, ShowMode.EDIT)
 
     async def handle_new_telegram_channel_username_input(
             self,
@@ -279,7 +306,6 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
                     return
 
                 dialog_manager.dialog_data["working_state"]["telegram_channel_username"] = new_telegram_channel_username
-                dialog_manager.dialog_data["has_new_telegram_channel_username"] = True
                 await dialog_manager.switch_to(model.AddSocialNetworkStates.telegram_edit)
 
                 span.set_status(Status(StatusCode.OK))
