@@ -29,12 +29,12 @@ class ContentMenuDialog(interface.IContentMenuDialog):
     def get_content_menu_window(self) -> Window:
         return Window(
             Const("✍️ <b>Контент-студия</b><br><br>"
-                  "💡 Создавайте новый контент или работайте с черновиками<br>"),
+                  "💡 Создавайте новый контент или работайте с черновиками<br><br>"),
 
-            Format("📊 <b>Ваша статистика:</b>"),
-            Format("📝 Черновиков: <b>{drafts_count}</b>"),
-            Format("⏳ На модерации: <b>{moderation_count}</b>"),
-            Format("✅ Опубликовано: <b>{approved_count}</b>"),
+            Format("📊 <b>Ваша статистика:</b><br>"),
+            Format("📝 Черновиков: <b>{drafts_count}</b><br>"),
+            Format("⏳ На модерации: <b>{moderation_count}</b><br>"),
+            Format("✅ Опубликовано: <b>{approved_count}</b><br>"),
 
             Column(
                 Button(
@@ -97,11 +97,11 @@ class ContentMenuDialog(interface.IContentMenuDialog):
     def get_drafts_type_selection_window(self) -> Window:
         return Window(
             Const("📝 <b>Ваши черновики</b><br><br>"
-                  "Выберите тип черновиков для просмотра:<br>"),
+                  "Выберите тип черновиков для просмотра:<br><br>"),
 
-            Format("📊 <b>Статистика черновиков:</b>"),
-            Format("📰 Публикации: <b>{publication_drafts_count}</b>"),
-            Format("🎬 Видео-нарезки: <b>{video_drafts_count}</b>"),
+            Format("📊 <b>Статистика черновиков:</b><br>"),
+            Format("📰 Публикации: <b>{publication_drafts_count}</b><br>"),
+            Format("🎬 Видео-нарезки: <b>{video_drafts_count}</b><br>"),
 
             Column(
                 Button(
@@ -130,11 +130,11 @@ class ContentMenuDialog(interface.IContentMenuDialog):
     def get_moderation_type_selection_window(self) -> Window:
         return Window(
             Const("👀 <b>Модерация контента</b><br><br>"
-                  "Выберите тип контента для модерации:<br>"),
+                  "Выберите тип контента для модерации:<br><br>"),
 
-            Format("📊 <b>Статистика модерации:</b>"),
-            Format("📰 Публикации на модерации: <b>{publication_moderation_count}</b>"),
-            Format("🎬 Видео на модерации: <b>{video_moderation_count}</b>"),
+            Format("📊 <b>Статистика модерации:</b><br>"),
+            Format("📰 Публикации на модерации: <b>{publication_moderation_count}</b><br>"),
+            Format("🎬 Видео на модерации: <b>{video_moderation_count}</b><br>"),
 
             Column(
                 Button(

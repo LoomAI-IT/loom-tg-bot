@@ -182,7 +182,7 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
                 dialog_manager.dialog_data.pop("has_void_title", None)
                 dialog_manager.dialog_data.pop("has_big_title", None)
 
-                new_title = text.strip()
+                new_title = message.html_text
                 if not new_title:
                     dialog_manager.dialog_data["has_void_title"] = True
                     return
@@ -221,7 +221,7 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
                 dialog_manager.dialog_data.pop("has_void_description", None)
                 dialog_manager.dialog_data.pop("has_big_description", None)
 
-                new_description = text.strip()
+                new_description = message.html_text
                 if not new_description:
                     dialog_manager.dialog_data["has_void_description"] = True
                     return
