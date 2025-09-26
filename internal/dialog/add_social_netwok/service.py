@@ -188,40 +188,6 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
                 await callback.answer("❌ Ошибка при сохранении", show_alert=True)
                 raise
 
-    async def handle_telegram_autoselect_changed(
-            self,
-            callback: CallbackQuery,
-            checkbox: ManagedCheckbox,
-            dialog_manager: DialogManager
-    ) -> None:
-        """Обработчик изменения состояния чекбокса автовыбора"""
-        with self.tracer.start_as_current_span(
-                "AddSocialNetworkService.handle_telegram_autoselect_changed",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                dialog_manager.show_mode = ShowMode.EDIT
-
-                current_state = checkbox.is_checked()
-
-                initial_state = dialog_manager.dialog_data.get("initial_autoselect", False)
-
-                username_changed = bool(dialog_manager.dialog_data.get("new_tg_channel_username"))
-
-                # Устанавливаем флаг изменений
-                autoselect_changed = current_state != initial_state
-                has_changes = autoselect_changed or username_changed
-
-                dialog_manager.dialog_data["has_changes"] = has_changes
-
-                self.logger.info(f"Telegram autoselect changed: {current_state}, has_changes: {has_changes}")
-                span.set_status(Status(StatusCode.OK))
-
-            except Exception as err:
-                span.record_exception(err)
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                raise
-
     async def handle_new_tg_channel_username_input(
             self,
             message: Message,
