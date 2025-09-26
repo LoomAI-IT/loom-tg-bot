@@ -185,7 +185,13 @@ class AddSocialNetworkDialog(interface.IAddSocialNetworkDialog):
                     },
                     selector="has_telegram_channel_username"
                 ),
-
+                Case(
+                    {
+                        True: Const("<br><br>❌ <b>Ошибка:</b> Канал не найден или бот не добавлен в администраторы"),
+                        False: Const(""),
+                    },
+                    selector="has_invalid_telegram_permission"
+                ),
                 # Шаг 2: Автовыбор (показывается только после ввода username)
                 Case(
                     {
@@ -211,13 +217,6 @@ class AddSocialNetworkDialog(interface.IAddSocialNetworkDialog):
                         False: Const(""),
                     },
                     selector="has_invalid_telegram_channel_username"
-                ),
-                Case(
-                    {
-                        True: Const("<br><br>❌ <b>Ошибка:</b> Канал не найден или бот не добавлен в администраторы"),
-                        False: Const(""),
-                    },
-                    selector="has_telegram_channel_not_found"
                 ),
                 sep="",
             ),
@@ -293,10 +292,8 @@ class AddSocialNetworkDialog(interface.IAddSocialNetworkDialog):
                     Const("🤖 Включить автовыбор"),
                     id="telegram_autoselect_checkbox",
                     default=False,
-                    # Убираем on_click обработчик
-                    # on_click=self.add_social_network_service.handle_toggle_telegram_autoselect,
                 ),
-                # Кнопка сохранения изменений (показывается только если есть изменения)
+
                 Button(
                     Const("💾 Сохранить изменения"),
                     id="save_changes",
@@ -327,7 +324,14 @@ class AddSocialNetworkDialog(interface.IAddSocialNetworkDialog):
                 # Ошибки валидации
                 Case(
                     {
-                        True: Const("<br>❌ <b>Ошибка:</b> Username канала не может быть пустым"),
+                        True: Const("<br><br>❌ <b>Ошибка:</b> Канал не найден или бот не добавлен в администраторы"),
+                        False: Const(""),
+                    },
+                    selector="has_invalid_telegram_permission"
+                ),
+                Case(
+                    {
+                        True: Const("<br><br>❌ <b>Ошибка:</b> Username канала не может быть пустым"),
                         False: Const(""),
                     },
                     selector="has_void_telegram_channel_username"
@@ -335,17 +339,10 @@ class AddSocialNetworkDialog(interface.IAddSocialNetworkDialog):
                 Case(
                     {
                         True: Const(
-                            "<br>❌ <b>Ошибка:</b> Неверный формат username. Используйте латиницу, цифры и подчеркивания (5-32 символа)"),
+                            "<br><br>❌ <b>Ошибка:</b> Неверный формат username. Используйте латиницу, цифры и подчеркивания (5-32 символа)"),
                         False: Const(""),
                     },
                     selector="has_invalid_telegram_channel_username"
-                ),
-                Case(
-                    {
-                        True: Const("<br>❌ <b>Ошибка:</b> Канал не найден или бот не добавлен в администраторы"),
-                        False: Const(""),
-                    },
-                    selector="has_telegram_channel_not_found"
                 ),
                 sep="",
             ),
