@@ -185,12 +185,16 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
                 new_value = checkbox.is_checked()
 
                 if "working_state" not in dialog_manager.dialog_data:
                     return
 
                 dialog_manager.dialog_data["working_state"]["autoselect"] = new_value
+
+                await dialog_manager.show()
 
                 self.logger.info(f"Telegram autoselect toggled to: {new_value}")
 
