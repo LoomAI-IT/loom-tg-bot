@@ -145,8 +145,14 @@ class AddSocialNetworkGetter(interface.IAddSocialNetworkGetter):
 
                 # Синхронизируем чекбокс с working_state
                 autoselect_checkbox = dialog_manager.find("telegram_autoselect_checkbox")
-                if autoselect_checkbox and autoselect_checkbox.is_checked() != working_state["autoselect"]:
+                print(autoselect_checkbox.is_checked(), flush=True)
+                if autoselect_checkbox.is_checked() != working_state["autoselect"]:
                     await autoselect_checkbox.set_checked(working_state["autoselect"])
+                else:
+                    await autoselect_checkbox.set_unchecked(autoselect_checkbox.is_checked())
+                    working_state["autoselect"] = autoselect_checkbox.is_checked()
+                    dialog_manager.dialog_data["working_state"] = working_state
+
 
                 data = {
                     "telegram_channel_username": working_state["telegram_channel_username"],
