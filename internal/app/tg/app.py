@@ -21,6 +21,7 @@ def NewTg(
         moderation_video_cut_dialog: interface.IVideoCutModerationDialog,
         video_cuts_draft_dialog: interface.IVideoCutsDraftDialog,
         publication_draft_dialog: interface.IPublicationDraftDialog,
+        add_social_network_dialog: interface.IAddSocialNetworkDialog,
 ) -> BgManagerFactory:
     include_command_handlers(
         dp,
@@ -40,7 +41,8 @@ def NewTg(
         moderation_publication_dialog,
         moderation_video_cut_dialog,
         video_cuts_draft_dialog,
-        publication_draft_dialog
+        publication_draft_dialog,
+        add_social_network_dialog
     )
 
     return dialog_bg_factory
@@ -80,6 +82,7 @@ def include_dialogs(
         moderation_video_cut_dialog: interface.IVideoCutModerationDialog,
         video_cuts_draft_dialog: interface.IVideoCutsDraftDialog,
         publication_draft_dialog: interface.IPublicationDraftDialog,
+        add_social_network_dialog: interface.IAddSocialNetworkDialog,
 ) -> BgManagerFactory:
     dialog_router = Router()
     dialog_router.include_routers(
@@ -95,7 +98,8 @@ def include_dialogs(
         generate_video_cut_dialog.get_dialog(),
         moderation_video_cut_dialog.get_dialog(),
         video_cuts_draft_dialog.get_dialog(),
-        publication_draft_dialog.get_dialog()
+        publication_draft_dialog.get_dialog(),
+        add_social_network_dialog.get_dialog()
     )
 
     dp.include_routers(dialog_router)

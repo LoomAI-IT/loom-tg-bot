@@ -42,6 +42,72 @@ class KonturContentClient(interface.IKonturContentClient):
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
+    async def create_telegram(self, organization_id: int, telegram_channel_username: str, autoselect: bool):
+        with self.tracer.start_as_current_span(
+                "KonturContentClient.create_telegram",
+                kind=SpanKind.CLIENT,
+                attributes={
+                    "organization_id": organization_id
+                }
+        ) as span:
+            try:
+                body = {
+                    "organization_id": organization_id,
+                    "tg_channel_username": telegram_channel_username,
+                    "autoselect": autoselect,
+                }
+                await self.client.post(f"/social-network/telegram", json=body)
+                span.set_status(Status(StatusCode.OK))
+
+            except Exception as e:
+                span.record_exception(e)
+                span.set_status(Status(StatusCode.ERROR, str(e)))
+                raise
+
+    async def update_telegram(
+            self,
+            organization_id: int,
+            telegram_channel_username: str = None,
+            autoselect: bool = None
+    ):
+        with self.tracer.start_as_current_span(
+                "KonturContentClient.update_telegram",
+                kind=SpanKind.CLIENT,
+                attributes={
+                    "organization_id": organization_id
+                }
+        ) as span:
+            try:
+                body = {
+                    "organization_id": organization_id,
+                    "tg_channel_username": telegram_channel_username,
+                    "autoselect": autoselect,
+                }
+                await self.client.put(f"/social-network/telegram", json=body)
+                span.set_status(Status(StatusCode.OK))
+
+            except Exception as e:
+                span.record_exception(e)
+                span.set_status(Status(StatusCode.ERROR, str(e)))
+                raise
+
+    async def delete_telegram(self, organization_id: int):
+        with self.tracer.start_as_current_span(
+                "KonturContentClient.delete_telegram",
+                kind=SpanKind.CLIENT,
+                attributes={
+                    "organization_id": organization_id
+                }
+        ) as span:
+            try:
+                await self.client.delete(f"/social-network/telegram/{organization_id}")
+                span.set_status(Status(StatusCode.OK))
+
+            except Exception as e:
+                span.record_exception(e)
+                span.set_status(Status(StatusCode.ERROR, str(e)))
+                raise
+
     # ПУБЛИКАЦИИ
     async def generate_publication_text(
             self,

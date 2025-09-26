@@ -7,6 +7,7 @@ from internal.interface.dialog.personal_profile import *
 from internal.interface.dialog.organization_menu import *
 from internal.interface.dialog.change_employee import *
 from internal.interface.dialog.add_employee import *
+from internal.interface.dialog.add_social_network import *
 from internal.interface.dialog.content_menu import *
 from internal.interface.dialog.generate_publication import *
 from internal.interface.dialog.generate_video_cut import *

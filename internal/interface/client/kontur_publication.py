@@ -2,13 +2,27 @@ import io
 from typing import Protocol
 from abc import abstractmethod
 from datetime import datetime
-from fastapi import UploadFile
 
 from internal import model
+
 
 class IKonturContentClient(Protocol):
     @abstractmethod
     async def get_social_networks_by_organization(self, organization_id: int) -> dict: pass
+
+    @abstractmethod
+    async def create_telegram(self, organization_id: int, telegram_channel_username: str, autoselect: bool): pass
+
+    @abstractmethod
+    async def update_telegram(
+            self,
+            organization_id: int,
+            telegram_channel_username: str = None,
+            autoselect: bool = None
+    ): pass
+
+    @abstractmethod
+    async def delete_telegram(self, organization_id: int): pass
 
     # ПУБЛИКАЦИИ
     @abstractmethod

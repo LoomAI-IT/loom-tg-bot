@@ -1,6 +1,6 @@
 from typing import Any
 from aiogram.types import CallbackQuery
-from aiogram_dialog import DialogManager, StartMode
+from aiogram_dialog import DialogManager, StartMode, ShowMode
 
 from opentelemetry.trace import SpanKind, Status, StatusCode
 
@@ -114,8 +114,9 @@ class OrganizationMenuService(interface.IOrganizationMenuService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                # TODO: Запустить диалог управления социальными сетями
-                await callback.answer("Функция в разработке", show_alert=True)
+                dialog_manager.show_mode = ShowMode.EDIT
+
+                await dialog_manager.start(model.AddSocialNetworkStates.select_network)
 
                 self.logger.info("Попытка перехода к социальным сетям")
 

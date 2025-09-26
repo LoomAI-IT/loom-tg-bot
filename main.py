@@ -25,6 +25,7 @@ from internal.dialog.organization_menu.dialog import OrganizationMenuDialog
 from internal.dialog.personal_profile.dialog import PersonalProfileDialog
 from internal.dialog.change_employee.dialog import ChangeEmployeeDialog
 from internal.dialog.add_employee.dialog import AddEmployeeDialog
+from internal.dialog.add_social_netwok.dialog import AddSocialNetworkDialog
 from internal.dialog.content_menu.dialog import ContentMenuDialog
 from internal.dialog.generate_publication.dialog import GeneratePublicationDialog
 from internal.dialog.generate_video_cut.dialog import GenerateVideoCutDialog
@@ -41,6 +42,7 @@ from internal.dialog.content_menu.service import ContentMenuService
 from internal.dialog.personal_profile.service import PersonalProfileService
 from internal.dialog.change_employee.service import ChangeEmployeeService
 from internal.dialog.add_employee.service import AddEmployeeService
+from internal.dialog.add_social_netwok.service import AddSocialNetworkService
 from internal.dialog.generate_publication.service import GeneratePublicationService
 from internal.dialog.generate_video_cut.service import GenerateVideoCutService
 from internal.dialog.moderation_publication.service import ModerationPublicationService
@@ -55,6 +57,7 @@ from internal.dialog.content_menu.getter import ContentMenuGetter
 from internal.dialog.personal_profile.getter import PersonalProfileGetter
 from internal.dialog.change_employee.getter import ChangeEmployeeGetter
 from internal.dialog.add_employee.getter import AddEmployeeGetter
+from internal.dialog.add_social_netwok.getter import AddSocialNetworkGetter
 from internal.dialog.generate_publication.getter import GeneratePublicationDataGetter
 from internal.dialog.moderation_publication.getter import ModerationPublicationGetter
 from internal.dialog.generate_video_cut.getter import GenerateVideoCutGetter
@@ -211,6 +214,12 @@ add_employee_getter = AddEmployeeGetter(
     kontur_employee_client,
 )
 
+add_social_network_getter = AddSocialNetworkGetter(
+    tel,
+    state_repo,
+    kontur_content_client,
+)
+
 # Инициализация сервисов
 state_service = StateService(tel, state_repo)
 auth_service = AuthService(
@@ -291,6 +300,12 @@ video_cut_moderation_service = VideoCutModerationService(
     kontur_content_client,
 )
 
+add_social_network_service = AddSocialNetworkService(
+    tel,
+    state_repo,
+    kontur_content_client,
+)
+
 # Инициализация диалогов
 auth_dialog = AuthDialog(
     tel,
@@ -366,6 +381,12 @@ video_cut_moderation_dialog = VideoCutModerationDialog(
     video_cut_moderation_getter,
 )
 
+add_social_network_dialog = AddSocialNetworkDialog(
+    tel,
+    add_social_network_service,
+    add_social_network_getter,
+)
+
 command_controller = CommandController(tel, state_service)
 
 dialog_bg_factory = NewTg(
@@ -383,7 +404,8 @@ dialog_bg_factory = NewTg(
     moderation_publication_dialog,
     video_cut_moderation_dialog,
     video_cuts_draft_dialog,
-    publication_draft_dialog
+    publication_draft_dialog,
+add_social_network_dialog
 )
 
 # Инициализация middleware
