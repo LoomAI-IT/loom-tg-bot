@@ -38,6 +38,18 @@ class MainMenuService(interface.IMainMenuService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                print(f"Текст: {message.text}")
+
+                # Информация о форматировании
+                if message.entities:
+                    for entity in message.entities:
+                        print(f"Тип: {entity.type}", flush=True)
+                        print(f"Позиция: {entity.offset}-{entity.offset + entity.length}", flush=True)
+
+                        # Извлекаем форматированный кусок
+                        formatted_text = message.text[entity.offset:entity.offset + entity.length]
+                        print(f"Форматированный текст: {formatted_text}", flush=True)
+
                 dialog_manager.show_mode = ShowMode.EDIT
 
                 await message.delete()
