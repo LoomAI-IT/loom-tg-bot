@@ -22,66 +22,6 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
         self.kontur_employee_client = kontur_employee_client
         self.kontur_content_client = kontur_content_client
 
-    async def get_social_network_select_data(
-            self,
-            dialog_manager: DialogManager,
-            **kwargs
-    ) -> dict:
-        with self.tracer.start_as_current_span(
-                "GeneratePublicationDataGetter.get_social_network_select_data",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                state = await self._get_state(dialog_manager)
-
-                social_networks = await self.kontur_content_client.get_social_networks_by_organization(
-                    organization_id=state.organization_id
-                )
-
-                telegram_connected = self._is_network_connected(social_networks, "telegram")
-                vkontakte_connected = self._is_network_connected(social_networks, "vkontakte")
-
-                selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
-                has_selected_networks = any(selected_networks.values())
-
-                if not has_selected_networks and not selected_networks:
-                    if vkontakte_connected:
-                        widget_id = "vkontakte_checkbox"
-                        autoselect = social_networks["vkontakte"][0].get("autoselect", False)
-
-                        vkontakte_checkbox: ManagedCheckbox = dialog_manager.find(widget_id)
-                        selected_networks[widget_id] = autoselect
-
-                        await vkontakte_checkbox.set_checked(autoselect)
-
-                    if telegram_connected:
-                        widget_id = "telegram_checkbox"
-                        autoselect = social_networks["telegram"][0].get("autoselect", False)
-
-                        telegram_checkbox: ManagedCheckbox = dialog_manager.find(widget_id)
-                        selected_networks[widget_id] = autoselect
-
-                        await telegram_checkbox.set_checked(autoselect)
-
-                    dialog_manager.dialog_data["selected_social_networks"] = selected_networks
-
-                data = {
-                    "telegram_connected": telegram_connected,
-                    "vkontakte_connected": vkontakte_connected,
-                    "all_networks_connected": telegram_connected and vkontakte_connected,
-                    "no_connected_networks": not telegram_connected and not vkontakte_connected,
-                    "has_available_networks": telegram_connected or vkontakte_connected,
-                    "has_selected_networks": has_selected_networks,
-                }
-
-                span.set_status(Status(StatusCode.OK))
-                return data
-
-            except Exception as err:
-                span.record_exception(err)
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                raise
-
     async def get_preview_data(
             self,
             dialog_manager: DialogManager,
@@ -127,6 +67,28 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
                             type=ContentType.PHOTO
                         )
 
+                selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
+
+                social_networks = await self.kontur_content_client.get_social_networks_by_organization(
+                    organization_id=state.organization_id
+                )
+
+                telegram_connected = self._is_network_connected(social_networks, "telegram")
+                vkontakte_connected = self._is_network_connected(social_networks, "vkontakte")
+
+                if not selected_networks:
+                    if vkontakte_connected:
+                        widget_id = "vkontakte_checkbox"
+                        autoselect = social_networks["vkontakte"][0].get("autoselect", False)
+                        selected_networks[widget_id] = autoselect
+
+                    if telegram_connected:
+                        widget_id = "telegram_checkbox"
+                        autoselect = social_networks["telegram"][0].get("autoselect", False)
+                        selected_networks[widget_id] = autoselect
+
+                    dialog_manager.dialog_data["selected_social_networks"] = selected_networks
+
                 requires_moderation = employee.required_moderation
                 can_publish_directly = not requires_moderation
 
@@ -147,6 +109,52 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
 
                 span.set_status(Status(StatusCode.OK))
                 return data
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
+                raise
+
+    async def get_social_network_select_data(
+            self,
+            dialog_manager: DialogManager,
+            **kwargs
+    ) -> dict:
+        with self.tracer.start_as_current_span(
+                "GeneratePublicationDataGetter.get_social_network_select_data",
+                kind=SpanKind.INTERNAL
+        ) as span:
+            try:
+                state = await self._get_state(dialog_manager)
+
+                social_networks = await self.kontur_content_client.get_social_networks_by_organization(
+                    organization_id=state.organization_id
+                )
+
+                telegram_connected = self._is_network_connected(social_networks, "telegram")
+                vkontakte_connected = self._is_network_connected(social_networks, "vkontakte")
+
+                selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
+
+                if vkontakte_connected:
+                    widget_id = "vkontakte_checkbox"
+                    vkontakte_checkbox: ManagedCheckbox = dialog_manager.find(widget_id)
+                    await vkontakte_checkbox.set_checked(selected_networks[widget_id])
+
+                if telegram_connected:
+                    widget_id = "telegram_checkbox"
+                    telegram_checkbox: ManagedCheckbox = dialog_manager.find(widget_id)
+                    await telegram_checkbox.set_checked(selected_networks[widget_id])
+
+                data = {
+                    "telegram_connected": telegram_connected,
+                    "vkontakte_connected": vkontakte_connected,
+                    "no_connected_networks": not telegram_connected and not vkontakte_connected,
+                    "has_available_networks": telegram_connected or vkontakte_connected,
+                }
+
+                span.set_status(Status(StatusCode.OK))
+                return data
+
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
@@ -213,7 +221,6 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
-
 
     async def get_edit_text_data(
             self,
