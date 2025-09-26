@@ -217,7 +217,7 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
                 # Get autoselect checkbox state
                 autoselect_checkbox: ManagedCheckbox = dialog_manager.find("autoselect_checkbox")
                 autoselect = autoselect_checkbox.is_checked() if autoselect_checkbox else False
-                new_telegram_channel_username = dialog_manager.dialog_data.get("new_telegram_channel_username", None)
+                new_telegram_channel_username =  dialog_manager.dialog_data["working_state"]["telegram_channel_username"]
 
                 # Get current user state
                 state = await self._get_state(dialog_manager)
