@@ -7,6 +7,7 @@ from internal.model.dialog_states.personal_profile import *
 from internal.model.dialog_states.organization_menu import *
 from internal.model.dialog_states.change_employee import *
 from internal.model.dialog_states.add_employee import *
+from internal.model.dialog_states.add_social_network import *
 from internal.model.dialog_states.content_menu import *
 from internal.model.dialog_states.generate_publication import *
 from internal.model.dialog_states.generate_video_cut import *
