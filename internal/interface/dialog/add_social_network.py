@@ -2,6 +2,7 @@ from abc import abstractmethod
 from typing import Protocol, Any
 from aiogram_dialog import DialogManager, Dialog, Window
 from aiogram.types import CallbackQuery, Message
+from aiogram_dialog.widgets.kbd import ManagedCheckbox
 
 
 class IAddSocialNetworkDialog(Protocol):
@@ -75,6 +76,16 @@ class IAddSocialNetworkService(Protocol):
             self,
             callback: CallbackQuery,
             button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        pass
+
+
+    @abstractmethod
+    async def handle_toggle_telegram_autoselect(
+            self,
+            callback: CallbackQuery,
+            checkbox: ManagedCheckbox,
             dialog_manager: DialogManager
     ) -> None:
         pass

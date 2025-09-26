@@ -146,6 +146,33 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
                 await callback.answer("❌ Ошибка при отключении канала", show_alert=True)
                 raise
 
+    async def handle_toggle_telegram_autoselect(
+            self,
+            callback: CallbackQuery,
+            checkbox: ManagedCheckbox,
+            dialog_manager: DialogManager
+    ) -> None:
+        with self.tracer.start_as_current_span(
+                "AddSocialNetworkService.handle_toggle_telegram_autoselect",
+                kind=SpanKind.INTERNAL
+        ) as span:
+            try:
+                dialog_manager.show_mode = ShowMode.EDIT
+
+                is_checked = checkbox.is_checked()
+
+                dialog_manager.dialog_data["working_state"]["autoselect"] = is_checked
+
+                await callback.answer()
+                span.set_status(Status(StatusCode.OK))
+
+            except Exception as err:
+                span.record_exception(err)
+                span.set_status(Status(StatusCode.ERROR, str(err)))
+
+                await callback.answer("❌ Ошибка", show_alert=True)
+                raise
+
     async def handle_save_telegram_changes(
             self,
             callback: CallbackQuery,
