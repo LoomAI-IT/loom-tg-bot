@@ -102,9 +102,11 @@ class AddSocialNetworkGetter(interface.IAddSocialNetworkGetter):
             "has_telegram_channel_username": dialog_manager.dialog_data.get("has_telegram_channel_username", False),
 
             # Error flags
-            "has_void_telegram_channel_username": dialog_manager.dialog_data.get("has_void_telegram_channel_username", False),
-            "has_invalid_telegram_channel_username": dialog_manager.dialog_data.get("has_invalid_telegram_channel_username", False),
-            "has_telegram_channel_not_found": dialog_manager.dialog_data.get("has_channel_not_found", False),
+            "has_void_telegram_channel_username": dialog_manager.dialog_data.get("has_void_telegram_channel_username",
+                                                                                 False),
+            "has_invalid_telegram_channel_username": dialog_manager.dialog_data.get(
+                "has_invalid_telegram_channel_username", False),
+            "has_telegram_channel_not_found": dialog_manager.dialog_data.get("has_telegram_channel_not_found", False),
         }
 
     async def get_telegram_edit_data(
@@ -148,7 +150,8 @@ class AddSocialNetworkGetter(interface.IAddSocialNetworkGetter):
 
                 data = {
                     "telegram_channel_username": telegram_channel_username,
-                    "has_new_telegram_channel_username": dialog_manager.dialog_data.get("has_new_telegram_channel_username", False),
+                    "has_new_telegram_channel_username": dialog_manager.dialog_data.get(
+                        "has_new_telegram_channel_username", False),
                     "has_telegram_autoselect": autoselect,
                     "has_changes": self._has_changes(dialog_manager),
                 }
@@ -179,14 +182,16 @@ class AddSocialNetworkGetter(interface.IAddSocialNetworkGetter):
                 )
 
                 telegram_data = social_networks.get("telegram", [{}])[0]
-
                 data = {
-                    "telegram_channel_username": telegram_data.get("telegram_channel_username", ""),
-                    "has_void_telegram_channel_username": dialog_manager.dialog_data.get("has_void_telegram_channel_username",
-                                                                                   False),
-                    "has_invalid_telegram_channel_username": dialog_manager.dialog_data.get("has_invalid_telegram_channel_username",
-                                                                                      False),
-                    "has_channel_not_found": dialog_manager.dialog_data.get("has_channel_not_found", False),
+                    "telegram_channel_username": telegram_data.get("tg_channel_username", ""),
+                    "has_void_telegram_channel_username": dialog_manager.dialog_data.get(
+                        "has_void_telegram_channel_username",
+                        False),
+                    "has_invalid_telegram_channel_username": dialog_manager.dialog_data.get(
+                        "has_invalid_telegram_channel_username",
+                        False),
+                    "has_telegram_channel_not_found": dialog_manager.dialog_data.get("has_telegram_channel_not_found",
+                                                                                     False),
                 }
 
                 span.set_status(Status(StatusCode.OK))
