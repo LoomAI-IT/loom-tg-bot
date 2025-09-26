@@ -1,6 +1,8 @@
 from aiogram_dialog import Window, Dialog
 from aiogram_dialog.widgets.text import Const, Format
 from aiogram_dialog.widgets.kbd import Button, Column, Row
+from sulguk import SULGUK_PARSE_MODE
+
 from internal import interface, model
 
 
@@ -26,8 +28,8 @@ class ContentMenuDialog(interface.IContentMenuDialog):
 
     def get_content_menu_window(self) -> Window:
         return Window(
-            Const("✍️ <b>Контент-студия</b>\n\n"
-                  "💡 Создавайте новый контент или работайте с черновиками\n"),
+            Const("✍️ <b>Контент-студия</b><br><br>"
+                  "💡 Создавайте новый контент или работайте с черновиками<br>"),
 
             Format("📊 <b>Ваша статистика:</b>"),
             Format("📝 Черновиков: <b>{drafts_count}</b>"),
@@ -61,13 +63,13 @@ class ContentMenuDialog(interface.IContentMenuDialog):
 
             state=model.ContentMenuStates.content_menu,
             getter=self.content_menu_getter.get_content_menu_data,
-            parse_mode="HTML",
+            parse_mode=SULGUK_PARSE_MODE,
         )
 
     def get_content_type_selection_window(self) -> Window:
         return Window(
-            Const("🎯 <b>Что будем создавать?</b>\n\n"
-                  "Выберите тип контента для генерации:\n"),
+            Const("🎯 <b>Что будем создавать?</b><br><br>"
+                  "Выберите тип контента для генерации:<br>"),
 
             Column(
                 Button(
@@ -89,13 +91,13 @@ class ContentMenuDialog(interface.IContentMenuDialog):
             ),
 
             state=model.ContentMenuStates.select_content_type,
-            parse_mode="HTML",
+            parse_mode=SULGUK_PARSE_MODE,
         )
 
     def get_drafts_type_selection_window(self) -> Window:
         return Window(
-            Const("📝 <b>Ваши черновики</b>\n\n"
-                  "Выберите тип черновиков для просмотра:\n"),
+            Const("📝 <b>Ваши черновики</b><br><br>"
+                  "Выберите тип черновиков для просмотра:<br>"),
 
             Format("📊 <b>Статистика черновиков:</b>"),
             Format("📰 Публикации: <b>{publication_drafts_count}</b>"),
@@ -122,13 +124,13 @@ class ContentMenuDialog(interface.IContentMenuDialog):
 
             state=model.ContentMenuStates.select_drafts_type,
             getter=self.content_menu_getter.get_drafts_type_data,
-            parse_mode="HTML",
+            parse_mode=SULGUK_PARSE_MODE,
         )
 
     def get_moderation_type_selection_window(self) -> Window:
         return Window(
-            Const("👀 <b>Модерация контента</b>\n\n"
-                  "Выберите тип контента для модерации:\n"),
+            Const("👀 <b>Модерация контента</b><br><br>"
+                  "Выберите тип контента для модерации:<br>"),
 
             Format("📊 <b>Статистика модерации:</b>"),
             Format("📰 Публикации на модерации: <b>{publication_moderation_count}</b>"),
@@ -155,5 +157,5 @@ class ContentMenuDialog(interface.IContentMenuDialog):
 
             state=model.ContentMenuStates.select_moderation_type,
             getter=self.content_menu_getter.get_moderation_type_data,
-            parse_mode="HTML",
+            parse_mode=SULGUK_PARSE_MODE,
         )

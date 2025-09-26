@@ -2,6 +2,7 @@ from aiogram_dialog import Window, Dialog
 from aiogram_dialog.widgets.text import Const, Format, Multi, Case
 from aiogram_dialog.widgets.kbd import Button, Column
 from aiogram_dialog.widgets.input import MessageInput
+from sulguk import SULGUK_PARSE_MODE
 
 from internal import interface, model
 
@@ -30,26 +31,26 @@ class GenerateVideoCutDialog(interface.IGenerateVideoCutDialog):
                 Case(
                     {
                         True: Multi(
-                            Const("⏳ <b>Видео обрабатывается...</b>\n\n"),
-                            Const("📬 <b>Я уведомлю вас, как только видео будут готовы!</b>\n\n"),
+                            Const("⏳ <b>Видео обрабатывается...</b><br><br>"),
+                            Const("📬 <b>Я уведомлю вас, как только видео будут готовы!</b><br><br>"),
                         ),
                         False: Multi(
                             # Error messages
                             Case(
                                 {
-                                    True: Const("❌ <b>Ошибка:</b> <i>Неверная ссылка на YouTube</i>\n\n"),
+                                    True: Const("❌ <b>Ошибка:</b> <i>Неверная ссылка на YouTube</i><br><br>"),
                                     False: Const(""),
                                 },
                                 selector="has_invalid_youtube_url"
                             ),
 
                             # Instructions
-                            Const("📋 <b>Инструкция:</b>\n"),
-                            Const("┌ 🔗 Отправьте ссылку на YouTube видео\n"),
-                            Const("├ ✂️ Я создам из него короткие видео-нарезки\n"),
-                            Const("└ 📁 Готовые видео появятся в разделе <i>\"Черновики\"</i>\n\n"),
-                            Const("🎯 <b>Введите ссылку на YouTube видео:</b>\n"),
-                            Const("💡 <i>Например:</i> <code>https://www.youtube.com/watch?v=VIDEO_ID</code>\n\n"),
+                            Const("📋 <b>Инструкция:</b><br>"),
+                            Const("┌ 🔗 Отправьте ссылку на YouTube видео<br>"),
+                            Const("├ ✂️ Я создам из него короткие видео-нарезки<br>"),
+                            Const("└ 📁 Готовые видео появятся в разделе <i>\"Черновики\"</i><br><br>"),
+                            Const("🎯 <b>Введите ссылку на YouTube видео:</b><br>"),
+                            Const("💡 <i>Например:</i> <code>https://www.youtube.com/watch?v=VIDEO_ID</code><br><br>"),
 
                         ),
                     },
@@ -73,7 +74,7 @@ class GenerateVideoCutDialog(interface.IGenerateVideoCutDialog):
 
             state=model.GenerateVideoCutStates.input_youtube_link,
             getter=self.generate_video_cut_getter.get_youtube_input_data,
-            parse_mode="HTML",
+            parse_mode=SULGUK_PARSE_MODE,
         )
 
     def get_video_generated_alert_window(self) -> Window:
@@ -83,15 +84,15 @@ class GenerateVideoCutDialog(interface.IGenerateVideoCutDialog):
                 Case(
                     {
                         True: Multi(
-                            Const("🎉 <b>Ваши видео готовы!</b>\n\n"),
-                            Format("📊 У вас готово <b>{alerts_count}</b> {alerts_word}:\n\n"),
+                            Const("🎉 <b>Ваши видео готовы!</b><br><br>"),
+                            Format("📊 У вас готово <b>{alerts_count}</b> {alerts_word}:<br><br>"),
                             # Список всех алертов
-                            Format("📋 <b>Список готовых видео:</b>\n{alerts_text}"),
+                            Format("📋 <b>Список готовых видео:</b><br>{alerts_text}"),
                         ),
                         False: Multi(
-                            Const("🎉 <b>Ваше видео готово!</b>\n\n"),
-                            Format("✅ Успешно сгенерировано <b>{video_count}</b> {video_word} из видео:\n"),
-                            Format("🎬 <a href='{youtube_video_reference}'>📺 Исходное видео</a>\n\n"),
+                            Const("🎉 <b>Ваше видео готово!</b><br><br>"),
+                            Format("✅ Успешно сгенерировано <b>{video_count}</b> {video_word} из видео:<br>"),
+                            Format("🎬 <a href='{youtube_video_reference}'>📺 Исходное видео</a><br><br>"),
                         ),
                     },
                     selector="has_multiple_alerts"
@@ -115,5 +116,5 @@ class GenerateVideoCutDialog(interface.IGenerateVideoCutDialog):
 
             state=model.GenerateVideoCutStates.video_generated_alert,
             getter=self.generate_video_cut_getter.get_video_alert_data,
-            parse_mode="HTML",
+            parse_mode=SULGUK_PARSE_MODE,
         )

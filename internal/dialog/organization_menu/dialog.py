@@ -1,6 +1,7 @@
 from aiogram_dialog import Window, Dialog
 from aiogram_dialog.widgets.text import Const, Format
 from aiogram_dialog.widgets.kbd import Button, Column, Back
+from sulguk import SULGUK_PARSE_MODE
 
 from internal import interface, model
 
@@ -25,10 +26,10 @@ class OrganizationMenuDialog(interface.IOrganizationMenuDialog):
 
     def get_organization_menu_window(self) -> Window:
         return Window(
-            Const("🏢 <b>Профиль организации</b> ✨"),
-            Format("🏷️ Название: <code>{organization_name}</code>"),
-            Format("💰 Баланс: <code>{balance}</code> руб."),
-            Format("📊 <b>Рубрики:</b> 📝"),
+            Const("🏢 <b>Профиль организации</b> ✨<br><br>"),
+            Format("🏷️ Название: <code>{organization_name}</code><br>"),
+            Format("💰 Баланс: <code>{balance}</code> руб.<br><br>"),
+            Format("📊 <b>Рубрики:</b> 📝<br>"),
             Format("{categories_list}"),
 
             Column(
@@ -61,5 +62,5 @@ class OrganizationMenuDialog(interface.IOrganizationMenuDialog):
 
             state=model.OrganizationMenuStates.organization_menu,
             getter=self.organization_menu_getter.get_organization_menu_data,
-            parse_mode="HTML",
+            parse_mode=SULGUK_PARSE_MODE,
         )
