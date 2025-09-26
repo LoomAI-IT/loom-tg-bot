@@ -261,7 +261,7 @@ class AddSocialNetworkDialog(interface.IAddSocialNetworkDialog):
                 Format("📣 <b>Текущий канал:</b> @{telegram_channel_username}\n"),
                 Case(
                     {
-                        True: Format("🆕 <b>Новый канал:</b> @{new_telegram_channel_username}\n"),
+                        True: Format("🆕 <b>Новый канал:</b> @{telegram_channel_username}\n"),
                         False: Const(""),
                     },
                     selector="has_new_telegram_channel_username"
