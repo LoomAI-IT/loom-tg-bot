@@ -3,6 +3,7 @@ from aiogram import Bot, Dispatcher
 import redis.asyncio as redis
 from aiogram.fsm.storage.base import DefaultKeyBuilder
 from aiogram.fsm.storage.redis import RedisStorage
+from sulguk import AiogramSulgukMiddleware
 
 from infrastructure.pg.pg import PG
 from infrastructure.telemetry.telemetry import Telemetry, AlertManager
@@ -111,6 +112,7 @@ storage = RedisStorage(
 )
 dp = Dispatcher(storage=storage)
 bot = Bot(token=cfg.tg_bot_token)
+bot.session.middleware(AiogramSulgukMiddleware())
 
 # Инициализация клиентов
 db = PG(tel, cfg.db_user, cfg.db_pass, cfg.db_host, cfg.db_port, cfg.db_name)

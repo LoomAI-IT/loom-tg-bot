@@ -52,7 +52,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 dialog_manager.dialog_data.pop("has_small_input_text", None)
                 dialog_manager.dialog_data.pop("has_big_input_text", None)
 
-                text = text.strip()
+                text = message.html_text.strip()
                 if not text:
                     dialog_manager.dialog_data["has_void_input_text"] = True
                     return
@@ -401,7 +401,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 dialog_manager.show_mode = ShowMode.EDIT
 
                 await message.delete()
-                prompt = prompt.strip()
+                prompt = message.html_text
 
                 # Очищаем предыдущие ошибки
                 dialog_manager.dialog_data.pop("has_void_regenerate_prompt", None)
@@ -477,7 +477,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 dialog_manager.dialog_data.pop("has_big_text", None)
                 dialog_manager.dialog_data.pop("has_small_text", None)
 
-                new_text = text.strip()
+                new_text = message.html_text
                 if not new_text:
                     dialog_manager.dialog_data["has_void_text"] = True
                     return
@@ -575,7 +575,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 dialog_manager.dialog_data.pop("has_big_image_prompt", None)
                 dialog_manager.dialog_data.pop("has_image_generation_error", None)
 
-                prompt = prompt.strip()
+                prompt = message.html_text
                 if not prompt:
                     dialog_manager.dialog_data["has_void_image_prompt"] = True
                     return

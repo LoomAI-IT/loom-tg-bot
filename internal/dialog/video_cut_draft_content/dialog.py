@@ -3,6 +3,7 @@ from aiogram_dialog.widgets.text import Const, Format, Multi, Case
 from aiogram_dialog.widgets.kbd import Button, Column, Row, Checkbox
 from aiogram_dialog.widgets.input import TextInput
 from aiogram_dialog.widgets.media import DynamicMedia
+from sulguk import SULGUK_PARSE_MODE
 
 from internal import interface, model
 
@@ -33,24 +34,24 @@ class VideoCutsDraftDialog(interface.IVideoCutsDraftDialog):
     def get_video_cut_list_window(self) -> Window:
         return Window(
             Multi(
-                Const("🎬 <b>Твои видео-нарезки</b>\n\n"),
+                Const("🎬 <b>Твои видео-нарезки</b><br><br>"),
                 Case(
                     {
                         True: Multi(
-                            Format("📽️ <b>{video_name}</b>\n"),
-                            Format("📝 {video_description}\n\n"),
+                            Format("📽️ <b>{video_name}</b><br>"),
+                            Format("📝 {video_description}<br><br>"),
                             Case(
                                 {
-                                    True: Format("🏷️ <b>Теги:</b> <code>{video_tags}</code>\n"),
-                                    False: Const("🏷️ <b>Теги:</b> <i>❌ отсутствуют</i>\n"),
+                                    True: Format("🏷️ <b>Теги:</b> <code>{video_tags}</code><br>"),
+                                    False: Const("🏷️ <b>Теги:</b> <i>❌ отсутствуют</i><br>"),
                                 },
                                 selector="has_tags"
                             ),
-                            Format("🔗 <b>Источник:</b> <a href='{youtube_reference}'>YouTube</a>\n\n"),
-                            Format("📅 <b>Создано:</b> <code>{created_at}</code>\n"),
+                            Format("🔗 <b>Источник:</b> <a href='{youtube_reference}'>YouTube</a><br><br>"),
+                            Format("📅 <b>Создано:</b> <code>{created_at}</code><br>"),
                         ),
                         False: Multi(
-                            Const("📂 <b>Пусто в черновиках</b>\n\n"),
+                            Const("📂 <b>Пусто в черновиках</b><br><br>"),
                             Const("💡 <i>Создайте первую видео-нарезку, чтобы начать работу с черновиками</i>"),
                         ),
                     },
@@ -135,33 +136,33 @@ class VideoCutsDraftDialog(interface.IVideoCutsDraftDialog):
 
             state=model.VideoCutsDraftStates.video_cut_list,
             getter=self.video_cut_draft_getter.get_video_cut_list_data,
-            parse_mode="HTML",
+            parse_mode=SULGUK_PARSE_MODE,
         )
 
     def get_edit_preview_window(self) -> Window:
         return Window(
             Multi(
-                Const("✏️ <b>Редактирование видео</b>\n\n"),
+                Const("✏️ <b>Редактирование видео</b><br><br>"),
 
-                Format("📽️ <b>{video_name}</b>\n\n"),
-                Format("📝 {video_description}\n\n"),
+                Format("📽️ <b>{video_name}</b><br><br>"),
+                Format("📝 {video_description}<br><br>"),
                 Case(
                     {
-                        True: Format("🏷️ <b>Теги:</b> <code>{video_tags}</code>\n"),
-                        False: Const("🏷️ <b>Теги:</b> <i>❌ отсутствуют</i>\n"),
+                        True: Format("🏷️ <b>Теги:</b> <code>{video_tags}</code><br>"),
+                        False: Const("🏷️ <b>Теги:</b> <i>❌ отсутствуют</i><br>"),
                     },
                     selector="has_tags"
                 ),
-                Format("🔗 <b>Источник:</b> <a href='{youtube_reference}'>YouTube</a>\n\n"),
-                Format("📅 <b>Создано:</b> <code>{created_at}</code>\n"),
+                Format("🔗 <b>Источник:</b> <a href='{youtube_reference}'>YouTube</a><br><br>"),
+                Format("📅 <b>Создано:</b> <code>{created_at}</code><br>"),
                 Case(
                     {
-                        True: Const("\n\n⚠️ <b><i>Есть несохраненные изменения!</i></b>"),
+                        True: Const("<br><br>⚠️ <b><i>Есть несохраненные изменения!</i></b>"),
                         False: Const(""),
                     },
                     selector="has_changes"
                 ),
-                Const("\n\n📌 <b>Что будем изменять?</b>"),
+                Const("<br><br>📌 <b>Что будем изменять?</b>"),
                 sep="",
             ),
 
@@ -204,37 +205,37 @@ class VideoCutsDraftDialog(interface.IVideoCutsDraftDialog):
 
             state=model.VideoCutsDraftStates.edit_preview,
             getter=self.video_cut_draft_getter.get_edit_preview_data,
-            parse_mode="HTML",
+            parse_mode=SULGUK_PARSE_MODE,
         )
 
     def get_edit_title_window(self) -> Window:
         return Window(
             Multi(
-                Const("📝 <b>Изменение названия</b>\n\n"),
-                Format("📋 <b>Текущее название:</b>\n<i>{current_title}</i>\n\n"),
-                Const("✍️ <b>Введите новое название:</b>\n\n"),
-                Const("📏 <b>Ограничения по символам:</b>\n"),
-                Const("🎬 YouTube Shorts: <code>максимум 100 символов</code>\n"),
+                Const("📝 <b>Изменение названия</b><br><br>"),
+                Format("📋 <b>Текущее название:</b><br><i>{current_title}</i><br><br>"),
+                Const("✍️ <b>Введите новое название:</b><br><br>"),
+                Const("📏 <b>Ограничения по символам:</b><br>"),
+                Const("🎬 YouTube Shorts: <code>максимум 100 символов</code><br>"),
                 Const("📱 Instagram Reels: <code>максимум 2200 символов</code>"),
                 sep="",
             ),
             Case(
                 {
-                    True: Const("\n❌ <b>Ошибка:</b> Название не может быть пустым"),
+                    True: Const("<br>❌ <b>Ошибка:</b> Название не может быть пустым"),
                     False: Const("")
                 },
                 selector="has_void_title"
             ),
             Case(
                 {
-                    True: Const("\n📏 <b>Слишком короткое название</b>\n<i>Минимум 5 символов</i>"),
+                    True: Const("<br>📏 <b>Слишком короткое название</b><br><i>Минимум 5 символов</i>"),
                     False: Const("")
                 },
                 selector="has_small_title"
             ),
             Case(
                 {
-                    True: Const("\n📏 <b>Слишком длинное название</b>\n<i>Максимум 500 символов</i>"),
+                    True: Const("<br>📏 <b>Слишком длинное название</b><br><i>Максимум 500 символов</i>"),
                     False: Const("")
                 },
                 selector="has_big_title"
@@ -253,39 +254,39 @@ class VideoCutsDraftDialog(interface.IVideoCutsDraftDialog):
 
             state=model.VideoCutsDraftStates.edit_title,
             getter=self.video_cut_draft_getter.get_edit_title_data,
-            parse_mode="HTML",
+            parse_mode=SULGUK_PARSE_MODE,
         )
 
     def get_edit_description_window(self) -> Window:
         """Окно редактирования описания видео"""
         return Window(
             Multi(
-                Const("📄 <b>Изменение описания</b>\n\n"),
-                Format("📊 <b>Длина текущего описания:</b> <code>{current_description_length} символов</code>\n\n"),
-                Const("✍️ <b>Введите новое описание:</b>\n\n"),
-                Const("📏 <b>Ограничения по символам:</b>\n"),
-                Const("🎬 YouTube: <code>максимум 5000 символов</code>\n"),
-                Const("📱 Instagram: <code>максимум 2200 символов</code>\n\n"),
+                Const("📄 <b>Изменение описания</b><br><br>"),
+                Format("📊 <b>Длина текущего описания:</b> <code>{current_description_length} символов</code><br><br>"),
+                Const("✍️ <b>Введите новое описание:</b><br><br>"),
+                Const("📏 <b>Ограничения по символам:</b><br>"),
+                Const("🎬 YouTube: <code>максимум 5000 символов</code><br>"),
+                Const("📱 Instagram: <code>максимум 2200 символов</code><br><br>"),
                 Const("💡 <i>Чтобы просмотреть текущее описание, вернитесь назад</i>"),
                 sep="",
             ),
             Case(
                 {
-                    True: Const("\n❌ <b>Ошибка:</b> Описание не может быть пустым"),
+                    True: Const("<br>❌ <b>Ошибка:</b> Описание не может быть пустым"),
                     False: Const("")
                 },
                 selector="has_void_description"
             ),
             Case(
                 {
-                    True: Const("\n📏 <b>Слишком короткое описание</b>\n<i>Минимум 5 символов</i>"),
+                    True: Const("<br>📏 <b>Слишком короткое описание</b><br><i>Минимум 5 символов</i>"),
                     False: Const("")
                 },
                 selector="has_small_description"
             ),
             Case(
                 {
-                    True: Const("\n📏 <b>Слишком длинное описание</b>\n<i>Максимум 500 символов</i>"),
+                    True: Const("<br>📏 <b>Слишком длинное описание</b><br><i>Максимум 500 символов</i>"),
                     False: Const("")
                 },
                 selector="has_big_description"
@@ -304,31 +305,31 @@ class VideoCutsDraftDialog(interface.IVideoCutsDraftDialog):
 
             state=model.VideoCutsDraftStates.edit_description,
             getter=self.video_cut_draft_getter.get_edit_description_data,
-            parse_mode="HTML",
+            parse_mode=SULGUK_PARSE_MODE,
         )
 
     def get_edit_tags_window(self) -> Window:
         return Window(
             Multi(
-                Const("🏷️ <b>Изменение тегов</b>\n\n"),
+                Const("🏷️ <b>Изменение тегов</b><br><br>"),
                 Case(
                     {
-                        True: Format("📋 <b>Текущие теги:</b>\n<code>{current_tags}</code>\n\n"),
-                        False: Const("📋 <b>Текущие теги:</b> <i>❌ отсутствуют</i>\n\n"),
+                        True: Format("📋 <b>Текущие теги:</b><br><code>{current_tags}</code><br><br>"),
+                        False: Const("📋 <b>Текущие теги:</b> <i>❌ отсутствуют</i><br><br>"),
                     },
                     selector="has_tags"
                 ),
-                Const("✍️ <b>Введите теги через запятую:</b>\n\n"),
-                Const("💡 <b>Пример:</b> <code>технологии, обучение, shorts</code>\n\n"),
-                Const("📏 <b>Ограничения:</b>\n"),
-                Const("🎬 YouTube: <code>максимум 15 тегов</code>\n"),
-                Const("📱 Instagram: <code>максимум 30 хештегов</code>\n\n"),
+                Const("✍️ <b>Введите теги через запятую:</b><br><br>"),
+                Const("💡 <b>Пример:</b> <code>технологии, обучение, shorts</code><br><br>"),
+                Const("📏 <b>Ограничения:</b><br>"),
+                Const("🎬 YouTube: <code>максимум 15 тегов</code><br>"),
+                Const("📱 Instagram: <code>максимум 30 хештегов</code><br><br>"),
                 Const("🗑️ <i>Оставьте пустым для удаления всех тегов</i>"),
                 sep="",
             ),
             Case(
                 {
-                    True: Const("\n❌ <b>Ошибка:</b> Тэги не может быть пустым"),
+                    True: Const("<br>❌ <b>Ошибка:</b> Тэги не может быть пустым"),
                     False: Const("")
                 },
                 selector="has_void_tags"
@@ -347,23 +348,23 @@ class VideoCutsDraftDialog(interface.IVideoCutsDraftDialog):
 
             state=model.VideoCutsDraftStates.edit_tags,
             getter=self.video_cut_draft_getter.get_edit_tags_data,
-            parse_mode="HTML",
+            parse_mode=SULGUK_PARSE_MODE,
         )
 
     def get_social_network_select_window(self) -> Window:
         return Window(
             Multi(
-                Const("🌐 <b>Выбор социальных сетей</b>\n\n"),
+                Const("🌐 <b>Выбор социальных сетей</b><br><br>"),
                 Case(
                     {
                         True: Multi(
-                            Const("⚠️ <b>Нет подключенных соцсетей!</b>\n\n"),
+                            Const("⚠️ <b>Нет подключенных соцсетей!</b><br><br>"),
                             Const(
-                                "🔗 <i>Для публикации видео-нарезок необходимо подключить хотя бы одну социальную сеть в настройках организации.</i>\n\n"),
+                                "🔗 <i>Для публикации видео-нарезок необходимо подключить хотя бы одну социальную сеть в настройках организации.</i><br><br>"),
                             Const("👨‍💼 Обратитесь к администратору для подключения социальных сетей."),
                         ),
                         False: Multi(
-                            Const("📱 <b>Выберите платформы для публикации:</b>\n\n"),
+                            Const("📱 <b>Выберите платформы для публикации:</b><br><br>"),
                             Const("💡 <i>Можно выбрать несколько вариантов одновременно</i>"),
                         ),
                     },
@@ -400,5 +401,5 @@ class VideoCutsDraftDialog(interface.IVideoCutsDraftDialog):
 
             state=model.VideoCutsDraftStates.social_network_select,
             getter=self.video_cut_draft_getter.get_social_network_select_data,
-            parse_mode="HTML",
+            parse_mode=SULGUK_PARSE_MODE,
         )

@@ -4,6 +4,7 @@ from aiogram_dialog.widgets.text import Const, Format, Multi, Case
 from aiogram_dialog.widgets.kbd import Button, Column, Row, Back, Select, Checkbox, Next
 from aiogram_dialog.widgets.input import TextInput, MessageInput
 from aiogram_dialog.widgets.media import DynamicMedia
+from sulguk import SULGUK_PARSE_MODE
 
 from internal import interface, model
 
@@ -37,12 +38,12 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
     def get_select_category_window(self) -> Window:
         return Window(
             Multi(
-                Const("🎯 <b>Выберите рубрику для генерации контента</b>\n"),
+                Const("🎯 <b>Выберите рубрику для генерации контента</b><br>"),
                 Case(
                     {
                         True: Const("📋 <b>Доступные рубрики:</b>"),
                         False: Multi(
-                            Const("🚫 <b>Рубрики не созданы</b>\n"),
+                            Const("🚫 <b>Рубрики не созданы</b><br>"),
                             Const("💡 <i>Обратитесь к администратору для создания рубрик</i>"),
                         ),
                     },
@@ -70,7 +71,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
 
             state=model.GeneratePublicationStates.select_category,
             getter=self.generate_publication_getter.get_categories_data,
-            parse_mode="HTML",
+            parse_mode=SULGUK_PARSE_MODE,
         )
 
     def get_input_text_window(self) -> Window:
@@ -78,11 +79,11 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             Case(
                 {
                     False: Multi(
-                        Const("📝 <b>Создание контента</b>\n"),
+                        Const("📝 <b>Создание контента</b><br>"),
                         Const("💬 <i>Отправьте текст или голосовое сообщение — я превращу их в готовый контент</i>"),
                         Case(
                             {
-                                True: Format("\n📄 <b>Ваш текст:</b>\n<i>{input_text}</i>"),
+                                True: Format("<br>📄 <b>Ваш текст:</b><br><i>{input_text}</i>"),
                                 False: Const(""),
                             },
                             selector="has_input_text"
@@ -90,21 +91,21 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                         # Text input error messages
                         Case(
                             {
-                                True: Const("\n❌ <b>Ошибка:</b> Текст не может быть пустым"),
+                                True: Const("<br>❌ <b>Ошибка:</b> Текст не может быть пустым"),
                                 False: Const(""),
                             },
                             selector="has_void_input_text"
                         ),
                         Case(
                             {
-                                True: Const("\n📏 <b>Слишком короткий текст</b>\n<i>Минимум 10 символов</i>"),
+                                True: Const("<br>📏 <b>Слишком короткий текст</b><br><i>Минимум 10 символов</i>"),
                                 False: Const(""),
                             },
                             selector="has_small_input_text"
                         ),
                         Case(
                             {
-                                True: Const("\n📏 <b>Слишком длинный текст</b>\n<i>Максимум 2000 символов</i>"),
+                                True: Const("<br>📏 <b>Слишком длинный текст</b><br><i>Максимум 2000 символов</i>"),
                                 False: Const(""),
                             },
                             selector="has_big_input_text"
@@ -113,14 +114,14 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                         Case(
                             {
                                 True: Const(
-                                    "\n🎤 <b>Неверный формат</b>\n<i>Отправьте голосовое сообщение или аудиофайл</i>"),
+                                    "<br>🎤 <b>Неверный формат</b><br><i>Отправьте голосовое сообщение или аудиофайл</i>"),
                                 False: Const(""),
                             },
                             selector="has_invalid_voice_type"
                         ),
                         Case(
                             {
-                                True: Const("\n⏱️ <b>Слишком длинное сообщение</b>\n<i>Максимум 5 минут</i>"),
+                                True: Const("<br>⏱️ <b>Слишком длинное сообщение</b><br><i>Максимум 5 минут</i>"),
                                 False: Const(""),
                             },
                             selector="has_long_voice_duration"
@@ -128,7 +129,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                         Case(
                             {
                                 True: Const(
-                                    "\n🔍 <b>Не удалось распознать речь</b>\n<i>Попробуйте записать заново или введите текст</i>"),
+                                    "<br>🔍 <b>Не удалось распознать речь</b><br><i>Попробуйте записать заново или введите текст</i>"),
                                 False: Const(""),
                             },
                             selector="has_empty_voice_text"
@@ -160,13 +161,13 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
 
             state=model.GeneratePublicationStates.input_text,
             getter=self.generate_publication_getter.get_input_text_data,
-            parse_mode="HTML",
+            parse_mode=SULGUK_PARSE_MODE,
         )
 
     def get_generation_window(self) -> Window:
         return Window(
             Multi(
-                Const("🎨 <b>Настройка публикации</b>\n"),
+                Const("🎨 <b>Настройка публикации</b><br>"),
                 Const("📸 <i>Хотите добавить изображение к тексту?</i>"),
                 sep="",
             ),
@@ -188,17 +189,17 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
 
             state=model.GeneratePublicationStates.generation,
             getter=self.generate_publication_getter.get_input_text_data,
-            parse_mode="HTML",
+            parse_mode=SULGUK_PARSE_MODE,
         )
 
     def get_preview_window(self) -> Window:
         return Window(
             Multi(
-                Const("👁️ <b>Предварительный просмотр</b>\n"),
+                Const("👁️ <b>Предварительный просмотр</b><br>"),
                 Format("{publication_text}"),
                 Case(
                     {
-                        True: Format("\n\n🖼️ <b>Изображение {current_image_index} из {total_images}</b>"),
+                        True: Format("<br><br>🖼️ <b>Изображение {current_image_index} из {total_images}</b>"),
                         False: Const(""),
                     },
                     selector="has_multiple_images"
@@ -275,7 +276,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
 
             state=model.GeneratePublicationStates.preview,
             getter=self.generate_publication_getter.get_preview_data,
-            parse_mode="HTML",
+            parse_mode=SULGUK_PARSE_MODE,
         )
 
     def get_edit_text_menu_window(self) -> Window:
@@ -284,18 +285,18 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                 Case(
                     {
                         False: Multi(
-                            Const("✏️ <b>Редактирование текста</b>\n"),
+                            Const("✏️ <b>Редактирование текста</b><br>"),
                             Const("💭 <i>Напишите, что нужно изменить в тексте — я отредактирую его!</i>"),
                         ),
                         True: Case(
                             {
                                 True: Multi(
-                                    Format("📝 <b>Ваши указания:</b>\n<code>{regenerate_prompt}</code>\n"),
-                                    Const("⏳ <b>Перегенерирую текст...</b>\n"),
+                                    Format("📝 <b>Ваши указания:</b><br><code>{regenerate_prompt}</code><br>"),
+                                    Const("⏳ <b>Перегенерирую текст...</b><br>"),
                                     Const("🕐 <i>Это может занять время. Пожалуйста, подождите.</i>"),
                                 ),
                                 False: Multi(
-                                    Const("⏳ <b>Перегенерирую текст...</b>\n"),
+                                    Const("⏳ <b>Перегенерирую текст...</b><br>"),
                                     Const("🕐 <i>Это может занять время. Пожалуйста, подождите.</i>"),
                                 ),
                             },
@@ -335,32 +336,32 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
 
             state=model.GeneratePublicationStates.edit_text_menu,
             getter=self.generate_publication_getter.get_edit_text_data,
-            parse_mode="HTML",
+            parse_mode=SULGUK_PARSE_MODE,
         )
 
     def get_edit_text_window(self) -> Window:
         return Window(
             Multi(
-                Const("✍️ <b>Редактирование текста</b>\n"),
+                Const("✍️ <b>Редактирование текста</b><br>"),
                 Const("📝 <i>Напишите итоговый текст публикации</i>"),
                 # Add error messages
                 Case(
                     {
-                        True: Const("\n❌ <b>Ошибка:</b> Текст не может быть пустым"),
+                        True: Const("<br>❌ <b>Ошибка:</b> Текст не может быть пустым"),
                         False: Const(""),
                     },
                     selector="has_void_text"
                 ),
                 Case(
                     {
-                        True: Const("\n📏 <b>Слишком короткий текст</b>\n<i>Минимум 50 символов</i>"),
+                        True: Const("<br>📏 <b>Слишком короткий текст</b><br><i>Минимум 50 символов</i>"),
                         False: Const(""),
                     },
                     selector="has_small_text"
                 ),
                 Case(
                     {
-                        True: Const("\n📏 <b>Слишком длинный текст</b>\n<i>Максимум 4000 символов</i>"),
+                        True: Const("<br>📏 <b>Слишком длинный текст</b><br><i>Максимум 4000 символов</i>"),
                         False: Const(""),
                     },
                     selector="has_big_text"
@@ -381,7 +382,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
 
             state=model.GeneratePublicationStates.edit_text,
             getter=self.generate_publication_getter.get_edit_text_data,
-            parse_mode="HTML",
+            parse_mode=SULGUK_PARSE_MODE,
         )
 
     def get_image_menu_window(self) -> Window:
@@ -389,25 +390,25 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             Case(
                 {
                     False: Multi(
-                        Const("🎨 <b>Настройка изображения</b>\n"),
+                        Const("🎨 <b>Настройка изображения</b><br>"),
                         Case(
                             {
                                 True: Multi(
                                     Const(
-                                        "✏️ <i>Опишите, как изменить картинку. Я внесу ваши правки в текущее изображение.</i>\n\n")
+                                        "✏️ <i>Опишите, как изменить картинку. Я внесу ваши правки в текущее изображение.</i><br><br>")
                                 ),
-                                False: Const("🖼️ <i>Опишите, какую картинку создать.</i>\n\n"),
+                                False: Const("🖼️ <i>Опишите, какую картинку создать.</i><br><br>"),
                             },
                             selector="has_image"
                         ),
-                        Const("📋 <b>Что указать в описании:</b>\n"),
-                        Const("• 👥 <b>Объекты и персонажи</b> — кто или что на картинке\n"),
-                        Const("• 🎭 <b>Стиль и настроение</b> — реалистично, мультяшно, минимализм, цветовая гамма\n"),
-                        Const("• 🌍 <b>Фон и окружение</b> — улица, природа, офис и т.д.\n"),
+                        Const("📋 <b>Что указать в описании:</b><br>"),
+                        Const("• 👥 <b>Объекты и персонажи</b> — кто или что на картинке<br>"),
+                        Const("• 🎭 <b>Стиль и настроение</b> — реалистично, мультяшно, минимализм, цветовая гамма<br>"),
+                        Const("• 🌍 <b>Фон и окружение</b> — улица, природа, офис и т.д.<br>"),
                         Const("• ✨ <b>Детали</b> — освещение, поза, аксессуары"),
                     ),
                     True: Multi(
-                        Const("🪄 <b>Создаю изображение...</b>\n"),
+                        Const("🪄 <b>Создаю изображение...</b><br>"),
                         Const("⏳ <i>Это займет около минуты</i>"),
                     ),
                 },
@@ -415,21 +416,21 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             ),
             Case(
                 {
-                    True: Const("\n❌ <b>Ошибка:</b> Описание изображения не может быть пустым"),
+                    True: Const("<br>❌ <b>Ошибка:</b> Описание изображения не может быть пустым"),
                     False: Const(""),
                 },
                 selector="has_void_image_prompt"
             ),
             Case(
                 {
-                    True: Const("\n📏 <b>Слишком короткое описание</b>\n<i>Минимум 5 символов</i>"),
+                    True: Const("<br>📏 <b>Слишком короткое описание</b><br><i>Минимум 5 символов</i>"),
                     False: Const(""),
                 },
                 selector="has_small_image_prompt"
             ),
             Case(
                 {
-                    True: Const("\n📏 <b>Слишком длинное описание</b>\n<i>Максимум 500 символов</i>"),
+                    True: Const("<br>📏 <b>Слишком длинное описание</b><br><i>Максимум 500 символов</i>"),
                     False: Const(""),
                 },
                 selector="has_big_image_prompt"
@@ -472,26 +473,26 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
 
             state=model.GeneratePublicationStates.image_menu,
             getter=self.generate_publication_getter.get_image_menu_data,
-            parse_mode="HTML",
+            parse_mode=SULGUK_PARSE_MODE,
         )
 
     def get_upload_image_window(self) -> Window:
         return Window(
             Multi(
-                Const("📷 <b>Загрузка изображения</b>\n"),
+                Const("📷 <b>Загрузка изображения</b><br>"),
                 Const("📤 <i>Отправьте своё изображение</i>"),
                 # Add error messages
                 Case(
                     {
                         True: Const(
-                            "\n❌ <b>Неверный формат файла</b>\n<i>Отправьте изображение (не другой тип файла)</i>"),
+                            "<br>❌ <b>Неверный формат файла</b><br><i>Отправьте изображение (не другой тип файла)</i>"),
                         False: Const(""),
                     },
                     selector="has_invalid_image_type"
                 ),
                 Case(
                     {
-                        True: Const("\n📁 <b>Файл слишком большой</b>\n<i>Максимум 10 МБ</i>"),
+                        True: Const("<br>📁 <b>Файл слишком большой</b><br><i>Максимум 10 МБ</i>"),
                         False: Const(""),
                     },
                     selector="has_big_image_size"
@@ -499,7 +500,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                 Case(
                     {
                         True: Const(
-                            "\n⚠️ <b>Ошибка обработки</b>\n<i>Не удалось обработать изображение, попробуйте другое</i>"),
+                            "<br>⚠️ <b>Ошибка обработки</b><br><i>Не удалось обработать изображение, попробуйте другое</i>"),
                         False: Const(""),
                     },
                     selector="has_image_processing_error"
@@ -519,23 +520,23 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
 
             state=model.GeneratePublicationStates.upload_image,
             getter=self.generate_publication_getter.get_upload_image_data,
-            parse_mode="HTML",
+            parse_mode=SULGUK_PARSE_MODE,
         )
 
     def get_social_network_select_window(self) -> Window:
         return Window(
             Multi(
-                Const("🌐 <b>Выбор платформы для публикации</b>\n"),
+                Const("🌐 <b>Выбор платформы для публикации</b><br>"),
                 Case(
                     {
                         True: Multi(
-                            Const("⚠️ <b>Социальные сети не подключены</b>\n"),
+                            Const("⚠️ <b>Социальные сети не подключены</b><br>"),
                             Const(
-                                "🔗 <i>Для публикации необходимо подключить хотя бы одну социальную сеть в настройках организации</i>\n"),
+                                "🔗 <i>Для публикации необходимо подключить хотя бы одну социальную сеть в настройках организации</i><br>"),
                             Const("💡 <b>Обратитесь к администратору для настройки подключений</b>"),
                         ),
                         False: Multi(
-                            Const("📱 <b>Выберите платформы для публикации:</b>\n"),
+                            Const("📱 <b>Выберите платформы для публикации:</b><br>"),
                             Const("💡 <i>Можно выбрать несколько вариантов</i>"),
                         ),
                     },
@@ -576,5 +577,5 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
 
             state=model.GeneratePublicationStates.social_network_select,
             getter=self.generate_publication_getter.get_social_network_select_data,
-            parse_mode="HTML",
+            parse_mode=SULGUK_PARSE_MODE,
         )

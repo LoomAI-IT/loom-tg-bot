@@ -83,7 +83,7 @@ class PersonalProfileGetter(interface.IPersonalProfileGetter):
                 if not permissions_list:
                     permissions_list.append("❌ Нет специальных разрешений")
 
-                permissions_text = "\n".join(permissions_list)
+                permissions_text = "<br>".join(permissions_list)
 
 
                 # Форматируем дату

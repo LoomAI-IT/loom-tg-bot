@@ -1,6 +1,7 @@
 from aiogram_dialog import Window, Dialog
 from aiogram_dialog.widgets.text import Const, Format
 from aiogram_dialog.widgets.kbd import Button, Url, Back
+from sulguk import SULGUK_PARSE_MODE
 
 from internal import interface, model
 
@@ -28,7 +29,7 @@ class AuthDialog(interface.IAuthDialog):
 
     def get_user_agreement_window(self) -> Window:
         return Window(
-            Const("📋 <b>1/3 Перед началом работы необходимо принять пользовательское соглашение:</b>\n"),
+            Const("📋 <b>1/3 Перед началом работы необходимо принять пользовательское соглашение:</b><br>"),
             Format("{user_agreement_link}"),
             Url(
                 Const("📖 Читать соглашение"),
@@ -41,12 +42,12 @@ class AuthDialog(interface.IAuthDialog):
             ),
             state=model.AuthStates.user_agreement,
             getter=self.auth_getter.get_agreement_data,
-            parse_mode="HTML",
+            parse_mode=SULGUK_PARSE_MODE,
         )
 
     def get_privacy_policy_window(self) -> Window:
         return Window(
-            Const("🔒 <b>2/3 Перед началом работы необходимо принять политику конфиденциальности:</b>\n"),
+            Const("🔒 <b>2/3 Перед началом работы необходимо принять политику конфиденциальности:</b><br>"),
             Format("{privacy_policy_link}"),
             Url(
                 Const("📖 Читать политику"),
@@ -60,12 +61,12 @@ class AuthDialog(interface.IAuthDialog):
             Back(Const("◀️ Назад")),
             state=model.AuthStates.privacy_policy,
             getter=self.auth_getter.get_agreement_data,
-            parse_mode="HTML",
+            parse_mode=SULGUK_PARSE_MODE,
         )
 
     def get_data_processing_window(self) -> Window:
         return Window(
-            Const("📊 <b>3/3 Перед началом работы необходимо принять согласие на обработку персональных данных:</b>\n"),
+            Const("📊 <b>3/3 Перед началом работы необходимо принять согласие на обработку персональных данных:</b><br>"),
             Format("{data_processing_link}"),
             Url(
                 Const("📖 Читать согласие"),
@@ -79,18 +80,18 @@ class AuthDialog(interface.IAuthDialog):
             Back(Const("◀️ Назад")),
             state=model.AuthStates.data_processing,
             getter=self.auth_getter.get_agreement_data,
-            parse_mode="HTML",
+            parse_mode=SULGUK_PARSE_MODE,
         )
 
     def get_access_denied_window(self) -> Window:
         return Window(
-            Const("🚫 <b>Доступ ограничен</b>\n\n"),
+            Const("🚫 <b>Доступ ограничен</b><br><br>"),
             Const(
                 "Извините, но у вашего аккаунта недостаточно прав для "
-                "использования этого бота.\n\n"
-                "<b>Что можно сделать:</b>\n"
+                "использования этого бота.<br><br>"
+                "<b>Что можно сделать:</b><br>"
             ),
-            Format("• Обратитесь к своему администратору и сообщите ему ваш ID аккаунта: {account_id}\n"),
+            Format("• Обратитесь к своему администратору и сообщите ему ваш ID аккаунта: {account_id}<br>"),
             Button(
                 Const("📞 Поддержка"),
                 id="contact_support",
@@ -98,5 +99,5 @@ class AuthDialog(interface.IAuthDialog):
             ),
             state=model.AuthStates.access_denied,
             getter=self.auth_getter.get_user_status,
-            parse_mode="HTML",
+            parse_mode=SULGUK_PARSE_MODE,
         )

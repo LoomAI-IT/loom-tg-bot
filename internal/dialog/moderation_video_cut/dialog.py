@@ -3,6 +3,7 @@ from aiogram_dialog.widgets.text import Const, Format, Multi, Case
 from aiogram_dialog.widgets.kbd import Button, Column, Row, Checkbox
 from aiogram_dialog.widgets.input import TextInput
 from aiogram_dialog.widgets.media import DynamicMedia
+from sulguk import SULGUK_PARSE_MODE
 
 from internal import interface, model
 
@@ -34,25 +35,25 @@ class VideoCutModerationDialog(interface.IVideoCutModerationDialog):
     def get_moderation_list_window(self) -> Window:
         return Window(
             Multi(
-                Const("🎬 <b>Модерация видео</b>\n\n"),
+                Const("🎬 <b>Модерация видео</b><br><br>"),
                 Case(
                     {
                         True: Multi(
-                            Format("📽️ <b>{video_name}</b>\n"),
-                            Format("📝 {video_description}\n\n"),
+                            Format("📽️ <b>{video_name}</b><br>"),
+                            Format("📝 {video_description}<br><br>"),
                             Case(
                                 {
-                                    True: Format("🏷️ <b>Теги:</b> <code>{video_tags}</code>\n"),
-                                    False: Const("🏷️ <b>Теги:</b> <i>не указаны</i>\n"),
+                                    True: Format("🏷️ <b>Теги:</b> <code>{video_tags}</code><br>"),
+                                    False: Const("🏷️ <b>Теги:</b> <i>не указаны</i><br>"),
                                 },
                                 selector="has_tags"
                             ),
-                            Format("👤 <b>Автор:</b> <code>{creator_name}</code>\n"),
-                            Format("📅 <b>Создано:</b> <code>{created_at}</code>\n"),
-                            Format("🔗 <b>Источник:</b> <a href='{youtube_reference}'>YouTube</a>\n\n"),
+                            Format("👤 <b>Автор:</b> <code>{creator_name}</code><br>"),
+                            Format("📅 <b>Создано:</b> <code>{created_at}</code><br>"),
+                            Format("🔗 <b>Источник:</b> <a href='{youtube_reference}'>YouTube</a><br><br>"),
                         ),
                         False: Multi(
-                            Const("📂 <b>Очередь модерации пуста</b>\n\n"),
+                            Const("📂 <b>Очередь модерации пуста</b><br><br>"),
                             Const("💡 <i>Все видео обработаны или ещё не поступали на проверку</i>"),
                         ),
                     },
@@ -129,21 +130,21 @@ class VideoCutModerationDialog(interface.IVideoCutModerationDialog):
 
             state=model.VideoCutModerationStates.moderation_list,
             getter=self.video_cut_moderation_getter.get_moderation_list_data,
-            parse_mode="HTML",
+            parse_mode=SULGUK_PARSE_MODE,
         )
 
     def get_reject_comment_window(self) -> Window:
         return Window(
             Multi(
-                Const("❌ <b>Отклонение видео</b>\n\n"),
-                Format("🎬 <b>Видео:</b> {video_name}\n"),
-                Format("👤 <b>Автор:</b> {creator_name}\n\n"),
-                Const("💬 <b>Укажите причину отклонения:</b>\n"),
-                Const("📨 <i>Автор получит уведомление с вашим комментарием</i>\n\n"),
+                Const("❌ <b>Отклонение видео</b><br><br>"),
+                Format("🎬 <b>Видео:</b> {video_name}<br>"),
+                Format("👤 <b>Автор:</b> {creator_name}<br><br>"),
+                Const("💬 <b>Укажите причину отклонения:</b><br>"),
+                Const("📨 <i>Автор получит уведомление с вашим комментарием</i><br><br>"),
                 Case(
                     {
                         True: Multi(
-                            Const("📝 <b>Ваш комментарий:</b>\n"),
+                            Const("📝 <b>Ваш комментарий:</b><br>"),
                             Format("<code>{reject_comment}</code>"),
                         ),
                         False: Const("⌨️ <i>Введите комментарий...</i>"),
@@ -154,21 +155,21 @@ class VideoCutModerationDialog(interface.IVideoCutModerationDialog):
             ),
             Case(
                 {
-                    True: Const("\n\n⚠️ <b>Комментарий не может быть пустым</b>"),
+                    True: Const("<br><br>⚠️ <b>Комментарий не может быть пустым</b>"),
                     False: Const("")
                 },
                 selector="has_void_reject_comment"
             ),
             Case(
                 {
-                    True: Const("\n\n📏 <b>Слишком короткий комментарий</b>\n<i>Минимум 10 символов для информативности</i>"),
+                    True: Const("<br><br>📏 <b>Слишком короткий комментарий</b><br><i>Минимум 10 символов для информативности</i>"),
                     False: Const("")
                 },
                 selector="has_small_reject_comment"
             ),
             Case(
                 {
-                    True: Const("\n\n📏 <b>Слишком длинный комментарий</b>\n<i>Максимум 500 символов</i>"),
+                    True: Const("<br><br>📏 <b>Слишком длинный комментарий</b><br><i>Максимум 500 символов</i>"),
                     False: Const("")
                 },
                 selector="has_big_reject_comment"
@@ -195,35 +196,35 @@ class VideoCutModerationDialog(interface.IVideoCutModerationDialog):
 
             state=model.VideoCutModerationStates.reject_comment,
             getter=self.video_cut_moderation_getter.get_reject_comment_data,
-            parse_mode="HTML",
+            parse_mode=SULGUK_PARSE_MODE,
         )
 
     def get_edit_preview_window(self) -> Window:
         return Window(
             Multi(
-                Const("✏️ <b>Редактирование видео на модерации</b>\n\n"),
+                Const("✏️ <b>Редактирование видео на модерации</b><br><br>"),
                 Multi(
-                    Format("📽️ <b>{video_name}</b>\n"),
-                    Format("📝 {video_description}\n\n"),
+                    Format("📽️ <b>{video_name}</b><br>"),
+                    Format("📝 {video_description}<br><br>"),
                     Case(
                         {
-                            True: Format("🏷️ <b>Теги:</b> <code>{video_tags}</code>\n"),
-                            False: Const("🏷️ <b>Теги:</b> <i>не указаны</i>\n"),
+                            True: Format("🏷️ <b>Теги:</b> <code>{video_tags}</code><br>"),
+                            False: Const("🏷️ <b>Теги:</b> <i>не указаны</i><br>"),
                         },
                         selector="has_tags"
                     ),
-                    Format("👤 <b>Автор:</b> <code>{creator_name}</code>\n"),
-                    Format("📅 <b>Создано:</b> <code>{created_at}</code>\n"),
-                    Format("🔗 <b>Источник:</b> <a href='{youtube_reference}'>YouTube</a>\n"),
+                    Format("👤 <b>Автор:</b> <code>{creator_name}</code><br>"),
+                    Format("📅 <b>Создано:</b> <code>{created_at}</code><br>"),
+                    Format("🔗 <b>Источник:</b> <a href='{youtube_reference}'>YouTube</a><br>"),
                 ),
                 Case(
                     {
-                        True: Const("\n⚠️ <b><i>Есть несохранённые изменения!</i></b>\n"),
+                        True: Const("<br>⚠️ <b><i>Есть несохранённые изменения!</i></b><br>"),
                         False: Const(""),
                     },
                     selector="has_changes"
                 ),
-                Const("\n📌 <b>Что требуется изменить?</b>"),
+                Const("<br>📌 <b>Что требуется изменить?</b>"),
                 sep="",
             ),
 
@@ -266,37 +267,37 @@ class VideoCutModerationDialog(interface.IVideoCutModerationDialog):
 
             state=model.VideoCutModerationStates.edit_preview,
             getter=self.video_cut_moderation_getter.get_edit_preview_data,
-            parse_mode="HTML",
+            parse_mode=SULGUK_PARSE_MODE,
         )
 
     def get_edit_title_window(self) -> Window:
         return Window(
             Multi(
-                Const("📝 <b>Изменение названия</b>\n\n"),
-                Format("📋 <b>Текущее название:</b>\n<i>{current_title}</i>\n\n"),
-                Const("✍️ <b>Введите новое название:</b>\n\n"),
-                Const("📏 <b>Ограничения по символам:</b>\n"),
-                Const("🎬 YouTube Shorts: <code>максимум 100 символов</code>\n"),
+                Const("📝 <b>Изменение названия</b><br><br>"),
+                Format("📋 <b>Текущее название:</b><br><i>{current_title}</i><br><br>"),
+                Const("✍️ <b>Введите новое название:</b><br><br>"),
+                Const("📏 <b>Ограничения по символам:</b><br>"),
+                Const("🎬 YouTube Shorts: <code>максимум 100 символов</code><br>"),
                 Const("📱 Instagram Reels: <code>максимум 2200 символов</code>"),
                 sep="",
             ),
             Case(
                 {
-                    True: Const("\n\n⚠️ <b>Название не может быть пустым</b>"),
+                    True: Const("<br><br>⚠️ <b>Название не может быть пустым</b>"),
                     False: Const("")
                 },
                 selector="has_void_title"
             ),
             Case(
                 {
-                    True: Const("\n\n📏 <b>Слишком короткое название</b>\n<i>Минимум 5 символов</i>"),
+                    True: Const("<br><br>📏 <b>Слишком короткое название</b><br><i>Минимум 5 символов</i>"),
                     False: Const("")
                 },
                 selector="has_small_title"
             ),
             Case(
                 {
-                    True: Const("\n\n📏 <b>Слишком длинное название</b>\n<i>Максимум 100 символов для YouTube Shorts</i>"),
+                    True: Const("<br><br>📏 <b>Слишком длинное название</b><br><i>Максимум 100 символов для YouTube Shorts</i>"),
                     False: Const("")
                 },
                 selector="has_big_title"
@@ -315,39 +316,39 @@ class VideoCutModerationDialog(interface.IVideoCutModerationDialog):
 
             state=model.VideoCutModerationStates.edit_title,
             getter=self.video_cut_moderation_getter.get_edit_title_data,
-            parse_mode="HTML",
+            parse_mode=SULGUK_PARSE_MODE,
         )
 
     def get_edit_description_window(self) -> Window:
         """Окно редактирования описания видео"""
         return Window(
             Multi(
-                Const("📄 <b>Изменение описания</b>\n\n"),
-                Format("📊 <b>Длина текущего описания:</b> <code>{current_description_length} символов</code>\n\n"),
-                Const("✍️ <b>Введите новое описание:</b>\n\n"),
-                Const("📏 <b>Ограничения по символам:</b>\n"),
-                Const("🎬 YouTube: <code>максимум 5000 символов</code>\n"),
-                Const("📱 Instagram: <code>максимум 2200 символов</code>\n\n"),
+                Const("📄 <b>Изменение описания</b><br><br>"),
+                Format("📊 <b>Длина текущего описания:</b> <code>{current_description_length} символов</code><br><br>"),
+                Const("✍️ <b>Введите новое описание:</b><br><br>"),
+                Const("📏 <b>Ограничения по символам:</b><br>"),
+                Const("🎬 YouTube: <code>максимум 5000 символов</code><br>"),
+                Const("📱 Instagram: <code>максимум 2200 символов</code><br><br>"),
                 Const("💡 <i>Чтобы просмотреть текущее описание, вернитесь назад</i>"),
                 sep="",
             ),
             Case(
                 {
-                    True: Const("\n\n⚠️ <b>Описание не может быть пустым</b>"),
+                    True: Const("<br><br>⚠️ <b>Описание не может быть пустым</b>"),
                     False: Const("")
                 },
                 selector="has_void_description"
             ),
             Case(
                 {
-                    True: Const("\n\n📏 <b>Слишком короткое описание</b>\n<i>Минимум 10 символов</i>"),
+                    True: Const("<br><br>📏 <b>Слишком короткое описание</b><br><i>Минимум 10 символов</i>"),
                     False: Const("")
                 },
                 selector="has_small_description"
             ),
             Case(
                 {
-                    True: Const("\n\n📏 <b>Слишком длинное описание</b>\n<i>Максимум 2200 символов для Instagram</i>"),
+                    True: Const("<br><br>📏 <b>Слишком длинное описание</b><br><i>Максимум 2200 символов для Instagram</i>"),
                     False: Const("")
                 },
                 selector="has_big_description"
@@ -366,31 +367,31 @@ class VideoCutModerationDialog(interface.IVideoCutModerationDialog):
 
             state=model.VideoCutModerationStates.edit_description,
             getter=self.video_cut_moderation_getter.get_edit_description_data,
-            parse_mode="HTML",
+            parse_mode=SULGUK_PARSE_MODE,
         )
 
     def get_edit_tags_window(self) -> Window:
         return Window(
             Multi(
-                Const("🏷️ <b>Изменение тегов</b>\n\n"),
+                Const("🏷️ <b>Изменение тегов</b><br><br>"),
                 Case(
                     {
-                        True: Format("📋 <b>Текущие теги:</b>\n<code>{current_tags}</code>\n\n"),
-                        False: Const("📋 <b>Текущие теги:</b> <i>не указаны</i>\n\n"),
+                        True: Format("📋 <b>Текущие теги:</b><br><code>{current_tags}</code><br><br>"),
+                        False: Const("📋 <b>Текущие теги:</b> <i>не указаны</i><br><br>"),
                     },
                     selector="has_tags"
                 ),
-                Const("✍️ <b>Введите теги через запятую:</b>\n\n"),
-                Const("💡 <b>Пример:</b> <code>технологии, обучение, shorts</code>\n\n"),
-                Const("📏 <b>Ограничения:</b>\n"),
-                Const("🎬 YouTube: <code>максимум 15 тегов</code>\n"),
-                Const("📱 Instagram: <code>максимум 30 хештегов</code>\n\n"),
+                Const("✍️ <b>Введите теги через запятую:</b><br><br>"),
+                Const("💡 <b>Пример:</b> <code>технологии, обучение, shorts</code><br><br>"),
+                Const("📏 <b>Ограничения:</b><br>"),
+                Const("🎬 YouTube: <code>максимум 15 тегов</code><br>"),
+                Const("📱 Instagram: <code>максимум 30 хештегов</code><br><br>"),
                 Const("🗑️ <i>Оставьте поле пустым для удаления всех тегов</i>"),
                 sep="",
             ),
             Case(
                 {
-                    True: Const("\n\n⚠️ <b>Теги не могут быть пустыми</b>\n<i>Или оставьте поле пустым для удаления</i>"),
+                    True: Const("<br><br>⚠️ <b>Теги не могут быть пустыми</b><br><i>Или оставьте поле пустым для удаления</i>"),
                     False: Const("")
                 },
                 selector="has_void_tags"
@@ -409,22 +410,22 @@ class VideoCutModerationDialog(interface.IVideoCutModerationDialog):
 
             state=model.VideoCutModerationStates.edit_tags,
             getter=self.video_cut_moderation_getter.get_edit_tags_data,
-            parse_mode="HTML",
+            parse_mode=SULGUK_PARSE_MODE,
         )
 
     def get_social_network_select_window(self) -> Window:
         return Window(
             Multi(
-                Const("🌐 <b>Выбор социальных сетей для публикации</b>\n\n"),
+                Const("🌐 <b>Выбор социальных сетей для публикации</b><br><br>"),
                 Case(
                     {
                         True: Multi(
-                            Const("⚠️ <b>Нет подключённых соцсетей!</b>\n\n"),
-                            Const("🔗 <i>Для публикации видео необходимо подключить хотя бы одну социальную сеть.</i>\n\n"),
+                            Const("⚠️ <b>Нет подключённых соцсетей!</b><br><br>"),
+                            Const("🔗 <i>Для публикации видео необходимо подключить хотя бы одну социальную сеть.</i><br><br>"),
                             Const("👨‍💼 <b>Обратитесь к администратору</b> для настройки интеграции с соцсетями."),
                         ),
                         False: Multi(
-                            Const("📱 <b>Выберите платформы для публикации:</b>\n\n"),
+                            Const("📱 <b>Выберите платформы для публикации:</b><br><br>"),
                             Const("💡 <i>Можно выбрать несколько платформ одновременно</i>"),
                         ),
                     },
@@ -461,5 +462,5 @@ class VideoCutModerationDialog(interface.IVideoCutModerationDialog):
 
             state=model.VideoCutModerationStates.social_network_select,
             getter=self.video_cut_moderation_getter.get_social_network_select_data,
-            parse_mode="HTML",
+            parse_mode=SULGUK_PARSE_MODE,
         )

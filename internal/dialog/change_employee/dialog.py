@@ -2,6 +2,7 @@ from aiogram_dialog import Window, Dialog
 from aiogram_dialog.widgets.text import Const, Format, Multi, Case
 from aiogram_dialog.widgets.kbd import Button, Column, Row, Back, ScrollingGroup, Select, NumberedPager
 from aiogram_dialog.widgets.input import TextInput
+from sulguk import SULGUK_PARSE_MODE
 
 from internal import interface, model
 
@@ -31,12 +32,12 @@ class ChangeEmployeeDialog(interface.IChangeEmployeeDialog):
     def get_employee_list_window(self) -> Window:
         return Window(
             Multi(
-                Const("👥 <b>Управление командой</b>\n\n"),
-                Format("🏢 <b>Организация:</b> {organization_name}\n"),
-                Format("👤 <b>Всего сотрудников:</b> {employees_count}\n\n"),
+                Const("👥 <b>Управление командой</b><br><br>"),
+                Format("🏢 <b>Организация:</b> {organization_name}<br>"),
+                Format("👤 <b>Всего сотрудников:</b> {employees_count}<br><br>"),
                 Case(
                     {
-                        True: Const("🔍 <b>Результаты поиска:</b>\n"),
+                        True: Const("🔍 <b>Результаты поиска:</b><br>"),
                         False: Const("📋 <b>Выберите сотрудника для управления:</b>"),
                     },
                     selector="has_search"
@@ -99,40 +100,40 @@ class ChangeEmployeeDialog(interface.IChangeEmployeeDialog):
 
             state=model.ChangeEmployeeStates.employee_list,
             getter=self.change_employee_getter.get_employee_list_data,
-            parse_mode="HTML",
+            parse_mode=SULGUK_PARSE_MODE,
         )
 
     def get_employee_detail_window(self) -> Window:
         return Window(
             Multi(
-                Const("👤 <b>Профиль сотрудника</b>\n\n"),
-                Const("📋 <b>Основная информация:</b>\n"),
-                Format("• <b>Имя:</b> {employee_name}\n"),
-                Format("• <b>Телеграм аккаунт:</b> @{employee_tg_username}\n"),
-                Format("• <b>ID аккаунта:</b> <code>{account_id}</code>\n"),
-                Format("• <b>Роль:</b> {role_display}\n"),
-                Format("• <b>В команде с:</b> {created_at}\n\n"),
+                Const("👤 <b>Профиль сотрудника</b><br><br>"),
+                Const("📋 <b>Основная информация:</b><br>"),
+                Format("• <b>Имя:</b> {employee_name}<br>"),
+                Format("• <b>Телеграм аккаунт:</b> @{employee_tg_username}<br>"),
+                Format("• <b>ID аккаунта:</b> <code>{account_id}</code><br>"),
+                Format("• <b>Роль:</b> {role_display}<br>"),
+                Format("• <b>В команде с:</b> {created_at}<br><br>"),
 
-                Const("📊 <b>Активность:</b>\n"),
-                Format("• <b>Сгенерировано публикаций:</b> {generated_publication_count}\n"),
-                Format("• <b>Опубликовано публикаций:</b> {published_publication_count}\n"),
+                Const("📊 <b>Активность:</b><br>"),
+                Format("• <b>Сгенерировано публикаций:</b> {generated_publication_count}<br>"),
+                Format("• <b>Опубликовано публикаций:</b> {published_publication_count}"),
                 Case(
                     {
                         True: Multi(
-                            Format("• <b>Отклонено в ходе модерации:</b> {rejected_publication_count}"),
-                            Format("• <b>Опубликовано в ходе модерации:</b> {approved_publication_count}\n\n"),
+                            Format("<br>• <b>Отклонено в ходе модерации:</b> {rejected_publication_count}"),
+                            Format("<br>• <b>Опубликовано в ходе модерации:</b> {approved_publication_count}"),
                         ),
                         False: Const("")
                     },
                     selector="has_moderated_publications"
                 ),
 
-                Const("🔐 <b>Права доступа:</b>\n"),
-                Format("{permissions_text}\n"),
+                Const("<br><br>🔐 <b>Права доступа:</b><br>"),
+                Format("{permissions_text}<br>"),
 
                 Case(
                     {
-                        True: Const("\n👆 <i>Это ваш профиль</i>"),
+                        True: Const("<br>👆 <i>Это ваш профиль</i>"),
                         False: Const(""),
                     },
                     selector="is_current_user"
@@ -185,21 +186,21 @@ class ChangeEmployeeDialog(interface.IChangeEmployeeDialog):
 
             state=model.ChangeEmployeeStates.employee_detail,
             getter=self.change_employee_getter.get_employee_detail_data,
-            parse_mode="HTML",
+            parse_mode=SULGUK_PARSE_MODE,
         )
 
     def get_change_permissions_window(self) -> Window:
         return Window(
             Multi(
-                Const("⚙️ <b>Настройка прав доступа</b>\n\n"),
-                Format("👤 <b>Сотрудник:</b> {employee_name}\n"),
-                Format("🏷️ <b>Роль:</b> {role_display}\n\n"),
-                Const("🔐 <b>Управление правами:</b>\n"),
-                Const("💡 <i>Нажмите на право для включения/отключения</i>\n\n"),
+                Const("⚙️ <b>Настройка прав доступа</b><br><br>"),
+                Format("👤 <b>Сотрудник:</b> {employee_name}<br>"),
+                Format("🏷️ <b>Роль:</b> {role_display}<br><br>"),
+                Const("🔐 <b>Управление правами:</b><br>"),
+                Const("💡 <i>Нажмите на право для включения/отключения</i><br><br>"),
 
                 Case(
                     {
-                        True: Const("⚠️ <b>Есть несохраненные изменения</b>\n"),
+                        True: Const("⚠️ <b>Есть несохраненные изменения</b><br>"),
                         False: Const(""),
                     },
                     selector="has_changes"
@@ -258,33 +259,33 @@ class ChangeEmployeeDialog(interface.IChangeEmployeeDialog):
 
             state=model.ChangeEmployeeStates.change_permissions,
             getter=self.change_employee_getter.get_permissions_data,
-            parse_mode="HTML",
+            parse_mode=SULGUK_PARSE_MODE,
         )
 
     def get_change_role_window(self) -> Window:
         """Единое окно для выбора и подтверждения изменения роли"""
         return Window(
             Multi(
-                Const("🔄 <b>Изменение роли сотрудника</b>\n\n"),
-                Format("👤 Сотрудник: <b>{employee_name}</b>\n"),
-                Format("🏷 Текущая роль: <b>{current_role_display}</b>\n\n"),
+                Const("🔄 <b>Изменение роли сотрудника</b><br><br>"),
+                Format("👤 Сотрудник: <b>{employee_name}</b><br>"),
+                Format("🏷 Текущая роль: <b>{current_role_display}</b><br><br>"),
 
                 # Показываем разные блоки в зависимости от того, выбрана ли роль
                 Case(
                     {
                         True: Multi(
-                            Const("✅ <b>Выбранная роль:</b>\n"),
-                            Format("🔄 Новая роль: <b>{selected_role_display}</b>\n\n"),
-                            Const("ℹ️ <b>Внимание:</b>\n"),
-                            Const("• Изменение роли может повлиять на разрешения сотрудника\n"),
-                            Const("• Сотрудник получит уведомление об изменении\n"),
-                            Const("• Это действие можно будет отменить позже\n\n"),
+                            Const("✅ <b>Выбранная роль:</b><br>"),
+                            Format("🔄 Новая роль: <b>{selected_role_display}</b><br><br>"),
+                            Const("ℹ️ <b>Внимание:</b><br>"),
+                            Const("• Изменение роли может повлиять на разрешения сотрудника<br>"),
+                            Const("• Сотрудник получит уведомление об изменении<br>"),
+                            Const("• Это действие можно будет отменить позже<br><br>"),
                             Const("❓ <b>Подтвердить изменение роли?</b>"),
                             sep="",
                         ),
                         False: Multi(
-                            Const("📋 <b>Выберите новую роль:</b>\n"),
-                            Const("<i>Доступные роли для назначения:</i>\n"),
+                            Const("📋 <b>Выберите новую роль:</b><br>"),
+                            Const("<i>Доступные роли для назначения:</i><br>"),
                             sep="",
                         ),
                     },
@@ -327,18 +328,18 @@ class ChangeEmployeeDialog(interface.IChangeEmployeeDialog):
 
             state=model.ChangeEmployeeStates.change_role,
             getter=self.change_employee_getter.get_role_change_data,
-            parse_mode="HTML",
+            parse_mode=SULGUK_PARSE_MODE,
         )
 
     def get_confirm_delete_window(self) -> Window:
         return Window(
             Multi(
-                Const("⚠️ <b>Подтверждение исключения</b>\n\n"),
-                Format("Вы уверены, что хотите исключить сотрудника из команды?\n\n"),
-                Format("👤 <b>Имя:</b> {employee_name}\n"),
-                Format("🆔 <b>ID:</b> <code>{account_id}</code>\n"),
-                Format("🏷️ <b>Роль:</b> {role_display}\n\n"),
-                Const("🚨 <b>Внимание:</b> <i>Действие необратимо!</i>\n"),
+                Const("⚠️ <b>Подтверждение исключения</b><br><br>"),
+                Format("Вы уверены, что хотите исключить сотрудника из команды?<br><br>"),
+                Format("👤 <b>Имя:</b> {employee_name}<br>"),
+                Format("🆔 <b>ID:</b> <code>{account_id}</code><br>"),
+                Format("🏷️ <b>Роль:</b> {role_display}<br><br>"),
+                Const("🚨 <b>Внимание:</b> <i>Действие необратимо!</i><br>"),
                 Const("Сотрудник потеряет доступ к организации и всем её ресурсам."),
                 sep="",
             ),
@@ -354,5 +355,5 @@ class ChangeEmployeeDialog(interface.IChangeEmployeeDialog):
 
             state=model.ChangeEmployeeStates.confirm_delete,
             getter=self.change_employee_getter.get_delete_confirmation_data,
-            parse_mode="HTML",
+            parse_mode=SULGUK_PARSE_MODE,
         )

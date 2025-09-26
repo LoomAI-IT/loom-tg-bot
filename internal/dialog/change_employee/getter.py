@@ -159,7 +159,7 @@ class ChangeEmployeeGetter(interface.IChangeEmployeeGetter):
                 if not permissions_list:
                     permissions_list.append("❌ Нет специальных разрешений")
 
-                permissions_text = "\n".join(permissions_list)
+                permissions_text = "<br>".join(permissions_list)
 
                 # Навигация
                 all_employee_ids = dialog_manager.dialog_data.get("all_employee_ids", [])
@@ -201,7 +201,7 @@ class ChangeEmployeeGetter(interface.IChangeEmployeeGetter):
                     "published_publication_count": published_publication_count,
                     "rejected_publication_count": rejected_publication_count,
                     "approved_publication_count": approved_publication_count,
-                    "has_moderated_publications": rejected_publication_count or approved_publication_count,
+                    "has_moderated_publications": bool(rejected_publication_count or approved_publication_count),
                 }
 
                 span.set_status(Status(StatusCode.OK))
