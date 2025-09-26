@@ -147,7 +147,8 @@ class AddSocialNetworkGetter(interface.IAddSocialNetworkGetter):
                     "telegram_channel_username": telegram_channel_username,
                     "has_telegram_autoselect": autoselect,
                     "has_changes": self._has_changes(dialog_manager),
-                    "has_new_telegram_channel_username": self._has_changes(dialog_manager),
+                    "has_new_telegram_channel_username": dialog_manager.dialog_data.get(
+                        "has_new_telegram_channel_username", False),
                 }
 
                 span.set_status(Status(StatusCode.OK))
