@@ -274,7 +274,6 @@ class VideoCutModerationGetter(interface.IVideoCutModerationGetter):
 
                 # Получаем текущие выбранные сети
                 selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
-                has_selected_networks = any(selected_networks.values())
 
                 if youtube_connected:
                     widget_id = "youtube_checkbox"
@@ -293,7 +292,6 @@ class VideoCutModerationGetter(interface.IVideoCutModerationGetter):
                     "instagram_connected": instagram_connected,
                     "no_connected_networks": not youtube_connected and not instagram_connected,
                     "has_available_networks": youtube_connected or instagram_connected,
-                    "has_selected_networks": has_selected_networks,
                 }
 
                 span.set_status(Status(StatusCode.OK))
