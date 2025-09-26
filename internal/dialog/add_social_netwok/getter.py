@@ -80,7 +80,7 @@ class AddSocialNetworkGetter(interface.IAddSocialNetworkGetter):
                 data = {
                     "telegram_connected": telegram_connected,
                     "telegram_not_connected": not telegram_connected,
-                    "telegram_channel_username": telegram_data.get("telegram_channel_username", ""),
+                    "telegram_channel_username": telegram_data.get("tg_channel_username", ""),
                     "telegram_autoselect": telegram_data.get("autoselect", False),
                 }
 
@@ -124,7 +124,7 @@ class AddSocialNetworkGetter(interface.IAddSocialNetworkGetter):
                 )
 
                 autoselect = social_networks["telegram"][0]["autoselect"]
-                telegram_channel_username = social_networks["telegram"][0]["telegram_channel_username"]
+                telegram_channel_username = social_networks["telegram"][0]["tg_channel_username"]
 
                 dialog_manager.dialog_data["original_state"] = {
                     "telegram_channel_username": telegram_channel_username,
