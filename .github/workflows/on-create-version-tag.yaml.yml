@@ -9,7 +9,7 @@ env:
     SERVICE_NAME: kontur-tg-bot
 
 jobs:
-     update-tag-on-server:
+    update-tag-on-server:
         runs-on: self-hosted
         if: github.event.ref_type == 'tag'
 
@@ -21,7 +21,7 @@ jobs:
                     echo "TAG_NAME=$TAG_NAME" >> $GITHUB_ENV
                     echo "✅ Обрабатываем тег: $TAG_NAME"
 
-            -   name: Load server configuration and check assignment
+            -   name: Load server configuration
                 run: |
                     if [ ! -f "/root/.env.servers" ]; then
                       echo "❌ Файл конфигурации серверов .env.servers не найден!"
@@ -33,7 +33,14 @@ jobs:
                     source /root/.env.servers
                     set +a
 
-                    # Формируем имена переменных для текущего автора
+                    # Проверяем наличие API конфигурации
+                    if [ -z "$KONTUR_RELEASE_TG_BOT_API_URL" ] || [ -z "$KONTUR_RELEASE_TG_BOT_API_TOKEN" ]; then
+                      echo "❌ API конфигурация не найдена в .env.servers!"
+                      echo "   Убедитесь, что есть переменные: KONTUR_RELEASE_TG_BOT_API_URL и KONTUR_RELEASE_TG_BOT_API_TOKEN"
+                      exit 1
+                    fi
+
+                    # Формируем имена переменных для тестового сервера
                     HOST_VAR="TEST_HOST"
                     PASSWORD_VAR="TEST_PASSWORD"
 
@@ -47,14 +54,70 @@ jobs:
                       exit 1
                     fi
 
+                    # Экспортируем все необходимые переменные
+                    echo "KONTUR_RELEASE_TG_BOT_API_URL=$KONTUR_RELEASE_TG_BOT_API_URL" >> $GITHUB_ENV
+                    echo "KONTUR_RELEASE_TG_BOT_API_TOKEN=$KONTUR_RELEASE_TG_BOT_API_TOKEN" >> $GITHUB_ENV
                     echo "SERVER_HOST=$SERVER_HOST" >> $GITHUB_ENV
                     echo "SERVER_PASSWORD=$SERVER_PASSWORD" >> $GITHUB_ENV
-                    echo "✅ Найдена конфигурация сервера для тестового сервера: $SERVER_HOST"
+                    echo "✅ Конфигурация загружена успешно"
+                    echo "✅ API URL: $KONTUR_RELEASE_TG_BOT_API_URL"
+                    echo "✅ Тестовый сервер: $SERVER_HOST"
+
+            -   name: Create release record
+                run: |
+                    # Создаем запись о релизе в базе данных
+                    RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+                      -H "Content-Type: application/json" \
+                      -H "Authorization: Bearer ${{ env.KONTUR_RELEASE_TG_BOT_API_TOKEN }}" \
+                      -d '{
+                        "service_name": "${{ env.SERVICE_NAME }}",
+                        "release_version": "${{ env.TAG_NAME }}",
+                        "status": "initiated",
+                        "initiated_by": "${{ github.actor }}",
+                        "github_run_id": "${{ github.run_id }}",
+                        "github_action_link": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+                        "github_ref": "${{ github.ref }}"
+                      }' \
+                      "${{ env.KONTUR_RELEASE_TG_BOT_API_URL }}/release")
+                    
+                    HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+                    BODY=$(echo "$RESPONSE" | head -n -1)
+                    
+                    if [ "$HTTP_CODE" -ne 201 ]; then
+                      echo "❌ Не удалось создать запись о релизе. HTTP код: $HTTP_CODE"
+                      echo "Ответ: $BODY"
+                      exit 1
+                    fi
+                    
+                    # Извлекаем ID релиза из ответа
+                    RELEASE_ID=$(echo "$BODY" | jq -r '.id')
+                    echo "RELEASE_ID=$RELEASE_ID" >> $GITHUB_ENV
+                    echo "✅ Создана запись о релизе с ID: $RELEASE_ID"
+
+            -   name: Update status to building
+                run: |
+                    curl -s -X PATCH \
+                      -H "Content-Type: application/json" \
+                      -H "Authorization: Bearer ${{ env.KONTUR_RELEASE_TG_BOT_API_TOKEN }}" \
+                      -d "{"status": "failed", "release_id": ${{ env.RELEASE_ID }}}" \
+                      "${{ env.KONTUR_RELEASE_TG_BOT_API_URL }}/release"
+                    echo "✅ Статус обновлен на 'building'"
 
             -   name: Update tag on test server
+                id: deploy_step
                 run: |
+                    # Функция для обновления статуса с ошибкой
+                    update_failed_status() {
+                        curl -s -X PATCH \
+                          -H "Content-Type: application/json" \
+                          -H "Authorization: Bearer ${{ env.KONTUR_RELEASE_TG_BOT_API_TOKEN }}" \
+                          -d "{"status": "failed", "release_id": ${{ env.RELEASE_ID }}}" \
+                          "${{ env.KONTUR_RELEASE_TG_BOT_API_URL }}/release"
+                    }
+
                     # Используем sshpass для аутентификации по паролю
-                    sshpass -p "${{ env.SERVER_PASSWORD }}" ssh -o StrictHostKeyChecking=no root@${{ env.SERVER_HOST }} -p 22 << 'EOF'
+                    SSH_OUTPUT=$(sshpass -p "${{ env.SERVER_PASSWORD }}" ssh -o StrictHostKeyChecking=no root@${{ env.SERVER_HOST }} -p 22 << 'EOF' 2>&1
+                    set -e
 
                     cd kontur/${{ env.SERVICE_NAME }}
                     git fetch origin --tags
@@ -123,18 +186,46 @@ jobs:
                         echo "❌ Health check не пройден после $MAX_ATTEMPTS попыток"
                         echo "📋 Логи контейнера:"
                         docker logs --tail 50 ${{ env.SERVICE_NAME }}
-                        python3 script/tg_bot_alert.py "❌ Тег ${{ env.SERVICE_NAME }}/${{ env.TAG_NAME }} не развернут на сервере ${{ env.SERVER_HOST }}!
-                    📋 Подробности в Actions: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-
                         exit 1
                     fi
 
                     echo "✅ Тег ${{ env.TAG_NAME }} успешно развернут и приложение работает!"
-                    python3 script/tg_bot_alert.py "✅ Тег ${{ env.SERVICE_NAME }}/${{ env.TAG_NAME }} успешно развернут на сервере ${{ env.SERVER_HOST }}!"
                     EOF
+                    )
+
+                    SSH_EXIT_CODE=$?
+                    
+                    if [ $SSH_EXIT_CODE -ne 0 ]; then
+                        echo "❌ Ошибка при деплое на тестовый сервер:"
+                        echo "$SSH_OUTPUT"
+                        update_failed_status
+                        exit 1
+                    fi
+                    
+                    echo "✅ Деплой завершен успешно"
+
+            -   name: Update status to manual testing
+                if: success()
+                run: |
+                    curl -s -X PATCH \
+                      -H "Content-Type: application/json" \
+                      -H "Authorization: Bearer ${{ env.KONTUR_RELEASE_TG_BOT_API_TOKEN }}" \
+                      -d "{"status": "failed", "release_id": ${{ env.RELEASE_ID }}}" \
+                      "${{ env.KONTUR_RELEASE_TG_BOT_API_URL }}/release"
+                    echo "✅ Статус обновлен на 'manual_testing'"
 
             -   name: Verify deployment
+                if: success()
                 run: |
                     echo "🎉 Деплой тега ${{ env.TAG_NAME }} завершен успешно"
                     echo "📊 Сервер: ${{ env.SERVER_HOST }}"
                     echo "🏷️ Версия: ${{ env.TAG_NAME }}"
+                    echo "🧪 Статус: Готов к ручному тестированию"
+
+            -   name: Handle deployment failure
+                if: failure()
+                run: |
+                    echo "❌ Деплой завершился с ошибкой"
+                    echo "📊 Сервер: ${{ env.SERVER_HOST }}"
+                    echo "🏷️ Версия: ${{ env.TAG_NAME }}"
+                    echo "📋 Проверьте логи выше для подробной информации"
