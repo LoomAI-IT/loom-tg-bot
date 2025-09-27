@@ -33,6 +33,9 @@ class IGeneratePublicationDialog(Protocol):
     @abstractmethod
     def get_social_network_select_window(self) -> Window: pass
 
+    @abstractmethod
+    def get_publication_success_window(self) -> Window: pass
+
 
 class IGeneratePublicationService(Protocol):
 

@@ -36,6 +36,9 @@ class IModerationPublicationDialog(Protocol):
     @abstractmethod
     def get_social_network_select_window(self) -> Window: pass
 
+    @abstractmethod
+    def get_publication_success_window(self) -> Window: pass
+
 
 class IModerationPublicationService(Protocol):
 
@@ -221,6 +224,12 @@ class IModerationPublicationGetter(Protocol):
 
     @abstractmethod
     async def get_upload_image_data(
+            self,
+            dialog_manager: DialogManager,
+    ) -> dict: pass
+
+    @abstractmethod
+    async def get_publication_success_data(
             self,
             dialog_manager: DialogManager,
     ) -> dict: pass
