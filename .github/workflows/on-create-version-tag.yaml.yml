@@ -5,6 +5,9 @@ on:
         tags:
             - 'v*'
 
+env:
+    SERVICE_NAME: kontur-tg-bot
+
 jobs:
      update-tag-on-server:
         runs-on: self-hosted
@@ -53,7 +56,7 @@ jobs:
                     # Используем sshpass для аутентификации по паролю
                     sshpass -p "${{ env.SERVER_PASSWORD }}" ssh -o StrictHostKeyChecking=no root@${{ env.SERVER_HOST }} -p 22 << 'EOF'
 
-                    cd kontur/kontur-tg-bot
+                    cd kontur/${{ env.SERVICE_NAME }}
                     git fetch origin --tags
 
                     # Сохраняем текущую ветку/тег для проверки
@@ -84,7 +87,7 @@ jobs:
                     export $(cat env/.env.app env/.env.db env/.env.monitoring | xargs)
 
                     echo "🔨 Начинаем сборку контейнера для тега ${{ env.TAG_NAME }}..."
-                    docker compose -f ./docker-compose/app.yaml up -d --build kontur-tg-bot
+                    docker compose -f ./docker-compose/app.yaml up -d --build ${{ env.SERVICE_NAME }}
 
                     check_health() {
                         # Если есть HTTP endpoint
@@ -119,15 +122,15 @@ jobs:
                     if [ "$SUCCESS" = false ]; then
                         echo "❌ Health check не пройден после $MAX_ATTEMPTS попыток"
                         echo "📋 Логи контейнера:"
-                        docker logs --tail 50 kontur-tg-bot
-                        python3 script/tg_bot_alert.py "❌ Тег kontur-tg-bot/${{ env.TAG_NAME }} не развернут на сервере ${{ env.SERVER_HOST }}!
+                        docker logs --tail 50 ${{ env.SERVICE_NAME }}
+                        python3 script/tg_bot_alert.py "❌ Тег ${{ env.SERVICE_NAME }}/${{ env.TAG_NAME }} не развернут на сервере ${{ env.SERVER_HOST }}!
                     📋 Подробности в Actions: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
                         exit 1
                     fi
 
                     echo "✅ Тег ${{ env.TAG_NAME }} успешно развернут и приложение работает!"
-                    python3 script/tg_bot_alert.py "✅ Тег kontur-tg-bot/${{ env.TAG_NAME }} успешно развернут на сервере ${{ env.SERVER_HOST }}!"
+                    python3 script/tg_bot_alert.py "✅ Тег ${{ env.SERVICE_NAME }}/${{ env.TAG_NAME }} успешно развернут на сервере ${{ env.SERVER_HOST }}!"
                     EOF
 
             -   name: Verify deployment
