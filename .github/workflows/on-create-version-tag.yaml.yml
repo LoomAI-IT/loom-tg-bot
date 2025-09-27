@@ -34,41 +34,40 @@ jobs:
                     set +a
 
                     # Проверяем наличие API конфигурации
-                    if [ -z "$KONTUR_RELEASE_TG_BOT_API_URL" ] || [ -z "$KONTUR_RELEASE_TG_BOT_API_TOKEN" ]; then
+                    if [ -z "$KONTUR_RELEASE_TG_BOT_API_URL" ] || [ -z "$KONTUR_INTERSERVER_SECRET_KEY" ]; then
                       echo "❌ API конфигурация не найдена в .env.servers!"
-                      echo "   Убедитесь, что есть переменные: KONTUR_RELEASE_TG_BOT_API_URL и KONTUR_RELEASE_TG_BOT_API_TOKEN"
+                      echo "   Убедитесь, что есть переменные: KONTUR_RELEASE_TG_BOT_API_URL и KONTUR_INTERSERVER_SECRET_KEY"
                       exit 1
                     fi
 
                     # Формируем имена переменных для тестового сервера
-                    HOST_VAR="TEST_HOST"
-                    PASSWORD_VAR="TEST_PASSWORD"
+                    HOST_VAR="STAGE_HOST"
+                    PASSWORD_VAR="STAGE_PASSWORD"
 
                     # Получаем значения переменных
                     eval "SERVER_HOST=\$$HOST_VAR"
                     eval "SERVER_PASSWORD=\$$PASSWORD_VAR"
 
                     if [ -z "$SERVER_HOST" ] || [ -z "$SERVER_PASSWORD" ]; then
-                      echo "❌ Конфигурация тестового сервера не найдена!"
+                      echo "❌ Конфигурация stage сервера не найдена!"
                       echo "   Убедитесь, что в .env.servers есть переменные: ${HOST_VAR} и ${PASSWORD_VAR}"
                       exit 1
                     fi
 
                     # Экспортируем все необходимые переменные
                     echo "KONTUR_RELEASE_TG_BOT_API_URL=$KONTUR_RELEASE_TG_BOT_API_URL" >> $GITHUB_ENV
-                    echo "KONTUR_RELEASE_TG_BOT_API_TOKEN=$KONTUR_RELEASE_TG_BOT_API_TOKEN" >> $GITHUB_ENV
+                    echo "KONTUR_INTERSERVER_SECRET_KEY=$KONTUR_INTERSERVER_SECRET_KEY" >> $GITHUB_ENV
                     echo "SERVER_HOST=$SERVER_HOST" >> $GITHUB_ENV
                     echo "SERVER_PASSWORD=$SERVER_PASSWORD" >> $GITHUB_ENV
                     echo "✅ Конфигурация загружена успешно"
                     echo "✅ API URL: $KONTUR_RELEASE_TG_BOT_API_URL"
-                    echo "✅ Тестовый сервер: $SERVER_HOST"
+                    echo "✅ Stage сервер: $SERVER_HOST"
 
             -   name: Create release record
                 run: |
                     # Создаем запись о релизе в базе данных
                     RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
                       -H "Content-Type: application/json" \
-                      -H "Authorization: Bearer ${{ env.KONTUR_RELEASE_TG_BOT_API_TOKEN }}" \
                       -d '{
                         "service_name": "${{ env.SERVICE_NAME }}",
                         "release_version": "${{ env.TAG_NAME }}",
@@ -76,7 +75,8 @@ jobs:
                         "initiated_by": "${{ github.actor }}",
                         "github_run_id": "${{ github.run_id }}",
                         "github_action_link": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
-                        "github_ref": "${{ github.ref }}"
+                        "github_ref": "${{ github.ref }}",
+                        "interserver_secret_key": "${{ env.KONTUR_INTERSERVER_SECRET_KEY }}",
                       }' \
                       "${{ env.KONTUR_RELEASE_TG_BOT_API_URL }}/release")
                     
@@ -98,8 +98,10 @@ jobs:
                 run: |
                     curl -s -X PATCH \
                       -H "Content-Type: application/json" \
-                      -H "Authorization: Bearer ${{ env.KONTUR_RELEASE_TG_BOT_API_TOKEN }}" \
-                      -d "{"status": "failed", "release_id": ${{ env.RELEASE_ID }}}" \
+                      -d '{
+                        "status": "initiated",
+                        "interserver_secret_key": "${{ env.KONTUR_INTERSERVER_SECRET_KEY }}",
+                      }' \
                       "${{ env.KONTUR_RELEASE_TG_BOT_API_URL }}/release"
                     echo "✅ Статус обновлен на 'building'"
 
@@ -109,10 +111,12 @@ jobs:
                     # Функция для обновления статуса с ошибкой
                     update_failed_status() {
                         curl -s -X PATCH \
-                          -H "Content-Type: application/json" \
-                          -H "Authorization: Bearer ${{ env.KONTUR_RELEASE_TG_BOT_API_TOKEN }}" \
-                          -d "{"status": "failed", "release_id": ${{ env.RELEASE_ID }}}" \
-                          "${{ env.KONTUR_RELEASE_TG_BOT_API_URL }}/release"
+                      -H "Content-Type: application/json" \
+                      -d '{
+                        "status": "failed",
+                        "interserver_secret_key": "${{ env.KONTUR_INTERSERVER_SECRET_KEY }}",
+                      }' \
+                      "${{ env.KONTUR_RELEASE_TG_BOT_API_URL }}/release"
                     }
 
                     # Используем sshpass для аутентификации по паролю
@@ -207,10 +211,12 @@ jobs:
             -   name: Update status to manual testing
                 if: success()
                 run: |
-                    curl -s -X PATCH \
+                    ccurl -s -X PATCH \
                       -H "Content-Type: application/json" \
-                      -H "Authorization: Bearer ${{ env.KONTUR_RELEASE_TG_BOT_API_TOKEN }}" \
-                      -d "{"status": "failed", "release_id": ${{ env.RELEASE_ID }}}" \
+                      -d '{
+                        "status": "failed",
+                        "interserver_secret_key": "${{ env.KONTUR_INTERSERVER_SECRET_KEY }}",
+                      }' \
                       "${{ env.KONTUR_RELEASE_TG_BOT_API_URL }}/release"
                     echo "✅ Статус обновлен на 'manual_testing'"
 
