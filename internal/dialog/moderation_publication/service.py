@@ -763,7 +763,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
                 await self._remove_current_publication_from_list(dialog_manager)
                 await callback.answer("🎉 Опубликовано!", show_alert=True)
 
-                await dialog_manager.switch_to(model.ModerationPublicationStates.moderation_list)
+                await dialog_manager.switch_to(model.ModerationPublicationStates.publication_success)
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
