@@ -8,6 +8,9 @@ on:
             - '!master'
             - '!develop'
 
+env:
+    SERVICE_NAME: kontur-tg-bot
+
 jobs:
     update-branch:
         runs-on: self-hosted
@@ -55,7 +58,7 @@ jobs:
                     sshpass -p "${{ env.SERVER_PASSWORD }}" ssh -o StrictHostKeyChecking=no root@${{ env.SERVER_HOST }} -p 22 << 'EOF'
                     echo "🔄 Обновляем ветку ${{ env.BRANCH_NAME }} для ${{ env.AUTHOR_NAME }}"
                     
-                    cd kontur/kontur-tg-bot
+                    cd kontur/${{ env.SERVICE_NAME }}
                     git fetch origin
                     
                     # Сохраняем текущую ветку для проверки
@@ -103,7 +106,7 @@ jobs:
                     export $(cat env/.env.app env/.env.db env/.env.monitoring | xargs)
                     
                     echo "🔨 Начинаем сборку контейнера..."
-                    docker compose -f ./docker-compose/app.yaml up -d --build kontur-tg-bot
+                    docker compose -f ./docker-compose/app.yaml up -d --build ${{ env.SERVICE_NAME }}
                     
                     check_health() {
                         # Если есть HTTP endpoint
@@ -136,13 +139,13 @@ jobs:
                     done
                     
                     if [ "$SUCCESS" = false ]; then
-                        docker logs -f kontur-tg-bot
-                        python3 script/tg_bot_alert.py "❌ Ветка kontur-tg-bot/${{ env.BRANCH_NAME }} не обновлена на сервере ${{ env.SERVER_HOST }}!
+                        docker logs -f ${{ env.SERVICE_NAME }}
+                        python3 script/tg_bot_alert.py "❌ Ветка ${{ env.SERVICE_NAME }}/${{ env.BRANCH_NAME }} не обновлена на сервере ${{ env.SERVER_HOST }}!
                     📋 Подробности в Actions: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
                     
                         exit 1
                     fi
                     
                     echo "✅ Ветка ${{ env.BRANCH_NAME }} успешно обновлена и приложение работает!"
-                    python3 script/tg_bot_alert.py "✅ Ветка kontur-tg-bot/${{ env.BRANCH_NAME }} успешно обновлена на сервере ${{ env.SERVER_HOST }}!"
+                    python3 script/tg_bot_alert.py "✅ Ветка ${{ env.SERVICE_NAME }}/${{ env.BRANCH_NAME }} успешно обновлена на сервере ${{ env.SERVER_HOST }}!"
                     EOF

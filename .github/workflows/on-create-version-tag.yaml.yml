@@ -1,0 +1,137 @@
+name: Update version tag on test server
+
+on:
+    create:
+        tags:
+            - 'v*'
+
+jobs:
+     update-tag-on-server:
+        runs-on: self-hosted
+        if: github.event.ref_type == 'tag'
+
+        steps:
+            -   name: Extract tag name
+                run: |
+                    # Извлекаем имя тега из ref
+                    TAG_NAME=${GITHUB_REF#refs/tags/}
+                    echo "TAG_NAME=$TAG_NAME" >> $GITHUB_ENV
+                    echo "✅ Обрабатываем тег: $TAG_NAME"
+
+            -   name: Load server configuration and check assignment
+                run: |
+                    if [ ! -f "/root/.env.servers" ]; then
+                      echo "❌ Файл конфигурации серверов .env.servers не найден!"
+                      exit 1
+                    fi
+
+                    # Загружаем переменные окружения из .env.servers
+                    set -a
+                    source /root/.env.servers
+                    set +a
+
+                    # Формируем имена переменных для текущего автора
+                    HOST_VAR="TEST_HOST"
+                    PASSWORD_VAR="TEST_PASSWORD"
+
+                    # Получаем значения переменных
+                    eval "SERVER_HOST=\$$HOST_VAR"
+                    eval "SERVER_PASSWORD=\$$PASSWORD_VAR"
+
+                    if [ -z "$SERVER_HOST" ] || [ -z "$SERVER_PASSWORD" ]; then
+                      echo "❌ Конфигурация тестового сервера не найдена!"
+                      echo "   Убедитесь, что в .env.servers есть переменные: ${HOST_VAR} и ${PASSWORD_VAR}"
+                      exit 1
+                    fi
+
+                    echo "SERVER_HOST=$SERVER_HOST" >> $GITHUB_ENV
+                    echo "SERVER_PASSWORD=$SERVER_PASSWORD" >> $GITHUB_ENV
+                    echo "✅ Найдена конфигурация сервера для тестового сервера: $SERVER_HOST"
+
+            -   name: Update tag on test server
+                run: |
+                    # Используем sshpass для аутентификации по паролю
+                    sshpass -p "${{ env.SERVER_PASSWORD }}" ssh -o StrictHostKeyChecking=no root@${{ env.SERVER_HOST }} -p 22 << 'EOF'
+
+                    cd kontur/kontur-tg-bot
+                    git fetch origin --tags
+
+                    # Сохраняем текущую ветку/тег для проверки
+                    CURRENT_REF=$(git symbolic-ref --short HEAD 2>/dev/null || git describe --tags --exact-match 2>/dev/null || git rev-parse --short HEAD)
+                    echo "🔍 Текущее состояние: $CURRENT_REF"
+
+                    # Проверяем, существует ли тег
+                    if ! git tag -l | grep -q "^${{ env.TAG_NAME }}$"; then
+                        echo "❌ Тег ${{ env.TAG_NAME }} не найден в репозитории!"
+                        exit 1
+                    fi
+
+                    # Переключаемся на тег
+                    echo "🏷️ Переключаемся на тег ${{ env.TAG_NAME }}"
+                    git checkout ${{ env.TAG_NAME }}
+
+                    # Очищаем старые ветки (кроме main/master)
+                    echo "🧹 Очищаем старые ветки"
+                    git for-each-ref --format='%(refname:short)' refs/heads | grep -v -E "^(main|master)$" | xargs -r git branch -D
+
+                    # Очищаем удаленные ветки
+                    git remote prune origin
+
+                    echo "✅ Переключение на тег ${{ env.TAG_NAME }} завершено"
+
+                    cd ../kontur-system
+
+                    export $(cat env/.env.app env/.env.db env/.env.monitoring | xargs)
+
+                    echo "🔨 Начинаем сборку контейнера для тега ${{ env.TAG_NAME }}..."
+                    docker compose -f ./docker-compose/app.yaml up -d --build kontur-tg-bot
+
+                    check_health() {
+                        # Если есть HTTP endpoint
+                        if curl -f -s -o /dev/null -w "%{http_code}" http://localhost:8005/api/tg-bot/health | grep -q "200"; then
+                            return 0
+                        else
+                            return 1
+                        fi
+                    }
+
+                    MAX_ATTEMPTS=3
+                    ATTEMPT=1
+                    SUCCESS=false
+
+                    sleep 10
+
+                    while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
+                        echo "🔍 Проверка health (попытка $ATTEMPT из $MAX_ATTEMPTS)..."
+
+                        if check_health; then
+                            echo "✅ Health check пройден!"
+                            SUCCESS=true
+                            break
+                        else
+                            echo "⏳ Health check не пройден, ждем..."
+                            sleep 15
+                        fi
+
+                        ATTEMPT=$((ATTEMPT + 1))
+                    done
+
+                    if [ "$SUCCESS" = false ]; then
+                        echo "❌ Health check не пройден после $MAX_ATTEMPTS попыток"
+                        echo "📋 Логи контейнера:"
+                        docker logs --tail 50 kontur-tg-bot
+                        python3 script/tg_bot_alert.py "❌ Тег kontur-tg-bot/${{ env.TAG_NAME }} не развернут на сервере ${{ env.SERVER_HOST }}!
+                    📋 Подробности в Actions: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+                        exit 1
+                    fi
+
+                    echo "✅ Тег ${{ env.TAG_NAME }} успешно развернут и приложение работает!"
+                    python3 script/tg_bot_alert.py "✅ Тег kontur-tg-bot/${{ env.TAG_NAME }} успешно развернут на сервере ${{ env.SERVER_HOST }}!"
+                    EOF
+
+            -   name: Verify deployment
+                run: |
+                    echo "🎉 Деплой тега ${{ env.TAG_NAME }} завершен успешно"
+                    echo "📊 Сервер: ${{ env.SERVER_HOST }}"
+                    echo "🏷️ Версия: ${{ env.TAG_NAME }}"
