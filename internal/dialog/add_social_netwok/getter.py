@@ -11,12 +11,12 @@ class AddSocialNetworkGetter(interface.IAddSocialNetworkGetter):
             self,
             tel: interface.ITelemetry,
             state_repo: interface.IStateRepo,
-            kontur_content_client: interface.IKonturContentClient,
+            loom_content_client: interface.ILoomContentClient,
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
         self.state_repo = state_repo
-        self.kontur_content_client = kontur_content_client
+        self.loom_content_client = loom_content_client
 
     async def get_select_network_data(
             self,
@@ -31,7 +31,7 @@ class AddSocialNetworkGetter(interface.IAddSocialNetworkGetter):
                 state = await self._get_state(dialog_manager)
 
                 # Get social networks data from API
-                social_networks = await self.kontur_content_client.get_social_networks_by_organization(
+                social_networks = await self.loom_content_client.get_social_networks_by_organization(
                     organization_id=state.organization_id
                 )
 
@@ -70,7 +70,7 @@ class AddSocialNetworkGetter(interface.IAddSocialNetworkGetter):
                 state = await self._get_state(dialog_manager)
 
                 # Get social networks data
-                social_networks = await self.kontur_content_client.get_social_networks_by_organization(
+                social_networks = await self.loom_content_client.get_social_networks_by_organization(
                     organization_id=state.organization_id
                 )
 
@@ -121,7 +121,7 @@ class AddSocialNetworkGetter(interface.IAddSocialNetworkGetter):
             try:
                 state = await self._get_state(dialog_manager)
 
-                social_networks = await self.kontur_content_client.get_social_networks_by_organization(
+                social_networks = await self.loom_content_client.get_social_networks_by_organization(
                     organization_id=state.organization_id
                 )
 
@@ -181,7 +181,7 @@ class AddSocialNetworkGetter(interface.IAddSocialNetworkGetter):
                 state = await self._get_state(dialog_manager)
 
                 # Get current telegram data
-                social_networks = await self.kontur_content_client.get_social_networks_by_organization(
+                social_networks = await self.loom_content_client.get_social_networks_by_organization(
                     organization_id=state.organization_id
                 )
 

@@ -5,7 +5,7 @@ from internal import interface
 from pkg.client.client import AsyncHTTPClient
 
 
-class KonturOrganizationClient(interface.IKonturOrganizationClient):
+class LoomOrganizationClient(interface.ILoomOrganizationClient):
     def __init__(
             self,
             tel: interface.ITelemetry,

@@ -10,14 +10,14 @@ class ContentMenuGetter(interface.IContentMenuGetter):
             self,
             tel: interface.ITelemetry,
             state_repo: interface.IStateRepo,
-            kontur_employee_client: interface.IKonturEmployeeClient,
-            kontur_content_client: interface.IKonturContentClient,
+            loom_employee_client: interface.ILoomEmployeeClient,
+            loom_content_client: interface.ILoomContentClient,
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
         self.state_repo = state_repo
-        self.kontur_employee_client = kontur_employee_client
-        self.kontur_content_client = kontur_content_client
+        self.loom_employee_client = loom_employee_client
+        self.loom_content_client = loom_content_client
 
     async def get_content_menu_data(
             self,
@@ -32,12 +32,12 @@ class ContentMenuGetter(interface.IContentMenuGetter):
                 state = await self._get_state(dialog_manager)
 
                 # Получаем статистику публикаций
-                publications = await self.kontur_content_client.get_publications_by_organization(
+                publications = await self.loom_content_client.get_publications_by_organization(
                     state.organization_id
                 )
 
                 # Получаем статистику видео-нарезок
-                video_cuts = await self.kontur_content_client.get_video_cuts_by_organization(
+                video_cuts = await self.loom_content_client.get_video_cuts_by_organization(
                     state.organization_id
                 )
 
@@ -110,12 +110,12 @@ class ContentMenuGetter(interface.IContentMenuGetter):
                 state = await self._get_state(dialog_manager)
 
                 # Получаем публикации организации
-                publications = await self.kontur_content_client.get_publications_by_organization(
+                publications = await self.loom_content_client.get_publications_by_organization(
                     state.organization_id
                 )
 
                 # Получаем видео-нарезки организации
-                video_cuts = await self.kontur_content_client.get_video_cuts_by_organization(
+                video_cuts = await self.loom_content_client.get_video_cuts_by_organization(
                     state.organization_id
                 )
 
@@ -153,12 +153,12 @@ class ContentMenuGetter(interface.IContentMenuGetter):
                 state = await self._get_state(dialog_manager)
 
                 # Получаем публикации организации
-                publications = await self.kontur_content_client.get_publications_by_organization(
+                publications = await self.loom_content_client.get_publications_by_organization(
                     state.organization_id
                 )
 
                 # Получаем видео-нарезки организации
-                video_cuts = await self.kontur_content_client.get_video_cuts_by_organization(
+                video_cuts = await self.loom_content_client.get_video_cuts_by_organization(
                     state.organization_id
                 )
 

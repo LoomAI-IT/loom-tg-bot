@@ -6,7 +6,7 @@ from datetime import datetime
 from internal import model
 
 
-class IKonturContentClient(Protocol):
+class ILoomContentClient(Protocol):
     @abstractmethod
     async def get_social_networks_by_organization(self, organization_id: int) -> dict: pass
 

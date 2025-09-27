@@ -4,7 +4,7 @@ from abc import abstractmethod
 from internal import model
 
 
-class IKonturOrganizationClient(Protocol):
+class ILoomOrganizationClient(Protocol):
 
     @abstractmethod
     async def get_organization_by_id(self, organization_id: int) -> model.Organization: pass

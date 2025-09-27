@@ -14,12 +14,12 @@ class AddEmployeeService(interface.IAddEmployeeService):
             self,
             tel: interface.ITelemetry,
             state_repo: interface.IStateRepo,
-            kontur_employee_client: interface.IKonturEmployeeClient,
+            loom_employee_client: interface.ILoomEmployeeClient,
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
         self.state_repo = state_repo
-        self.kontur_employee_client = kontur_employee_client
+        self.loom_employee_client = loom_employee_client
 
     async def handle_account_id_input(
             self,
@@ -220,12 +220,12 @@ class AddEmployeeService(interface.IAddEmployeeService):
                 # Получаем информацию о текущем пользователе
                 chat_id = callback.message.chat.id
                 current_user_state = (await self.state_repo.state_by_id(chat_id))[0]
-                current_employee = await self.kontur_employee_client.get_employee_by_account_id(
+                current_employee = await self.loom_employee_client.get_employee_by_account_id(
                     current_user_state.account_id
                 )
 
                 # Создаем сотрудника
-                await self.kontur_employee_client.create_employee(
+                await self.loom_employee_client.create_employee(
                     organization_id=current_employee.organization_id,
                     invited_from_account_id=current_user_state.account_id,
                     account_id=employee_data.account_id,
@@ -233,7 +233,7 @@ class AddEmployeeService(interface.IAddEmployeeService):
                     role=employee_data.role.value
                 )
 
-                await self.kontur_employee_client.update_employee_permissions(
+                await self.loom_employee_client.update_employee_permissions(
                     account_id=employee_data.account_id,
                     required_moderation=employee_data.permissions.required_moderation,
                     autoposting_permission=employee_data.permissions.autoposting,

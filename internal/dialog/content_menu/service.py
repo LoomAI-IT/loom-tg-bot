@@ -15,12 +15,12 @@ class ContentMenuService(interface.IContentMenuService):
             self,
             tel: interface.ITelemetry,
             state_repo: interface.IStateRepo,
-            kontur_employee_client: interface.IKonturEmployeeClient,
+            loom_employee_client: interface.ILoomEmployeeClient,
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
         self.state_repo = state_repo
-        self.kontur_employee_client = kontur_employee_client
+        self.loom_employee_client = loom_employee_client
 
 
     async def handle_go_to_publication_generation(
@@ -179,7 +179,7 @@ class ContentMenuService(interface.IContentMenuService):
                 state = await self._get_state(dialog_manager)
 
                 # Проверяем права доступа к модерации
-                employee = await self.kontur_employee_client.get_employee_by_account_id(
+                employee = await self.loom_employee_client.get_employee_by_account_id(
                     state.account_id
                 )
 
@@ -233,7 +233,7 @@ class ContentMenuService(interface.IContentMenuService):
                 state = await self._get_state(dialog_manager)
 
                 # Проверяем права доступа к модерации
-                employee = await self.kontur_employee_client.get_employee_by_account_id(
+                employee = await self.loom_employee_client.get_employee_by_account_id(
                     state.account_id
                 )
 

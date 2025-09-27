@@ -15,14 +15,14 @@ class AuthService(interface.IAuthService):
             self,
             tel: interface.ITelemetry,
             state_repo: interface.IStateRepo,
-            kontur_account_client: interface.IKonturAccountClient,
-            kontur_employee_client: interface.IKonturEmployeeClient,
+            loom_account_client: interface.ILoomAccountClient,
+            loom_employee_client: interface.ILoomEmployeeClient,
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
         self.state_repo = state_repo
-        self.kontur_account_client = kontur_account_client
-        self.kontur_employee_client = kontur_employee_client
+        self.loom_account_client = loom_account_client
+        self.loom_employee_client = loom_employee_client
 
     async def accept_user_agreement(
             self,
@@ -92,7 +92,7 @@ class AuthService(interface.IAuthService):
                 dialog_manager.dialog_data["data_processing_accepted"] = True
 
                 # Регистрируем пользователя
-                authorized_data = await self.kontur_account_client.register_from_tg(
+                authorized_data = await self.loom_account_client.register_from_tg(
                     uuid.uuid4().hex,
                     uuid.uuid4().hex,
                 )
@@ -110,7 +110,7 @@ class AuthService(interface.IAuthService):
                 self.logger.info("Пользователь завершил процесс авторизации")
 
                 # Проверяем доступ к организации
-                employee = await self.kontur_employee_client.get_employee_by_account_id(
+                employee = await self.loom_employee_client.get_employee_by_account_id(
                     authorized_data.account_id
                 )
 

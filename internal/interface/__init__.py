@@ -16,9 +16,9 @@ from internal.interface.dialog.video_cut_draft_content import *
 from internal.interface.dialog.moderation_publication import *
 from internal.interface.dialog.moderation_video_cut import *
 
-from internal.interface.client.kontur_account import *
-from internal.interface.client.kontur_authorization import *
-from internal.interface.client.kontur_employee import *
-from internal.interface.client.kontur_organization import *
-from internal.interface.client.kontur_publication import *
-from internal.interface.client.kontur_payment import *
+from internal.interface.client.loom_account import *
+from internal.interface.client.loom_authorization import *
+from internal.interface.client.loom_employee import *
+from internal.interface.client.loom_organization import *
+from internal.interface.client.loom_publication import *
+from internal.interface.client.loom_payment import *

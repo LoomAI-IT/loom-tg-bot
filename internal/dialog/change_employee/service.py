@@ -15,13 +15,13 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
             tel: interface.ITelemetry,
             bot: Bot,
             state_repo: interface.IStateRepo,
-            kontur_employee_client: interface.IKonturEmployeeClient,
+            loom_employee_client: interface.ILoomEmployeeClient,
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
         self.bot = bot
         self.state_repo = state_repo
-        self.kontur_employee_client = kontur_employee_client
+        self.loom_employee_client = loom_employee_client
 
     async def handle_select_employee(
             self,
@@ -275,7 +275,7 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
                 permissions = dialog_manager.dialog_data.get("temp_permissions", {})
 
                 # Обновляем разрешения через API
-                await self.kontur_employee_client.update_employee_permissions(
+                await self.loom_employee_client.update_employee_permissions(
                     account_id=selected_account_id,
                     required_moderation=permissions.get("required_moderation", False),
                     autoposting_permission=permissions.get("autoposting", False),
@@ -383,7 +383,7 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
                 selected_account_id = int(dialog_manager.dialog_data.get("selected_account_id"))
 
                 # Получаем данные сотрудника для проверки текущей роли
-                employee = await self.kontur_employee_client.get_employee_by_account_id(
+                employee = await self.loom_employee_client.get_employee_by_account_id(
                     selected_account_id
                 )
 
@@ -454,13 +454,13 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
                     return
 
                 # Получаем данные сотрудника до изменения
-                employee = await self.kontur_employee_client.get_employee_by_account_id(
+                employee = await self.loom_employee_client.get_employee_by_account_id(
                     selected_account_id
                 )
                 old_role = employee.role
 
                 # Обновляем роль через API
-                await self.kontur_employee_client.update_employee_role(
+                await self.loom_employee_client.update_employee_role(
                     account_id=selected_account_id,
                     role=new_role
                 )
@@ -515,12 +515,12 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
                 selected_account_id = int(dialog_manager.dialog_data.get("selected_account_id"))
 
                 # Получаем данные удаляемого сотрудника для логирования
-                employee = await self.kontur_employee_client.get_employee_by_account_id(
+                employee = await self.loom_employee_client.get_employee_by_account_id(
                     selected_account_id
                 )
 
                 # Удаляем сотрудника из организации
-                await self.kontur_employee_client.delete_employee(selected_account_id)
+                await self.loom_employee_client.delete_employee(selected_account_id)
 
                 # Обновляем состояние удаленного сотрудника
                 employee_state = await self.state_repo.state_by_account_id(selected_account_id)

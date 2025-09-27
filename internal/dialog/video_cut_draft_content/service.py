@@ -13,12 +13,12 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
             self,
             tel: interface.ITelemetry,
             state_repo: interface.IStateRepo,
-            kontur_content_client: interface.IKonturContentClient,
+            loom_content_client: interface.ILoomContentClient,
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
         self.state_repo = state_repo
-        self.kontur_content_client = kontur_content_client
+        self.loom_content_client = loom_content_client
 
     async def handle_navigate_video_cut(
             self,
@@ -79,7 +79,7 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
                 original_video_cut = dialog_manager.dialog_data["original_video_cut"]
                 video_cut_id = original_video_cut["id"]
 
-                await self.kontur_content_client.delete_video_cut(
+                await self.loom_content_client.delete_video_cut(
                     video_cut_id=video_cut_id
                 )
 
@@ -286,7 +286,7 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
                 original_video_cut = dialog_manager.dialog_data["original_video_cut"]
                 video_cut_id = original_video_cut["id"]
 
-                await self.kontur_content_client.send_video_cut_to_moderation(
+                await self.loom_content_client.send_video_cut_to_moderation(
                     video_cut_id=video_cut_id
                 )
 
@@ -338,7 +338,7 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
                 video_cut_id = original_video_cut["id"]
 
                 # Публикуем немедленно через API
-                await self.kontur_content_client.moderate_video_cut(
+                await self.loom_content_client.moderate_video_cut(
                     video_cut_id=video_cut_id,
                     moderator_id=state.account_id,
                     moderation_status="approved",
@@ -459,7 +459,7 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
         youtube_source = working_video_cut.get("youtube_source")
         inst_source = working_video_cut.get("inst_source")
 
-        await self.kontur_content_client.change_video_cut(
+        await self.loom_content_client.change_video_cut(
             video_cut_id=video_cut_id,
             name=working_video_cut["name"],
             description=working_video_cut["description"],

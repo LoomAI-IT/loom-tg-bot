@@ -8,7 +8,7 @@ from internal import interface
 from pkg.client.client import AsyncHTTPClient
 
 
-class KonturContentClient(interface.IKonturContentClient):
+class LoomContentClient(interface.ILoomContentClient):
     def __init__(
             self,
             tel: interface.ITelemetry,
@@ -25,7 +25,7 @@ class KonturContentClient(interface.IKonturContentClient):
 
     async def get_social_networks_by_organization(self, organization_id: int) -> dict:
         with self.tracer.start_as_current_span(
-                "KonturContentClient.get_social_networks_by_organization",
+                "LoomContentClient.get_social_networks_by_organization",
                 kind=SpanKind.CLIENT,
                 attributes={
                     "organization_id": organization_id
@@ -44,7 +44,7 @@ class KonturContentClient(interface.IKonturContentClient):
 
     async def create_telegram(self, organization_id: int, telegram_channel_username: str, autoselect: bool):
         with self.tracer.start_as_current_span(
-                "KonturContentClient.create_telegram",
+                "LoomContentClient.create_telegram",
                 kind=SpanKind.CLIENT,
                 attributes={
                     "organization_id": organization_id
@@ -66,7 +66,7 @@ class KonturContentClient(interface.IKonturContentClient):
 
     async def check_telegram_channel_permission(self, telegram_channel_username: str) -> bool:
         with self.tracer.start_as_current_span(
-                "KonturContentClient.check_telegram_channel_permission",
+                "LoomContentClient.check_telegram_channel_permission",
                 kind=SpanKind.CLIENT
         ) as span:
             try:
@@ -88,7 +88,7 @@ class KonturContentClient(interface.IKonturContentClient):
             autoselect: bool = None
     ):
         with self.tracer.start_as_current_span(
-                "KonturContentClient.update_telegram",
+                "LoomContentClient.update_telegram",
                 kind=SpanKind.CLIENT,
                 attributes={
                     "organization_id": organization_id
@@ -110,7 +110,7 @@ class KonturContentClient(interface.IKonturContentClient):
 
     async def delete_telegram(self, organization_id: int):
         with self.tracer.start_as_current_span(
-                "KonturContentClient.delete_telegram",
+                "LoomContentClient.delete_telegram",
                 kind=SpanKind.CLIENT,
                 attributes={
                     "organization_id": organization_id
@@ -132,7 +132,7 @@ class KonturContentClient(interface.IKonturContentClient):
             text_reference: str
     ) -> dict:
         with self.tracer.start_as_current_span(
-                "KonturContentClient.generate_publication_text",
+                "LoomContentClient.generate_publication_text",
                 kind=SpanKind.CLIENT
         ) as span:
             try:
@@ -158,7 +158,7 @@ class KonturContentClient(interface.IKonturContentClient):
             prompt: str = None
     ) -> dict:
         with self.tracer.start_as_current_span(
-                "KonturContentClient.regenerate_publication_text",
+                "LoomContentClient.regenerate_publication_text",
                 kind=SpanKind.CLIENT
         ) as span:
             try:
@@ -188,7 +188,7 @@ class KonturContentClient(interface.IKonturContentClient):
             image_filename: str = None,
     ) -> list[str]:
         with self.tracer.start_as_current_span(
-                "KonturContentClient.generate_publication_image",
+                "LoomContentClient.generate_publication_image",
                 kind=SpanKind.CLIENT
         ) as span:
             try:
@@ -239,7 +239,7 @@ class KonturContentClient(interface.IKonturContentClient):
             image_filename: str = None,
     ) -> dict:
         with self.tracer.start_as_current_span(
-                "KonturContentClient.create_publication",
+                "LoomContentClient.create_publication",
                 kind=SpanKind.CLIENT
         ) as span:
             try:
@@ -295,7 +295,7 @@ class KonturContentClient(interface.IKonturContentClient):
             image_filename: str = None,
     ) -> None:
         with self.tracer.start_as_current_span(
-                "KonturContentClient.change_publication",
+                "LoomContentClient.change_publication",
                 kind=SpanKind.CLIENT,
                 attributes={
                     "publication_id": publication_id
@@ -354,7 +354,7 @@ class KonturContentClient(interface.IKonturContentClient):
             publication_id: int,
     ) -> None:
         with self.tracer.start_as_current_span(
-                "KonturContentClient.delete_publication",
+                "LoomContentClient.delete_publication",
                 kind=SpanKind.CLIENT,
                 attributes={
                     "publication_id": publication_id
@@ -374,7 +374,7 @@ class KonturContentClient(interface.IKonturContentClient):
             publication_id: int,
     ) -> None:
         with self.tracer.start_as_current_span(
-                "KonturContentClient.delete_publication_image",
+                "LoomContentClient.delete_publication_image",
                 kind=SpanKind.CLIENT,
                 attributes={
                     "publication_id": publication_id
@@ -394,7 +394,7 @@ class KonturContentClient(interface.IKonturContentClient):
             publication_id: int,
     ) -> None:
         with self.tracer.start_as_current_span(
-                "KonturContentClient.send_publication_to_moderation",
+                "LoomContentClient.send_publication_to_moderation",
                 kind=SpanKind.CLIENT,
                 attributes={
                     "publication_id": publication_id
@@ -417,7 +417,7 @@ class KonturContentClient(interface.IKonturContentClient):
             moderation_comment: str = ""
     ) -> dict:
         with self.tracer.start_as_current_span(
-                "KonturContentClient.moderate_publication",
+                "LoomContentClient.moderate_publication",
                 kind=SpanKind.CLIENT,
                 attributes={
                     "publication_id": publication_id,
@@ -447,7 +447,7 @@ class KonturContentClient(interface.IKonturContentClient):
 
     async def get_publication_by_id(self, publication_id: int) -> model.Publication:
         with self.tracer.start_as_current_span(
-                "KonturContentClient.get_publication_by_id",
+                "LoomContentClient.get_publication_by_id",
                 kind=SpanKind.CLIENT,
                 attributes={
                     "publication_id": publication_id
@@ -466,7 +466,7 @@ class KonturContentClient(interface.IKonturContentClient):
 
     async def get_publications_by_organization(self, organization_id: int) -> list[model.Publication]:
         with self.tracer.start_as_current_span(
-                "KonturContentClient.get_publications_by_organization",
+                "LoomContentClient.get_publications_by_organization",
                 kind=SpanKind.CLIENT,
                 attributes={
                     "organization_id": organization_id
@@ -488,7 +488,7 @@ class KonturContentClient(interface.IKonturContentClient):
             publication_id: int
     ) -> tuple[io.BytesIO, str]:
         with self.tracer.start_as_current_span(
-                "KonturContentClient.download_publication_image",
+                "LoomContentClient.download_publication_image",
                 kind=SpanKind.CLIENT,
                 attributes={
                     "publication_id": publication_id
@@ -521,7 +521,7 @@ class KonturContentClient(interface.IKonturContentClient):
             prompt_for_text_style: str
     ) -> int:
         with self.tracer.start_as_current_span(
-                "KonturContentClient.create_category",
+                "LoomContentClient.create_category",
                 kind=SpanKind.CLIENT,
                 attributes={
                     "organization_id": organization_id
@@ -545,7 +545,7 @@ class KonturContentClient(interface.IKonturContentClient):
 
     async def get_category_by_id(self, category_id: int) -> model.Category:
         with self.tracer.start_as_current_span(
-                "KonturContentClient.get_category_by_id",
+                "LoomContentClient.get_category_by_id",
                 kind=SpanKind.CLIENT,
                 attributes={
                     "category_id": category_id
@@ -564,7 +564,7 @@ class KonturContentClient(interface.IKonturContentClient):
 
     async def get_categories_by_organization(self, organization_id: int) -> list[model.Category]:
         with self.tracer.start_as_current_span(
-                "KonturContentClient.get_categories_by_organization",
+                "LoomContentClient.get_categories_by_organization",
                 kind=SpanKind.CLIENT,
                 attributes={
                     "organization_id": organization_id
@@ -588,7 +588,7 @@ class KonturContentClient(interface.IKonturContentClient):
             prompt_for_text_style: str = None
     ) -> None:
         with self.tracer.start_as_current_span(
-                "KonturContentClient.update_category",
+                "LoomContentClient.update_category",
                 kind=SpanKind.CLIENT,
                 attributes={
                     "category_id": category_id
@@ -611,7 +611,7 @@ class KonturContentClient(interface.IKonturContentClient):
 
     async def delete_category(self, category_id: int) -> None:
         with self.tracer.start_as_current_span(
-                "KonturContentClient.delete_category",
+                "LoomContentClient.delete_category",
                 kind=SpanKind.CLIENT,
                 attributes={
                     "category_id": category_id
@@ -635,7 +635,7 @@ class KonturContentClient(interface.IKonturContentClient):
             tg_channels: list[str] = None
     ) -> int:
         with self.tracer.start_as_current_span(
-                "KonturContentClient.create_autoposting",
+                "LoomContentClient.create_autoposting",
                 kind=SpanKind.CLIENT,
                 attributes={
                     "organization_id": organization_id
@@ -662,7 +662,7 @@ class KonturContentClient(interface.IKonturContentClient):
 
     async def get_autoposting_by_organization(self, organization_id: int) -> list[model.Autoposting]:
         with self.tracer.start_as_current_span(
-                "KonturContentClient.get_autoposting_by_organization",
+                "LoomContentClient.get_autoposting_by_organization",
                 kind=SpanKind.CLIENT,
                 attributes={
                     "organization_id": organization_id
@@ -687,7 +687,7 @@ class KonturContentClient(interface.IKonturContentClient):
             tg_channels: list[str] = None
     ) -> None:
         with self.tracer.start_as_current_span(
-                "KonturContentClient.update_autoposting",
+                "LoomContentClient.update_autoposting",
                 kind=SpanKind.CLIENT,
                 attributes={
                     "autoposting_id": autoposting_id
@@ -712,7 +712,7 @@ class KonturContentClient(interface.IKonturContentClient):
 
     async def delete_autoposting(self, autoposting_id: int) -> None:
         with self.tracer.start_as_current_span(
-                "KonturContentClient.delete_autoposting",
+                "LoomContentClient.delete_autoposting",
                 kind=SpanKind.CLIENT,
                 attributes={
                     "autoposting_id": autoposting_id
@@ -735,7 +735,7 @@ class KonturContentClient(interface.IKonturContentClient):
             youtube_video_reference: str,
     ) -> None:
         with self.tracer.start_as_current_span(
-                "KonturContentClient.generate_video_cut",
+                "LoomContentClient.generate_video_cut",
                 kind=SpanKind.CLIENT,
                 attributes={
                     "organization_id": organization_id,
@@ -767,7 +767,7 @@ class KonturContentClient(interface.IKonturContentClient):
             youtube_source: bool = None,
     ) -> None:
         with self.tracer.start_as_current_span(
-                "KonturContentClient.change_video_cut",
+                "LoomContentClient.change_video_cut",
                 kind=SpanKind.CLIENT,
                 attributes={
                     "video_cut_id": video_cut_id
@@ -796,7 +796,7 @@ class KonturContentClient(interface.IKonturContentClient):
 
     async def delete_video_cut(self, video_cut_id: int) -> None:
         with self.tracer.start_as_current_span(
-                "KonturContentClient.delete_video_cut",
+                "LoomContentClient.delete_video_cut",
                 kind=SpanKind.CLIENT,
                 attributes={
                     "video_cut_id": video_cut_id
@@ -816,7 +816,7 @@ class KonturContentClient(interface.IKonturContentClient):
             video_cut_id: int,
     ) -> None:
         with self.tracer.start_as_current_span(
-                "KonturContentClient.send_video_cut_to_moderation",
+                "LoomContentClient.send_video_cut_to_moderation",
                 kind=SpanKind.CLIENT,
                 attributes={
                     "video_cut_id": video_cut_id
@@ -834,7 +834,7 @@ class KonturContentClient(interface.IKonturContentClient):
 
     async def get_video_cut_by_id(self, video_cut_id: int) -> model.VideoCut:
         with self.tracer.start_as_current_span(
-                "KonturContentClient.get_video_cut_by_id",
+                "LoomContentClient.get_video_cut_by_id",
                 kind=SpanKind.CLIENT,
                 attributes={
                     "video_cut_id": video_cut_id
@@ -853,7 +853,7 @@ class KonturContentClient(interface.IKonturContentClient):
 
     async def get_video_cuts_by_organization(self, organization_id: int) -> list[model.VideoCut]:
         with self.tracer.start_as_current_span(
-                "KonturContentClient.get_video_cuts_by_organization",
+                "LoomContentClient.get_video_cuts_by_organization",
                 kind=SpanKind.CLIENT,
                 attributes={
                     "organization_id": organization_id
@@ -878,7 +878,7 @@ class KonturContentClient(interface.IKonturContentClient):
             moderation_comment: str = ""
     ) -> None:
         with self.tracer.start_as_current_span(
-                "KonturContentClient.moderate_video_cut",
+                "LoomContentClient.moderate_video_cut",
                 kind=SpanKind.CLIENT,
                 attributes={
                     "video_cut_id": video_cut_id,
@@ -908,7 +908,7 @@ class KonturContentClient(interface.IKonturContentClient):
             video_cut_id: int
     ) -> tuple[io.BytesIO, str]:
         with self.tracer.start_as_current_span(
-                "KonturContentClient.download_video_cut",
+                "LoomContentClient.download_video_cut",
                 kind=SpanKind.CLIENT,
                 attributes={
                     "video_cut_id": video_cut_id
@@ -940,7 +940,7 @@ class KonturContentClient(interface.IKonturContentClient):
             audio_filename: str = None,
     ) -> str:
         with self.tracer.start_as_current_span(
-                "KonturContentClient.transcribe_audio",
+                "LoomContentClient.transcribe_audio",
                 kind=SpanKind.CLIENT
         ) as span:
             try:

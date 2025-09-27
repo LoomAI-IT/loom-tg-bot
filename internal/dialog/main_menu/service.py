@@ -18,13 +18,13 @@ class MainMenuService(interface.IMainMenuService):
             tel: interface.ITelemetry,
             bot: Bot,
             state_repo: interface.IStateRepo,
-            kontur_content_client: interface.IKonturContentClient
+            loom_content_client: interface.ILoomContentClient
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
         self.state_repo = state_repo
         self.bot = bot
-        self.kontur_content_client = kontur_content_client
+        self.loom_content_client = loom_content_client
 
     async def handle_text_input(
             self,
@@ -59,7 +59,7 @@ class MainMenuService(interface.IMainMenuService):
                     dialog_manager.dialog_data["is_processing_video"] = True
 
                     state = await self._get_state(dialog_manager)
-                    await self.kontur_content_client.generate_video_cut(
+                    await self.loom_content_client.generate_video_cut(
                         state.organization_id,
                         state.account_id,
                         text,
@@ -147,7 +147,7 @@ class MainMenuService(interface.IMainMenuService):
                 file = await self.bot.get_file(file_id)
                 file_data = await self.bot.download_file(file.file_path)
 
-                text = await self.kontur_content_client.transcribe_audio(
+                text = await self.loom_content_client.transcribe_audio(
                     state.organization_id,
                     audio_content=file_data.read(),
                     audio_filename="audio.mp3",

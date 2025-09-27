@@ -9,12 +9,12 @@ class AddEmployeeGetter(interface.IAddEmployeeGetter):
             self,
             tel: interface.ITelemetry,
             state_repo: interface.IStateRepo,
-            kontur_employee_client: interface.IKonturEmployeeClient,
+            loom_employee_client: interface.ILoomEmployeeClient,
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
         self.state_repo = state_repo
-        self.kontur_employee_client = kontur_employee_client
+        self.loom_employee_client = loom_employee_client
 
     async def get_enter_account_id_data(
             self,

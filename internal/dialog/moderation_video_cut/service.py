@@ -17,13 +17,13 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
             tel: interface.ITelemetry,
             bot: Bot,
             state_repo: interface.IStateRepo,
-            kontur_content_client: interface.IKonturContentClient,
+            loom_content_client: interface.ILoomContentClient,
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
         self.bot = bot
         self.state_repo = state_repo
-        self.kontur_content_client = kontur_content_client
+        self.loom_content_client = loom_content_client
 
     async def handle_navigate_video_cut(
             self,
@@ -131,7 +131,7 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
                 reject_comment = dialog_manager.dialog_data.get("reject_comment", "Нет комментария")
 
                 # Отклоняем видео-нарезку через API
-                await self.kontur_content_client.moderate_video_cut(
+                await self.loom_content_client.moderate_video_cut(
                     video_cut_id=video_cut_id,
                     moderator_id=state.account_id,
                     moderation_status="rejected",
@@ -407,14 +407,14 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
                 inst_source = selected_networks.get("instagram_checkbox", False)
 
                 # Обновляем видео-нарезку с выбранными платформами
-                await self.kontur_content_client.change_video_cut(
+                await self.loom_content_client.change_video_cut(
                     video_cut_id=video_cut_id,
                     youtube_source=youtube_source,
                     inst_source=inst_source,
                 )
 
                 # Одобряем видео-нарезку
-                await self.kontur_content_client.moderate_video_cut(
+                await self.loom_content_client.moderate_video_cut(
                     video_cut_id=video_cut_id,
                     moderator_id=state.account_id,
                     moderation_status="approved",
@@ -499,7 +499,7 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
         working_video_cut = dialog_manager.dialog_data["working_video_cut"]
         video_cut_id = working_video_cut["id"]
 
-        await self.kontur_content_client.change_video_cut(
+        await self.loom_content_client.change_video_cut(
             video_cut_id=video_cut_id,
             name=working_video_cut["name"],
             description=working_video_cut["description"],

@@ -19,13 +19,13 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             tel: interface.ITelemetry,
             bot: Bot,
             state_repo: interface.IStateRepo,
-            kontur_content_client: interface.IKonturContentClient,
+            loom_content_client: interface.ILoomContentClient,
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
         self.bot = bot
         self.state_repo = state_repo
-        self.kontur_content_client = kontur_content_client
+        self.loom_content_client = loom_content_client
 
     async def handle_text_input(
             self,
@@ -125,7 +125,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 file = await self.bot.get_file(file_id)
                 file_data = await self.bot.download_file(file.file_path)
 
-                text = await self.kontur_content_client.transcribe_audio(
+                text = await self.loom_content_client.transcribe_audio(
                     state.organization_id,
                     audio_content=file_data.read(),
                     audio_filename="audio.mp3",
@@ -172,7 +172,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         ) as span:
             try:
                 dialog_manager.show_mode = ShowMode.EDIT
-                category = await self.kontur_content_client.get_category_by_id(
+                category = await self.loom_content_client.get_category_by_id(
                     int(category_id)
                 )
 
@@ -218,7 +218,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 category_id = dialog_manager.dialog_data["category_id"]
                 input_text = dialog_manager.dialog_data["input_text"]
 
-                publication_data = await self.kontur_content_client.generate_publication_text(
+                publication_data = await self.loom_content_client.generate_publication_text(
                     category_id=category_id,
                     text_reference=input_text,
                 )
@@ -256,14 +256,14 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 category_id = dialog_manager.dialog_data["category_id"]
                 input_text = dialog_manager.dialog_data["input_text"]
 
-                publication_data = await self.kontur_content_client.generate_publication_text(
+                publication_data = await self.loom_content_client.generate_publication_text(
                     category_id=category_id,
                     text_reference=input_text,
                 )
 
                 dialog_manager.dialog_data["publication_text"] = publication_data["text"]
 
-                images_url = await self.kontur_content_client.generate_publication_image(
+                images_url = await self.loom_content_client.generate_publication_image(
                     category_id,
                     publication_data["text"],
                     input_text,
@@ -366,7 +366,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 category_id = dialog_manager.dialog_data["category_id"]
                 current_text = dialog_manager.dialog_data["publication_text"]
 
-                regenerated_data = await self.kontur_content_client.regenerate_publication_text(
+                regenerated_data = await self.loom_content_client.regenerate_publication_text(
                     category_id=category_id,
                     publication_text=current_text,
                     prompt=None
@@ -433,7 +433,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 category_id = dialog_manager.dialog_data["category_id"]
                 current_text = dialog_manager.dialog_data["publication_text"]
 
-                regenerated_data = await self.kontur_content_client.regenerate_publication_text(
+                regenerated_data = await self.loom_content_client.regenerate_publication_text(
                     category_id=category_id,
                     publication_text=current_text,
                     prompt=prompt
@@ -529,7 +529,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 if await self._get_current_image_data(dialog_manager):
                     current_image_content, current_image_filename = await self._get_current_image_data(dialog_manager)
 
-                images_url = await self.kontur_content_client.generate_publication_image(
+                images_url = await self.loom_content_client.generate_publication_image(
                     category_id=category_id,
                     publication_text=publication_text,
                     text_reference=text_reference,
@@ -606,7 +606,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                         dialog_manager
                     )
 
-                images_url = await self.kontur_content_client.generate_publication_image(
+                images_url = await self.loom_content_client.generate_publication_image(
                     category_id=category_id,
                     publication_text=publication_text,
                     text_reference=text_reference,
@@ -731,7 +731,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
                 image_url, image_content, image_filename = await self._get_selected_image_data(dialog_manager)
 
-                publication_data = await self.kontur_content_client.create_publication(
+                publication_data = await self.loom_content_client.create_publication(
                     state.organization_id,
                     category_id,
                     state.account_id,
@@ -748,7 +748,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                     tg_source = selected_networks.get("telegram_checkbox", False)
                     vk_source = selected_networks.get("vkontakte_checkbox", False)
 
-                    await self.kontur_content_client.change_publication(
+                    await self.loom_content_client.change_publication(
                         publication_id=publication_data["publication_id"],
                         tg_source=tg_source,
                         vk_source=vk_source,
@@ -795,7 +795,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
                 image_url, image_content, image_filename = await self._get_selected_image_data(dialog_manager)
 
-                publication_data = await self.kontur_content_client.create_publication(
+                publication_data = await self.loom_content_client.create_publication(
                     state.organization_id,
                     category_id,
                     state.account_id,
@@ -812,7 +812,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                     tg_source = selected_networks.get("telegram_checkbox", False)
                     vk_source = selected_networks.get("vkontakte_checkbox", False)
 
-                    await self.kontur_content_client.change_publication(
+                    await self.loom_content_client.change_publication(
                         publication_id=publication_data["publication_id"],
                         tg_source=tg_source,
                         vk_source=vk_source,
@@ -901,7 +901,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
                 image_url, image_content, image_filename = await self._get_selected_image_data(dialog_manager)
 
-                publication_data = await self.kontur_content_client.create_publication(
+                publication_data = await self.loom_content_client.create_publication(
                     state.organization_id,
                     category_id,
                     state.account_id,
@@ -917,14 +917,14 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 tg_source = selected_networks.get("telegram_checkbox", False)
                 vk_source = selected_networks.get("vkontakte_checkbox", False)
 
-                await self.kontur_content_client.change_publication(
+                await self.loom_content_client.change_publication(
                     publication_id=publication_data["publication_id"],
                     tg_source=tg_source,
                     vk_source=vk_source,
                 )
 
                 # Получаем ссылки на посты после модерации
-                post_links = await self.kontur_content_client.moderate_publication(
+                post_links = await self.loom_content_client.moderate_publication(
                     publication_data["publication_id"],
                     state.account_id,
                     "approved"

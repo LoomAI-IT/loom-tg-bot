@@ -11,16 +11,16 @@ class PersonalProfileGetter(interface.IPersonalProfileGetter):
             self,
             tel: interface.ITelemetry,
             state_repo: interface.IStateRepo,
-            kontur_employee_client: interface.IKonturEmployeeClient,
-            kontur_organization_client: interface.IKonturOrganizationClient,
-            kontur_content_client: interface.IKonturContentClient,
+            loom_employee_client: interface.ILoomEmployeeClient,
+            loom_organization_client: interface.ILoomOrganizationClient,
+            loom_content_client: interface.ILoomContentClient,
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
         self.state_repo = state_repo
-        self.kontur_employee_client = kontur_employee_client
-        self.kontur_organization_client = kontur_organization_client
-        self.kontur_content_client = kontur_content_client
+        self.loom_employee_client = loom_employee_client
+        self.loom_organization_client = loom_organization_client
+        self.loom_content_client = loom_content_client
 
     async def get_personal_profile_data(
             self,
@@ -34,15 +34,15 @@ class PersonalProfileGetter(interface.IPersonalProfileGetter):
             try:
                 state = await self._get_state(dialog_manager)
 
-                employee = await self.kontur_employee_client.get_employee_by_account_id(
+                employee = await self.loom_employee_client.get_employee_by_account_id(
                     state.account_id
                 )
 
-                organization = await self.kontur_organization_client.get_organization_by_id(
+                organization = await self.loom_organization_client.get_organization_by_id(
                     state.organization_id
                 )
 
-                publications = await self.kontur_content_client.get_publications_by_organization(
+                publications = await self.loom_content_client.get_publications_by_organization(
                     state.organization_id
                 )
 

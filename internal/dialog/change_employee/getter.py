@@ -12,16 +12,16 @@ class ChangeEmployeeGetter(interface.IChangeEmployeeGetter):
             self,
             tel: interface.ITelemetry,
             state_repo: interface.IStateRepo,
-            kontur_employee_client: interface.IKonturEmployeeClient,
-            kontur_organization_client: interface.IKonturOrganizationClient,
-            kontur_content_client: interface.IKonturContentClient,
+            loom_employee_client: interface.ILoomEmployeeClient,
+            loom_organization_client: interface.ILoomOrganizationClient,
+            loom_content_client: interface.ILoomContentClient,
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
         self.state_repo = state_repo
-        self.kontur_employee_client = kontur_employee_client
-        self.kontur_organization_client = kontur_organization_client
-        self.kontur_content_client = kontur_content_client
+        self.loom_employee_client = loom_employee_client
+        self.loom_organization_client = loom_organization_client
+        self.loom_content_client = loom_content_client
 
     async def get_employee_list_data(
             self,
@@ -34,16 +34,16 @@ class ChangeEmployeeGetter(interface.IChangeEmployeeGetter):
         ) as span:
             try:
                 state = await self._get_state(dialog_manager)
-                current_employee = await self.kontur_employee_client.get_employee_by_account_id(
+                current_employee = await self.loom_employee_client.get_employee_by_account_id(
                     state.account_id
                 )
 
-                organization = await self.kontur_organization_client.get_organization_by_id(
+                organization = await self.loom_organization_client.get_organization_by_id(
                     current_employee.organization_id
                 )
 
                 # Получаем список всех сотрудников организации
-                all_employees = await self.kontur_employee_client.get_employees_by_organization(
+                all_employees = await self.loom_employee_client.get_employees_by_organization(
                     organization.id
                 )
 
@@ -106,18 +106,18 @@ class ChangeEmployeeGetter(interface.IChangeEmployeeGetter):
 
                 # Получаем текущего пользователя
                 state = await self._get_state(dialog_manager)
-                current_employee = await self.kontur_employee_client.get_employee_by_account_id(
+                current_employee = await self.loom_employee_client.get_employee_by_account_id(
                     state.account_id
                 )
 
                 # Получаем выбранного сотрудника
-                employee = await self.kontur_employee_client.get_employee_by_account_id(
+                employee = await self.loom_employee_client.get_employee_by_account_id(
                     selected_account_id
                 )
                 employee_state = (await self.state_repo.state_by_account_id(selected_account_id))[0]
 
                 # Получаем статистику публикаций
-                publications = await self.kontur_content_client.get_publications_by_organization(
+                publications = await self.loom_content_client.get_publications_by_organization(
                     employee.organization_id
                 )
 
@@ -225,7 +225,7 @@ class ChangeEmployeeGetter(interface.IChangeEmployeeGetter):
                 selected_account_id = int(dialog_manager.dialog_data.get("selected_account_id"))
 
                 # Получаем данные сотрудника
-                employee = await self.kontur_employee_client.get_employee_by_account_id(
+                employee = await self.loom_employee_client.get_employee_by_account_id(
                     selected_account_id
                 )
 
@@ -282,7 +282,7 @@ class ChangeEmployeeGetter(interface.IChangeEmployeeGetter):
                 selected_account_id = int(dialog_manager.dialog_data.get("selected_account_id"))
 
                 # Получаем данные сотрудника
-                employee = await self.kontur_employee_client.get_employee_by_account_id(
+                employee = await self.loom_employee_client.get_employee_by_account_id(
                     selected_account_id
                 )
 
@@ -315,13 +315,13 @@ class ChangeEmployeeGetter(interface.IChangeEmployeeGetter):
                 selected_new_role = dialog_manager.dialog_data.get("selected_new_role")
 
                 # Получаем данные сотрудника
-                employee = await self.kontur_employee_client.get_employee_by_account_id(
+                employee = await self.loom_employee_client.get_employee_by_account_id(
                     selected_account_id
                 )
 
                 # Получаем данные текущего пользователя для определения доступных ролей
                 state = await self._get_state(dialog_manager)
-                current_employee = await self.kontur_employee_client.get_employee_by_account_id(
+                current_employee = await self.loom_employee_client.get_employee_by_account_id(
                     state.account_id
                 )
 
