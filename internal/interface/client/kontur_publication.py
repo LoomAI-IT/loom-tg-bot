@@ -100,7 +100,7 @@ class IKonturContentClient(Protocol):
             moderator_id: int,
             moderation_status: str,
             moderation_comment: str = ""
-    ) -> None: pass
+    ) -> dict: pass
 
     @abstractmethod
     async def get_publication_by_id(self, publication_id: int) -> model.Publication: pass

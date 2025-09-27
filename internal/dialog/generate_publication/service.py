@@ -923,28 +923,28 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                     vk_source=vk_source,
                 )
 
-                await self.kontur_content_client.moderate_publication(
+                # Получаем ссылки на посты после модерации
+                post_links = await self.kontur_content_client.moderate_publication(
                     publication_data["publication_id"],
                     state.account_id,
                     "approved"
                 )
 
-                await callback.answer("💾 Опубликовано!", show_alert=True)
+                # Сохраняем ссылки в данные диалога
+                dialog_manager.dialog_data["post_links"] = post_links
 
-                if await self._check_alerts(dialog_manager):
-                    return
+                await callback.answer("🎉 Опубликовано!", show_alert=True)
 
-                await dialog_manager.start(
-                    model.ContentMenuStates.content_menu,
-                    mode=StartMode.RESET_STACK
-                )
+                # Переходим к окну успешной публикации вместо меню контента
+                await dialog_manager.switch_to(model.GeneratePublicationStates.publication_success)
+
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
 
-                await callback.answer("❌ Ошибка при переходе к выбору соцсетей", show_alert=True)
+                await callback.answer("❌ Ошибка при публикации", show_alert=True)
                 raise
 
     async def handle_go_to_content_menu(

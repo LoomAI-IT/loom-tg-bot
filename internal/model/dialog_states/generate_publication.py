@@ -21,3 +21,5 @@ class GeneratePublicationStates(StatesGroup):
 
     # Публикация
     social_network_select = State()
+
+    publication_success = State()

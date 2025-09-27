@@ -13,3 +13,5 @@ class ModerationPublicationStates(StatesGroup):
     upload_image = State()
 
     social_network_select = State()
+
+    publication_success = State()

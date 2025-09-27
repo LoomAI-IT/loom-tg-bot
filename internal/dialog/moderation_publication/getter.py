@@ -380,6 +380,24 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
             "is_custom_image": working_pub.get("is_custom_image", False),
         }
 
+    async def get_publication_success_data(
+            self,
+            dialog_manager: DialogManager,
+            **kwargs
+    ) -> dict:
+        post_links = dialog_manager.dialog_data.get("post_links", {})
+
+        telegram_link = post_links.get("telegram")
+        vkontakte_link = post_links.get("vkontakte")
+
+        return {
+            "has_post_links": bool(post_links),
+            "has_telegram_link": bool(telegram_link),
+            "has_vkontakte_link": bool(vkontakte_link),
+            "telegram_link": telegram_link or "",
+            "vkontakte_link": vkontakte_link or "",
+        }
+
     # Вспомогательные методы
     def _has_changes(self, dialog_manager: DialogManager) -> bool:
         original = dialog_manager.dialog_data.get("original_publication", {})

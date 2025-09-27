@@ -32,6 +32,7 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
             self.get_edit_image_menu_window(),
             self.get_upload_image_window(),
             self.get_social_network_select_window(),
+            self.get_publication_success_window()
         )
 
     def get_moderation_list_window(self) -> Window:
@@ -550,5 +551,49 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
 
             state=model.ModerationPublicationStates.social_network_select,
             getter=self.moderation_publication_getter.get_social_network_select_data,
+            parse_mode=SULGUK_PARSE_MODE,
+        )
+
+    def get_publication_success_window(self) -> Window:
+        return Window(
+            Multi(
+                Const("🎉 <b>Публикация успешно размещена!</b><br>"),
+                Case(
+                    {
+                        True: Multi(
+                            Const("🔗 <b>Ссылки на ваши посты:</b><br>"),
+                            Case(
+                                {
+                                    True: Format(
+                                        "📱 <b>Telegram:</b> <a href='{telegram_link}'>Перейти к посту</a><br>"),
+                                    False: Const(""),
+                                },
+                                selector="has_telegram_link"
+                            ),
+                            Case(
+                                {
+                                    True: Format(
+                                        "🔵 <b>ВКонтакте:</b> <a href='{vkontakte_link}'>Перейти к посту</a><br>"),
+                                    False: Const(""),
+                                },
+                                selector="has_vkontakte_link"
+                            ),
+                            Const("<br>💡 <i>Ссылки сохранены и доступны в разделе \"Мои публикации\"</i>"),
+                        ),
+                        False: Const("📝 <i>Публикация размещена, но ссылки пока недоступны</i>"),
+                    },
+                    selector="has_post_links"
+                ),
+                sep="",
+            ),
+
+            Button(
+                Const("📋 К списку публикаций на модерации"),
+                id="go_to_content_menu",
+                on_click=self.moderation_publication_service.handle_back_to_moderation_list,
+            ),
+
+            state=model.ModerationPublicationStates.publication_success,
+            getter=self.moderation_publication_getter.get_publication_success_data,
             parse_mode=SULGUK_PARSE_MODE,
         )

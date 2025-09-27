@@ -751,11 +751,19 @@ class ModerationPublicationService(interface.IModerationPublicationService):
                     moderation_status="approved",
                 )
 
-                self.logger.info("Публикация одобрена и опубликована")
+                post_links = await self.kontur_content_client.moderate_publication(
+                    publication_id,
+                    state.account_id,
+                    "approved"
+                )
 
+                dialog_manager.dialog_data["post_links"] = post_links
+
+                self.logger.info("Публикация одобрена и опубликована")
                 await self._remove_current_publication_from_list(dialog_manager)
-                await callback.answer("Опубликовано", show_alert=True)
-                await dialog_manager.switch_to(model.ModerationPublicationStates.moderation_list)
+                await callback.answer("🎉 Опубликовано!", show_alert=True)
+
+                await dialog_manager.switch_to(model.ModerationPublicationStates.publication_success)
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
@@ -774,7 +782,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             return False
 
         # Сравниваем текстовые поля
-        fields_to_compare = ["text",]
+        fields_to_compare = ["text", ]
         for field in fields_to_compare:
             if original.get(field) != working.get(field):
                 return True
