@@ -593,7 +593,7 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
                 on_click=self.moderation_publication_service.handle_back_to_moderation_list,
             ),
 
-            state=model.GeneratePublicationStates.publication_success,
+            state=model.ModerationPublicationStates.publication_success,
             getter=self.moderation_publication_getter.get_publication_success_data,
             parse_mode=SULGUK_PARSE_MODE,
         )
