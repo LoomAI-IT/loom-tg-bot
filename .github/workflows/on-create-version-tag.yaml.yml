@@ -6,7 +6,7 @@ on:
             - 'v*'
 
 env:
-    SERVICE_NAME: kontur-tg-bot
+    SERVICE_NAME: loom-tg-bot
 
 jobs:
     update-tag-on-server:
@@ -34,9 +34,9 @@ jobs:
                     set +a
 
                     # Проверяем наличие API конфигурации
-                    if [ -z "$KONTUR_RELEASE_TG_BOT_API_URL" ] || [ -z "$KONTUR_INTERSERVER_SECRET_KEY" ]; then
+                    if [ -z "$LOOM_RELEASE_TG_BOT_API_URL" ] || [ -z "$LOOM_INTERSERVER_SECRET_KEY" ]; then
                       echo "❌ API конфигурация не найдена в .env.servers!"
-                      echo "   Убедитесь, что есть переменные: KONTUR_RELEASE_TG_BOT_API_URL и KONTUR_INTERSERVER_SECRET_KEY"
+                      echo "   Убедитесь, что есть переменные: LOOM_RELEASE_TG_BOT_API_URL и LOOM_INTERSERVER_SECRET_KEY"
                       exit 1
                     fi
 
@@ -55,12 +55,12 @@ jobs:
                     fi
 
                     # Экспортируем все необходимые переменные
-                    echo "KONTUR_RELEASE_TG_BOT_API_URL=$KONTUR_RELEASE_TG_BOT_API_URL" >> $GITHUB_ENV
-                    echo "KONTUR_INTERSERVER_SECRET_KEY=$KONTUR_INTERSERVER_SECRET_KEY" >> $GITHUB_ENV
+                    echo "LOOM_RELEASE_TG_BOT_API_URL=$LOOM_RELEASE_TG_BOT_API_URL" >> $GITHUB_ENV
+                    echo "LOOM_INTERSERVER_SECRET_KEY=$LOOM_INTERSERVER_SECRET_KEY" >> $GITHUB_ENV
                     echo "SERVER_HOST=$SERVER_HOST" >> $GITHUB_ENV
                     echo "SERVER_PASSWORD=$SERVER_PASSWORD" >> $GITHUB_ENV
                     echo "✅ Конфигурация загружена успешно"
-                    echo "✅ API URL: $KONTUR_RELEASE_TG_BOT_API_URL"
+                    echo "✅ API URL: $LOOM_RELEASE_TG_BOT_API_URL"
                     echo "✅ Stage сервер: $SERVER_HOST"
 
             -   name: Create release record
@@ -76,9 +76,9 @@ jobs:
                         "github_run_id": "${{ github.run_id }}",
                         "github_action_link": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
                         "github_ref": "${{ github.ref }}",
-                        "interserver_secret_key": "${{ env.KONTUR_INTERSERVER_SECRET_KEY }}",
+                        "interserver_secret_key": "${{ env.LOOM_INTERSERVER_SECRET_KEY }}",
                       }' \
-                      "${{ env.KONTUR_RELEASE_TG_BOT_API_URL }}/release")
+                      "${{ env.LOOM_RELEASE_TG_BOT_API_URL }}/release")
                     
                     HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
                     BODY=$(echo "$RESPONSE" | head -n -1)
@@ -100,9 +100,9 @@ jobs:
                       -H "Content-Type: application/json" \
                       -d '{
                         "status": "initiated",
-                        "interserver_secret_key": "${{ env.KONTUR_INTERSERVER_SECRET_KEY }}",
+                        "interserver_secret_key": "${{ env.LOOM_INTERSERVER_SECRET_KEY }}",
                       }' \
-                      "${{ env.KONTUR_RELEASE_TG_BOT_API_URL }}/release"
+                      "${{ env.LOOM_RELEASE_TG_BOT_API_URL }}/release"
                     echo "✅ Статус обновлен на 'building'"
 
             -   name: Update tag on test server
@@ -114,16 +114,16 @@ jobs:
                       -H "Content-Type: application/json" \
                       -d '{
                         "status": "failed",
-                        "interserver_secret_key": "${{ env.KONTUR_INTERSERVER_SECRET_KEY }}",
+                        "interserver_secret_key": "${{ env.LOOM_INTERSERVER_SECRET_KEY }}",
                       }' \
-                      "${{ env.KONTUR_RELEASE_TG_BOT_API_URL }}/release"
+                      "${{ env.LOOM_RELEASE_TG_BOT_API_URL }}/release"
                     }
 
                     # Используем sshpass для аутентификации по паролю
                     SSH_OUTPUT=$(sshpass -p "${{ env.SERVER_PASSWORD }}" ssh -o StrictHostKeyChecking=no root@${{ env.SERVER_HOST }} -p 22 << 'EOF' 2>&1
                     set -e
 
-                    cd kontur/${{ env.SERVICE_NAME }}
+                    cd loom/${{ env.SERVICE_NAME }}
                     git fetch origin --tags
 
                     # Сохраняем текущую ветку/тег для проверки
@@ -149,7 +149,7 @@ jobs:
 
                     echo "✅ Переключение на тег ${{ env.TAG_NAME }} завершено"
 
-                    cd ../kontur-system
+                    cd ../loom-system
 
                     export $(cat env/.env.app env/.env.db env/.env.monitoring | xargs)
 
@@ -215,9 +215,9 @@ jobs:
                       -H "Content-Type: application/json" \
                       -d '{
                         "status": "failed",
-                        "interserver_secret_key": "${{ env.KONTUR_INTERSERVER_SECRET_KEY }}",
+                        "interserver_secret_key": "${{ env.LOOM_INTERSERVER_SECRET_KEY }}",
                       }' \
-                      "${{ env.KONTUR_RELEASE_TG_BOT_API_URL }}/release"
+                      "${{ env.LOOM_RELEASE_TG_BOT_API_URL }}/release"
                     echo "✅ Статус обновлен на 'manual_testing'"
 
             -   name: Verify deployment

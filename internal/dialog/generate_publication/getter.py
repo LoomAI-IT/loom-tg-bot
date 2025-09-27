@@ -13,14 +13,14 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
             self,
             tel: interface.ITelemetry,
             state_repo: interface.IStateRepo,
-            kontur_employee_client: interface.IKonturEmployeeClient,
-            kontur_content_client: interface.IKonturContentClient,
+            loom_employee_client: interface.ILoomEmployeeClient,
+            loom_content_client: interface.ILoomContentClient,
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
         self.state_repo = state_repo
-        self.kontur_employee_client = kontur_employee_client
-        self.kontur_content_client = kontur_content_client
+        self.loom_employee_client = loom_employee_client
+        self.loom_content_client = loom_content_client
 
     async def get_preview_data(
             self,
@@ -33,7 +33,7 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
         ) as span:
             try:
                 state = await self._get_state(dialog_manager)
-                employee = await self.kontur_employee_client.get_employee_by_account_id(
+                employee = await self.loom_employee_client.get_employee_by_account_id(
                     state.account_id
                 )
 
@@ -70,7 +70,7 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
                 selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
 
                 if not selected_networks:
-                    social_networks = await self.kontur_content_client.get_social_networks_by_organization(
+                    social_networks = await self.loom_content_client.get_social_networks_by_organization(
                         organization_id=state.organization_id
                     )
 
@@ -126,7 +126,7 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
             try:
                 state = await self._get_state(dialog_manager)
 
-                social_networks = await self.kontur_content_client.get_social_networks_by_organization(
+                social_networks = await self.loom_content_client.get_social_networks_by_organization(
                     organization_id=state.organization_id
                 )
 
@@ -191,11 +191,11 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
         ) as span:
             try:
                 state = await self._get_state(dialog_manager)
-                employee = await self.kontur_employee_client.get_employee_by_account_id(
+                employee = await self.loom_employee_client.get_employee_by_account_id(
                     state.account_id
                 )
 
-                categories = await self.kontur_content_client.get_categories_by_organization(
+                categories = await self.loom_content_client.get_categories_by_organization(
                     employee.organization_id
                 )
 

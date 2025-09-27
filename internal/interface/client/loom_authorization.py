@@ -4,7 +4,7 @@ from abc import abstractmethod
 from internal import model
 
 
-class IKonturAuthorizationClient(Protocol):
+class ILoomAuthorizationClient(Protocol):
 
     @abstractmethod
     async def authorization_tg(self, account_id: int) -> model.JWTTokens: pass

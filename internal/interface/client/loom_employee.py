@@ -3,7 +3,7 @@ from abc import abstractmethod
 from internal import model
 
 
-class IKonturEmployeeClient(Protocol):
+class ILoomEmployeeClient(Protocol):
 
     @abstractmethod
     async def create_employee(

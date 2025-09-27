@@ -16,16 +16,16 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
             self,
             tel: interface.ITelemetry,
             state_repo: interface.IStateRepo,
-            kontur_employee_client: interface.IKonturEmployeeClient,
-            kontur_content_client: interface.IKonturContentClient,
-            kontur_domain: str
+            loom_employee_client: interface.ILoomEmployeeClient,
+            loom_content_client: interface.ILoomContentClient,
+            loom_domain: str
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
         self.state_repo = state_repo
-        self.kontur_employee_client = kontur_employee_client
-        self.kontur_content_client = kontur_content_client
-        self.kontur_domain = kontur_domain
+        self.loom_employee_client = loom_employee_client
+        self.loom_content_client = loom_content_client
+        self.loom_domain = loom_domain
 
     async def get_moderation_list_data(
             self,
@@ -40,7 +40,7 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
                 state = await self._get_state(dialog_manager)
 
                 # Получаем публикации на модерации для организации
-                publications = await self.kontur_content_client.get_publications_by_organization(
+                publications = await self.loom_content_client.get_publications_by_organization(
                     organization_id=state.organization_id
                 )
 
@@ -68,12 +68,12 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
                 current_pub = model.Publication(**moderation_publications[current_index])
 
                 # Получаем информацию об авторе
-                creator = await self.kontur_employee_client.get_employee_by_account_id(
+                creator = await self.loom_employee_client.get_employee_by_account_id(
                     current_pub.creator_id
                 )
 
                 # Получаем категорию
-                category = await self.kontur_content_client.get_category_by_id(
+                category = await self.loom_content_client.get_category_by_id(
                     current_pub.category_id
                 )
 
@@ -82,7 +82,7 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
                 image_url = None
                 if current_pub.image_fid:
                     cache_buster = int(time.time())
-                    image_url = f"https://{self.kontur_domain}/api/content/publication/{current_pub.id}/image/download?v={cache_buster}"
+                    image_url = f"https://{self.loom_domain}/api/content/publication/{current_pub.id}/image/download?v={cache_buster}"
 
                     preview_image_media = MediaAttachment(
                         url=image_url,
@@ -118,7 +118,7 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
                 selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
 
                 if not selected_networks:
-                    social_networks = await self.kontur_content_client.get_social_networks_by_organization(
+                    social_networks = await self.loom_content_client.get_social_networks_by_organization(
                         organization_id=state.organization_id
                     )
 
@@ -165,7 +165,7 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
                 original_pub = dialog_manager.dialog_data.get("original_publication", {})
 
                 # Получаем информацию об авторе
-                creator = await self.kontur_employee_client.get_employee_by_account_id(
+                creator = await self.loom_employee_client.get_employee_by_account_id(
                     original_pub["creator_id"],
                 )
 
@@ -203,12 +203,12 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
                 original_pub = dialog_manager.dialog_data["original_publication"]
 
                 # Получаем информацию об авторе
-                creator = await self.kontur_employee_client.get_employee_by_account_id(
+                creator = await self.loom_employee_client.get_employee_by_account_id(
                     working_pub["creator_id"]
                 )
 
                 # Получаем категорию
-                category = await self.kontur_content_client.get_category_by_id(
+                category = await self.loom_content_client.get_category_by_id(
                     working_pub["category_id"]
                 )
 
@@ -276,7 +276,7 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
             try:
                 state = await self._get_state(dialog_manager)
 
-                social_networks = await self.kontur_content_client.get_social_networks_by_organization(
+                social_networks = await self.loom_content_client.get_social_networks_by_organization(
                     organization_id=state.organization_id
                 )
 

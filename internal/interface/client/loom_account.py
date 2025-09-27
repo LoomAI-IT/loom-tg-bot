@@ -4,7 +4,7 @@ from abc import abstractmethod
 from internal import model
 
 
-class IKonturAccountClient(Protocol):
+class ILoomAccountClient(Protocol):
 
     @abstractmethod
     async def register(self, login: str, password: str) -> model.AuthorizationDataDTO: pass
@@ -59,5 +59,5 @@ class IKonturAccountClient(Protocol):
 
 
 class IPaymentClient(Protocol):
-    # Этот интерфейс пустой, так как файл pkg/client/internal/kontur_payment/client.py пустой
+    # Этот интерфейс пустой, так как файл pkg/client/internal/loom_payment/client.py пустой
     pass

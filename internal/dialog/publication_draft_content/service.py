@@ -15,13 +15,13 @@ class PublicationDraftService(interface.IPublicationDraftService):
             tel: interface.ITelemetry,
             bot: Bot,
             state_repo: interface.IStateRepo,
-            kontur_content_client: interface.IKonturContentClient,
+            loom_content_client: interface.ILoomContentClient,
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
         self.bot = bot
         self.state_repo = state_repo
-        self.kontur_content_client = kontur_content_client
+        self.loom_content_client = loom_content_client
 
     async def handle_select_publication(
             self,
@@ -114,7 +114,7 @@ class PublicationDraftService(interface.IPublicationDraftService):
                 publication_id = int(dialog_manager.dialog_data.get("selected_publication_id"))
                 
                 # 🗑️ Удаляем через API
-                await self.kontur_content_client.delete_publication(publication_id)
+                await self.loom_content_client.delete_publication(publication_id)
                 
                 self.logger.info(f"Черновик публикации удален: {publication_id}")
                 
@@ -153,7 +153,7 @@ class PublicationDraftService(interface.IPublicationDraftService):
                 tags = dialog_manager.dialog_data.get("publication_tags", [])
                 
                 # 🔄 Обновляем через API
-                await self.kontur_content_client.change_publication(
+                await self.loom_content_client.change_publication(
                     publication_id=publication_id,
                     name=name,
                     text=text,
@@ -304,7 +304,7 @@ class PublicationDraftService(interface.IPublicationDraftService):
             publication_id = int(dialog_manager.dialog_data.get("selected_publication_id"))
             
             # 🔄 Регенерируем через API (нужен соответствующий метод в клиенте)
-            # regenerated_data = await self.kontur_content_client.regenerate_publication_text(publication_id)
+            # regenerated_data = await self.loom_content_client.regenerate_publication_text(publication_id)
             
             # 💾 Обновляем данные в dialog_data
             # dialog_manager.dialog_data["publication_title"] = regenerated_data["name"]
@@ -374,7 +374,7 @@ class PublicationDraftService(interface.IPublicationDraftService):
             publication_id = int(dialog_manager.dialog_data.get("selected_publication_id"))
             
             # 📤 Отправляем на модерацию
-            await self.kontur_content_client.send_publication_to_moderation(publication_id)
+            await self.loom_content_client.send_publication_to_moderation(publication_id)
             
             await callback.answer("📤 Отправлено на модерацию!", show_alert=True)
             await dialog_manager.start(model.ContentMenuStates.content_menu, mode=StartMode.RESET_STACK)
@@ -394,7 +394,7 @@ class PublicationDraftService(interface.IPublicationDraftService):
             
             # 🚀 Публикуем (минуя модерацию): подтверждаем как опубликовано текущим пользователем
             state = await self._get_state(dialog_manager)
-            await self.kontur_content_client.moderate_publication(
+            await self.loom_content_client.moderate_publication(
                 publication_id=publication_id,
                 moderator_id=state.account_id,
                 moderation_status="published",

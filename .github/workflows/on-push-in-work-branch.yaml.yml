@@ -9,7 +9,7 @@ on:
             - '!develop'
 
 env:
-    SERVICE_NAME: kontur-tg-bot
+    SERVICE_NAME: loom-tg-bot
 
 jobs:
     update-branch:
@@ -58,7 +58,7 @@ jobs:
                     sshpass -p "${{ env.SERVER_PASSWORD }}" ssh -o StrictHostKeyChecking=no root@${{ env.SERVER_HOST }} -p 22 << 'EOF'
                     echo "🔄 Обновляем ветку ${{ env.BRANCH_NAME }} для ${{ env.AUTHOR_NAME }}"
                     
-                    cd kontur/${{ env.SERVICE_NAME }}
+                    cd loom/${{ env.SERVICE_NAME }}
                     git fetch origin
                     
                     # Сохраняем текущую ветку для проверки
@@ -100,7 +100,7 @@ jobs:
                         git checkout -b ${{ env.BRANCH_NAME }} origin/${{ env.BRANCH_NAME }}
                     fi
                     
-                    cd ../kontur-system
+                    cd ../loom-system
                     
                     
                     export $(cat env/.env.app env/.env.db env/.env.monitoring | xargs)

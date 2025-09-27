@@ -15,16 +15,16 @@ class PublicationDraftGetter(interface.IPublicationDraftGetter):
             self,
             tel: interface.ITelemetry,
             state_repo: interface.IStateRepo,
-            kontur_employee_client: interface.IKonturEmployeeClient,
-            kontur_content_client: interface.IKonturContentClient,
-            kontur_domain: str,
+            loom_employee_client: interface.ILoomEmployeeClient,
+            loom_content_client: interface.ILoomContentClient,
+            loom_domain: str,
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
         self.state_repo = state_repo
-        self.kontur_employee_client = kontur_employee_client
-        self.kontur_content_client = kontur_content_client
-        self.kontur_domain = kontur_domain
+        self.loom_employee_client = loom_employee_client
+        self.loom_content_client = loom_content_client
+        self.loom_domain = loom_domain
 
     async def get_publication_list_data(
             self,
@@ -44,7 +44,7 @@ class PublicationDraftGetter(interface.IPublicationDraftGetter):
                 state = await self._get_state(dialog_manager)
                 
                 # 📋 Получаем публикации организации и фильтруем черновики
-                publications = await self.kontur_content_client.get_publications_by_organization(
+                publications = await self.loom_content_client.get_publications_by_organization(
                     state.organization_id
                 )
                 drafts = [p for p in publications if getattr(p, "moderation_status", None) == "draft"]
@@ -108,10 +108,10 @@ class PublicationDraftGetter(interface.IPublicationDraftGetter):
                 publication_id = int(dialog_manager.dialog_data.get("selected_publication_id"))
                 
                 # 📖 Получаем детали публикации
-                publication = await self.kontur_content_client.get_publication_by_id(publication_id)
+                publication = await self.loom_content_client.get_publication_by_id(publication_id)
                 
                 # 🏷️ Получаем категорию
-                category = await self.kontur_content_client.get_category_by_id(publication.category_id)
+                category = await self.loom_content_client.get_category_by_id(publication.category_id)
                 
                 # 🎮 Навигация
                 all_publication_ids = dialog_manager.dialog_data.get("all_publication_ids", [])
@@ -125,13 +125,13 @@ class PublicationDraftGetter(interface.IPublicationDraftGetter):
                 
                 # 📊 Проверяем права пользователя
                 state = await self._get_state(dialog_manager)
-                employee = await self.kontur_employee_client.get_employee_by_account_id(state.account_id)
+                employee = await self.loom_employee_client.get_employee_by_account_id(state.account_id)
                 
                 # 🖼️ Готовим превью изображения, если есть
                 preview_image_media = None
                 has_image = bool(getattr(publication, "image_fid", None))
                 if has_image:
-                    image_url = f"https://{self.kontur_domain}/api/content/publication/{publication.id}/image/download"
+                    image_url = f"https://{self.loom_domain}/api/content/publication/{publication.id}/image/download"
                     preview_image_media = MediaAttachment(
                         url=image_url,
                         type=ContentType.PHOTO

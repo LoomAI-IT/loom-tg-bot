@@ -20,13 +20,13 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             tel: interface.ITelemetry,
             bot: Bot,
             state_repo: interface.IStateRepo,
-            kontur_content_client: interface.IKonturContentClient,
+            loom_content_client: interface.ILoomContentClient,
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
         self.bot = bot
         self.state_repo = state_repo
-        self.kontur_content_client = kontur_content_client
+        self.loom_content_client = loom_content_client
 
     async def handle_navigate_publication(
             self,
@@ -134,7 +134,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
                 reject_comment = dialog_manager.dialog_data.get("reject_comment", "Нет комментария")
 
                 # Отклоняем публикацию через API
-                await self.kontur_content_client.moderate_publication(
+                await self.loom_content_client.moderate_publication(
                     publication_id=publication_id,
                     moderator_id=state.account_id,
                     moderation_status="rejected",
@@ -185,7 +185,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
                 working_pub = dialog_manager.dialog_data["working_publication"]
 
                 # Перегенерация через API
-                regenerated_data = await self.kontur_content_client.regenerate_publication_text(
+                regenerated_data = await self.loom_content_client.regenerate_publication_text(
                     category_id=working_pub["category_id"],
                     publication_text=working_pub["text"],
                     prompt=None
@@ -245,7 +245,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
                 working_pub = dialog_manager.dialog_data["working_publication"]
 
                 # Перегенерация через API
-                regenerated_data = await self.kontur_content_client.regenerate_publication_text(
+                regenerated_data = await self.loom_content_client.regenerate_publication_text(
                     category_id=working_pub["category_id"],
                     publication_text=working_pub["text"],
                     prompt=prompt
@@ -339,7 +339,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
                         dialog_manager)
 
                 # Генерация через API - возвращает массив из 3 URL
-                images_url = await self.kontur_content_client.generate_publication_image(
+                images_url = await self.loom_content_client.generate_publication_image(
                     category_id=category_id,
                     publication_text=publication_text,
                     text_reference=publication_text[:200],
@@ -419,7 +419,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
                         dialog_manager)
 
                 # Генерация с промптом - возвращает массив из 3 URL
-                images_url = await self.kontur_content_client.generate_publication_image(
+                images_url = await self.loom_content_client.generate_publication_image(
                     category_id=category_id,
                     publication_text=publication_text,
                     text_reference=publication_text[:200],
@@ -738,20 +738,20 @@ class ModerationPublicationService(interface.IModerationPublicationService):
                 vk_source = selected_networks.get("vkontakte_checkbox", False)
 
                 # Обновляем публикацию с выбранными соцсетями
-                await self.kontur_content_client.change_publication(
+                await self.loom_content_client.change_publication(
                     publication_id=publication_id,
                     tg_source=tg_source,
                     vk_source=vk_source,
                 )
 
                 # Одобряем публикацию
-                await self.kontur_content_client.moderate_publication(
+                await self.loom_content_client.moderate_publication(
                     publication_id=publication_id,
                     moderator_id=state.account_id,
                     moderation_status="approved",
                 )
 
-                post_links = await self.kontur_content_client.moderate_publication(
+                post_links = await self.loom_content_client.moderate_publication(
                     publication_id,
                     state.account_id,
                     "approved"
@@ -863,7 +863,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         # Если нужно удалить изображение
         if should_delete_image:
             try:
-                await self.kontur_content_client.delete_publication_image(
+                await self.loom_content_client.delete_publication_image(
                     publication_id=publication_id
                 )
                 self.logger.info(f"Deleted image for publication {publication_id}")
@@ -872,7 +872,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
 
         # Обновляем публикацию через API
         if image_url or image_content:
-            await self.kontur_content_client.change_publication(
+            await self.loom_content_client.change_publication(
                 publication_id=publication_id,
                 text=working_pub["text"],
                 image_url=image_url,
@@ -881,7 +881,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             )
         else:
             # Обновляем только текстовые поля
-            await self.kontur_content_client.change_publication(
+            await self.loom_content_client.change_publication(
                 publication_id=publication_id,
                 text=working_pub["text"],
             )

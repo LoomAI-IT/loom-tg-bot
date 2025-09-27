@@ -15,14 +15,14 @@ class VideoCutModerationGetter(interface.IVideoCutModerationGetter):
             self,
             tel: interface.ITelemetry,
             state_repo: interface.IStateRepo,
-            kontur_employee_client: interface.IKonturEmployeeClient,
-            kontur_content_client: interface.IKonturContentClient,
+            loom_employee_client: interface.ILoomEmployeeClient,
+            loom_content_client: interface.ILoomContentClient,
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
         self.state_repo = state_repo
-        self.kontur_employee_client = kontur_employee_client
-        self.kontur_content_client = kontur_content_client
+        self.loom_employee_client = loom_employee_client
+        self.loom_content_client = loom_content_client
 
     async def get_moderation_list_data(
             self,
@@ -37,7 +37,7 @@ class VideoCutModerationGetter(interface.IVideoCutModerationGetter):
                 state = await self._get_state(dialog_manager)
 
                 # Получаем видео-нарезки на модерации для организации
-                video_cuts = await self.kontur_content_client.get_video_cuts_by_organization(
+                video_cuts = await self.loom_content_client.get_video_cuts_by_organization(
                     organization_id=state.organization_id
                 )
 
@@ -65,7 +65,7 @@ class VideoCutModerationGetter(interface.IVideoCutModerationGetter):
                 current_video_cut = model.VideoCut(**moderation_video_cuts[current_index])
 
                 # Получаем информацию об авторе
-                creator = await self.kontur_employee_client.get_employee_by_account_id(
+                creator = await self.loom_employee_client.get_employee_by_account_id(
                     current_video_cut.creator_id
                 )
 
@@ -130,7 +130,7 @@ class VideoCutModerationGetter(interface.IVideoCutModerationGetter):
                 selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
 
                 if not selected_networks:
-                    social_networks = await self.kontur_content_client.get_social_networks_by_organization(
+                    social_networks = await self.loom_content_client.get_social_networks_by_organization(
                         organization_id=state.organization_id
                     )
 
@@ -177,7 +177,7 @@ class VideoCutModerationGetter(interface.IVideoCutModerationGetter):
                 original_video_cut = dialog_manager.dialog_data.get("original_video_cut", {})
 
                 # Получаем информацию об авторе
-                creator = await self.kontur_employee_client.get_employee_by_account_id(
+                creator = await self.loom_employee_client.get_employee_by_account_id(
                     original_video_cut["creator_id"],
                 )
 
@@ -219,7 +219,7 @@ class VideoCutModerationGetter(interface.IVideoCutModerationGetter):
                 original_video_cut = dialog_manager.dialog_data["original_video_cut"]
 
                 # Получаем информацию об авторе
-                creator = await self.kontur_employee_client.get_employee_by_account_id(
+                creator = await self.loom_employee_client.get_employee_by_account_id(
                     working_video_cut["creator_id"]
                 )
 
@@ -264,7 +264,7 @@ class VideoCutModerationGetter(interface.IVideoCutModerationGetter):
                 state = await self._get_state(dialog_manager)
 
                 # Получаем подключенные социальные сети для организации
-                social_networks = await self.kontur_content_client.get_social_networks_by_organization(
+                social_networks = await self.loom_content_client.get_social_networks_by_organization(
                     organization_id=state.organization_id
                 )
 
@@ -367,7 +367,7 @@ class VideoCutModerationGetter(interface.IVideoCutModerationGetter):
         working_video_cut = dialog_manager.dialog_data["working_video_cut"]
         video_cut_id = working_video_cut["id"]
 
-        await self.kontur_content_client.change_video_cut(
+        await self.loom_content_client.change_video_cut(
             video_cut_id=video_cut_id,
             name=working_video_cut["name"],
             description=working_video_cut["description"],

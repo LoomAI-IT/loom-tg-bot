@@ -13,12 +13,12 @@ class GenerateVideoCutService(interface.IGenerateVideoCutService):
             self,
             tel: interface.ITelemetry,
             state_repo: interface.IStateRepo,
-            kontur_content_client: interface.IKonturContentClient,
+            loom_content_client: interface.ILoomContentClient,
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
         self.state_repo = state_repo
-        self.kontur_content_client = kontur_content_client
+        self.loom_content_client = loom_content_client
 
     async def handle_youtube_link_input(
             self,
@@ -48,7 +48,7 @@ class GenerateVideoCutService(interface.IGenerateVideoCutService):
 
                 dialog_manager.dialog_data["is_processing_video"] = True
 
-                await self.kontur_content_client.generate_video_cut(
+                await self.loom_content_client.generate_video_cut(
                     state.organization_id,
                     state.account_id,
                     youtube_url,

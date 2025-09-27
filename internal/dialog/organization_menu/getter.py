@@ -10,16 +10,16 @@ class OrganizationMenuGetter(interface.IOrganizationMenuGetter):
             self,
             tel: interface.ITelemetry,
             state_repo: interface.IStateRepo,
-            kontur_organization_client: interface.IKonturOrganizationClient,
-            kontur_employee_client: interface.IKonturEmployeeClient,
-            kontur_content_client: interface.IKonturContentClient,
+            loom_organization_client: interface.ILoomOrganizationClient,
+            loom_employee_client: interface.ILoomEmployeeClient,
+            loom_content_client: interface.ILoomContentClient,
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
         self.state_repo = state_repo
-        self.kontur_organization_client = kontur_organization_client
-        self.kontur_employee_client = kontur_employee_client
-        self.kontur_content_client = kontur_content_client
+        self.loom_organization_client = loom_organization_client
+        self.loom_employee_client = loom_employee_client
+        self.loom_content_client = loom_content_client
 
     async def get_organization_menu_data(
             self,
@@ -34,11 +34,11 @@ class OrganizationMenuGetter(interface.IOrganizationMenuGetter):
                 state = await self.__get_state(dialog_manager)
 
                 # Получаем данные организации
-                organization = await self.kontur_organization_client.get_organization_by_id(
+                organization = await self.loom_organization_client.get_organization_by_id(
                     state.organization_id
                 )
 
-                categories = await self.kontur_content_client.get_categories_by_organization(
+                categories = await self.loom_content_client.get_categories_by_organization(
                     state.organization_id
                 )
 

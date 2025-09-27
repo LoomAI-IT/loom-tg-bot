@@ -16,16 +16,16 @@ class VideoCutsDraftGetter(interface.IVideoCutsDraftGetter):
             self,
             tel: interface.ITelemetry,
             state_repo: interface.IStateRepo,
-            kontur_employee_client: interface.IKonturEmployeeClient,
-            kontur_organization_client: interface.IKonturOrganizationClient,
-            kontur_content_client: interface.IKonturContentClient,
+            loom_employee_client: interface.ILoomEmployeeClient,
+            loom_organization_client: interface.ILoomOrganizationClient,
+            loom_content_client: interface.ILoomContentClient,
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
         self.state_repo = state_repo
-        self.kontur_employee_client = kontur_employee_client
-        self.kontur_organization_client = kontur_organization_client
-        self.kontur_content_client = kontur_content_client
+        self.loom_employee_client = loom_employee_client
+        self.loom_organization_client = loom_organization_client
+        self.loom_content_client = loom_content_client
 
     async def get_video_cut_list_data(
             self,
@@ -39,9 +39,9 @@ class VideoCutsDraftGetter(interface.IVideoCutsDraftGetter):
         ) as span:
             try:
                 state = await self._get_state(dialog_manager)
-                employee = await self.kontur_employee_client.get_employee_by_account_id(state.account_id)
+                employee = await self.loom_employee_client.get_employee_by_account_id(state.account_id)
 
-                video_cuts = await self.kontur_content_client.get_video_cuts_by_organization(state.organization_id)
+                video_cuts = await self.loom_content_client.get_video_cuts_by_organization(state.organization_id)
                 video_cuts = [
                     video_cut for video_cut in video_cuts if
                     video_cut.video_fid != ""
@@ -104,7 +104,7 @@ class VideoCutsDraftGetter(interface.IVideoCutsDraftGetter):
                 selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
 
                 if not selected_networks:
-                    social_networks = await self.kontur_content_client.get_social_networks_by_organization(
+                    social_networks = await self.loom_content_client.get_social_networks_by_organization(
                         organization_id=state.organization_id
                     )
 
@@ -231,7 +231,7 @@ class VideoCutsDraftGetter(interface.IVideoCutsDraftGetter):
             try:
                 state = await self._get_state(dialog_manager)
 
-                social_networks = await self.kontur_content_client.get_social_networks_by_organization(
+                social_networks = await self.loom_content_client.get_social_networks_by_organization(
                     organization_id=state.organization_id
                 )
 

@@ -16,12 +16,12 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
             self,
             tel: interface.ITelemetry,
             state_repo: interface.IStateRepo,
-            kontur_content_client: interface.IKonturContentClient,
+            loom_content_client: interface.ILoomContentClient,
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
         self.state_repo = state_repo
-        self.kontur_content_client = kontur_content_client
+        self.loom_content_client = loom_content_client
 
     async def handle_go_to_connect_telegram(
             self,
@@ -85,7 +85,7 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
                     dialog_manager.dialog_data["has_invalid_telegram_channel_username"] = True
                     return
 
-                has_telegram_permission = await self.kontur_content_client.check_telegram_channel_permission(
+                has_telegram_permission = await self.loom_content_client.check_telegram_channel_permission(
                     telegram_channel_username
                 )
                 if not has_telegram_permission:
@@ -128,7 +128,7 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
 
                 state = await self._get_state(dialog_manager)
 
-                await self.kontur_content_client.create_telegram(
+                await self.loom_content_client.create_telegram(
                     organization_id=state.organization_id,
                     telegram_channel_username=telegram_channel_username,
                     autoselect=autoselect
@@ -163,7 +163,7 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
 
                 state = await self._get_state(dialog_manager)
 
-                await self.kontur_content_client.delete_telegram(
+                await self.loom_content_client.delete_telegram(
                     organization_id=state.organization_id
                 )
 
@@ -197,7 +197,7 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
 
                 if "working_state" not in dialog_manager.dialog_data:
                     state = await self._get_state(dialog_manager)
-                    social_networks = await self.kontur_content_client.get_social_networks_by_organization(
+                    social_networks = await self.loom_content_client.get_social_networks_by_organization(
                         organization_id=state.organization_id
                     )
                     telegram_data = social_networks["telegram"][0]
@@ -240,7 +240,7 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
 
                 state = await self._get_state(dialog_manager)
 
-                await self.kontur_content_client.update_telegram(
+                await self.loom_content_client.update_telegram(
                     organization_id=state.organization_id,
                     autoselect=autoselect,
                     telegram_channel_username=new_telegram_channel_username,
@@ -314,7 +314,7 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
                     dialog_manager.dialog_data["has_invalid_new_telegram_channel_username"] = True
                     return
 
-                has_telegram_permission = await self.kontur_content_client.check_telegram_channel_permission(
+                has_telegram_permission = await self.loom_content_client.check_telegram_channel_permission(
                     new_telegram_channel_username
                 )
                 if not has_telegram_permission:
