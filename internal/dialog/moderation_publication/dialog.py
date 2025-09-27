@@ -588,7 +588,7 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
             ),
 
             Button(
-                Const("📋 К меню контента"),
+                Const("📋 К списку публикаций на модерации"),
                 id="go_to_content_menu",
                 on_click=self.moderation_publication_service.handle_back_to_moderation_list,
             ),
