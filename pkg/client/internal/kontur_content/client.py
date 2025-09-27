@@ -1,6 +1,6 @@
 import io
-import json
 from datetime import datetime
+
 from opentelemetry.trace import Status, StatusCode, SpanKind
 
 from internal import model
@@ -415,7 +415,7 @@ class KonturContentClient(interface.IKonturContentClient):
             moderator_id: int,
             moderation_status: str,
             moderation_comment: str = ""
-    ) -> None:
+    ) -> dict:
         with self.tracer.start_as_current_span(
                 "KonturContentClient.moderate_publication",
                 kind=SpanKind.CLIENT,
@@ -434,9 +434,12 @@ class KonturContentClient(interface.IKonturContentClient):
                         moderation_status),
                     "moderation_comment": moderation_comment
                 }
-                await self.client.post("/publication/moderate", json=body)
+                response = await self.client.post("/publication/moderate", json=body)
+                json_response = response.json()
 
                 span.set_status(Status(StatusCode.OK))
+                return json_response
+
             except Exception as e:
                 span.record_exception(e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))

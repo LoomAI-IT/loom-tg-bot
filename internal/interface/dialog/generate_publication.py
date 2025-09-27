@@ -240,3 +240,9 @@ class IGeneratePublicationGetter(Protocol):
             self,
             dialog_manager: DialogManager,
     ) -> dict: pass
+
+    @abstractmethod
+    async def get_publication_success_data(
+            self,
+            dialog_manager: DialogManager,
+    ) -> dict: pass

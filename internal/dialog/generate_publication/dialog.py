@@ -32,7 +32,8 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             self.get_image_menu_window(),
             self.get_edit_text_window(),
             self.get_upload_image_window(),
-            self.get_social_network_select_window()
+            self.get_social_network_select_window(),
+            self.get_publication_success_window()  # Новое окно
         )
 
     def get_select_category_window(self) -> Window:
@@ -577,5 +578,49 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
 
             state=model.GeneratePublicationStates.social_network_select,
             getter=self.generate_publication_getter.get_social_network_select_data,
+            parse_mode=SULGUK_PARSE_MODE,
+        )
+
+    def get_publication_success_window(self) -> Window:
+        return Window(
+            Multi(
+                Const("🎉 <b>Публикация успешно размещена!</b><br>"),
+                Case(
+                    {
+                        True: Multi(
+                            Const("🔗 <b>Ссылки на ваши посты:</b><br>"),
+                            Case(
+                                {
+                                    True: Format(
+                                        "📱 <b>Telegram:</b> <a href='{telegram_link}'>Перейти к посту</a><br>"),
+                                    False: Const(""),
+                                },
+                                selector="has_telegram_link"
+                            ),
+                            Case(
+                                {
+                                    True: Format(
+                                        "🔵 <b>ВКонтакте:</b> <a href='{vkontakte_link}'>Перейти к посту</a><br>"),
+                                    False: Const(""),
+                                },
+                                selector="has_vkontakte_link"
+                            ),
+                            Const("<br>💡 <i>Ссылки сохранены и доступны в разделе \"Мои публикации\"</i>"),
+                        ),
+                        False: Const("📝 <i>Публикация размещена, но ссылки пока недоступны</i>"),
+                    },
+                    selector="has_post_links"
+                ),
+                sep="",
+            ),
+
+            Button(
+                Const("📋 К меню контента"),
+                id="go_to_content_menu",
+                on_click=self.generate_publication_service.handle_go_to_content_menu,
+            ),
+
+            state=model.GeneratePublicationStates.publication_success,
+            getter=self.generate_publication_getter.get_publication_success_data,
             parse_mode=SULGUK_PARSE_MODE,
         )
