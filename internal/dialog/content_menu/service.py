@@ -1,6 +1,5 @@
 from typing import Any
 
-from aiogram import Bot
 
 from aiogram.types import CallbackQuery
 from aiogram_dialog import DialogManager, StartMode, ShowMode
@@ -183,10 +182,7 @@ class ContentMenuService(interface.IContentMenuService):
                     state.account_id
                 )
 
-                can_moderate = (
-                        employee.role in ["moderator", "admin",] or
-                        employee.edit_employee_perm_permission
-                )
+                can_moderate = employee.role in ["moderator", "admin"]
 
                 if not can_moderate:
                     self.logger.warning("Пользователю отказано в доступе к модерации публикаций")
@@ -237,10 +233,7 @@ class ContentMenuService(interface.IContentMenuService):
                     state.account_id
                 )
 
-                can_moderate = (
-                        employee.role in ["moderator", "admin"] or
-                        employee.edit_employee_perm_permission
-                )
+                can_moderate = employee.role in ["moderator", "admin"]
 
                 if not can_moderate:
                     self.logger.warning("Пользователю отказано в доступе к модерации видео")
