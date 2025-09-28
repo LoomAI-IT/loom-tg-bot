@@ -52,30 +52,28 @@ class ContentMenuGetter(interface.IContentMenuGetter):
 
                 # Статистика публикаций
                 for pub in publications:
-                    if pub.creator_id == state.account_id:
-                        total_generations += 1
-                        publication_count += 1
 
-                        if pub.moderation_status == "draft":
-                            drafts_count += 1
-                        elif pub.moderation_status == "moderation":
-                            moderation_count += 1
-                        elif pub.moderation_status == "approved":
-                            approved_count += 1
+                    total_generations += 1
+                    publication_count += 1
 
+                    if pub.moderation_status == "draft":
+                        drafts_count += 1
+                    elif pub.moderation_status == "moderation":
+                        moderation_count += 1
+                    elif pub.moderation_status == "approved":
+                        approved_count += 1
 
                 # Статистика видео-нарезок
                 for video in video_cuts:
-                    if video.creator_id == state.account_id:
-                        total_generations += 1
-                        video_cut_count += 1
+                    total_generations += 1
+                    video_cut_count += 1
 
-                        if video.moderation_status == "draft":
-                            drafts_count += 1
-                        elif video.moderation_status == "moderation":
-                            moderation_count += 1
-                        elif video.moderation_status == "approved":
-                            approved_count += 1
+                    if video.moderation_status == "draft":
+                        drafts_count += 1
+                    elif video.moderation_status == "moderation":
+                        moderation_count += 1
+                    elif video.moderation_status == "approved":
+                        approved_count += 1
 
                 data = {
                     "drafts_count": drafts_count,
