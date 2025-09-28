@@ -34,6 +34,7 @@ class GenerateVideoCutGetter(interface.IGenerateVideoCutGetter):
 
                 data = {
                     "is_processing_video": is_processing_video,
+                    "has_invalid_youtube_url": dialog_manager.dialog_data.get("has_invalid_youtube_url", False),
                 }
 
                 self.logger.info("Данные окна ввода YouTube ссылки загружены")
