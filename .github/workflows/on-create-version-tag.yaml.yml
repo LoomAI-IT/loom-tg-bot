@@ -8,6 +8,7 @@ on:
 env:
     SERVICE_NAME: loom-tg-bot
 
+
 jobs:
     update-tag-on-server:
         runs-on: self-hosted
