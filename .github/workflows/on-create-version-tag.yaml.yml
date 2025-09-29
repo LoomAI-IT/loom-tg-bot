@@ -6,7 +6,8 @@ on:
             - 'v*'
 
 env:
-    SERVICE_NAME: loom-tg-bot
+    SERVICE_NAME: ${{ github.event.repository.name }}
+    SYSTEM_REPO: loom-system
 
 
 jobs:
@@ -24,46 +25,50 @@ jobs:
 
             -   name: Load server configuration
                 run: |
-                    if [ ! -f "/root/.env.servers" ]; then
-                      echo "❌ Файл конфигурации серверов .env.servers не найден!"
+                    if [ ! -f "/root/.env.runner" ]; then
+                      echo "❌ Файл конфигурации серверов .env.runner не найден!"
                       exit 1
                     fi
 
-                    # Загружаем переменные окружения из .env.servers
+                    # Загружаем переменные окружения из .env.runner
                     set -a
-                    source /root/.env.servers
+                    source /root/.env.runner
                     set +a
 
-
                     # Проверяем наличие API конфигурации
-                    if [ -z "$LOOM_RELEASE_TG_BOT_API_URL" ] || [ -z "$LOOM_INTERSERVER_SECRET_KEY" ]; then
-                      echo "❌ API конфигурация не найдена в .env.servers!"
-                      echo "   Убедитесь, что есть переменные: LOOM_RELEASE_TG_BOT_API_URL и LOOM_INTERSERVER_SECRET_KEY"
+                    if [ -z "$STAGE_DOMAIN" ] || [ -z "$PROD_DOMAIN" ]; then
+                      echo "❌ API конфигурация не найдена в .env.runner!"
+                      echo " Убедитесь, что есть переменные: STAGE_DOMAIN и PROD_DOMAIN"
                       exit 1
                     fi
 
-                    # Формируем имена переменных для тестового сервера
-                    HOST_VAR="STAGE_HOST"
-                    PASSWORD_VAR="STAGE_PASSWORD"
-
-                    # Получаем значения переменных
-                    eval "SERVER_HOST=\$$HOST_VAR"
-                    eval "SERVER_PASSWORD=\$$PASSWORD_VAR"
-
-                    if [ -z "$SERVER_HOST" ] || [ -z "$SERVER_PASSWORD" ]; then
+                    if [ -z "$STAGE_HOST" ] || [ -z "$STAGE_PASSWORD" ]; then
                       echo "❌ Конфигурация stage сервера не найдена!"
-                      echo "   Убедитесь, что в .env.servers есть переменные: ${HOST_VAR} и ${PASSWORD_VAR}"
+                      echo "   Убедитесь, что в .env.runner есть переменные: STAGE_HOST и STAGE_PASSWORD"
                       exit 1
                     fi
-
+                    
+                    SERVICE_PREFIX=$(echo "${{ env.SERVICE_NAME }}" | tr '[:lower:]' '[:upper:]' | tr '-' '_')
+                    SERVICE_PREFIX_VAR_NAME="${SERVICE_PREFIX}_PREFIX"
+                    SERVICE_PREFIX="${!SERVICE_PREFIX_VAR_NAME}"
+                    
+                    echo "SERVICE_PREFIX=$SERVICE_PREFIX" >> $GITHUB_ENV
+    
                     # Экспортируем все необходимые переменные
-                    echo "LOOM_RELEASE_TG_BOT_API_URL=$LOOM_RELEASE_TG_BOT_API_URL" >> $GITHUB_ENV
+                    echo "STAGE_HOST=$STAGE_HOST" >> $GITHUB_ENV
+                    echo "STAGE_PASSWORD=$STAGE_PASSWORD" >> $GITHUB_ENV
+                    echo "STAGE_DOMAIN=$STAGE_DOMAIN" >> $GITHUB_ENV
+                    
+                    echo "PROD_DOMAIN=$PROD_DOMAIN" >> $GITHUB_ENV
+                    
+                    echo "LOOM_TG_BOT_PREFIX=$LOOM_TG_BOT_PREFIX" >> $GITHUB_ENV
+                    echo "LOOM_ACCOUNT_PREFIX=$LOOM_ACCOUNT_PREFIX" >> $GITHUB_ENV
+                    echo "LOOM_AUTHORIZATION_PREFIX=$LOOM_AUTHORIZATION_PREFIX" >> $GITHUB_ENV
+                    echo "LOOM_EMPLOYEE_PREFIX=$LOOM_EMPLOYEE_PREFIX" >> $GITHUB_ENV
+                    echo "LOOM_ORGANIZATION_PREFIX=$LOOM_ORGANIZATION_PREFIX" >> $GITHUB_ENV
+                    echo "LOOM_CONTENT_PREFIX=$LOOM_CONTENT_PREFIX" >> $GITHUB_ENV
+                    echo "LOOM_RELEASE_TG_BOT_PREFIX=$LOOM_RELEASE_TG_BOT_PREFIX" >> $GITHUB_ENV
                     echo "LOOM_INTERSERVER_SECRET_KEY=$LOOM_INTERSERVER_SECRET_KEY" >> $GITHUB_ENV
-                    echo "SERVER_HOST=$SERVER_HOST" >> $GITHUB_ENV
-                    echo "SERVER_PASSWORD=$SERVER_PASSWORD" >> $GITHUB_ENV
-                    echo "✅ Конфигурация загружена успешно"
-                    echo "✅ API URL: $LOOM_RELEASE_TG_BOT_API_URL"
-                    echo "✅ Stage сервер: $SERVER_HOST"
 
             -   name: Create release record
                 run: |
@@ -79,7 +84,7 @@ jobs:
                             "github_action_link": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
                             "github_ref": "${{ github.ref }}"
                           }' \
-                          "${{ env.LOOM_RELEASE_TG_BOT_API_URL }}/release")
+                          "${{ env.PROD_DOMAIN }}${{ env.LOOM_RELEASE_TG_BOT_PREFIX }}/release")
                     
                     HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
                     BODY=$(echo "$RESPONSE" | head -n -1)
@@ -97,20 +102,40 @@ jobs:
 
             -   name: Update status to building
                 run: |
-                    curl -s -X PATCH \
+                    curl -s -X GET \
                       -H "Content-Type: application/json" \
                       -d '{
                         "release_id": ${{ env.RELEASE_ID }},
                         "status": "building"
                       }' \
-                      "${{ env.LOOM_RELEASE_TG_BOT_API_URL }}/release"
+                      "${{ env.PROD_DOMAIN }}${{ env.LOOM_RELEASE_TG_BOT_PREFIX }}/release"
                     echo "✅ Статус обновлен на 'building'"
+
+            -   name: Refresh database
+                run: |
+                    curl -s -X GET "${{ env.STAGE_DOMAIN }}${{ env.LOOM_TG_BOT_PREFIX }}/table/drop"
+                    curl -s -X GET "${{ env.STAGE_DOMAIN }}${{ env.LOOM_TG_BOT_PREFIX }}/table/create"
+                    
+                    curl -s -X GET "${{ env.STAGE_DOMAIN }}${{ env.LOOM_ACCOUNT_PREFIX }}/table/drop"
+                    curl -s -X GET "${{ env.STAGE_DOMAIN }}${{ env.LOOM_ACCOUNT_PREFIX }}/table/create"
+                    
+                    curl -s -X GET "${{ env.STAGE_DOMAIN }}${{ env.LOOM_AUTHORIZATION_PREFIX }}/table/drop"
+                    curl -s -X GET "${{ env.STAGE_DOMAIN }}${{ env.LOOM_AUTHORIZATION_PREFIX }}/table/create"
+                    
+                    curl -s -X GET "${{ env.STAGE_DOMAIN }}${{ env.LOOM_EMPLOYEE_PREFIX }}/table/drop"
+                    curl -s -X GET "${{ env.STAGE_DOMAIN }}${{ env.LOOM_EMPLOYEE_PREFIX }}/table/create"
+                    
+                    curl -s -X GET "${{ env.STAGE_DOMAIN }}${{ env.LOOM_ORGANIZATION_PREFIX }}/table/drop"
+                    curl -s -X GET "${{ env.STAGE_DOMAIN }}${{ env.LOOM_ORGANIZATION_PREFIX }}/table/create"
+                    
+                    curl -s -X GET "${{ env.STAGE_DOMAIN }}${{ env.LOOM_CONTENT_PREFIX }}/table/drop"
+                    curl -s -X GET "${{ env.STAGE_DOMAIN }}${{ env.LOOM_CONTENT_PREFIX }}/table/create"
 
             -   name: Update tag on test server
                 id: deploy_step
                 run: |
                     # Используем sshpass для аутентификации по паролю
-                    SSH_OUTPUT=$(sshpass -p "${{ env.SERVER_PASSWORD }}" ssh -o StrictHostKeyChecking=no root@${{ env.SERVER_HOST }} -p 22 << 'EOF' 2>&1
+                    SSH_OUTPUT=$(sshpass -p "${{ env.STAGE_PASSWORD }}" ssh -o StrictHostKeyChecking=no root@${{ env.STAGE_HOST }} -p 22 << 'EOF' 2>&1
                     set -e
 
                     # Создаем директорию для логов если её нет
@@ -124,6 +149,7 @@ jobs:
                         local message="$1"
                         echo "$(date '+%Y-%m-%d %H:%M:%S') - $message" | tee -a "$LOG_FILE"
                     }
+                    
                     
                     log_message "🚀 Начинаем деплой тега ${{ env.TAG_NAME }}"
 
@@ -168,17 +194,46 @@ jobs:
                     git remote prune origin 2>&1 | tee -a "$LOG_FILE"
 
                     log_message "✅ Переключение на тег ${{ env.TAG_NAME }} завершено"
-
-                    cd ../loom-system
-
+                    
+                    log_message "🗄️ Запускаем миграции базы данных..."
+                    # Запускаем миграции в отдельном контейнере
                     export $(cat env/.env.app env/.env.db env/.env.monitoring | xargs)
+                    docker run --rm \
+                      --network net \
+                      -v ./:/app \
+                      -w /app \
+                      --env-file ../${{ env.SYSTEM_REPO }}/env/.env.app \
+                      --env-file ../${{ env.SYSTEM_REPO }}/env/.env.db \
+                      --env-file ../${{ env.SYSTEM_REPO }}/env/.env.monitoring \
+                      python:3.11-slim \
+                      bash -c '
+                        echo "📦 Установка зависимостей..."
+                        cd .github && pip install -r requirements.txt && cd ..
+                        
+                        echo "✅ Зависимости установлены"
+                        echo "🚀 Запуск миграции..."
+                        
+                        python internal/migration/run.py stage
+                      ' 2>&1 | tee -a "$LOG_FILE"
+                    
+                    MIGRATION_EXIT_CODE=$?
+                    
+                    if [ $MIGRATION_EXIT_CODE -ne 0 ]; then
+                        log_message "❌ Миграции завершились с ошибкой"
+                        exit 1
+                    fi
+                    
+                    log_message "✅ Миграции успешно применены"
+
+                    cd ../${{ env.SYSTEM_REPO }}
 
                     log_message "🔨 Начинаем сборку контейнера для тега ${{ env.TAG_NAME }}..."
+                    export $(cat env/.env.app env/.env.db env/.env.monitoring | xargs)
                     docker compose -f ./docker-compose/app.yaml up -d --build ${{ env.SERVICE_NAME }} 2>&1 | tee -a "$LOG_FILE"
 
                     check_health() {
                         # Если есть HTTP endpoint
-                        if curl -f -s -o /dev/null -w "%{http_code}" http://localhost:8005/api/tg-bot/health | grep -q "200"; then
+                        if curl -f -s -o /dev/null -w "%{http_code}" ${{ env.STAGE_DOMAIN }}${{ env.SERVICE_PREFIX }}/health | grep -q "200"; then
                             return 0
                         else
                             return 1
@@ -242,7 +297,7 @@ jobs:
                     "release_id": ${{ env.RELEASE_ID }},
                     "status": "staging_failed"
                   }' \
-                  "${{ env.LOOM_RELEASE_TG_BOT_API_URL }}/release"
+                  "${{ env.PROD_DOMAIN }}${{ env.LOOM_RELEASE_TG_BOT_PREFIX }}/release"
                 echo "✅ Статус обновлен на 'staging_failed'"
 
             -   name: Update status to manual testing
@@ -254,7 +309,7 @@ jobs:
                         "release_id": ${{ env.RELEASE_ID }},
                         "status": "manual_testing"
                       }' \
-                      "${{ env.LOOM_RELEASE_TG_BOT_API_URL }}/release"
+                      "${{ env.PROD_DOMAIN }}${{ env.LOOM_RELEASE_TG_BOT_PREFIX }}/release"
                     echo "✅ Статус обновлен на 'manual_testing'"
 
             -   name: Verify deployment
@@ -264,7 +319,7 @@ jobs:
                     echo "📊 Сервер: ${{ env.SERVER_HOST }}"
                     echo "🏷️ Версия: ${{ env.TAG_NAME }}"
                     echo "🧪 Статус: Готов к ручному тестированию"
-                    echo "📁 Лог деплоя: /var/log/deployments/${{ env.TAG_NAME }}.log"
+                    echo "📁 Лог деплоя: /var/log/deployments/${{ env.SERVICE_NAME }}/${{ env.TAG_NAME }}.log"
 
             -   name: Handle deployment failure
                 if: failure()
@@ -273,4 +328,4 @@ jobs:
                     echo "📊 Сервер: ${{ env.SERVER_HOST }}"
                     echo "🏷️ Версия: ${{ env.TAG_NAME }}"
                     echo "📋 Проверьте логи выше для подробной информации"
-                    echo "📁 Лог деплоя: /var/log/deployments/${{ env.TAG_NAME }}.log"
+                    echo "📁 Лог деплоя: /var/log/deployments/${{ env.SERVICE_NAME }}/${{ env.TAG_NAME }}.log"
