@@ -49,9 +49,9 @@ class MigrationManager:
         query = """
                 CREATE TABLE IF NOT EXISTS migration_history \
                 ( \
-                    id
-                    SERIAL
-                    PRIMARY
+                    id \
+                    SERIAL \
+                    PRIMARY \
                     KEY, \
                     version \
                     TEXT \
