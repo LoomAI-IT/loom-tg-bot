@@ -182,7 +182,7 @@ rollback_migrations() {
 rebuild_container_for_rollback() {
     log_message "INFO" "Пересборка Docker контейнера для версии отката"
 
-    cd ../$SYSTEM_REPO
+    cd loom/$SYSTEM_REPO
 
     export $(cat env/.env.app env/.env.db env/.env.monitoring | xargs)
 
@@ -408,7 +408,7 @@ rollback_with_status_tracking() {
         update_release_status "manual_testing"
         verify_rollback_success "$target_tag"
     else
-        update_release_status "stage_rollback_test_failed"
+        update_release_status "stage_test_rollback_failed"
         handle_rollback_failure "$target_tag"
         exit 1
     fi
