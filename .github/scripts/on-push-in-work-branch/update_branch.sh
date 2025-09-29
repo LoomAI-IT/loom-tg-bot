@@ -26,10 +26,35 @@ update_branch_on_server() {
         bash << 'EOFMAIN'
 set -e
 
+# ============================================
+# Настройка логирования на удаленном сервере
+# ============================================
+
+LOG_DIR="/var/log/deployments/dev/$SERVICE_NAME"
+LOG_FILE="$LOG_DIR/$BRANCH_NAME-$(date '+%Y%m%d-%H%M%S').log"
+
+init_logging() {
+    mkdir -p "$LOG_DIR"
+    {
+        echo "========================================"
+        echo "ОБНОВЛЕНИЕ ВЕТКИ НАЧАТО"
+        echo "========================================"
+        echo "Дата:         $(date '+%Y-%m-%d %H:%M:%S')"
+        echo "Сервис:       $SERVICE_NAME"
+        echo "Ветка:        $BRANCH_NAME"
+        echo "Автор:        $AUTHOR_NAME"
+        echo "Префикс:      $SERVICE_PREFIX"
+        echo "Домен:        $DEV_DOMAIN"
+        echo "========================================"
+        echo ""
+    } > "$LOG_FILE"
+}
+
 log() {
     local level=$1
     shift
     local message="$@"
+    local timestamp=$(date '+%H:%M:%S')
 
     case $level in
         INFO)    local icon="ℹ️ " ;;
@@ -40,6 +65,7 @@ log() {
     esac
 
     echo "${icon} ${message}"
+    echo "[$timestamp] [$level] $message" >> "$LOG_FILE"
 }
 
 # ============================================
@@ -55,7 +81,7 @@ update_git_branch() {
     cd loom/$SERVICE_NAME
 
     log INFO "Получение обновлений из origin"
-    git fetch origin
+    git fetch origin >> "$LOG_FILE" 2>&1
 
     # Сохраняем текущую ветку
     CURRENT_BRANCH=$(git branch --show-current)
@@ -66,14 +92,14 @@ update_git_branch() {
         log INFO "Очистка старых веток"
 
         # Переключаемся на main для безопасного удаления
-        git checkout main 2>/dev/null || git checkout master 2>/dev/null || log WARN "Не удалось переключиться на main/master"
+        git checkout main >> "$LOG_FILE" 2>&1 || git checkout master >> "$LOG_FILE" 2>&1 || log WARN "Не удалось переключиться на main/master"
 
         # Удаляем все ветки кроме main/master и целевой
         local deleted_count=$(git branch | grep -v -E "(main|master|\*|$BRANCH_NAME)" | wc -l)
-        git branch | grep -v -E "(main|master|\*|$BRANCH_NAME)" | xargs -r git branch -D >/dev/null 2>&1
+        git branch | grep -v -E "(main|master|\*|$BRANCH_NAME)" | xargs -r git branch -D >> "$LOG_FILE" 2>&1
 
         # Очищаем удаленные ветки
-        git remote prune origin >/dev/null 2>&1
+        git remote prune origin >> "$LOG_FILE" 2>&1
 
         if [ $deleted_count -gt 0 ]; then
             log SUCCESS "Удалено веток: $deleted_count"
@@ -83,7 +109,7 @@ update_git_branch() {
     # Проверяем существование ветки локально
     if git show-ref --verify --quiet refs/heads/$BRANCH_NAME; then
         log INFO "Ветка существует локально, обновляем"
-        git checkout $BRANCH_NAME
+        git checkout $BRANCH_NAME >> "$LOG_FILE" 2>&1
 
         # Проверяем расхождения
         LOCAL_COMMIT=$(git rev-parse HEAD)
@@ -91,14 +117,14 @@ update_git_branch() {
 
         if [ "$LOCAL_COMMIT" != "$REMOTE_COMMIT" ]; then
             log WARN "Обнаружены расхождения, принудительное обновление"
-            git reset --hard origin/$BRANCH_NAME
+            git reset --hard origin/$BRANCH_NAME >> "$LOG_FILE" 2>&1
             log SUCCESS "Ветка обновлена до $REMOTE_COMMIT"
         else
             log SUCCESS "Ветка уже актуальна"
         fi
     else
         log INFO "Первый деплой ветки, создаем"
-        git checkout -b $BRANCH_NAME origin/$BRANCH_NAME
+        git checkout -b $BRANCH_NAME origin/$BRANCH_NAME >> "$LOG_FILE" 2>&1
         log SUCCESS "Ветка создана и переключена"
     fi
 
@@ -119,11 +145,13 @@ build_and_start_container() {
 
     export $(cat env/.env.app env/.env.db env/.env.monitoring | xargs)
 
-    if docker compose -f ./docker-compose/app.yaml up -d --build $SERVICE_NAME >/dev/null 2>&1; then
+    if docker compose -f ./docker-compose/app.yaml up -d --build $SERVICE_NAME >> "$LOG_FILE" 2>&1; then
         log SUCCESS "Контейнер собран и запущен"
     else
         log ERROR "Ошибка сборки контейнера"
-        docker logs --tail 50 $SERVICE_NAME
+        echo "" >> "$LOG_FILE"
+        echo "=== Логи контейнера (последние 50 строк) ===" >> "$LOG_FILE"
+        docker logs --tail 50 $SERVICE_NAME >> "$LOG_FILE" 2>&1
         exit 1
     fi
 
@@ -168,9 +196,9 @@ wait_for_health() {
     done
 
     log ERROR "Проверка не пройдена после $max_attempts попыток"
-    echo ""
-    log ERROR "Логи контейнера (последние 50 строк):"
-    docker logs --tail 50 $SERVICE_NAME
+    echo "" >> "$LOG_FILE"
+    echo "=== Логи контейнера (последние 50 строк) ===" >> "$LOG_FILE"
+    docker logs --tail 50 $SERVICE_NAME >> "$LOG_FILE" 2>&1
     exit 1
 }
 
@@ -179,6 +207,8 @@ wait_for_health() {
 # ============================================
 
 main() {
+    init_logging
+
     update_git_branch
     build_and_start_container
     wait_for_health
@@ -192,6 +222,20 @@ main() {
     log SUCCESS "Автор: $AUTHOR_NAME"
     log SUCCESS "Приложение работает"
     echo ""
+    echo "📁 Полный лог: $LOG_FILE"
+    echo ""
+
+    {
+        echo ""
+        echo "========================================"
+        echo "ОБНОВЛЕНИЕ ВЕТКИ ЗАВЕРШЕНО"
+        echo "========================================"
+        echo "Время:          $(date '+%Y-%m-%d %H:%M:%S')"
+        echo "Статус:         УСПЕШНО"
+        echo "Ветка:          $BRANCH_NAME"
+        echo "Автор:          $AUTHOR_NAME"
+        echo "========================================"
+    } >> "$LOG_FILE"
 }
 
 main
