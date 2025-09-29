@@ -34,7 +34,7 @@ jobs:
 
             -   name: ⚙️ Загрузка конфигурации dev сервера
                 run: |
-                    source .github/scripts/on-push-in-work-branch/load_dev_config.sh
+                    source .github/scripts/on-push-in-work-branch/load_config.sh
                     load_dev_server_config
 
             -   name: 🔄 Обновление ветки на dev сервере
