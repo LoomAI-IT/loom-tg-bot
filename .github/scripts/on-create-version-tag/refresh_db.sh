@@ -3,56 +3,56 @@
 source .github/scripts/load_config.sh
 
 # ============================================
-# Database table operations
+# Операции с таблицами базы данных
 # ============================================
 
 refresh_database_table() {
     local service_prefix=$1
     local service_name=$2
 
-    log_info "Database" "Refreshing $service_name database tables..."
+    log_info "База данных" "Обновление таблиц базы данных $service_name..."
 
     local drop_url="${STAGE_DOMAIN}${service_prefix}/table/drop"
     local create_url="${STAGE_DOMAIN}${service_prefix}/table/create"
 
-    # Drop existing table
-    log_info "Database" "Dropping $service_name tables..."
+    # Удаление существующих таблиц
+    log_info "База данных" "Удаление таблиц $service_name..."
     local drop_response=$(curl -s -w "\n%{http_code}" -X GET "$drop_url")
     local drop_code=$(echo "$drop_response" | tail -n1)
     local drop_body=$(echo "$drop_response" | head -n -1)
 
     if [ "$drop_code" -ne 200 ]; then
-        log_warning "Database" "Failed to drop $service_name table (HTTP $drop_code)"
-        log_info "Response" "$drop_body"
+        log_warning "База данных" "Не удалось удалить таблицы $service_name (HTTP $drop_code)"
+        log_info "Ответ" "$drop_body"
     else
-        log_success "Database" "$service_name tables dropped"
+        log_success "База данных" "Таблицы $service_name удалены"
     fi
 
-    # Create new table
-    log_info "Database" "Creating $service_name tables..."
+    # Создание новых таблиц
+    log_info "База данных" "Создание таблиц $service_name..."
     local create_response=$(curl -s -w "\n%{http_code}" -X GET "$create_url")
     local create_code=$(echo "$create_response" | tail -n1)
     local create_body=$(echo "$create_response" | head -n -1)
 
     if [ "$create_code" -ne 200 ]; then
-        log_error "Database" "Failed to create $service_name table (HTTP $create_code)"
-        log_info "Response" "$create_body"
+        log_error "База данных" "Не удалось создать таблицы $service_name (HTTP $create_code)"
+        log_info "Ответ" "$create_body"
         return 1
     fi
 
-    log_success "Database" "$service_name tables created successfully"
+    log_success "База данных" "Таблицы $service_name успешно созданы"
     return 0
 }
 
 # ============================================
-# Batch database refresh
+# Массовое обновление баз данных
 # ============================================
 
 refresh_all_databases() {
-    log_info "Database Refresh" "Starting database refresh for all services..."
-    log_info "Target" "Stage domain: $STAGE_DOMAIN"
+    log_info "Обновление БД" "Запуск обновления баз данных для всех сервисов..."
+    log_info "Цель" "Stage домен: $STAGE_DOMAIN"
 
-    # Define all services to refresh
+    # Определение всех сервисов для обновления
     local services=(
         "$LOOM_TG_BOT_PREFIX:TG Bot"
         "$LOOM_ACCOUNT_PREFIX:Account"
@@ -66,7 +66,7 @@ refresh_all_databases() {
     local failed=0
     local success=0
 
-    log_info "Progress" "Processing $total service databases..."
+    log_info "Прогресс" "Обработка баз данных $total сервисов..."
 
     for service_info in "${services[@]}"; do
         IFS=':' read -r prefix name <<< "$service_info"
@@ -77,16 +77,16 @@ refresh_all_databases() {
             ((failed++))
         fi
 
-        echo "" # Empty line for readability
+        echo "" # Пустая строка для читаемости
     done
 
-    # Summary
-    log_info "Summary" "Completed: $success successful, $failed failed out of $total total"
+    # Итоги
+    log_info "Итоги" "Завершено: $success успешно, $failed с ошибками из $total всего"
 
     if [ $failed -gt 0 ]; then
-        log_error "Database Refresh" "$failed service(s) failed to refresh"
+        log_error "Обновление БД" "Не удалось обновить $failed сервис(ов)"
         exit 1
     fi
 
-    log_success "Database Refresh" "All $total databases refreshed successfully"
+    log_success "Обновление БД" "Все $total баз данных успешно обновлены"
 }

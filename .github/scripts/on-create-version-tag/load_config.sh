@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ============================================
-# Logging utilities
+# Утилиты логирования
 # ============================================
 
 log_info() {
@@ -33,7 +33,7 @@ log_warning() {
 }
 
 # ============================================
-# Configuration validation
+# Валидация конфигурации
 # ============================================
 
 validate_env_var() {
@@ -42,8 +42,8 @@ validate_env_var() {
     local error_message=$3
 
     if [ -z "$var_value" ]; then
-        log_error "Configuration Error" "$error_message"
-        log_info "Required Variable" "Missing: $var_name"
+        log_error "Ошибка конфигурации" "$error_message"
+        log_info "Требуемая переменная" "Отсутствует: $var_name"
         exit 1
     fi
 }
@@ -55,52 +55,52 @@ export_to_github_env() {
 }
 
 # ============================================
-# Main configuration loader
+# Основной загрузчик конфигурации
 # ============================================
 
 load_server_config() {
-    log_info "Configuration" "Loading server configuration..."
+    log_info "Конфигурация" "Загрузка конфигурации сервера..."
 
     local config_file="/root/.env.runner"
 
-    # Check if config file exists
+    # Проверка существования файла конфигурации
     if [ ! -f "$config_file" ]; then
-        log_error "Configuration Error" "Server configuration file not found: $config_file"
+        log_error "Ошибка конфигурации" "Файл конфигурации сервера не найден: $config_file"
         exit 1
     fi
 
-    # Load environment variables from config file
+    # Загрузка переменных окружения из файла конфигурации
     set -a
     source "$config_file"
     set +a
 
-    log_success "Configuration" "Environment variables loaded from $config_file"
+    log_success "Конфигурация" "Переменные окружения загружены из $config_file"
 
-    # Validate required API configuration
-    validate_env_var "STAGE_DOMAIN" "$STAGE_DOMAIN" "STAGE_DOMAIN not configured in .env.runner"
-    validate_env_var "PROD_DOMAIN" "$PROD_DOMAIN" "PROD_DOMAIN not configured in .env.runner"
+    # Валидация требуемой конфигурации API
+    validate_env_var "STAGE_DOMAIN" "$STAGE_DOMAIN" "STAGE_DOMAIN не настроен в .env.runner"
+    validate_env_var "PROD_DOMAIN" "$PROD_DOMAIN" "PROD_DOMAIN не настроен в .env.runner"
 
-    # Validate stage server configuration
-    validate_env_var "STAGE_HOST" "$STAGE_HOST" "STAGE_HOST not configured in .env.runner"
-    validate_env_var "STAGE_PASSWORD" "$STAGE_PASSWORD" "STAGE_PASSWORD not configured in .env.runner"
+    # Валидация конфигурации stage-сервера
+    validate_env_var "STAGE_HOST" "$STAGE_HOST" "STAGE_HOST не настроен в .env.runner"
+    validate_env_var "STAGE_PASSWORD" "$STAGE_PASSWORD" "STAGE_PASSWORD не настроен в .env.runner"
 
-    log_success "Validation" "All required configuration variables present"
+    log_success "Валидация" "Все требуемые переменные конфигурации присутствуют"
 
-    # Extract and build service prefix
+    # Извлечение и построение префикса сервиса
     SERVICE_PREFIX=$(echo "$SERVICE_NAME" | tr '[:lower:]' '[:upper:]' | tr '-' '_')
     SERVICE_PREFIX_VAR_NAME="${SERVICE_PREFIX}_PREFIX"
     SERVICE_PREFIX="${!SERVICE_PREFIX_VAR_NAME}"
 
-    log_info "Service" "Service prefix resolved: $SERVICE_PREFIX"
+    log_info "Сервис" "Префикс сервиса определён: $SERVICE_PREFIX"
 
-    # Export main configuration to GitHub environment
+    # Экспорт основной конфигурации в окружение GitHub
     export_to_github_env "SERVICE_PREFIX" "$SERVICE_PREFIX"
     export_to_github_env "STAGE_HOST" "$STAGE_HOST"
     export_to_github_env "STAGE_PASSWORD" "$STAGE_PASSWORD"
     export_to_github_env "STAGE_DOMAIN" "$STAGE_DOMAIN"
     export_to_github_env "PROD_DOMAIN" "$PROD_DOMAIN"
 
-    # Export service-specific prefixes
+    # Экспорт префиксов для конкретных сервисов
     export_to_github_env "LOOM_TG_BOT_PREFIX" "$LOOM_TG_BOT_PREFIX"
     export_to_github_env "LOOM_ACCOUNT_PREFIX" "$LOOM_ACCOUNT_PREFIX"
     export_to_github_env "LOOM_AUTHORIZATION_PREFIX" "$LOOM_AUTHORIZATION_PREFIX"
@@ -110,8 +110,8 @@ load_server_config() {
     export_to_github_env "LOOM_RELEASE_TG_BOT_PREFIX" "$LOOM_RELEASE_TG_BOT_PREFIX"
     export_to_github_env "LOOM_INTERSERVER_SECRET_KEY" "$LOOM_INTERSERVER_SECRET_KEY"
 
-    log_success "Configuration" "All variables exported to GitHub environment"
-    log_info "Details" "Service: $SERVICE_NAME | Prefix: $SERVICE_PREFIX"
-    log_info "Details" "Stage host: $STAGE_HOST | Stage domain: $STAGE_DOMAIN"
-    log_info "Details" "Production domain: $PROD_DOMAIN"
+    log_success "Конфигурация" "Все переменные экспортированы в окружение GitHub"
+    log_info "Детали" "Сервис: $SERVICE_NAME | Префикс: $SERVICE_PREFIX"
+    log_info "Детали" "Stage хост: $STAGE_HOST | Stage домен: $STAGE_DOMAIN"
+    log_info "Детали" "Production домен: $PROD_DOMAIN"
 }

@@ -44,7 +44,7 @@ jobs:
             -   name: Обновление статуса на "сборка"
                 run: |
                     source .github/scripts/on-create-version-tag/release_tg_bot_api.sh
-                    update_release_status "building"
+                    update_release_status "stage_building"
 
             -   name: Обновление таблиц базы данных
                 id: refresh_db_step

@@ -3,7 +3,7 @@
 source .github/scripts/load_config.sh
 
 # ============================================
-# API utilities
+# Утилиты для работы с API
 # ============================================
 
 api_request() {
@@ -12,7 +12,7 @@ api_request() {
     local data=$3
     local expected_code=$4
 
-    log_info "API Request" "Making $method request to $endpoint"
+    log_info "API запрос" "Выполнение $method запроса к $endpoint"
 
     local response=$(curl -s -w "\n%{http_code}" -X "$method" \
         -H "Content-Type: application/json" \
@@ -23,12 +23,12 @@ api_request() {
     local body=$(echo "$response" | head -n -1)
 
     if [ "$http_code" -ne "$expected_code" ]; then
-        log_error "API Error" "Request failed with HTTP $http_code (expected $expected_code)"
-        log_info "Response Body" "$body"
+        log_error "Ошибка API" "Запрос завершился с HTTP $http_code (ожидался $expected_code)"
+        log_info "Тело ответа" "$body"
         return 1
     fi
 
-    log_success "API Request" "Request successful (HTTP $http_code)"
+    log_success "API запрос" "Запрос выполнен успешно (HTTP $http_code)"
     echo "$body"
     return 0
 }
@@ -40,12 +40,12 @@ extract_json_value() {
 }
 
 # ============================================
-# Release record management
+# Управление записями релизов
 # ============================================
 
 create_release_record() {
-    log_info "Release Record" "Creating release record for $SERVICE_NAME:$TAG_NAME"
-    log_info "Details" "Initiated by: $GITHUB_ACTOR | Run ID: $GITHUB_RUN_ID"
+    log_info "Запись релиза" "Создание записи релиза для $SERVICE_NAME:$TAG_NAME"
+    log_info "Детали" "Инициатор: $GITHUB_ACTOR | ID запуска: $GITHUB_RUN_ID"
 
     local payload=$(cat <<EOF
 {
@@ -64,35 +64,35 @@ EOF
     local response=$(api_request "POST" "$endpoint" "$payload" 201)
 
     if [ $? -ne 0 ]; then
-        log_error "Release Record" "Failed to create release record"
+        log_error "Запись релиза" "Не удалось создать запись релиза"
         exit 1
     fi
 
-    # Extract release ID from response
+    # Извлечение ID релиза из ответа
     local release_id=$(extract_json_value "$response" "release_id")
 
     if [ -z "$release_id" ]; then
-        log_error "Release Record" "Failed to extract release ID from response"
-        log_info "Response" "$response"
+        log_error "Запись релиза" "Не удалось извлечь ID релиза из ответа"
+        log_info "Ответ" "$response"
         exit 1
     fi
 
-    # Export release ID to GitHub environment
+    # Экспорт ID релиза в окружение GitHub
     echo "RELEASE_ID=$release_id" >> $GITHUB_ENV
 
-    log_success "Release Record" "Created release record with ID: $release_id"
-    log_info "Status" "Initial status: initiated"
+    log_success "Запись релиза" "Создана запись релиза с ID: $release_id"
+    log_info "Статус" "Начальный статус: initiated"
 }
 
 update_release_status() {
     local new_status=$1
 
     if [ -z "$RELEASE_ID" ]; then
-        log_warning "Release Status" "RELEASE_ID not set, skipping status update"
+        log_warning "Статус релиза" "RELEASE_ID не установлен, пропуск обновления статуса"
         return 0
     fi
 
-    log_info "Release Status" "Updating release #$RELEASE_ID status: $new_status"
+    log_info "Статус релиза" "Обновление статуса релиза #$RELEASE_ID: $new_status"
 
     local payload=$(cat <<EOF
 {
@@ -112,9 +112,9 @@ EOF
     local http_code=$(echo "$response" | tail -n1)
 
     if [ "$http_code" -eq 200 ] || [ "$http_code" -eq 204 ]; then
-        log_success "Release Status" "Status successfully updated to: $new_status"
+        log_success "Статус релиза" "Статус успешно обновлён на: $new_status"
     else
-        log_warning "Release Status" "Failed to update status (HTTP $http_code)"
-        log_info "Response" "$(echo "$response" | head -n -1)"
+        log_warning "Статус релиза" "Не удалось обновить статус (HTTP $http_code)"
+        log_info "Ответ" "$(echo "$response" | head -n -1)"
     fi
 }

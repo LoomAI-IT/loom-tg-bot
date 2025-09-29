@@ -4,7 +4,7 @@ source .github/scripts/load_config.sh
 source .github/scripts/release_api.sh
 
 # ============================================
-# Rollback execution
+# Выполнение отката
 # ============================================
 
 execute_rollback() {
@@ -13,14 +13,14 @@ execute_rollback() {
     local target_tag=$3
     local system_repo=$4
 
-    log_info "Rollback" "Starting rollback for $service_name to version $target_tag"
-    log_info "Connection" "Connecting via SSH to root@$STAGE_HOST:22"
+    log_info "Откат" "Начало отката $service_name к версии $target_tag"
+    log_info "Подключение" "Подключение через SSH к root@$STAGE_HOST:22"
 
     SSH_OUTPUT=$(sshpass -p "$STAGE_PASSWORD" ssh -o StrictHostKeyChecking=no root@$STAGE_HOST -p 22 << EOFMAIN
 set -e
 
 # ============================================
-# Remote rollback logging setup
+# Настройка логирования отката на удаленном сервере
 # ============================================
 
 ROLLBACK_LOG_DIR="/var/log/deployments/rollback/$service_name"
@@ -29,10 +29,10 @@ ROLLBACK_LOG_FILE="\$ROLLBACK_LOG_DIR/${target_tag}-rollback.log"
 init_rollback_logging() {
     mkdir -p "\$ROLLBACK_LOG_DIR"
     echo "========================================" >> "\$ROLLBACK_LOG_FILE"
-    echo "Rollback started: \$(date '+%Y-%m-%d %H:%M:%S')" >> "\$ROLLBACK_LOG_FILE"
-    echo "Service: $service_name" >> "\$ROLLBACK_LOG_FILE"
-    echo "Target tag: $target_tag" >> "\$ROLLBACK_LOG_FILE"
-    echo "Release ID: $release_id" >> "\$ROLLBACK_LOG_FILE"
+    echo "Откат начат: \$(date '+%Y-%m-%d %H:%M:%S')" >> "\$ROLLBACK_LOG_FILE"
+    echo "Сервис: $service_name" >> "\$ROLLBACK_LOG_FILE"
+    echo "Целевой тег: $target_tag" >> "\$ROLLBACK_LOG_FILE"
+    echo "ID релиза: $release_id" >> "\$ROLLBACK_LOG_FILE"
     echo "========================================" >> "\$ROLLBACK_LOG_FILE"
 }
 
@@ -53,7 +53,7 @@ log_message() {
 }
 
 # ============================================
-# Update release status (using remote API)
+# Обновление статуса релиза (через удаленный API)
 # ============================================
 
 update_rollback_status_remote() {
@@ -68,74 +68,74 @@ update_rollback_status_remote() {
         }" \
         "\${release_tg_bot_url}/release" > /dev/null
 
-    log_message "INFO" "Release status updated to: \$status"
+    log_message "INFO" "Статус релиза обновлён на: \$status"
 }
 
 # ============================================
-# Git operations for rollback
+# Операции Git для отката
 # ============================================
 
 save_current_state() {
     cd loom/$service_name
 
     local current_ref=\$(git symbolic-ref --short HEAD 2>/dev/null || git describe --tags --exact-match 2>/dev/null || git rev-parse --short HEAD)
-    log_message "INFO" "Current state before rollback: \$current_ref"
+    log_message "INFO" "Текущее состояние до отката: \$current_ref"
     echo "\$current_ref" > /tmp/rollback_previous_ref.txt
 }
 
 fetch_target_tag() {
-    log_message "INFO" "Fetching target tag $target_tag for rollback"
+    log_message "INFO" "Получение целевого тега $target_tag для отката"
 
-    # Remove local tag if exists
+    # Удаление локального тега, если существует
     if git tag -l | grep -q "^${target_tag}\$"; then
-        log_message "INFO" "Removing existing local tag $target_tag"
+        log_message "INFO" "Удаление существующего локального тега $target_tag"
         git tag -d $target_tag >> "\$ROLLBACK_LOG_FILE" 2>&1
     fi
 
-    # Fetch updates
-    log_message "INFO" "Fetching updates from remote repository"
+    # Получение обновлений
+    log_message "INFO" "Получение обновлений из удаленного репозитория"
     git fetch origin >> "\$ROLLBACK_LOG_FILE" 2>&1
     git fetch origin --tags --force >> "\$ROLLBACK_LOG_FILE" 2>&1
 
-    # Verify tag exists
+    # Проверка существования тега
     if ! git tag -l | grep -q "^${target_tag}\$"; then
-        log_message "ERROR" "Tag $target_tag not found in repository"
-        log_message "INFO" "Available tags (last 10):"
+        log_message "ERROR" "Тег $target_tag не найден в репозитории"
+        log_message "INFO" "Доступные теги (последние 10):"
         git tag -l | tail -10 | tee -a "\$ROLLBACK_LOG_FILE"
         exit 1
     fi
 
-    log_message "SUCCESS" "Tag $target_tag is ready for rollback"
+    log_message "SUCCESS" "Тег $target_tag готов для отката"
 }
 
 checkout_rollback_tag() {
-    log_message "INFO" "Checking out tag $target_tag for rollback"
+    log_message "INFO" "Переключение на тег $target_tag для отката"
 
     git checkout $target_tag >> "\$ROLLBACK_LOG_FILE" 2>&1
 
     if [ \$? -ne 0 ]; then
-        log_message "ERROR" "Failed to checkout tag $target_tag"
+        log_message "ERROR" "Не удалось переключиться на тег $target_tag"
         exit 1
     fi
 
-    log_message "SUCCESS" "Successfully checked out tag $target_tag"
+    log_message "SUCCESS" "Успешно переключено на тег $target_tag"
 
-    # Cleanup branches
-    log_message "INFO" "Cleaning up branches"
+    # Очистка веток
+    log_message "INFO" "Очистка веток"
     git for-each-ref --format='%(refname:short)' refs/heads | \
         grep -v -E "^(main|master)\$" | \
         xargs -r git branch -D >> "\$ROLLBACK_LOG_FILE" 2>&1
     git remote prune origin >> "\$ROLLBACK_LOG_FILE" 2>&1
 
-    log_message "SUCCESS" "Branch cleanup completed"
+    log_message "SUCCESS" "Очистка веток завершена"
 }
 
 # ============================================
-# Database rollback
+# Откат базы данных
 # ============================================
 
 rollback_migrations() {
-    log_message "INFO" "Rolling back database migrations to $target_tag"
+    log_message "INFO" "Откат миграций базы данных к версии $target_tag"
 
     docker run --rm \
         --network net \
@@ -147,30 +147,30 @@ rollback_migrations() {
         --env-file ../$system_repo/env/.env.monitoring \
         python:3.11-slim \
         bash -c '
-            echo "📦 Installing dependencies..."
+            echo "📦 Установка зависимостей..."
             cd .github && pip install -r requirements.txt > /dev/null 2>&1 && cd ..
-            echo "✅ Dependencies installed"
-            echo "🚀 Rolling back migrations..."
+            echo "✅ Зависимости установлены"
+            echo "🚀 Откат миграций..."
             python internal/migration/run.py stage --command down --version '\$PREVIOUS_TAG'
         ' >> "\$ROLLBACK_LOG_FILE" 2>&1
 
     local migration_exit_code=\$?
 
     if [ \$migration_exit_code -ne 0 ]; then
-        log_message "ERROR" "Migration rollback failed with exit code \$migration_exit_code"
+        log_message "ERROR" "Откат миграций завершился с кодом ошибки \$migration_exit_code"
         tail -50 "\$ROLLBACK_LOG_FILE"
         exit 1
     fi
 
-    log_message "SUCCESS" "Migration rollback completed"
+    log_message "SUCCESS" "Откат миграций завершён"
 }
 
 # ============================================
-# Container rebuild for rollback
+# Пересборка контейнера для отката
 # ============================================
 
 rebuild_container_for_rollback() {
-    log_message "INFO" "Rebuilding container with rollback version $target_tag"
+    log_message "INFO" "Пересборка контейнера с версией отката $target_tag"
 
     cd ../$system_repo
 
@@ -179,18 +179,18 @@ rebuild_container_for_rollback() {
     docker compose -f ./docker-compose/app.yaml up -d --build $service_name >> "\$ROLLBACK_LOG_FILE" 2>&1
 
     if [ \$? -ne 0 ]; then
-        log_message "ERROR" "Container rebuild failed during rollback"
+        log_message "ERROR" "Не удалось пересобрать контейнер во время отката"
         tail -50 "\$ROLLBACK_LOG_FILE"
         exit 1
     fi
 
-    log_message "SUCCESS" "Container rebuilt with rollback version"
-    log_message "INFO" "Docker images after rollback:"
+    log_message "SUCCESS" "Контейнер пересобран с версией отката"
+    log_message "INFO" "Docker образы после отката:"
     docker images | grep $service_name | tee -a "\$ROLLBACK_LOG_FILE"
 }
 
 # ============================================
-# Health check after rollback
+# Проверка работоспособности после отката
 # ============================================
 
 check_health_after_rollback() {
@@ -205,7 +205,7 @@ check_health_after_rollback() {
 }
 
 wait_for_health_after_rollback() {
-    log_message "INFO" "Waiting for service health after rollback"
+    log_message "INFO" "Ожидание готовности сервиса после отката"
 
     sleep 15
 
@@ -213,21 +213,21 @@ wait_for_health_after_rollback() {
     local attempt=1
 
     while [ \$attempt -le \$max_attempts ]; do
-        log_message "INFO" "Health check attempt \$attempt/\$max_attempts after rollback"
+        log_message "INFO" "Попытка проверки работоспособности \$attempt/\$max_attempts после отката"
 
         if check_health_after_rollback; then
-            log_message "SUCCESS" "Health check passed after rollback"
+            log_message "SUCCESS" "Проверка работоспособности пройдена после отката"
             return 0
         else
-            log_message "WARNING" "Health check failed, waiting 20 seconds..."
+            log_message "WARNING" "Проверка работоспособности не пройдена, ожидание 20 секунд..."
             sleep 20
         fi
 
         ((attempt++))
     done
 
-    log_message "ERROR" "Health check failed after \$max_attempts attempts"
-    log_message "INFO" "Container logs (last 100 lines):"
+    log_message "ERROR" "Проверка работоспособности не пройдена после \$max_attempts попыток"
+    log_message "INFO" "Логи контейнера (последние 100 строк):"
     docker logs --tail 100 $service_name | tee -a "\$ROLLBACK_LOG_FILE"
 
     update_rollback_status_remote "stage_rollback_test_failed"
@@ -235,27 +235,27 @@ wait_for_health_after_rollback() {
 }
 
 # ============================================
-# Restore to current version (after test)
+# Восстановление к текущей версии (после теста)
 # ============================================
 
 restore_to_current() {
-    log_message "INFO" "Restoring to current version after rollback test"
+    log_message "INFO" "Восстановление к текущей версии после теста отката"
 
     cd loom/$service_name
 
     local previous_ref=\$(cat /tmp/rollback_previous_ref.txt)
-    log_message "INFO" "Restoring to: \$previous_ref"
+    log_message "INFO" "Восстановление к: \$previous_ref"
 
     git checkout "\$previous_ref" >> "\$ROLLBACK_LOG_FILE" 2>&1
 
     if [ \$? -ne 0 ]; then
-        log_message "WARNING" "Failed to restore to previous state: \$previous_ref"
+        log_message "WARNING" "Не удалось восстановить предыдущее состояние: \$previous_ref"
     else
-        log_message "SUCCESS" "Restored to previous state: \$previous_ref"
+        log_message "SUCCESS" "Восстановлено предыдущее состояние: \$previous_ref"
     fi
 
-    # Re-run migrations for current version
-    log_message "INFO" "Re-applying migrations for current version"
+    # Повторное выполнение миграций для текущей версии
+    log_message "INFO" "Повторное применение миграций для текущей версии"
 
     docker run --rm \
         --network net \
@@ -266,25 +266,25 @@ restore_to_current() {
         --env-file ../$system_repo/env/.env.monitoring \
         python:3.11-slim \
         bash -c '
-            echo "📦 Installing dependencies..."
+            echo "📦 Установка зависимостей..."
             cd .github && pip install -r requirements.txt > /dev/null 2>&1 && cd ..
-            echo "✅ Dependencies installed"
-            echo "🚀 Running migrations..."
+            echo "✅ Зависимости установлены"
+            echo "🚀 Запуск миграций..."
             python internal/migration/run.py stage
         ' >> "\$ROLLBACK_LOG_FILE" 2>&1
 
-    log_message "SUCCESS" "Current version restored"
+    log_message "SUCCESS" "Текущая версия восстановлена"
 
     rm -f /tmp/rollback_previous_ref.txt
 }
 
 # ============================================
-# Main rollback flow
+# Основной процесс отката
 # ============================================
 
 main() {
     init_rollback_logging
-    log_message "INFO" "🔄 Starting rollback test for $service_name to $target_tag"
+    log_message "INFO" "🔄 Начало теста отката для $service_name к версии $target_tag"
 
     update_rollback_status_remote "stage_rollback"
 
@@ -297,19 +297,19 @@ main() {
 
     update_rollback_status_remote "manual_testing"
 
-    log_message "SUCCESS" "🎉 Rollback test completed successfully!"
-    log_message "INFO" "Service: $service_name"
-    log_message "INFO" "Rollback version: $target_tag"
-    log_message "INFO" "Status: Rollback successful"
-    log_message "INFO" "Log file: \$ROLLBACK_LOG_FILE"
+    log_message "SUCCESS" "🎉 Тест отката успешно завершён!"
+    log_message "INFO" "Сервис: $service_name"
+    log_message "INFO" "Версия отката: $target_tag"
+    log_message "INFO" "Статус: Откат выполнен успешно"
+    log_message "INFO" "Файл логов: \$ROLLBACK_LOG_FILE"
 
     restore_to_current
 
-    log_message "SUCCESS" "Rollback test cycle completed"
+    log_message "SUCCESS" "Цикл теста отката завершён"
 
     echo ""
     echo "========================================="
-    echo "📋 Rollback Summary (last 30 lines):"
+    echo "📋 Итоги отката (последние 30 строк):"
     echo "========================================="
     tail -30 "\$ROLLBACK_LOG_FILE"
 }
@@ -321,16 +321,16 @@ EOFMAIN
     local ssh_exit_code=$?
 
     if [ $ssh_exit_code -ne 0 ]; then
-        log_error "Rollback" "SSH rollback failed with exit code $ssh_exit_code"
+        log_error "Откат" "SSH откат завершился с кодом ошибки $ssh_exit_code"
         echo "$SSH_OUTPUT"
         exit 1
     fi
 
-    log_success "Rollback" "Rollback test completed successfully for $service_name"
+    log_success "Откат" "Тест отката успешно завершён для $service_name"
 }
 
 # ============================================
-# High-level rollback wrapper (uses release_api)
+# Высокоуровневая обёртка отката (использует release_api)
 # ============================================
 
 rollback_with_status_tracking() {
@@ -339,13 +339,13 @@ rollback_with_status_tracking() {
     local target_tag=$3
     local system_repo=$4
 
-    log_info "Rollback" "Starting rollback process with status tracking"
+    log_info "Откат" "Начало процесса отката с отслеживанием статуса"
 
-    # Update status to rollback started
+    # Обновление статуса на начало отката
     export RELEASE_ID=$release_id
     update_release_status "stage_rollback"
 
-    # Execute rollback
+    # Выполнение отката
     execute_rollback "$release_id" "$service_name" "$target_tag" "$system_repo"
 
     if [ $? -eq 0 ]; then
@@ -359,27 +359,27 @@ rollback_with_status_tracking() {
 }
 
 # ============================================
-# Rollback verification
+# Проверка отката
 # ============================================
 
 verify_rollback_success() {
     local service_name=$1
     local target_tag=$2
 
-    log_success "Rollback Verification" "Rollback test for $service_name completed"
-    log_info "Service" "$service_name"
-    log_info "Rollback Version" "$target_tag"
-    log_info "Status" "Rollback successful, current version restored"
-    log_info "Log File" "/var/log/deployments/rollback/$service_name/${target_tag}-rollback.log"
+    log_success "Проверка отката" "Тест отката для $service_name завершён"
+    log_info "Сервис" "$service_name"
+    log_info "Версия отката" "$target_tag"
+    log_info "Статус" "Откат выполнен успешно, текущая версия восстановлена"
+    log_info "Файл логов" "/var/log/deployments/rollback/$service_name/${target_tag}-rollback.log"
 }
 
 handle_rollback_failure() {
     local service_name=$1
     local target_tag=$2
 
-    log_error "Rollback Failed" "Rollback test for $service_name failed"
-    log_info "Service" "$service_name"
-    log_info "Target Version" "$target_tag"
-    log_warning "Action Required" "Check logs for detailed error information"
-    log_info "Log File" "/var/log/deployments/rollback/$service_name/${target_tag}-rollback.log"
+    log_error "Ошибка отката" "Тест отката для $service_name завершился с ошибкой"
+    log_info "Сервис" "$service_name"
+    log_info "Целевая версия" "$target_tag"
+    log_warning "Требуется действие" "Проверьте логи для получения детальной информации об ошибке"
+    log_info "Файл логов" "/var/log/deployments/rollback/$service_name/${target_tag}-rollback.log"
 }
