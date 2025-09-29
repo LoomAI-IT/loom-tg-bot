@@ -149,6 +149,7 @@ jobs:
                         local message="$1"
                         echo "$(date '+%Y-%m-%d %H:%M:%S') - $message" | tee -a "$LOG_FILE"
                     }
+                    export $(cat env/.env.app env/.env.db env/.env.monitoring | xargs)
                     
                     log_message "🚀 Начинаем деплой тега ${{ env.TAG_NAME }}"
 
@@ -193,10 +194,37 @@ jobs:
                     git remote prune origin 2>&1 | tee -a "$LOG_FILE"
 
                     log_message "✅ Переключение на тег ${{ env.TAG_NAME }} завершено"
+                    
+                    log_message "🗄️ Запускаем миграции базы данных..."
+                    # Запускаем миграции в отдельном контейнере
+                    docker run --rm \
+                      --network net \
+                      -v ./:/app \
+                      -w /app \
+                      --env-file ../${{ env.SYSTEM_REPO }}/env/.env.app \
+                      --env-file ../${{ env.SYSTEM_REPO }}/env/.env.db \
+                      --env-file ../${{ env.SYSTEM_REPO }}/env/.env.monitoring \
+                      python:3.11-slim \
+                      bash -c '
+                        echo "📦 Установка зависимостей..."
+                        cd .github && pip install -r requirements.txt
+                        
+                        echo "✅ Зависимости установлены"
+                        echo "🚀 Запуск миграции..."
+                        
+                        python intenal/migration/run stage
+                      '
+                    
+                    MIGRATION_EXIT_CODE=$?
+                    
+                    if [ $MIGRATION_EXIT_CODE -ne 0 ]; then
+                        log_message "❌ Миграции завершились с ошибкой"
+                        exit 1
+                    fi
+                    
+                    log_message "✅ Миграции успешно применены"
 
                     cd ../${{ env.SYSTEM_REPO }}
-
-                    export $(cat env/.env.app env/.env.db env/.env.monitoring | xargs)
 
                     log_message "🔨 Начинаем сборку контейнера для тега ${{ env.TAG_NAME }}..."
                     docker compose -f ./docker-compose/app.yaml up -d --build ${{ env.SERVICE_NAME }} 2>&1 | tee -a "$LOG_FILE"

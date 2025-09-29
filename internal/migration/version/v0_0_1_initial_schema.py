@@ -1,3 +1,33 @@
+from internal import interface, model
+from internal.migration.base import Migration, MigrationInfo
+
+
+class InitialSchemaMigration(Migration):
+
+    def get_info(self) -> MigrationInfo:
+        return MigrationInfo(
+            version="v1_0_0",
+            name="initial_schema",
+        )
+
+    async def up(self, db: interface.IDB):
+        queries = [
+            create_state_table,
+            create_cache_files_table,
+            create_vizard_video_cut_alerts_table
+        ]
+
+        await db.multi_query(queries)
+
+    async def down(self, db: interface.IDB):
+        queries = [
+            drop_state_table,
+            drop_cache_files_table,
+            drop_vizard_video_cut_alerts_table
+        ]
+
+        await db.multi_query(queries)
+
 create_state_table = """
 CREATE TABLE IF NOT EXISTS user_states (
     id SERIAL PRIMARY KEY,
@@ -47,15 +77,3 @@ DROP TABLE IF EXISTS cache_files;
 drop_vizard_video_cut_alerts_table = """
 DROP TABLE IF EXISTS vizard_video_cut_alerts;
 """
-
-
-create_queries = [
-    create_state_table,
-    create_cache_files_table,
-    create_vizard_video_cut_alerts_table,
-]
-drop_queries = [
-    drop_state_table,
-    drop_cache_files_table,
-    drop_vizard_video_cut_alerts_table
-]
