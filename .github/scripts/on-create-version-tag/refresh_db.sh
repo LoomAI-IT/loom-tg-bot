@@ -73,20 +73,24 @@ refresh_all_databases() {
 
     log_info "Прогресс" "Обработка баз данных $total сервисов..."
 
+    # ИСПРАВЛЕНИЕ: отключаем set -e для цикла
+    set +e
+
     for service_info in "${services[@]}"; do
-        log_info "DEBUG" "Обработка: '$service_info'"  # ДОБАВЬТЕ ЭТУ СТРОКУ
+        log_info "DEBUG" "Обработка: '$service_info'"
 
         IFS=':' read -r prefix name <<< "$service_info"
 
-        log_info "DEBUG" "Префикс: '$prefix', Имя: '$name'"  # ДОБАВЬТЕ ЭТУ СТРОКУ
+        log_info "DEBUG" "Префикс: '$prefix', Имя: '$name'"
 
         # Проверка на пустой префикс
-        if [ -z "$prefix" ]; then
-            log_error "Конфигурация" "Пустой префикс для сервиса: $name"
+        if [ -z "$prefix" ] || [ "$prefix" = ":" ]; then
+            log_warning "Конфигурация" "Пропуск сервиса с пустым префиксом: $name"
             ((failed++))
             continue
         fi
 
+        # Вызов функции с явной обработкой результата
         if refresh_database_table "$prefix" "$name"; then
             ((success++))
         else
@@ -96,13 +100,17 @@ refresh_all_databases() {
         echo "" # Пустая строка для читаемости
     done
 
+    # ИСПРАВЛЕНИЕ: включаем обратно set -e
+    set -e
+
     # Итоги
     log_info "Итоги" "Завершено: $success успешно, $failed с ошибками из $total всего"
 
     if [ $failed -gt 0 ]; then
         log_error "Обновление БД" "Не удалось обновить $failed сервис(ов)"
-        exit 1
+        return 1  # ИЗМЕНЕНО: используем return вместо exit
     fi
 
     log_success "Обновление БД" "Все $total баз данных успешно обновлены"
+    return 0  # ДОБАВЛЕНО: явный успешный возврат
 }
