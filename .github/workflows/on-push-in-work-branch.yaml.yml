@@ -49,18 +49,6 @@ jobs:
                     source .github/scripts/on-push-in-work-branch/update_branch.sh
                     update_branch_on_server
 
-            -   name: 🎉 Уведомление об успехе
-                if: success()
-                run: |
-                    source .github/scripts/on-push-in-work-branch/notify.sh
-                    send_success_notification
-
-            -   name: ❌ Уведомление об ошибке
-                if: failure()
-                run: |
-                    source .github/scripts/on-push-in-work-branch/notify.sh
-                    send_failure_notification
-
             -   name: 📋 Итоги обновления
                 if: always()
                 run: |

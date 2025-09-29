@@ -8,14 +8,14 @@ send_telegram_notification() {
     local message=$1
 
     # Проверяем наличие скрипта уведомлений
-    if [ ! -f ".github/scripts/tg_bot_alert.py" ]; then
-        echo "⚠️  Скрипт уведомлений не найден: .github/scripts/tg_bot_alert.py"
+    if [ ! -f "script/tg_bot_alert.py" ]; then
+        echo "⚠️  Скрипт уведомлений не найден: script/tg_bot_alert.py"
         echo "   Пропуск отправки уведомления"
         return 0
     fi
 
     # Отправляем уведомление
-    if python3 .github/scripts/tg_bot_alert.py "$message" 2>/dev/null; then
+    if python3 script/tg_bot_alert.py "$message" 2>/dev/null; then
         echo "✅ Уведомление отправлено в Telegram"
     else
         echo "⚠️  Не удалось отправить уведомление в Telegram"
