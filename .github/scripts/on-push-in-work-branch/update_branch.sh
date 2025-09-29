@@ -31,7 +31,7 @@ set -e
 # ============================================
 
 LOG_DIR="/var/log/deployments/dev/$SERVICE_NAME"
-LOG_FILE="$LOG_DIR/$BRANCH_NAME-$(date '+%Y%m%d-%H%M%S').log"
+LOG_FILE="$LOG_DIR/$BRANCH_NAME.log"
 
 init_logging() {
     mkdir -p "$LOG_DIR"
