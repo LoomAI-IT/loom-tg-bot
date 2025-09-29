@@ -39,6 +39,7 @@ jobs:
 
             -   name: Загрузка конфигурации сервера
                 run: |
+                    source .github/scripts/on-create-version-tag/logger.sh
                     source .github/scripts/on-create-version-tag/load_config.sh
                     load_server_config
 
