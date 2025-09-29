@@ -119,8 +119,6 @@ cleanup_branches() {
 run_migrations() {
     log_message "INFO" "Запуск миграций базы данных для stage окружения"
 
-    export $(cat env/.env.app env/.env.db env/.env.monitoring | xargs)
-
     docker run --rm \
         --network net \
         -v ./:/app \

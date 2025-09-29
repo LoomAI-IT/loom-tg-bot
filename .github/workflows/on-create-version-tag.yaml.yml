@@ -81,7 +81,7 @@ jobs:
                 if: steps.deploy_step.outcome == 'success'
                 run: |
                     source .github/scripts/on-create-version-tag/logger.sh
-                    source .github/scripts/release_api.sh
+                    source .github/scripts/on-create-version-tag/release_api.sh
                     source .github/scripts/on-create-version-tag/rollback.sh
                     
                     # Получаем предыдущий тег для теста отката
@@ -116,12 +116,14 @@ jobs:
             -   name: Подтверждение успешного деплоя
                 if: success()
                 run: |
+                    source .github/scripts/on-create-version-tag/logger.sh
                     source .github/scripts/on-create-version-tag/deploy.sh
                     verify_deployment_success
 
             -   name: Обновление статуса при ошибке
                 if: failure()
                 run: |
+                    source .github/scripts/on-create-version-tag/logger.sh
                     source .github/scripts/on-create-version-tag/release_tg_bot_api.sh
                     
                     # Определяем, на каком этапе произошла ошибка
@@ -136,6 +138,7 @@ jobs:
             -   name: Обработка ошибки деплоя
                 if: failure()
                 run: |
+                    source .github/scripts/on-create-version-tag/logger.sh
                     source .github/scripts/on-create-version-tag/deploy.sh
                     handle_deployment_failure
 
