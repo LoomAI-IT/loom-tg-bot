@@ -65,6 +65,7 @@ save_current_state() {
 
     # Сохраняем для возможного восстановления
     echo "$current_ref" > /tmp/${SERVICE_NAME}_rollback_previous.txt
+    cd
 
     log_message "SUCCESS" "Текущее состояние сохранено: $current_ref"
 }
@@ -98,12 +99,13 @@ update_repository_for_rollback() {
         git tag -l | tail -10 | tee -a "$LOG_FILE"
         exit 1
     fi
-
+    cd
     log_message "SUCCESS" "Тег $TARGET_TAG доступен для отката"
 }
 
 checkout_rollback_tag() {
     log_message "INFO" "Переключение на тег отката $TARGET_TAG"
+    cd loom/$SERVICE_NAME
 
     git checkout $TARGET_TAG >> "$LOG_FILE" 2>&1
 
@@ -112,12 +114,14 @@ checkout_rollback_tag() {
         tail -20 "$LOG_FILE"
         exit 1
     fi
-
+    cd
     log_message "SUCCESS" "Успешно переключено на тег отката $TARGET_TAG"
 }
 
 cleanup_branches() {
     log_message "INFO" "Очистка старых локальных веток"
+
+    cd loom/$SERVICE_NAME
 
     git for-each-ref --format='%(refname:short)' refs/heads | \
         grep -v -E "^(main|master)$" | \
@@ -125,6 +129,8 @@ cleanup_branches() {
 
     log_message "INFO" "Очистка отслеживаемых веток удаленного репозитория"
     git remote prune origin >> "$LOG_FILE" 2>&1
+
+    cd
 
     log_message "SUCCESS" "Очистка git завершена"
 }
@@ -135,6 +141,8 @@ cleanup_branches() {
 
 rollback_migrations() {
     log_message "INFO" "Откат миграций базы данных к версии $TARGET_TAG"
+
+    cd loom/$SERVICE_NAME
 
     docker run --rm \
         --network net \
@@ -162,6 +170,8 @@ rollback_migrations() {
         exit 1
     fi
 
+    cd
+
     log_message "SUCCESS" "Откат миграций базы данных успешно завершен"
 }
 
@@ -185,6 +195,8 @@ rebuild_container_for_rollback() {
         tail -50 "$LOG_FILE"
         exit 1
     fi
+
+    cd
 
     log_message "SUCCESS" "Контейнер успешно пересобран с версией отката"
 }
@@ -235,6 +247,8 @@ wait_for_health_after_rollback() {
 reapply_current_migrations() {
     log_message "INFO" "Повторное применение миграций для текущей версии"
 
+    cd loom/$SERVICE_NAME
+
     docker run --rm \
         --network net \
         -v ./:/app \
@@ -252,6 +266,8 @@ reapply_current_migrations() {
         ' >> "$LOG_FILE" 2>&1
 
     local migration_exit_code=$?
+
+    cd
 
     if [ $migration_exit_code -ne 0 ]; then
         log_message "WARNING" "Повторное применение миграций завершилось с предупреждениями"
