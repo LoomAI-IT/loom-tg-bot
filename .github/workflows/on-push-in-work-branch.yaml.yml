@@ -19,6 +19,12 @@ jobs:
         runs-on: self-hosted
 
         steps:
+            -   name: 📥 Checkout кода
+                uses: actions/checkout@v4
+                with:
+                    ref: ${{ github.ref }}
+                    fetch-depth: 0
+
             -   name: 📋 Информация о пуше
                 run: |
                     echo ""
