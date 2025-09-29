@@ -95,7 +95,7 @@ EOF
     log_debug "Разбор ответа API" "Извлечение release_id" >&2
 
     # Извлечение ID релиза из ответа (только значение в stdout)
-    local release_id=$(extract_json_value "$response" "release_id")
+    local release_id=$(echo "$response" | grep -o '"release_id":[0-9]*' | sed 's/"release_id"://')
 
     if [ -z "$release_id" ]; then
         log_error "Парсинг ответа" "Не удалось извлечь release_id" >&2
