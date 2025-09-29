@@ -143,6 +143,7 @@ class MigrationManager:
 
     async def drop_tables(self):
         try:
-            await self.db.multi_query(model.drop_queries)
+            drop_migration_history_table = "DROP TABLE IF EXISTS migration_history;"
+            await self.db.multi_query([*model.drop_queries, drop_migration_history_table])
         except Exception as e:
             print(e, flush=True)
