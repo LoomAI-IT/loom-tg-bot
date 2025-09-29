@@ -10,7 +10,8 @@ from infrastructure.telemetry.telemetry import Telemetry
 from internal.config.config import Config
 from internal.migration.manager import MigrationManager
 
-if __name__ == "__main__":
+
+async def main():
     cfg = Config()
 
     tel = Telemetry(
@@ -37,11 +38,12 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.env == "stage":
-        asyncio.run(manager.drop_tables())
-        asyncio.run(manager.migrate())
+        await manager.drop_tables()
+        await manager.migrate()
+
     if args.env == "prod":
         if args.command == "up":
-            asyncio.run(manager.migrate())
+            await manager.migrate()
 
         if args.command == "down":
             version = args.version
@@ -50,4 +52,8 @@ if __name__ == "__main__":
                 sys.exit(1)
             version = version.replace(".", "_")
 
-            asyncio.run(manager.rollback_to_version(version))
+            await manager.rollback_to_version(version)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
