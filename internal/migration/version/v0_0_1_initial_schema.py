@@ -6,7 +6,7 @@ class InitialSchemaMigration(Migration):
 
     def get_info(self) -> MigrationInfo:
         return MigrationInfo(
-            version="v1_0_0",
+            version="v0_0_1",
             name="initial_schema",
         )
 
