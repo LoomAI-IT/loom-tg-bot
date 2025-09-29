@@ -289,7 +289,7 @@ jobs:
                     echo "📊 Сервер: ${{ env.SERVER_HOST }}"
                     echo "🏷️ Версия: ${{ env.TAG_NAME }}"
                     echo "🧪 Статус: Готов к ручному тестированию"
-                    echo "📁 Лог деплоя: /var/log/deployments/${{ env.TAG_NAME }}.log"
+                    echo "📁 Лог деплоя: /var/log/deployments/${{ env.SERVICE_NAME }}/${{ env.TAG_NAME }}.log"
 
             -   name: Handle deployment failure
                 if: failure()
@@ -298,4 +298,4 @@ jobs:
                     echo "📊 Сервер: ${{ env.SERVER_HOST }}"
                     echo "🏷️ Версия: ${{ env.TAG_NAME }}"
                     echo "📋 Проверьте логи выше для подробной информации"
-                    echo "📁 Лог деплоя: /var/log/deployments/${{ env.TAG_NAME }}.log"
+                    echo "📁 Лог деплоя: /var/log/deployments/${{ env.SERVICE_NAME }}/${{ env.TAG_NAME }}.log"
