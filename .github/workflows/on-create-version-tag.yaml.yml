@@ -49,12 +49,6 @@ jobs:
                     source .github/scripts/on-create-version-tag/release_tg_bot_api.sh
                     create_release_record
 
-            -   name: Обновление статуса на "сборка"
-                run: |
-                    source .github/scripts/on-create-version-tag/logger.sh
-                    source .github/scripts/on-create-version-tag/release_tg_bot_api.sh
-                    update_release_status "stage_building"
-
             -   name: Обновление таблиц базы данных
                 id: refresh_db_step
                 run: |
@@ -62,19 +56,18 @@ jobs:
                     source .github/scripts/on-create-version-tag/refresh_db.sh
                     refresh_all_databases
 
-#            -   name: Деплой на stage сервер
-#                id: deploy_step
-#                run: |
-#                    source .github/scripts/on-create-version-tag/logger.sh
-#                    source .github/scripts/on-create-version-tag/deploy.sh
-#                    deploy_to_server
-
-            -   name: Обновление статуса после деплоя
-                if: steps.deploy_step.outcome == 'success'
+            -   name: Обновление статуса на "сборка"
                 run: |
                     source .github/scripts/on-create-version-tag/logger.sh
                     source .github/scripts/on-create-version-tag/release_tg_bot_api.sh
-                    update_release_status "stage_deployed"
+                    update_release_status "stage_building"
+
+            -   name: Деплой на stage сервер
+                id: deploy_step
+                run: |
+                    source .github/scripts/on-create-version-tag/logger.sh
+                    source .github/scripts/on-create-version-tag/deploy.sh
+                    deploy_to_server
 
             -   name: Тестирование возможности отката
                 id: rollback_test_step
@@ -83,6 +76,8 @@ jobs:
                     source .github/scripts/on-create-version-tag/logger.sh
                     source .github/scripts/on-create-version-tag/release_api.sh
                     source .github/scripts/on-create-version-tag/rollback.sh
+                    
+                    update_release_status "stage_test_rollback"
                     
                     # Получаем предыдущий тег для теста отката
                     PREVIOUS_TAG=$(git describe --tags --abbrev=0 ${{ env.TAG_NAME }}^ 2>/dev/null || echo "")
