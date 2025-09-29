@@ -5,31 +5,17 @@
 # ============================================
 
 log_info() {
-    local title=$1
-    local message=$2
-    echo "ℹ️  $message"
+    echo "ℹ️ $1"
 }
 
 log_success() {
-    local title=$1
-    local message=$2
-    echo "✅ $message"
+    echo "✅ $1"
 }
 
 log_error() {
-    local title=$1
-    local message=$2
-    echo "❌ $message"
-}
-
-log_debug() {
-    local title=$1
-    local message=$2
-    echo "[DEBUG] $message"
+    echo "❌ $1" >&2
 }
 
 log_warning() {
-    local title=$1
-    local message=$2
-    echo "⚠️  $message"
+    echo "⚠️  $1"
 }
