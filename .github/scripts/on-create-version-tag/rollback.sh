@@ -69,70 +69,6 @@ save_current_state() {
     log_message "SUCCESS" "Текущее состояние сохранено: $current_ref"
 }
 
-# ============================================
-# Операции с Git для отката
-# ============================================
-
-update_repository_for_rollback() {
-    log_message "INFO" "Обновление репозитория для отката на $TARGET_TAG"
-
-    cd loom/$SERVICE_NAME
-
-    # Удаление локального тега, если существует
-    if git tag -l | grep -q "^$TARGET_TAG$"; then
-        log_message "INFO" "Удаление существующего локального тега $TARGET_TAG"
-        git tag -d $TARGET_TAG >> "$LOG_FILE"
-    fi
-
-    # Получение обновлений с удаленного репозитория
-    log_message "INFO" "Получение обновлений из origin"
-    git fetch origin >> "$LOG_FILE"
-
-    log_message "INFO" "Принудительное обновление тегов с удаленного репозитория"
-    git fetch origin --tags --force >> "$LOG_FILE"
-
-    # Проверка доступности тега
-    if ! git tag -l | grep -q "^$TARGET_TAG$"; then
-        log_message "ERROR" "Тег $TARGET_TAG не найден после получения"
-        log_message "INFO" "Доступные теги (последние 10):"
-        git tag -l | tail -10 | tee -a "$LOG_FILE"
-        exit 1
-    fi
-    cd
-    log_message "SUCCESS" "Тег $TARGET_TAG доступен для отката"
-}
-
-checkout_rollback_tag() {
-    log_message "INFO" "Переключение на тег отката $TARGET_TAG"
-    cd loom/$SERVICE_NAME
-
-    git checkout $TARGET_TAG >> "$LOG_FILE" 2>&1
-
-    if [ $? -ne 0 ]; then
-        log_message "ERROR" "Не удалось переключиться на тег $TARGET_TAG"
-        tail -20 "$LOG_FILE"
-        exit 1
-    fi
-    cd
-    log_message "SUCCESS" "Успешно переключено на тег отката $TARGET_TAG"
-}
-
-cleanup_branches() {
-    log_message "INFO" "Очистка старых локальных веток"
-
-    cd loom/$SERVICE_NAME
-
-    git for-each-ref --format='%(refname:short)' refs/heads | \
-        grep -v -E "^(main|master)$" | \
-        xargs -r git branch -D >> "$LOG_FILE" 2>&1
-
-    log_message "INFO" "Очистка отслеживаемых веток удаленного репозитория"
-    git remote prune origin >> "$LOG_FILE" 2>&1
-
-    cd
-
-    log_message "SUCCESS" "Очистка git завершена"
-}
 
 # ============================================
 # Откат миграций базы данных
@@ -158,7 +94,7 @@ rollback_migrations() {
             echo "✅ Зависимости установлены"
             echo "🔄 Откат миграций..."
             python internal/migration/run.py stage --command down --version $PREVIOUS_TAG
-        ' >> "$LOG_FILE" 2>&1
+        ' >> "$LOG_FILE"
 
     local migration_exit_code=$?
 
@@ -186,7 +122,7 @@ rebuild_container_for_rollback() {
     export $(cat env/.env.app env/.env.db env/.env.monitoring | xargs)
 
     log_message "INFO" "Запуск docker compose build для $SERVICE_NAME (версия отката)"
-    docker compose -f ./docker-compose/app.yaml up -d --build $SERVICE_NAME >> "$LOG_FILE" 2>&1
+    docker compose -f ./docker-compose/app.yaml up -d --build $SERVICE_NAME >> "$LOG_FILE"
 
     if [ $? -ne 0 ]; then
         log_message "ERROR" "Не удалось собрать/запустить Docker контейнер при откате"
@@ -240,10 +176,32 @@ wait_for_health_after_rollback() {
 }
 
 # ============================================
-# Применение миграций после отката (для текущей версии)
+# Восстановление к исходной версии
 # ============================================
 
-reapply_current_migrations() {
+restore_to_original() {
+    log_message "INFO" "Восстановление к исходной версии после теста отката"
+
+    cd loom/$SERVICE_NAME
+
+    local previous_ref=$(cat /tmp/${SERVICE_NAME}_rollback_previous.txt 2>/dev/null || echo "")
+
+    if [ -z "$previous_ref" ]; then
+        log_message "WARNING" "Не найдено сохраненное состояние для восстановления"
+        return 1
+    fi
+
+    log_message "INFO" "Восстановление к: $previous_ref"
+
+    git checkout "$previous_ref" >> "$LOG_FILE"
+
+    if [ $? -ne 0 ]; then
+        log_message "ERROR" "Не удалось восстановить предыдущее состояние: $previous_ref"
+        return 1
+    fi
+
+    log_message "SUCCESS" "Восстановлено предыдущее состояние: $previous_ref"
+
     log_message "INFO" "Повторное применение миграций для текущей версии"
 
     cd loom/$SERVICE_NAME
@@ -262,7 +220,7 @@ reapply_current_migrations() {
             echo "✅ Зависимости установлены"
             echo "🚀 Запуск миграций..."
             python internal/migration/run.py stage
-        ' >> "$LOG_FILE" 2>&1
+        ' >> "$LOG_FILE"
 
     local migration_exit_code=$?
 
@@ -273,44 +231,13 @@ reapply_current_migrations() {
     else
         log_message "SUCCESS" "Миграции успешно применены для текущей версии"
     fi
-}
-
-# ============================================
-# Восстановление к исходной версии
-# ============================================
-
-restore_to_original() {
-    log_message "INFO" "Восстановление к исходной версии после теста отката"
-
-    cd loom/$SERVICE_NAME
-
-    local previous_ref=$(cat /tmp/${SERVICE_NAME}_rollback_previous.txt 2>/dev/null || echo "")
-
-    if [ -z "$previous_ref" ]; then
-        log_message "WARNING" "Не найдено сохраненное состояние для восстановления"
-        return 1
-    fi
-
-    log_message "INFO" "Восстановление к: $previous_ref"
-
-    git checkout "$previous_ref" >> "$LOG_FILE" 2>&1
-
-    if [ $? -ne 0 ]; then
-        log_message "ERROR" "Не удалось восстановить предыдущее состояние: $previous_ref"
-        return 1
-    fi
-
-    log_message "SUCCESS" "Восстановлено предыдущее состояние: $previous_ref"
-
-    # Повторное применение миграций
-    reapply_current_migrations
 
     # Пересборка контейнера
     cd ../$SYSTEM_REPO
     export $(cat env/.env.app env/.env.db env/.env.monitoring | xargs)
 
     log_message "INFO" "Пересборка контейнера с исходной версией"
-    docker compose -f ./docker-compose/app.yaml up -d --build $SERVICE_NAME >> "$LOG_FILE" 2>&1
+    docker compose -f ./docker-compose/app.yaml up -d --build $SERVICE_NAME >> "$LOG_FILE"
 
     log_message "SUCCESS" "Исходная версия полностью восстановлена"
 
@@ -329,9 +256,6 @@ main() {
     log_message "INFO" "🔄 Начало теста отката к версии $TARGET_TAG"
 
     save_current_state
-    update_repository_for_rollback
-    checkout_rollback_tag
-    cleanup_branches
     rollback_migrations
     rebuild_container_for_rollback
     wait_for_health_after_rollback
