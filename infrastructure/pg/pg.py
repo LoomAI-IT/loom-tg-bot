@@ -107,11 +107,9 @@ class PG(interface.IDB):
             self,
             queries: list[str]
     ) -> None:
-        try:
-            async with self.pool() as session:
-                for query in queries:
-                    await session.execute(text(query))
-                await session.commit()
-            return None
-        except:
-            pass
+
+        async with self.pool() as session:
+            for query in queries:
+                await session.execute(text(query))
+            await session.commit()
+        return None
