@@ -6,7 +6,7 @@ from dataclasses import dataclass
 class MigrationInfo:
     version: str
     name: str
-    depend_on: str = None
+    depends_on: str = None
 
 
 class Migration(ABC):

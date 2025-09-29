@@ -8,7 +8,7 @@ class AddUserPreferencesMigration(Migration):
         return MigrationInfo(
             version="v0_0_6",
             name="add_user_preferences",
-            depend_on="v0_0_1"
+            depends_on="v0_0_1"
         )
 
     async def up(self, db: interface.IDB):
