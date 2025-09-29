@@ -1,7 +1,6 @@
 #!/bin/bash
 
-source .github/scripts/load_config.sh
-source .github/scripts/release_api.sh
+
 
 # ============================================
 # Выполнение отката
