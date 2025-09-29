@@ -53,6 +53,24 @@ log_message() {
 # Операции с Git
 # ============================================
 
+save_previous_tag() {
+    log_message "INFO" "Сохранение текущего тега для возможности отката"
+
+    cd loom/$SERVICE_NAME
+
+    # Пытаемся получить текущий тег (если есть)
+    local previous_tag=$(git describe --tags --exact-match 2>/dev/null || echo "")
+
+    if [ -n "$previous_tag" ]; then
+        log_message "INFO" "Найден предыдущий тег: $previous_tag"
+        echo "$previous_tag" > /tmp/${SERVICE_NAME}_previous_tag.txt
+        log_message "SUCCESS" "Предыдущий тег сохранен для возможности отката: $previous_tag"
+    else
+        log_message "WARNING" "Предыдущий тег не найден (возможно, первый деплой)"
+        echo "" > /tmp/${SERVICE_NAME}_previous_tag.txt
+    fi
+}
+
 update_repository() {
     log_message "INFO" "Обновление репозитория и получение тегов"
 
@@ -218,6 +236,7 @@ main() {
     init_logging
     log_message "INFO" "🚀 Начало развертывания тега $TAG_NAME"
 
+    save_previous_tag
     update_repository
     checkout_tag
     cleanup_branches
@@ -227,6 +246,14 @@ main() {
 
     log_message "SUCCESS" "🎉 Развертывание успешно завершено!"
     log_message "INFO" "📁 Полный лог развертывания: $LOG_FILE"
+
+    # Вывод информации о сохраненном теге для отката
+    if [ -f "/tmp/${SERVICE_NAME}_previous_tag.txt" ]; then
+        local saved_tag=$(cat /tmp/${SERVICE_NAME}_previous_tag.txt)
+        if [ -n "$saved_tag" ]; then
+            log_message "INFO" "💾 Сохранен предыдущий тег для отката: $saved_tag"
+        fi
+    fi
 
     echo ""
     echo "========================================="

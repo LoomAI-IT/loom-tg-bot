@@ -69,32 +69,37 @@ jobs:
                     source .github/scripts/on-create-version-tag/deploy.sh
                     deploy_to_server
 
-            -   name: Тестирование возможности отката
-                id: rollback_test_step
+            -   name: Получение сохраненного тега для отката
+                id: get_previous_tag
                 if: steps.deploy_step.outcome == 'success'
                 run: |
-                    source .github/scripts/on-create-version-tag/logger.sh
-                    source .github/scripts/on-create-version-tag/release_api.sh
-                    source .github/scripts/on-create-version-tag/rollback.sh
-                    
-                    update_release_status "stage_test_rollback"
-                    
-                    # Получаем предыдущий тег для теста отката
-                    PREVIOUS_TAG=$(git describe --tags --abbrev=0 ${{ env.TAG_NAME }}^ 2>/dev/null || echo "")
+                    # Получаем сохраненный тег с удаленного сервера
+                    PREVIOUS_TAG=$(sshpass -p "$STAGE_PASSWORD" ssh -o StrictHostKeyChecking=no root@$STAGE_HOST -p 22 \
+                        "cat /tmp/${{ env.SERVICE_NAME }}_previous_tag.txt 2>/dev/null || echo ''")
                     
                     if [ -z "$PREVIOUS_TAG" ]; then
                       echo "⚠️ Предыдущий тег не найден, пропускаем тест отката"
                       echo "ROLLBACK_SKIPPED=true" >> $GITHUB_ENV
-                      exit 0
+                    else
+                      echo "🔍 Найден предыдущий тег для отката: $PREVIOUS_TAG"
+                      echo "PREVIOUS_TAG=$PREVIOUS_TAG" >> $GITHUB_ENV
+                      echo "ROLLBACK_SKIPPED=false" >> $GITHUB_ENV
                     fi
+
+            -   name: Тестирование возможности отката
+                id: rollback_test_step
+                if: steps.deploy_step.outcome == 'success' && env.ROLLBACK_SKIPPED == 'false'
+                run: |
+                    source .github/scripts/on-create-version-tag/logger.sh
+                    source .github/scripts/on-create-version-tag/release_tg_bot_api.sh
+                    source .github/scripts/on-create-version-tag/rollback.sh
                     
-                    echo "🔄 Тестируем откат на предыдущий тег: $PREVIOUS_TAG"
-                    echo "PREVIOUS_TAG=$PREVIOUS_TAG" >> $GITHUB_ENV
+                    echo "🔄 Тестируем откат на предыдущий тег: ${{ env.PREVIOUS_TAG }}"
                     
-                    rollback_with_status_tracking "$RELEASE_ID" "$SERVICE_NAME" "$PREVIOUS_TAG" "$SYSTEM_REPO"
+                    rollback_with_status_tracking
 
             -   name: Проверка возможности отката
-                if: steps.rollback_test_step.outcome == 'success' && env.ROLLBACK_SKIPPED != 'true'
+                if: steps.rollback_test_step.outcome == 'success' && env.ROLLBACK_SKIPPED == 'false'
                 run: |
                     echo "✅ Тест отката пройден успешно"
                     echo "   Текущая версия: ${{ env.TAG_NAME }}"
@@ -149,6 +154,12 @@ jobs:
                     echo "Stage хост: ${{ env.STAGE_HOST }}"
                     echo "Stage домен: ${{ env.STAGE_DOMAIN }}"
                     echo ""
+                    if [ "${{ env.ROLLBACK_SKIPPED }}" == "false" ]; then
+                      echo "Предыдущий тег: ${{ env.PREVIOUS_TAG }}"
+                    else
+                      echo "Предыдущий тег: не найден (первый деплой)"
+                    fi
+                    echo ""
                     echo "Статус задачи: ${{ job.status }}"
                     echo "Шаг деплоя: ${{ steps.deploy_step.outcome }}"
                     echo "Тест отката: ${{ steps.rollback_test_step.outcome }}"
@@ -168,8 +179,10 @@ jobs:
                     echo "✅ Тег ${{ env.TAG_NAME }} развернут на stage"
                     echo "✅ База данных обновлена"
                     echo "✅ Проверки работоспособности пройдены"
-                    if [ "${{ env.ROLLBACK_SKIPPED }}" != "true" ]; then
-                      echo "✅ Возможность отката проверена"
+                    if [ "${{ env.ROLLBACK_SKIPPED }}" == "false" ]; then
+                      echo "✅ Возможность отката проверена (откат на ${{ env.PREVIOUS_TAG }})"
+                    else
+                      echo "⚠️ Тест отката пропущен (первый деплой)"
                     fi
                     echo ""
                     echo "👉 Следующий шаг: Ручное тестирование"
