@@ -9,6 +9,8 @@ refresh_database_table() {
     local service_name=$2
 
     log_info "База данных" "Обновление таблиц базы данных $service_name..."
+    log_info "URL" "Drop URL: ${STAGE_DOMAIN}${service_prefix}/table/drop"  # Добавьте эту строку
+    log_info "URL" "Create URL: ${STAGE_DOMAIN}${service_prefix}/table/create"  # И эту
 
     local drop_url="${STAGE_DOMAIN}${service_prefix}/table/drop"
     local create_url="${STAGE_DOMAIN}${service_prefix}/table/create"
@@ -18,6 +20,8 @@ refresh_database_table() {
     local drop_response=$(curl -s -w "\n%{http_code}" -X GET "$drop_url")
     local drop_code=$(echo "$drop_response" | tail -n1)
     local drop_body=$(echo "$drop_response" | head -n -1)
+
+    log_info "Ответ drop" "HTTP код: $drop_code, Тело: $drop_body"  # Добавьте эту строку
 
     if [ "$drop_code" -ne 200 ]; then
         log_warning "База данных" "Не удалось удалить таблицы $service_name (HTTP $drop_code)"
@@ -32,9 +36,12 @@ refresh_database_table() {
     local create_code=$(echo "$create_response" | tail -n1)
     local create_body=$(echo "$create_response" | head -n -1)
 
+    log_info "Ответ create" "HTTP код: $create_code, Тело: $create_body"  # Добавьте эту строку
+
     if [ "$create_code" -ne 200 ]; then
         log_error "База данных" "Не удалось создать таблицы $service_name (HTTP $create_code)"
         log_info "Ответ" "$create_body"
+        log_error "Детали" "URL: $create_url"  # Добавьте эту строку
         return 1
     fi
 
