@@ -6,7 +6,7 @@ on:
             - 'v*'
 
 env:
-    SERVICE_NAME: ${{ github.event.repository.name }}"
+    SERVICE_NAME: ${{ github.event.repository.name }}
     SYSTEM_REPO: loom-system
 
 
@@ -38,7 +38,7 @@ jobs:
                     # Проверяем наличие API конфигурации
                     if [ -z "$STAGE_DOMAIN" ] || [ -z "$PROD_DOMAIN" ]; then
                       echo "❌ API конфигурация не найдена в .env.runner!"
-                      echo "   Убедитесь, что есть переменные: STAGE_DOMAIN и PROD_DOMAIN"
+                      echo " Убедитесь, что есть переменные: STAGE_DOMAIN и PROD_DOMAIN"
                       exit 1
                     fi
 
