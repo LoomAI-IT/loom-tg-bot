@@ -82,4 +82,11 @@ load_server_config() {
     log_info "Детали" "Сервис: $SERVICE_NAME | Префикс: $SERVICE_PREFIX"
     log_info "Детали" "Stage хост: $STAGE_HOST | Stage домен: $STAGE_DOMAIN"
     log_info "Детали" "Production домен: $PROD_DOMAIN"
+
+    log_info "Проверка префиксов" "LOOM_TG_BOT_PREFIX='$LOOM_TG_BOT_PREFIX'"
+    log_info "Проверка префиксов" "LOOM_ACCOUNT_PREFIX='$LOOM_ACCOUNT_PREFIX'"
+    log_info "Проверка префиксов" "LOOM_AUTHORIZATION_PREFIX='$LOOM_AUTHORIZATION_PREFIX'"
+    log_info "Проверка префиксов" "LOOM_EMPLOYEE_PREFIX='$LOOM_EMPLOYEE_PREFIX'"
+    log_info "Проверка префиксов" "LOOM_ORGANIZATION_PREFIX='$LOOM_ORGANIZATION_PREFIX'"
+    log_info "Проверка префиксов" "LOOM_CONTENT_PREFIX='$LOOM_CONTENT_PREFIX'"
 }

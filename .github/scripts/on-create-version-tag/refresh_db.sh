@@ -74,7 +74,18 @@ refresh_all_databases() {
     log_info "Прогресс" "Обработка баз данных $total сервисов..."
 
     for service_info in "${services[@]}"; do
+        log_info "DEBUG" "Обработка: '$service_info'"  # ДОБАВЬТЕ ЭТУ СТРОКУ
+
         IFS=':' read -r prefix name <<< "$service_info"
+
+        log_info "DEBUG" "Префикс: '$prefix', Имя: '$name'"  # ДОБАВЬТЕ ЭТУ СТРОКУ
+
+        # Проверка на пустой префикс
+        if [ -z "$prefix" ]; then
+            log_error "Конфигурация" "Пустой префикс для сервиса: $name"
+            ((failed++))
+            continue
+        fi
 
         if refresh_database_table "$prefix" "$name"; then
             ((success++))
