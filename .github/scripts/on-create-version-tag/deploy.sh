@@ -15,15 +15,15 @@ set -e
 # Настройка логирования на удаленном сервере
 # ============================================
 
-LOG_DIR="/var/log/deployments/${{ env.SERVICE_NAME }}"
-LOG_FILE="$LOG_DIR/${{ env.TAG_NAME }}.log"
+LOG_DIR="/var/log/deployments/$SERVICE_NAME"
+LOG_FILE="$LOG_DIR/$TAG_NAME.log"
 
 init_logging() {
     mkdir -p "$LOG_DIR"
     echo "========================================" >> "$LOG_FILE"
     echo "Развертывание начато: $(date '+%Y-%m-%d %H:%M:%S')" >> "$LOG_FILE"
-    echo "Сервис: ${{ env.SERVICE_NAME }}" >> "$LOG_FILE"
-    echo "Тег: ${{ env.TAG_NAME }}" >> "$LOG_FILE"
+    echo "Сервис: $SERVICE_NAME" >> "$LOG_FILE"
+    echo "Тег: $TAG_NAME" >> "$LOG_FILE"
     echo "========================================" >> "$LOG_FILE"
 }
 
@@ -50,15 +50,15 @@ log_message() {
 update_repository() {
     log_message "INFO" "Обновление репозитория и получение тегов"
 
-    cd loom/${{ env.SERVICE_NAME }}
+    cd loom/$SERVICE_NAME
 
     local current_ref=$(git symbolic-ref --short HEAD 2>/dev/null || git describe --tags --exact-match 2>/dev/null || git rev-parse --short HEAD)
     log_message "INFO" "Текущее состояние git: $current_ref"
 
     # Удаление локального тега, если существует
-    if git tag -l | grep -q "^${{ env.TAG_NAME }}$"; then
-        log_message "INFO" "Удаление существующего локального тега ${{ env.TAG_NAME }}"
-        git tag -d ${{ env.TAG_NAME }} >> "$LOG_FILE" 2>&1
+    if git tag -l | grep -q "^$TAG_NAME$"; then
+        log_message "INFO" "Удаление существующего локального тега $TAG_NAME"
+        git tag -d $TAG_NAME >> "$LOG_FILE" 2>&1
     fi
 
     # Получение обновлений с удаленного репозитория
@@ -69,28 +69,28 @@ update_repository() {
     git fetch origin --tags --force >> "$LOG_FILE" 2>&1
 
     # Проверка доступности тега
-    if ! git tag -l | grep -q "^${{ env.TAG_NAME }}$"; then
-        log_message "ERROR" "Тег ${{ env.TAG_NAME }} не найден после получения"
+    if ! git tag -l | grep -q "^$TAG_NAME$"; then
+        log_message "ERROR" "Тег $TAG_NAME не найден после получения"
         log_message "INFO" "Доступные теги (последние 10):"
         git tag -l | tail -10 | tee -a "$LOG_FILE"
         exit 1
     fi
 
-    log_message "SUCCESS" "Тег ${{ env.TAG_NAME }} доступен"
+    log_message "SUCCESS" "Тег $TAG_NAME доступен"
 }
 
 checkout_tag() {
-    log_message "INFO" "Переключение на тег ${{ env.TAG_NAME }}"
+    log_message "INFO" "Переключение на тег $TAG_NAME"
 
-    git checkout ${{ env.TAG_NAME }} >> "$LOG_FILE" 2>&1
+    git checkout $TAG_NAME >> "$LOG_FILE" 2>&1
 
     if [ $? -ne 0 ]; then
-        log_message "ERROR" "Не удалось переключиться на тег ${{ env.TAG_NAME }}"
+        log_message "ERROR" "Не удалось переключиться на тег $TAG_NAME"
         tail -20 "$LOG_FILE"
         exit 1
     fi
 
-    log_message "SUCCESS" "Успешно переключено на тег ${{ env.TAG_NAME }}"
+    log_message "SUCCESS" "Успешно переключено на тег $TAG_NAME"
 }
 
 cleanup_branches() {
@@ -119,9 +119,9 @@ run_migrations() {
         --network net \
         -v ./:/app \
         -w /app \
-        --env-file ../${{ env.SYSTEM_REPO }}/env/.env.app \
-        --env-file ../${{ env.SYSTEM_REPO }}/env/.env.db \
-        --env-file ../${{ env.SYSTEM_REPO }}/env/.env.monitoring \
+        --env-file ../$SYSTEM_REPO/env/.env.app \
+        --env-file ../$SYSTEM_REPO/env/.env.db \
+        --env-file ../$SYSTEM_REPO/env/.env.monitoring \
         python:3.11-slim \
         bash -c '
             echo "📦 Установка зависимостей для миграции..."
@@ -150,12 +150,12 @@ run_migrations() {
 build_container() {
     log_message "INFO" "Сборка и запуск Docker контейнера"
 
-    cd ../${{ env.SYSTEM_REPO }}
+    cd ../$SYSTEM_REPO
 
     export $(cat env/.env.app env/.env.db env/.env.monitoring | xargs)
 
-    log_message "INFO" "Запуск docker compose build для ${{ env.SERVICE_NAME }}"
-    docker compose -f ./docker-compose/app.yaml up -d --build ${{ env.SERVICE_NAME }} >> "$LOG_FILE" 2>&1
+    log_message "INFO" "Запуск docker compose build для $SERVICE_NAME"
+    docker compose -f ./docker-compose/app.yaml up -d --build $SERVICE_NAME >> "$LOG_FILE" 2>&1
 
     if [ $? -ne 0 ]; then
         log_message "ERROR" "Не удалось собрать/запустить Docker контейнер"
@@ -168,7 +168,7 @@ build_container() {
 }
 
 check_health() {
-    local url="${{ env.STAGE_DOMAIN }}${{ env.SERVICE_PREFIX }}/health"
+    local url="$STAGE_DOMAIN$SERVICE_PREFIX/health"
     local http_code=$(curl -f -s -o /dev/null -w "%{http_code}" "$url" 2>/dev/null)
 
     if [ "$http_code" = "200" ]; then
@@ -202,7 +202,7 @@ wait_for_health() {
 
     log_message "ERROR" "Проверка работоспособности не пройдена после $max_attempts попыток"
     log_message "INFO" "Логи контейнера (последние 50 строк):"
-    docker logs --tail 50 ${{ env.SERVICE_NAME }} | tee -a "$LOG_FILE"
+    docker logs --tail 50 $SERVICE_NAME | tee -a "$LOG_FILE"
     exit 1
 }
 
@@ -212,7 +212,7 @@ wait_for_health() {
 
 main() {
     init_logging
-    log_message "INFO" "🚀 Начало развертывания тега ${{ env.TAG_NAME }}"
+    log_message "INFO" "🚀 Начало развертывания тега $TAG_NAME"
 
     update_repository
     checkout_tag
