@@ -86,10 +86,10 @@ update_repository_for_rollback() {
 
     # Получение обновлений с удаленного репозитория
     log_message "INFO" "Получение обновлений из origin"
-    git fetch origin >> "$LOG_FILE" 2>&1
+    git fetch origin >> "$LOG_FILE"
 
     log_message "INFO" "Принудительное обновление тегов с удаленного репозитория"
-    git fetch origin --tags --force >> "$LOG_FILE" 2>&1
+    git fetch origin --tags --force >> "$LOG_FILE"
 
     # Проверка доступности тега
     if ! git tag -l | grep -q "^$TARGET_TAG$"; then
