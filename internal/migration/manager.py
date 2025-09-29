@@ -49,22 +49,11 @@ class MigrationManager:
         query = """
                 CREATE TABLE IF NOT EXISTS migration_history \
                 ( \
-                    id \
-                    SERIAL \
-                    PRIMARY \
-                    KEY, \
-                    version \
-                    TEXT \
-                    KEY, \
-                    name \
-                    TEXT \
-                    NOT \
-                    NULL, \
-                    applied_at \
-                    TIMESTAMP \
-                    DEFAULT \
-                    CURRENT_TIMESTAMP
-                ) \
+                    id SERIAL PRIMARY KEY,
+                    version TEXT KEY, 
+                    name TEXT NOT NULL,
+                    applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
                 """
         await self.db.multi_query([query])
         print("MigrationManager: migration_history table ready", flush=True)
