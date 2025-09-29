@@ -36,15 +36,15 @@ jobs:
                     set +a
 
                     # Проверяем наличие API конфигурации
-                    if [ -z "$LOOM_RELEASE_TG_BOT_API_URL" ] || [ -z "$LOOM_INTERSERVER_SECRET_KEY" ]; then
+                    if [ -z "$STAGE_DOMAIN" ] || [ -z "$PROD_DOMAIN" ]; then
                       echo "❌ API конфигурация не найдена в .env.runner!"
-                      echo "   Убедитесь, что есть переменные: LOOM_RELEASE_TG_BOT_API_URL и LOOM_INTERSERVER_SECRET_KEY"
+                      echo "   Убедитесь, что есть переменные: STAGE_DOMAIN и PROD_DOMAIN"
                       exit 1
                     fi
 
-                    if [ -z "STAGE_HOST" ] || [ -z "$SERVER_PASSWORD" ]; then
+                    if [ -z "$STAGE_HOST" ] || [ -z "$STAGE_PASSWORD" ]; then
                       echo "❌ Конфигурация stage сервера не найдена!"
-                      echo "   Убедитесь, что в .env.runner есть переменные: ${HOST_VAR} и ${PASSWORD_VAR}"
+                      echo "   Убедитесь, что в .env.runner есть переменные: STAGE_HOST и STAGE_PASSWORD"
                       exit 1
                     fi
                     
