@@ -8,7 +8,13 @@ deploy_to_server() {
     log_info "Развертывание" "Запуск развертывания $TAG_NAME на $STAGE_HOST"
     log_info "Подключение" "Подключение через SSH к root@$STAGE_HOST:22"
 
-    SSH_OUTPUT=$(sshpass -p "$STAGE_PASSWORD" ssh -o StrictHostKeyChecking=no root@$STAGE_HOST -p 22 << 'EOFMAIN'
+    SSH_OUTPUT=$(sshpass -p "$STAGE_PASSWORD" ssh -o StrictHostKeyChecking=no root@$STAGE_HOST -p 22 \
+        SERVICE_NAME="$SERVICE_NAME" \
+        TAG_NAME="$TAG_NAME" \
+        SYSTEM_REPO="$SYSTEM_REPO" \
+        SERVICE_PREFIX="$SERVICE_PREFIX" \
+        STAGE_DOMAIN="$STAGE_DOMAIN" \
+        bash << 'EOFMAIN'
 set -e
 
 # ============================================
