@@ -41,17 +41,18 @@ extract_json_value() {
     local json=$1
     local key=$2
 
-    log_debug "Извлечение JSON" "Ключ: $key"
+    log_debug "Извлечение JSON" "Ключ: $key" >&2
 
     local value=$(echo "$json" | grep -o "\"$key\":[0-9]*" | sed "s/\"$key\"://")
 
     if [ -z "$value" ]; then
-        log_warning "Извлечение JSON" "Ключ '$key' не найден в ответе"
-        log_debug "JSON" "$json"
+        log_warning "Извлечение JSON" "Ключ '$key' не найден в ответе" >&2
+        log_debug "JSON" "$json" >&2
     else
-        log_debug "Извлечено значение" "$key = $value"
+        log_debug "Извлечено значение" "$key = $value" >&2
     fi
 
+    # Только значение в stdout
     echo "$value"
 }
 
@@ -96,7 +97,7 @@ EOF
 
     log_debug "Разбор ответа API" "Извлечение release_id"
 
-    # Извлечение ID релиза из ответа
+    # Извлечение ID релиза из ответа (логи идут в stderr, только значение в stdout)
     local release_id=$(extract_json_value "$response" "release_id")
 
     if [ -z "$release_id" ]; then
@@ -105,6 +106,8 @@ EOF
         log_error "Критическая ошибка" "Невозможно продолжить без ID релиза"
         exit 1
     fi
+
+    log_info "Извлечён Release ID" "$release_id"
 
     # Экспорт ID релиза в окружение GitHub
     echo "RELEASE_ID=$release_id" >> $GITHUB_ENV
