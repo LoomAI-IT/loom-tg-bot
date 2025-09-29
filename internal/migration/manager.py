@@ -31,6 +31,8 @@ class MigrationManager:
                             migration = obj()
                             migrations[migration.info.version] = migration
                             break
+
+            print(migrations, flush=True)
             return migrations
         except Exception as e:
             print(e, flush=True)
