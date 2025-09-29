@@ -69,6 +69,8 @@ save_previous_tag() {
         log_message "WARNING" "Предыдущий тег не найден (возможно, первый деплой)"
         echo "" > /tmp/${SERVICE_NAME}_previous_tag.txt
     fi
+
+    cd
 }
 
 update_repository() {
@@ -101,11 +103,12 @@ update_repository() {
     fi
 
     log_message "SUCCESS" "Тег $TAG_NAME доступен"
+    cd
 }
 
 checkout_tag() {
     log_message "INFO" "Переключение на тег $TAG_NAME"
-
+    cd loom/$SERVICE_NAME
     git checkout $TAG_NAME >> "$LOG_FILE" 2>&1
 
     if [ $? -ne 0 ]; then
@@ -115,10 +118,12 @@ checkout_tag() {
     fi
 
     log_message "SUCCESS" "Успешно переключено на тег $TAG_NAME"
+    cd
 }
 
 cleanup_branches() {
     log_message "INFO" "Очистка старых локальных веток"
+    cd loom/$SERVICE_NAME
 
     git for-each-ref --format='%(refname:short)' refs/heads | \
         grep -v -E "^(main|master)$" | \
@@ -128,6 +133,7 @@ cleanup_branches() {
     git remote prune origin >> "$LOG_FILE" 2>&1
 
     log_message "SUCCESS" "Очистка git завершена"
+    cd
 }
 
 # ============================================
@@ -136,7 +142,7 @@ cleanup_branches() {
 
 run_migrations() {
     log_message "INFO" "Запуск миграций базы данных для stage окружения"
-
+    cd loom/$SERVICE_NAME
     docker run --rm \
         --network net \
         -v ./:/app \
@@ -161,7 +167,7 @@ run_migrations() {
         tail -50 "$LOG_FILE"
         exit 1
     fi
-
+    cd
     log_message "SUCCESS" "Миграции базы данных успешно завершены"
 }
 
@@ -172,7 +178,7 @@ run_migrations() {
 build_container() {
     log_message "INFO" "Сборка и запуск Docker контейнера"
 
-    cd ../$SYSTEM_REPO
+    cd loom/$SYSTEM_REPO
 
     export $(cat env/.env.app env/.env.db env/.env.monitoring | xargs)
 
@@ -185,7 +191,7 @@ build_container() {
         tail -50 "$LOG_FILE"
         exit 1
     fi
-
+    cd
     log_message "SUCCESS" "Контейнер успешно собран и запущен"
 }
 
