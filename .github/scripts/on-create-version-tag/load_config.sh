@@ -10,8 +10,8 @@ validate_env_var() {
     local error_message=$3
 
     if [ -z "$var_value" ]; then
-        log_error "Ошибка конфигурации" "$error_message"
-        log_info "Требуемая переменная" "Отсутствует: $var_name"
+        echo "❌ Ошибка конфигурации: $error_message"
+        echo "   Отсутствует переменная: $var_name"
         exit 1
     fi
 }
@@ -27,48 +27,59 @@ export_to_github_env() {
 # ============================================
 
 load_server_config() {
-    log_info "Конфигурация" "Загрузка конфигурации сервера..."
+    echo ""
+    echo "╔════════════════════════════════════════════════════════════╗"
+    echo "║              ЗАГРУЗКА КОНФИГУРАЦИИ                         ║"
+    echo "╚════════════════════════════════════════════════════════════╝"
+    echo ""
 
     local config_file="/root/.env.runner"
 
     # Проверка существования файла конфигурации
     if [ ! -f "$config_file" ]; then
-        log_error "Ошибка конфигурации" "Файл конфигурации сервера не найден: $config_file"
+        echo "❌ Файл конфигурации не найден: $config_file"
         exit 1
     fi
+
+    echo "📄 Файл: $config_file"
 
     # Загрузка переменных окружения из файла конфигурации
     set -a
     source "$config_file"
     set +a
 
-    log_success "Конфигурация" "Переменные окружения загружены из $config_file"
+    echo "✅ Переменные загружены"
+    echo ""
+    echo "─────────────────────────────────────────"
+    echo "Валидация обязательных переменных"
+    echo "─────────────────────────────────────────"
 
     # Валидация требуемой конфигурации API
-    validate_env_var "STAGE_DOMAIN" "$STAGE_DOMAIN" "STAGE_DOMAIN не настроен в .env.runner"
-    validate_env_var "PROD_DOMAIN" "$PROD_DOMAIN" "PROD_DOMAIN не настроен в .env.runner"
+    validate_env_var "STAGE_DOMAIN" "$STAGE_DOMAIN" "STAGE_DOMAIN не настроен"
+    validate_env_var "PROD_DOMAIN" "$PROD_DOMAIN" "PROD_DOMAIN не настроен"
+    validate_env_var "STAGE_HOST" "$STAGE_HOST" "STAGE_HOST не настроен"
+    validate_env_var "STAGE_PASSWORD" "$STAGE_PASSWORD" "STAGE_PASSWORD не настроен"
 
-    # Валидация конфигурации stage-сервера
-    validate_env_var "STAGE_HOST" "$STAGE_HOST" "STAGE_HOST не настроен в .env.runner"
-    validate_env_var "STAGE_PASSWORD" "$STAGE_PASSWORD" "STAGE_PASSWORD не настроен в .env.runner"
-
-    log_success "Валидация" "Все требуемые переменные конфигурации присутствуют"
+    echo "✅ Все обязательные переменные присутствуют"
 
     # Извлечение и построение префикса сервиса
     SERVICE_PREFIX=$(echo "$SERVICE_NAME" | tr '[:lower:]' '[:upper:]' | tr '-' '_')
     SERVICE_PREFIX_VAR_NAME="${SERVICE_PREFIX}_PREFIX"
     SERVICE_PREFIX="${!SERVICE_PREFIX_VAR_NAME}"
 
-    log_info "Сервис" "Префикс сервиса определён: $SERVICE_PREFIX"
+    echo ""
+    echo "─────────────────────────────────────────"
+    echo "Экспорт в окружение GitHub Actions"
+    echo "─────────────────────────────────────────"
 
-    # Экспорт основной конфигурации в окружение GitHub
+    # Экспорт основной конфигурации
     export_to_github_env "SERVICE_PREFIX" "$SERVICE_PREFIX"
     export_to_github_env "STAGE_HOST" "$STAGE_HOST"
     export_to_github_env "STAGE_PASSWORD" "$STAGE_PASSWORD"
     export_to_github_env "STAGE_DOMAIN" "$STAGE_DOMAIN"
     export_to_github_env "PROD_DOMAIN" "$PROD_DOMAIN"
 
-    # Экспорт префиксов для конкретных сервисов
+    # Экспорт префиксов сервисов
     export_to_github_env "LOOM_TG_BOT_PREFIX" "$LOOM_TG_BOT_PREFIX"
     export_to_github_env "LOOM_ACCOUNT_PREFIX" "$LOOM_ACCOUNT_PREFIX"
     export_to_github_env "LOOM_AUTHORIZATION_PREFIX" "$LOOM_AUTHORIZATION_PREFIX"
@@ -78,15 +89,26 @@ load_server_config() {
     export_to_github_env "LOOM_RELEASE_TG_BOT_PREFIX" "$LOOM_RELEASE_TG_BOT_PREFIX"
     export_to_github_env "LOOM_INTERSERVER_SECRET_KEY" "$LOOM_INTERSERVER_SECRET_KEY"
 
-    log_success "Конфигурация" "Все переменные экспортированы в окружение GitHub"
-    log_info "Детали" "Сервис: $SERVICE_NAME | Префикс: $SERVICE_PREFIX"
-    log_info "Детали" "Stage хост: $STAGE_HOST | Stage домен: $STAGE_DOMAIN"
-    log_info "Детали" "Production домен: $PROD_DOMAIN"
+    echo "✅ Переменные экспортированы"
 
-    log_info "Проверка префиксов" "LOOM_TG_BOT_PREFIX='$LOOM_TG_BOT_PREFIX'"
-    log_info "Проверка префиксов" "LOOM_ACCOUNT_PREFIX='$LOOM_ACCOUNT_PREFIX'"
-    log_info "Проверка префиксов" "LOOM_AUTHORIZATION_PREFIX='$LOOM_AUTHORIZATION_PREFIX'"
-    log_info "Проверка префиксов" "LOOM_EMPLOYEE_PREFIX='$LOOM_EMPLOYEE_PREFIX'"
-    log_info "Проверка префиксов" "LOOM_ORGANIZATION_PREFIX='$LOOM_ORGANIZATION_PREFIX'"
-    log_info "Проверка префиксов" "LOOM_CONTENT_PREFIX='$LOOM_CONTENT_PREFIX'"
+    echo ""
+    echo "╔════════════════════════════════════════════════════════════╗"
+    echo "║              КОНФИГУРАЦИЯ ЗАГРУЖЕНА                        ║"
+    echo "╚════════════════════════════════════════════════════════════╝"
+    echo ""
+    echo "📦 Сервис:          $SERVICE_NAME"
+    echo "🔧 Префикс:         $SERVICE_PREFIX"
+    echo "🖥️  Stage хост:      $STAGE_HOST"
+    echo "🌐 Stage домен:     $STAGE_DOMAIN"
+    echo "🌐 Production домен: $PROD_DOMAIN"
+    echo ""
+    echo "Префиксы сервисов:"
+    echo "  • TG Bot:         $LOOM_TG_BOT_PREFIX"
+    echo "  • Account:        $LOOM_ACCOUNT_PREFIX"
+    echo "  • Authorization:  $LOOM_AUTHORIZATION_PREFIX"
+    echo "  • Employee:       $LOOM_EMPLOYEE_PREFIX"
+    echo "  • Organization:   $LOOM_ORGANIZATION_PREFIX"
+    echo "  • Content:        $LOOM_CONTENT_PREFIX"
+    echo "  • Release Bot:    $LOOM_RELEASE_TG_BOT_PREFIX"
+    echo ""
 }

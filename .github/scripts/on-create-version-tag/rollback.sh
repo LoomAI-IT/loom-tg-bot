@@ -5,9 +5,15 @@
 # ============================================
 
 execute_rollback() {
-
-    log_info "Откат" "Запуск отката к версии $PREVIOUS_TAG на $STAGE_HOST"
-    log_info "Подключение" "Подключение через SSH к root@$STAGE_HOST:22"
+    echo ""
+    echo "╔════════════════════════════════════════════════════════════╗"
+    echo "║               ТЕСТ ОТКАТА НА STAGE                         ║"
+    echo "╚════════════════════════════════════════════════════════════╝"
+    echo ""
+    echo "📦 Сервис:         $SERVICE_NAME"
+    echo "🔄 Откат на:       $PREVIOUS_TAG"
+    echo "🖥️  Сервер:         $STAGE_HOST"
+    echo ""
 
     SSH_OUTPUT=$(sshpass -p "$STAGE_PASSWORD" ssh -o StrictHostKeyChecking=no root@$STAGE_HOST -p 22 \
         SERVICE_NAME="$SERVICE_NAME" \
@@ -27,27 +33,36 @@ LOG_FILE="$LOG_DIR/$TARGET_TAG-rollback.log"
 
 init_logging() {
     mkdir -p "$LOG_DIR"
-    echo "========================================" >> "$LOG_FILE"
-    echo "Откат начат: $(date '+%Y-%m-%d %H:%M:%S')" >> "$LOG_FILE"
-    echo "Сервис: $SERVICE_NAME" >> "$LOG_FILE"
-    echo "Целевой тег: $TARGET_TAG" >> "$LOG_FILE"
-    echo "========================================" >> "$LOG_FILE"
+    {
+        echo "========================================"
+        echo "ОТКАТ НАЧАТ"
+        echo "========================================"
+        echo "Дата:         $(date '+%Y-%m-%d %H:%M:%S')"
+        echo "Сервис:       $SERVICE_NAME"
+        echo "Целевой тег:  $TARGET_TAG"
+        echo "Префикс:      $SERVICE_PREFIX"
+        echo "Домен:        $STAGE_DOMAIN"
+        echo "========================================"
+        echo ""
+    } > "$LOG_FILE"
 }
 
-log_message() {
+log() {
     local level=$1
-    local message=$2
-    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-    local prefix=""
+    shift
+    local message="$@"
+    local timestamp=$(date '+%H:%M:%S')
 
     case $level in
-        "INFO") prefix="ℹ️" ;;
-        "SUCCESS") prefix="✅" ;;
-        "ERROR") prefix="❌" ;;
-        "WARNING") prefix="⚠️" ;;
+        INFO)    local icon="ℹ️ " ;;
+        SUCCESS) local icon="✅" ;;
+        ERROR)   local icon="❌" ;;
+        WARN)    local icon="⚠️ " ;;
+        *)       local icon="  " ;;
     esac
 
-    echo "[$timestamp] [$level] $prefix $message" | tee -a "$LOG_FILE"
+    echo "${icon} ${message}"
+    echo "[$timestamp] [$level] $message" >> "$LOG_FILE"
 }
 
 # ============================================
@@ -55,27 +70,31 @@ log_message() {
 # ============================================
 
 save_current_state() {
-    log_message "INFO" "Сохранение текущего состояния перед откатом"
+    echo ""
+    echo "─────────────────────────────────────────"
+    log INFO "Сохранение текущего состояния"
+    echo "─────────────────────────────────────────"
 
     cd loom/$SERVICE_NAME
 
     local current_ref=$(git symbolic-ref --short HEAD 2>/dev/null || git describe --tags --exact-match 2>/dev/null || git rev-parse --short HEAD)
-    log_message "INFO" "Текущее состояние: $current_ref"
+    log INFO "Текущее состояние: $current_ref"
 
-    # Сохраняем для возможного восстановления
     echo "$current_ref" > /tmp/${SERVICE_NAME}_rollback_previous.txt
+    log SUCCESS "Состояние сохранено для восстановления"
+
     cd
-
-    log_message "SUCCESS" "Текущее состояние сохранено: $current_ref"
 }
-
 
 # ============================================
 # Откат миграций базы данных
 # ============================================
 
 rollback_migrations() {
-    log_message "INFO" "Откат миграций базы данных к версии $TARGET_TAG"
+    echo ""
+    echo "─────────────────────────────────────────"
+    log INFO "Откат миграций к версии $TARGET_TAG"
+    echo "─────────────────────────────────────────"
 
     cd loom/$SERVICE_NAME
 
@@ -89,25 +108,21 @@ rollback_migrations() {
         --env-file ../$SYSTEM_REPO/env/.env.monitoring \
         python:3.11-slim \
         bash -c '
-            echo "📦 Установка зависимостей для отката миграции..."
-            cd .github && pip install -r requirements.txt > /dev/null 2>&1 && cd ..
-            echo "✅ Зависимости установлены"
-            echo "🔄 Откат миграций..."
+            pip install -q -r .github/requirements.txt
             python internal/migration/run.py stage --command down --version $PREVIOUS_TAG
-        ' >> "$LOG_FILE"
+        ' >> "$LOG_FILE" 2>&1
 
-    local migration_exit_code=$?
-
-    if [ $migration_exit_code -ne 0 ]; then
-        log_message "ERROR" "Откат миграций завершился с кодом ошибки $migration_exit_code"
-        log_message "INFO" "Логи отката миграции (последние 50 строк):"
-        tail -50 "$LOG_FILE"
+    if [ $? -eq 0 ]; then
+        log SUCCESS "Миграции откачены"
+    else
+        log ERROR "Ошибка отката миграций"
+        echo "" >> "$LOG_FILE"
+        echo "=== Последние 50 строк лога ===" >> "$LOG_FILE"
+        tail -50 "$LOG_FILE" >> "$LOG_FILE"
         exit 1
     fi
 
     cd
-
-    log_message "SUCCESS" "Откат миграций базы данных успешно завершен"
 }
 
 # ============================================
@@ -115,40 +130,39 @@ rollback_migrations() {
 # ============================================
 
 rebuild_container_for_rollback() {
-    log_message "INFO" "Пересборка Docker контейнера для версии отката"
+    echo ""
+    echo "─────────────────────────────────────────"
+    log INFO "Пересборка контейнера для отката"
+    echo "─────────────────────────────────────────"
 
     cd loom/$SYSTEM_REPO
 
     export $(cat env/.env.app env/.env.db env/.env.monitoring | xargs)
 
-    log_message "INFO" "Запуск docker compose build для $SERVICE_NAME (версия отката)"
-    docker compose -f ./docker-compose/app.yaml up -d --build $SERVICE_NAME >> "$LOG_FILE"
-
-    if [ $? -ne 0 ]; then
-        log_message "ERROR" "Не удалось собрать/запустить Docker контейнер при откате"
-        log_message "INFO" "Логи Docker (последние 50 строк):"
-        tail -50 "$LOG_FILE"
+    if docker compose -f ./docker-compose/app.yaml up -d --build $SERVICE_NAME >> "$LOG_FILE" 2>&1; then
+        log SUCCESS "Контейнер пересобран"
+    else
+        log ERROR "Ошибка пересборки контейнера"
+        echo "" >> "$LOG_FILE"
+        echo "=== Последние 50 строк лога ===" >> "$LOG_FILE"
+        tail -50 "$LOG_FILE" >> "$LOG_FILE"
         exit 1
     fi
 
     cd
-
-    log_message "SUCCESS" "Контейнер успешно пересобран с версией отката"
 }
 
 check_health() {
     local url="$STAGE_DOMAIN$SERVICE_PREFIX/health"
     local http_code=$(curl -f -s -o /dev/null -w "%{http_code}" "$url" 2>/dev/null)
-
-    if [ "$http_code" = "200" ]; then
-        return 0
-    else
-        return 1
-    fi
+    [ "$http_code" = "200" ]
 }
 
 wait_for_health_after_rollback() {
-    log_message "INFO" "Ожидание готовности сервиса после отката"
+    echo ""
+    echo "─────────────────────────────────────────"
+    log INFO "Проверка работоспособности после отката"
+    echo "─────────────────────────────────────────"
 
     sleep 10
 
@@ -156,22 +170,25 @@ wait_for_health_after_rollback() {
     local attempt=1
 
     while [ $attempt -le $max_attempts ]; do
-        log_message "INFO" "Попытка проверки работоспособности $attempt/$max_attempts"
+        log INFO "Попытка $attempt/$max_attempts"
 
         if check_health; then
-            log_message "SUCCESS" "Проверка работоспособности пройдена - сервис работает после отката"
+            log SUCCESS "Сервис работает после отката"
             return 0
-        else
-            log_message "WARNING" "Проверка работоспособности не пройдена, ожидание 20 секунд..."
+        fi
+
+        if [ $attempt -lt $max_attempts ]; then
+            log WARN "Сервис не готов, ожидание 20 сек..."
             sleep 20
         fi
 
         ((attempt++))
     done
 
-    log_message "ERROR" "Проверка работоспособности не пройдена после $max_attempts попыток"
-    log_message "INFO" "Логи контейнера (последние 50 строк):"
-    docker logs --tail 50 $SERVICE_NAME | tee -a "$LOG_FILE"
+    log ERROR "Проверка не пройдена после $max_attempts попыток"
+    echo "" >> "$LOG_FILE"
+    echo "=== Логи контейнера (последние 50 строк) ===" >> "$LOG_FILE"
+    docker logs --tail 50 $SERVICE_NAME >> "$LOG_FILE" 2>&1
     exit 1
 }
 
@@ -180,29 +197,30 @@ wait_for_health_after_rollback() {
 # ============================================
 
 restore_to_original() {
-    log_message "INFO" "Восстановление к исходной версии после теста отката"
+    echo ""
+    echo "─────────────────────────────────────────"
+    log INFO "Восстановление исходной версии"
+    echo "─────────────────────────────────────────"
 
     cd loom/$SERVICE_NAME
 
     local previous_ref=$(cat /tmp/${SERVICE_NAME}_rollback_previous.txt 2>/dev/null || echo "")
 
     if [ -z "$previous_ref" ]; then
-        log_message "WARNING" "Не найдено сохраненное состояние для восстановления"
+        log WARN "Не найдено сохраненное состояние"
         return 1
     fi
 
-    log_message "INFO" "Восстановление к: $previous_ref"
+    log INFO "Восстановление к: $previous_ref"
 
-    git checkout "$previous_ref" >> "$LOG_FILE"
-
-    if [ $? -ne 0 ]; then
-        log_message "ERROR" "Не удалось восстановить предыдущее состояние: $previous_ref"
+    if git checkout "$previous_ref" >> "$LOG_FILE" 2>&1; then
+        log SUCCESS "Переключено на $previous_ref"
+    else
+        log ERROR "Не удалось переключиться на $previous_ref"
         return 1
     fi
 
-    log_message "SUCCESS" "Восстановлено предыдущее состояние: $previous_ref"
-
-    log_message "INFO" "Повторное применение миграций для текущей версии"
+    log INFO "Повторное применение миграций"
 
     docker run --rm \
         --network net \
@@ -213,31 +231,25 @@ restore_to_original() {
         --env-file ../$SYSTEM_REPO/env/.env.monitoring \
         python:3.11-slim \
         bash -c '
-            echo "📦 Установка зависимостей..."
-            cd .github && pip install -r requirements.txt > /dev/null 2>&1 && cd ..
-            echo "✅ Зависимости установлены"
-            echo "🚀 Запуск миграций..."
+            pip install -q -r .github/requirements.txt
             python internal/migration/run.py stage
-        ' >> "$LOG_FILE"
+        ' >> "$LOG_FILE" 2>&1
 
-    local migration_exit_code=$?
-
-    if [ $migration_exit_code -ne 0 ]; then
-        log_message "WARNING" "Повторное применение миграций завершилось с предупреждениями"
+    if [ $? -eq 0 ]; then
+        log SUCCESS "Миграции применены"
     else
-        log_message "SUCCESS" "Миграции успешно применены для текущей версии"
+        log WARN "Миграции завершились с предупреждениями"
     fi
 
     # Пересборка контейнера
     cd ../$SYSTEM_REPO
     export $(cat env/.env.app env/.env.db env/.env.monitoring | xargs)
 
-    log_message "INFO" "Пересборка контейнера с исходной версией"
-    docker compose -f ./docker-compose/app.yaml up -d --build $SERVICE_NAME >> "$LOG_FILE"
+    log INFO "Пересборка контейнера с исходной версией"
+    docker compose -f ./docker-compose/app.yaml up -d --build $SERVICE_NAME >> "$LOG_FILE" 2>&1
 
-    log_message "SUCCESS" "Исходная версия полностью восстановлена"
+    log SUCCESS "Исходная версия восстановлена"
 
-    # Удаляем временный файл
     rm -f /tmp/${SERVICE_NAME}_rollback_previous.txt
 
     return 0
@@ -249,27 +261,40 @@ restore_to_original() {
 
 main() {
     init_logging
-    log_message "INFO" "🔄 Начало теста отката к версии $TARGET_TAG"
 
     save_current_state
     rollback_migrations
     rebuild_container_for_rollback
     wait_for_health_after_rollback
 
-    log_message "SUCCESS" "🎉 Тест отката успешно завершён!"
-    log_message "INFO" "Версия отката: $TARGET_TAG проверена"
-    log_message "INFO" "Начинается восстановление исходной версии..."
+    echo ""
+    echo "╔════════════════════════════════════════════════════════════╗"
+    echo "║           ОТКАТ ПРОТЕСТИРОВАН УСПЕШНО! ✅                  ║"
+    echo "╚════════════════════════════════════════════════════════════╝"
+    echo ""
+    log INFO "Версия отката $TARGET_TAG проверена"
+    log INFO "Начинается восстановление исходной версии..."
 
     restore_to_original
 
-    log_message "SUCCESS" "🎉 Цикл теста отката полностью завершён!"
-    log_message "INFO" "Файл логов: $LOG_FILE"
-
     echo ""
-    echo "========================================="
-    echo "📋 Итоги отката (последние 30 строк):"
-    echo "========================================="
-    tail -30 "$LOG_FILE"
+    echo "╔════════════════════════════════════════════════════════════╗"
+    echo "║        ЦИКЛ ТЕСТА ОТКАТА ПОЛНОСТЬЮ ЗАВЕРШЕН! 🎉           ║"
+    echo "╚════════════════════════════════════════════════════════════╝"
+    echo ""
+    echo "📁 Полный лог: $LOG_FILE"
+    echo ""
+
+    {
+        echo ""
+        echo "========================================"
+        echo "ТЕСТ ОТКАТА ЗАВЕРШЕН"
+        echo "========================================"
+        echo "Время:          $(date '+%Y-%m-%d %H:%M:%S')"
+        echo "Статус:         УСПЕШНО"
+        echo "Версия отката:  $TARGET_TAG"
+        echo "========================================"
+    } >> "$LOG_FILE"
 }
 
 main
@@ -279,12 +304,20 @@ EOFMAIN
     local ssh_exit_code=$?
 
     if [ $ssh_exit_code -ne 0 ]; then
-        log_error "Откат" "SSH откат завершился с кодом ошибки $ssh_exit_code"
+        echo ""
+        echo "❌ SSH откат завершился с ошибкой (код: $ssh_exit_code)"
+        echo ""
+        echo "═══════════════════════════════════════════════════════════"
+        echo "ВЫВОД SSH:"
+        echo "═══════════════════════════════════════════════════════════"
         echo "$SSH_OUTPUT"
+        echo "═══════════════════════════════════════════════════════════"
         exit 1
     fi
 
-    log_success "Откат" "Тест отката успешно завершён на $STAGE_HOST"
+    echo ""
+    echo "✅ Тест отката на $STAGE_HOST успешно завершен"
+    echo ""
 }
 
 # ============================================
@@ -292,19 +325,35 @@ EOFMAIN
 # ============================================
 
 verify_rollback_success() {
-    log_success "Проверка" "Тест отката к $1 успешно завершен"
-    log_info "Сервер" "$STAGE_HOST"
-    log_info "Версия отката" "$1"
-    log_info "Статус" "Откат протестирован, исходная версия восстановлена"
-    log_info "Файл логов" "/var/log/deployments/rollback/$SERVICE_NAME/$1-rollback.log"
+    echo ""
+    echo "╔════════════════════════════════════════════════════════════╗"
+    echo "║              ИТОГИ ТЕСТА ОТКАТА                            ║"
+    echo "╚════════════════════════════════════════════════════════════╝"
+    echo ""
+    echo "✅ Статус:          Успешно завершено"
+    echo "📦 Сервис:          $SERVICE_NAME"
+    echo "🔄 Версия отката:   $1"
+    echo "🖥️  Сервер:          $STAGE_HOST"
+    echo "📁 Логи:            /var/log/deployments/rollback/$SERVICE_NAME/$1-rollback.log"
+    echo ""
+    echo "ℹ️  Откат протестирован, исходная версия восстановлена"
+    echo ""
 }
 
 handle_rollback_failure() {
-    log_error "Ошибка отката" "Тест отката к $1 завершился с ошибкой"
-    log_info "Сервер" "$STAGE_HOST"
-    log_info "Целевая версия" "$1"
-    log_warning "Требуется действие" "Проверьте логи выше для получения детальной информации об ошибке"
-    log_info "Файл логов" "/var/log/deployments/rollback/$SERVICE_NAME/$1-rollback.log"
+    echo ""
+    echo "╔════════════════════════════════════════════════════════════╗"
+    echo "║              ОШИБКА ТЕСТА ОТКАТА                           ║"
+    echo "╚════════════════════════════════════════════════════════════╝"
+    echo ""
+    echo "❌ Статус:          Завершено с ошибкой"
+    echo "📦 Сервис:          $SERVICE_NAME"
+    echo "🔄 Целевая версия:  $1"
+    echo "🖥️  Сервер:          $STAGE_HOST"
+    echo "📁 Логи:            /var/log/deployments/rollback/$SERVICE_NAME/$1-rollback.log"
+    echo ""
+    echo "🔍 Проверьте логи выше для получения подробностей"
+    echo ""
 }
 
 # ============================================
@@ -312,23 +361,28 @@ handle_rollback_failure() {
 # ============================================
 
 rollback_with_status_tracking() {
-    local target_tag=$1
-
-    log_info "Откат" "Начало процесса тестирования отката с отслеживанием статуса"
-    log_info "Целевая версия" "$target_tag"
-
-    # Обновление статуса на начало отката
+    echo ""
+    echo "─────────────────────────────────────────"
+    echo "Обновление статуса: stage_test_rollback"
+    echo "─────────────────────────────────────────"
     update_release_status "stage_test_rollback"
 
-    # Выполнение отката
-    execute_rollback "$target_tag"
+    execute_rollback
 
     if [ $? -eq 0 ]; then
+        echo ""
+        echo "─────────────────────────────────────────"
+        echo "Обновление статуса: manual_testing"
+        echo "─────────────────────────────────────────"
         update_release_status "manual_testing"
-        verify_rollback_success "$target_tag"
+        verify_rollback_success "$PREVIOUS_TAG"
     else
+        echo ""
+        echo "─────────────────────────────────────────"
+        echo "Обновление статуса: stage_test_rollback_failed"
+        echo "─────────────────────────────────────────"
         update_release_status "stage_test_rollback_failed"
-        handle_rollback_failure "$target_tag"
+        handle_rollback_failure "$PREVIOUS_TAG"
         exit 1
     fi
 }
