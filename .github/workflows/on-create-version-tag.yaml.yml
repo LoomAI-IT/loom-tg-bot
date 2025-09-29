@@ -62,12 +62,12 @@ jobs:
                     source .github/scripts/on-create-version-tag/refresh_db.sh
                     refresh_all_databases
 
-            -   name: Деплой на stage сервер
-                id: deploy_step
-                run: |
-                    source .github/scripts/on-create-version-tag/logger.sh
-                    source .github/scripts/on-create-version-tag/deploy.sh
-                    deploy_to_server
+#            -   name: Деплой на stage сервер
+#                id: deploy_step
+#                run: |
+#                    source .github/scripts/on-create-version-tag/logger.sh
+#                    source .github/scripts/on-create-version-tag/deploy.sh
+#                    deploy_to_server
 
             -   name: Обновление статуса после деплоя
                 if: steps.deploy_step.outcome == 'success'
