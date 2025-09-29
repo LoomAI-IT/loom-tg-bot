@@ -12,28 +12,30 @@ class MigrationManager:
         self.migrations = self._load_migrations()
 
     def _load_migrations(self) -> dict[str, Migration]:
-        migrations = {}
-        migration_dir = Path(__file__).parent / 'version'
+        try:
+            migrations = {}
+            migration_dir = Path(__file__).parent / 'version'
 
-        for file_path in sorted(migration_dir.glob('v*.py')):
-            if file_path.stem == '__init__':
-                continue
+            for file_path in sorted(migration_dir.glob('v*.py')):
+                if file_path.stem == '__init__':
+                    continue
 
-            try:
+
                 module = importlib.import_module(f"internal.migration.version.{file_path.stem}")
 
                 for attr in dir(module):
                     obj = getattr(module, attr)
                     if (isinstance(obj, type) and
-                        issubclass(obj, Migration) and
-                        obj != Migration):
-                        migration = obj()
-                        migrations[migration.info.version] = migration
-                        break
-            except Exception:
-                pass  # Пропускаем проблемные файлы
+                                issubclass(obj, Migration) and
+                                obj != Migration):
+                            migration = obj()
+                            migrations[migration.info.version] = migration
+                            break
+            return migrations
+        except Exception as e:
+            print(e, flush=True)
 
-        return migrations
+
 
     async def _ensure_history_table(self):
         query = """
@@ -71,65 +73,74 @@ class MigrationManager:
         return tuple(map(int, version.lstrip('v').split('_')))
 
     async def migrate(self) -> int:
-        await self._ensure_history_table()
-        latest_version = max(self.migrations.keys(), key=self._version_key)
-        applied = await self._get_applied_versions()
+       try:
+           await self._ensure_history_table()
+           latest_version = max(self.migrations.keys(), key=self._version_key)
+           applied = await self._get_applied_versions()
 
-        # Определяем какие миграции нужно применить
-        to_apply = []
-        target_key = self._version_key(latest_version)
+           # Определяем какие миграции нужно применить
+           to_apply = []
+           target_key = self._version_key(latest_version)
 
-        for version in sorted(self.migrations.keys(), key=self._version_key):
-            if (self._version_key(version) <= target_key and
-                version not in applied):
-                to_apply.append(version)
+           for version in sorted(self.migrations.keys(), key=self._version_key):
+               if (self._version_key(version) <= target_key and
+                       version not in applied):
+                   to_apply.append(version)
 
-        # Применяем миграции по порядку
-        count = 0
-        for version in to_apply:
-            migration = self.migrations[version]
+           # Применяем миграции по порядку
+           count = 0
+           for version in to_apply:
+               migration = self.migrations[version]
 
-            # Проверяем зависимости
-            if migration.info.depends_on and migration.info.depends_on not in applied:
-                continue  # Пропускаем если зависимость не выполнена
+               # Проверяем зависимости
+               if migration.info.depends_on and migration.info.depends_on not in applied:
+                   continue  # Пропускаем если зависимость не выполнена
 
-            await migration.up(self.db)
-            await self._mark_applied(migration)
-            applied.add(version)
-            count += 1
+               await migration.up(self.db)
+               await self._mark_applied(migration)
+               applied.add(version)
+               count += 1
 
-        return count
+           return count
+       except Exception as e:
+           print(e, flush=True)
 
     async def rollback_to_version(self, target_version: Optional[str] = None) -> int:
-        await self._ensure_history_table()
-        applied = await self._get_applied_versions()
+        try:
+            await self._ensure_history_table()
+            applied = await self._get_applied_versions()
 
-        if not applied:
-            return 0
+            if not applied:
+                return 0
 
-        # Определяем какие миграции откатить
-        to_rollback = []
+            # Определяем какие миграции откатить
+            to_rollback = []
 
-        if target_version is None:
-            # Откатываем все
-            to_rollback = sorted(applied, key=self._version_key, reverse=True)
-        else:
-            # Откатываем все версии после target_version
-            target_key = self._version_key(target_version)
-            for version in sorted(applied, key=self._version_key, reverse=True):
-                if self._version_key(version) > target_key:
-                    to_rollback.append(version)
+            if target_version is None:
+                # Откатываем все
+                to_rollback = sorted(applied, key=self._version_key, reverse=True)
+            else:
+                # Откатываем все версии после target_version
+                target_key = self._version_key(target_version)
+                for version in sorted(applied, key=self._version_key, reverse=True):
+                    if self._version_key(version) > target_key:
+                        to_rollback.append(version)
 
-        # Откатываем миграции в обратном порядке
-        count = 0
-        for version in to_rollback:
-            if version in self.migrations:
-                migration = self.migrations[version]
-                await migration.down(self.db)
-                await self._mark_rolled_back(version)
-                count += 1
+            # Откатываем миграции в обратном порядке
+            count = 0
+            for version in to_rollback:
+                if version in self.migrations:
+                    migration = self.migrations[version]
+                    await migration.down(self.db)
+                    await self._mark_rolled_back(version)
+                    count += 1
 
-        return count
+            return count
+        except Exception as e:
+            print(e, flush=True)
 
     async def drop_tables(self):
-        await self.db.multi_query(model.drop_queries)
+        try:
+            await self.db.multi_query(model.drop_queries)
+        except Exception as e:
+            print(e, flush=True)
