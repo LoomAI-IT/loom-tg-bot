@@ -1,4 +1,4 @@
-name: Push in work brunch - Update Dev Server
+name: Push в рабочую ветку - Обновление Dev сервера
 
 on:
     push:
@@ -11,163 +11,72 @@ on:
 env:
     SERVICE_NAME: ${{ github.event.repository.name }}
     SYSTEM_REPO: loom-system
+    BRANCH_NAME: ${{ github.ref_name }}
+    AUTHOR_NAME: ${{ github.actor }}
 
 jobs:
-    update-branch:
+    update-dev-server:
         runs-on: self-hosted
 
         steps:
-            -   name: Get branch and author info
+            -   name: 📋 Информация о пуше
                 run: |
-                    echo "BRANCH_NAME=${GITHUB_REF#refs/heads/}" >> $GITHUB_ENV
-                    echo "AUTHOR_NAME=${{ github.actor }}" >> $GITHUB_ENV
+                    echo ""
+                    echo "╔════════════════════════════════════════════════════════════╗"
+                    echo "║           ОБНОВЛЕНИЕ DEV СЕРВЕРА                           ║"
+                    echo "╚════════════════════════════════════════════════════════════╝"
+                    echo ""
+                    echo "📦 Сервис:      ${{ env.SERVICE_NAME }}"
+                    echo "🌿 Ветка:       ${{ env.BRANCH_NAME }}"
+                    echo "👤 Автор:       ${{ env.AUTHOR_NAME }}"
+                    echo "📝 Коммит:      ${{ github.sha }}"
+                    echo ""
 
-            -   name: Load server configuration and check assignment
+            -   name: ⚙️ Загрузка конфигурации dev сервера
                 run: |
-                    if [ ! -f "/root/.env.runner" ]; then
-                      echo "❌ Файл конфигурации серверов .env.runner не найден!"
-                      exit 1
-                    fi
-                    
-                    # Загружаем переменные окружения из .env.runner
-                    set -a
-                    source /root/.env.runner
-                    set +a
-                    
-                    # Проверяем наличие API конфигурации
-                    if [ -z "$STAGE_DOMAIN" ] || [ -z "$PROD_DOMAIN" ]; then
-                      echo "❌ API конфигурация не найдена в .env.runner!"
-                      echo " Убедитесь, что есть переменные: STAGE_DOMAIN и PROD_DOMAIN"
-                      exit 1
-                    fi
+                    source .github/scripts/on-push-work-branch/load_dev_config.sh
+                    load_dev_server_config
 
-                    if [ -z "$STAGE_HOST" ] || [ -z "$STAGE_PASSWORD" ]; then
-                      echo "❌ Конфигурация stage сервера не найдена!"
-                      echo "   Убедитесь, что в .env.runner есть переменные: STAGE_HOST и STAGE_PASSWORD"
-                      exit 1
-                    fi
-                    
-                    SERVICE_PREFIX=$(echo "${{ env.SERVICE_NAME }}" | tr '[:lower:]' '[:upper:]' | tr '-' '_')
-                    SERVICE_PREFIX_VAR_NAME="${SERVICE_PREFIX}_PREFIX"
-                    SERVICE_PREFIX="${!SERVICE_PREFIX_VAR_NAME}"
-                    
-                    echo "SERVICE_PREFIX=$SERVICE_PREFIX" >> $GITHUB_ENV
-                    
-                    # Формируем имена переменных для текущего автора
-                    DEV_HOST_VAR="${AUTHOR_NAME}_HOST"
-                    DEV_PASSWORD_VAR="${AUTHOR_NAME}_PASSWORD"
-                    DEV_DOMAIN_VAR="${AUTHOR_NAME}_DOMAIN"
-                    
-                    # Получаем значения переменных
-                    eval "DEV_HOST=\$$DEV_HOST_VAR"
-                    eval "DEV_PASSWORD=\$$DEV_PASSWORD_VAR"
-                    eval "DEV_DOMAIN=\$$DEV_DOMAIN_VAR"
-                    
-                    if [ -z "$DEV_HOST" ] || [ -z "$DEV_PASSWORD" ]; then
-                      echo "❌ Конфигурация сервера для разработчика $AUTHOR_NAME не найдена!"
-                      echo "   Убедитесь, что в .env.runner есть переменные: ${DEV_HOST_VAR} и ${DEV_PASSWORD_VAR}"
-                      exit 1
-                    fi
-                    
-                    echo "DEV_HOST=$SERVER_HOST" >> $GITHUB_ENV
-                    echo "DEV_PASSWORD=$SERVER_PASSWORD" >> $GITHUB_ENV
-                    echo "DEV_DOMAIN=$SERVER_DOMAIN" >> $GITHUB_ENV
-                    echo "✅ Найдена конфигурация сервера для $AUTHOR_NAME: $DEV_HOST"
-
-            -   name: Update branch on developer server
+            -   name: 🔄 Обновление ветки на dev сервере
+                id: update_step
                 run: |
-                    # Используем sshpass для аутентификации по паролю
-                    sshpass -p "${{ env.DEV_PASSWORD }}" ssh -o StrictHostKeyChecking=no root@${{ env.DEV_HOST }} -p 22 << 'EOF'
-                    echo "🔄 Обновляем ветку ${{ env.BRANCH_NAME }} для ${{ env.AUTHOR_NAME }}"
+                    source .github/scripts/on-push-work-branch/update_branch.sh
+                    update_branch_on_server
+
+            -   name: 🎉 Уведомление об успехе
+                if: success()
+                run: |
+                    source .github/scripts/on-push-work-branch/notify.sh
+                    send_success_notification
+
+            -   name: ❌ Уведомление об ошибке
+                if: failure()
+                run: |
+                    source .github/scripts/on-push-work-branch/notify.sh
+                    send_failure_notification
+
+            -   name: 📋 Итоги обновления
+                if: always()
+                run: |
+                    echo ""
+                    echo "╔════════════════════════════════════════════════════════════╗"
+                    echo "║                    ИТОГИ ОБНОВЛЕНИЯ                        ║"
+                    echo "╚════════════════════════════════════════════════════════════╝"
+                    echo ""
+                    echo "📦 Сервис:      ${{ env.SERVICE_NAME }}"
+                    echo "🌿 Ветка:       ${{ env.BRANCH_NAME }}"
+                    echo "👤 Автор:       ${{ env.AUTHOR_NAME }}"
+                    echo "🖥️  Dev сервер:  ${{ env.DEV_HOST }}"
+                    echo "🌐 Dev домен:   ${{ env.DEV_DOMAIN }}"
+                    echo ""
+                    echo "📊 Статус:      ${{ job.status }}"
+                    echo "🔄 Обновление:  ${{ steps.update_step.outcome }}"
+                    echo ""
                     
-                    cd loom/${{ env.SERVICE_NAME }}
-                    git fetch origin
-                    
-                    # Сохраняем текущую ветку для проверки
-                    CURRENT_BRANCH=$(git branch --show-current)
-                    
-                    # Очищаем старые ветки если текущая не main
-                    if [ "$CURRENT_BRANCH" != "main" ] && [ "$CURRENT_BRANCH" != "master" ]; then
-                        echo "🧹 Очищаем старые ветки (текущая ветка: $CURRENT_BRANCH)"
-                    
-                        # Переключаемся на main для безопасного удаления веток
-                        git checkout main 2>/dev/null || git checkout master 2>/dev/null || echo "⚠️ Не удалось переключиться на main/master"
-                    
-                        # Удаляем все локальные ветки кроме main/master и текущей целевой ветки
-                        git branch | grep -v -E "(main|master|\*|${{ env.BRANCH_NAME }})" | xargs -r git branch -D
-                    
-                        # Очищаем удаленные ветки
-                        git remote prune origin
-                    
-                        echo "✅ Очистка веток завершена"
-                    fi
-                    
-                    if git show-ref --verify --quiet refs/heads/${{ env.BRANCH_NAME }}; then
-                        echo "Ветка существует локально, обновляем"
-                        git checkout ${{ env.BRANCH_NAME }}
-                        
-                        # Проверяем, есть ли расхождения
-                        LOCAL_COMMIT=$(git rev-parse HEAD)
-                        REMOTE_COMMIT=$(git rev-parse origin/${{ env.BRANCH_NAME }})
-                        
-                        if [ "$LOCAL_COMMIT" != "$REMOTE_COMMIT" ]; then
-                            echo "⚠️ Обнаружены расходящиеся ветки, принудительно обновляем локальную ветку"
-                            # Принудительно обновляем до состояния remote
-                            git reset --hard origin/${{ env.BRANCH_NAME }}
-                        else
-                            echo "✅ Локальная ветка уже актуальна"
-                        fi
+                    if [ "${{ job.status }}" == "success" ]; then
+                      echo "✅ Ветка успешно обновлена и приложение работает"
                     else
-                        echo "Первый деплой ветки, создаем и переключаемся"
-                        git checkout -b ${{ env.BRANCH_NAME }} origin/${{ env.BRANCH_NAME }}
+                      echo "❌ Обновление завершилось с ошибкой"
+                      echo "🔍 Логи: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
                     fi
-                    
-                    cd ../${{ env.SYSTEM_REPO }}
-                    
-                    
-                    export $(cat env/.env.app env/.env.db env/.env.monitoring | xargs)
-                    
-                    echo "🔨 Начинаем сборку контейнера..."
-                    docker compose -f ./docker-compose/app.yaml up -d --build ${{ env.SERVICE_NAME }}
-                    
-                    check_health() {
-                        # Если есть HTTP endpoint
-                        if curl -f -s -o /dev/null -w "%{http_code}" ${{ env.DEV_DOMAIN }}${{ env.SERVICE_PREFIX }}/health | grep -q "200"; then
-                            return 0
-                        else
-                            return 1
-                        fi
-                    }
-                    
-                    MAX_ATTEMPTS=2
-                    ATTEMPT=1
-                    SUCCESS=false
-                    
-                    sleep 5
-                    
-                    while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
-                        echo "🔍 Проверка health (попытка $ATTEMPT из $MAX_ATTEMPTS)..."
-                        
-                        if check_health; then
-                            echo "✅ Health check пройден!"
-                            SUCCESS=true
-                            break
-                        else
-                            echo "⏳ Health check не пройден, ждем..."
-                            sleep 10
-                        fi
-                        
-                        ATTEMPT=$((ATTEMPT + 1))
-                    done
-                    
-                    if [ "$SUCCESS" = false ]; then
-                        docker logs -f ${{ env.SERVICE_NAME }}
-                        python3 script/tg_bot_alert.py "❌ Ветка ${{ env.SERVICE_NAME }}/${{ env.BRANCH_NAME }} не обновлена на сервере ${{ env.DEV_HOST }}!
-                    📋 Подробности в Actions: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-                    
-                        exit 1
-                    fi
-                    
-                    echo "✅ Ветка ${{ env.BRANCH_NAME }} успешно обновлена и приложение работает!"
-                    python3 script/tg_bot_alert.py "✅ Ветка ${{ env.SERVICE_NAME }}/${{ env.BRANCH_NAME }} успешно обновлена на сервере ${{ env.DEV_HOST }}!"
-                    EOF
+                    echo ""
