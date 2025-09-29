@@ -149,7 +149,7 @@ jobs:
                         local message="$1"
                         echo "$(date '+%Y-%m-%d %H:%M:%S') - $message" | tee -a "$LOG_FILE"
                     }
-                    export $(cat env/.env.app env/.env.db env/.env.monitoring | xargs)
+                    
                     
                     log_message "🚀 Начинаем деплой тега ${{ env.TAG_NAME }}"
 
@@ -197,6 +197,7 @@ jobs:
                     
                     log_message "🗄️ Запускаем миграции базы данных..."
                     # Запускаем миграции в отдельном контейнере
+                    export $(cat env/.env.app env/.env.db env/.env.monitoring | xargs)
                     docker run --rm \
                       --network net \
                       -v ./:/app \
@@ -227,6 +228,7 @@ jobs:
                     cd ../${{ env.SYSTEM_REPO }}
 
                     log_message "🔨 Начинаем сборку контейнера для тега ${{ env.TAG_NAME }}..."
+                    export $(cat env/.env.app env/.env.db env/.env.monitoring | xargs)
                     docker compose -f ./docker-compose/app.yaml up -d --build ${{ env.SERVICE_NAME }} 2>&1 | tee -a "$LOG_FILE"
 
                     check_health() {

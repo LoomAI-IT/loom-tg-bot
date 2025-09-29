@@ -115,7 +115,7 @@ class MigrationManager:
             target_key = self._version_key(latest_version)
             print(f"MigrationManager: Target version key: {target_key}", flush=True)
 
-            for version in sorted(self.migrations.keys(), key=self._version_key):
+            for version in sorted(self.migrations.keys(), key=self._version_key, reverse=True):
                 if (self._version_key(version) <= target_key and
                         version not in applied):
                     to_apply.append(version)
