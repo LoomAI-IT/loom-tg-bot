@@ -356,6 +356,8 @@ check_health() {
 send_telegram_notification() {
     local message=$1
 
+    cd loom/$SYSTEM_REPO
+    export $(cat env/.env.app env/.env.db env/.env.monitoring | xargs)
     # Проверяем наличие скрипта уведомлений
     if [ ! -f "script/tg_bot_alert.py" ]; then
         echo "⚠️  Скрипт уведомлений не найден: script/tg_bot_alert.py"
@@ -369,6 +371,7 @@ send_telegram_notification() {
     else
         echo "⚠️  Не удалось отправить уведомление в Telegram"
     fi
+    cd
 }
 
 # ============================================
