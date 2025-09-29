@@ -5,9 +5,8 @@
 # ============================================
 
 execute_rollback() {
-    local target_tag=$1
 
-    log_info "Откат" "Запуск отката к версии $target_tag на $STAGE_HOST"
+    log_info "Откат" "Запуск отката к версии $PREVIOUS_TAG на $STAGE_HOST"
     log_info "Подключение" "Подключение через SSH к root@$STAGE_HOST:22"
 
     SSH_OUTPUT=$(sshpass -p "$STAGE_PASSWORD" ssh -o StrictHostKeyChecking=no root@$STAGE_HOST -p 22 \
@@ -82,7 +81,7 @@ update_repository_for_rollback() {
     # Удаление локального тега, если существует
     if git tag -l | grep -q "^$TARGET_TAG$"; then
         log_message "INFO" "Удаление существующего локального тега $TARGET_TAG"
-        git tag -d $TARGET_TAG >> "$LOG_FILE" 2>&1
+        git tag -d $TARGET_TAG >> "$LOG_FILE"
     fi
 
     # Получение обновлений с удаленного репозитория
