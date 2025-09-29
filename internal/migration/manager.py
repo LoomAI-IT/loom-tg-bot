@@ -83,7 +83,7 @@ class MigrationManager:
     async def _mark_applied(self, migration: Migration):
         print(f"MigrationManager: Marking migration {migration.info.version} as applied...", flush=True)
         await self.db.insert(
-            "INSERT INTO migration_history (version, name) VALUES (:version, :name)",
+            "INSERT INTO migration_history (version, name) VALUES (:version, :name) RETURNING id",
             {'version': migration.info.version, 'name': migration.info.name}
         )
         print(f"MigrationManager: Migration {migration.info.version} marked as applied", flush=True)
