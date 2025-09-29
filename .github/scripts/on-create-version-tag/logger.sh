@@ -22,6 +22,12 @@ log_error() {
     echo "❌ $message"
 }
 
+log_debug() {
+    local title=$1
+    local message=$2
+    echo "[DEBUG] $message"
+}
+
 log_warning() {
     local title=$1
     local message=$2
