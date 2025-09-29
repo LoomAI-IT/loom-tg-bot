@@ -117,7 +117,7 @@ class MigrationManager:
             target_key = self._version_key(latest_version)
             print(f"MigrationManager: Target version key: {target_key}", flush=True)
 
-            for version in sorted(self.migrations.keys(), key=self._version_key, reverse=True):
+            for version in sorted(self.migrations.keys(), key=self._version_key):
                 if (self._version_key(version) <= target_key and
                         version not in applied):
                     to_apply.append(version)
@@ -130,6 +130,12 @@ class MigrationManager:
             for version in to_apply:
                 migration = self.migrations[version]
                 print(f"MigrationManager: Applying migration {version}...", flush=True)
+
+                # Проверяем зависимости
+                if migration.info.depends_on and migration.info.depends_on not in applied:
+                    print(f"MigrationManager: Skipping {version} - dependency {migration.info.depends_on} not met",
+                          flush=True)
+                    continue
 
                 await migration.up(self.db)
                 await self._mark_applied(migration)
