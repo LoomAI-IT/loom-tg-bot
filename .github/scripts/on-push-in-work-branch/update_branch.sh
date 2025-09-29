@@ -23,6 +23,7 @@ update_branch_on_server() {
         SYSTEM_REPO="$SYSTEM_REPO" \
         SERVICE_PREFIX="$SERVICE_PREFIX" \
         DEV_DOMAIN="$DEV_DOMAIN" \
+        DEV_HOST="$DEV_HOST" \
         bash << 'EOFMAIN'
 set -e
 
