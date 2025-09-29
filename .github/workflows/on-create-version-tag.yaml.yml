@@ -212,7 +212,7 @@ jobs:
                         echo "✅ Зависимости установлены"
                         echo "🚀 Запуск миграции..."
                         
-                        python intenal/migration/run stage
+                        python intenal/migration/run.py stage
                       ' 2>&1 | tee -a "$LOG_FILE"
                     
                     MIGRATION_EXIT_CODE=$?
