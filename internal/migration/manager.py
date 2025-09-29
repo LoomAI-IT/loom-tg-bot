@@ -131,12 +131,6 @@ class MigrationManager:
                 migration = self.migrations[version]
                 print(f"MigrationManager: Applying migration {version}...", flush=True)
 
-                # Проверяем зависимости
-                if migration.info.depends_on and migration.info.depends_on not in applied:
-                    print(f"MigrationManager: Skipping {version} - dependency {migration.info.depends_on} not met",
-                          flush=True)
-                    continue
-
                 await migration.up(self.db)
                 await self._mark_applied(migration)
                 applied.add(version)
