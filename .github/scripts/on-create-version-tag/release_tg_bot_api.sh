@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source .github/scripts/load_config.sh
+source load_config.sh
 
 # ============================================
 # Утилиты для работы с API
