@@ -102,7 +102,7 @@ jobs:
 
             -   name: Update status to building
                 run: |
-                    curl -s -X GET \
+                    curl -s -X PATCH \
                       -H "Content-Type: application/json" \
                       -d '{
                         "release_id": ${{ env.RELEASE_ID }},

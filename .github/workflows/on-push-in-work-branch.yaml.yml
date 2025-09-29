@@ -9,7 +9,8 @@ on:
             - '!develop'
 
 env:
-    SERVICE_NAME: loom-tg-bot
+    SERVICE_NAME: ${{ github.event.repository.name }}
+    SYSTEM_REPO: loom-system
 
 jobs:
     update-branch:
@@ -23,39 +24,60 @@ jobs:
 
             -   name: Load server configuration and check assignment
                 run: |
-                    if [ ! -f "/root/.env.servers" ]; then
-                      echo "❌ Файл конфигурации серверов .env.servers не найден!"
+                    if [ ! -f "/root/.env.runner" ]; then
+                      echo "❌ Файл конфигурации серверов .env.runner не найден!"
                       exit 1
                     fi
                     
-                    # Загружаем переменные окружения из .env.servers
+                    # Загружаем переменные окружения из .env.runner
                     set -a
-                    source /root/.env.servers
+                    source /root/.env.runner
                     set +a
                     
-                    
-                    # Формируем имена переменных для текущего автора
-                    HOST_VAR="${AUTHOR_NAME}_HOST"
-                    PASSWORD_VAR="${AUTHOR_NAME}_PASSWORD"
-                    
-                    # Получаем значения переменных
-                    eval "SERVER_HOST=\$$HOST_VAR"
-                    eval "SERVER_PASSWORD=\$$PASSWORD_VAR"
-                    
-                    if [ -z "$SERVER_HOST" ] || [ -z "$SERVER_PASSWORD" ]; then
-                      echo "❌ Конфигурация сервера для разработчика $AUTHOR_NAME не найдена!"
-                      echo "   Убедитесь, что в .env.servers есть переменные: ${HOST_VAR} и ${PASSWORD_VAR}"
+                    # Проверяем наличие API конфигурации
+                    if [ -z "$STAGE_DOMAIN" ] || [ -z "$PROD_DOMAIN" ]; then
+                      echo "❌ API конфигурация не найдена в .env.runner!"
+                      echo " Убедитесь, что есть переменные: STAGE_DOMAIN и PROD_DOMAIN"
+                      exit 1
+                    fi
+
+                    if [ -z "$STAGE_HOST" ] || [ -z "$STAGE_PASSWORD" ]; then
+                      echo "❌ Конфигурация stage сервера не найдена!"
+                      echo "   Убедитесь, что в .env.runner есть переменные: STAGE_HOST и STAGE_PASSWORD"
                       exit 1
                     fi
                     
-                    echo "SERVER_HOST=$SERVER_HOST" >> $GITHUB_ENV
-                    echo "SERVER_PASSWORD=$SERVER_PASSWORD" >> $GITHUB_ENV
-                    echo "✅ Найдена конфигурация сервера для $AUTHOR_NAME: $SERVER_HOST"
+                    SERVICE_PREFIX=$(echo "${{ env.SERVICE_NAME }}" | tr '[:lower:]' '[:upper:]' | tr '-' '_')
+                    SERVICE_PREFIX_VAR_NAME="${SERVICE_PREFIX}_PREFIX"
+                    SERVICE_PREFIX="${!SERVICE_PREFIX_VAR_NAME}"
+                    
+                    echo "SERVICE_PREFIX=$SERVICE_PREFIX" >> $GITHUB_ENV
+                    
+                    # Формируем имена переменных для текущего автора
+                    DEV_HOST_VAR="${AUTHOR_NAME}_HOST"
+                    DEV_PASSWORD_VAR="${AUTHOR_NAME}_PASSWORD"
+                    DEV_DOMAIN_VAR="${AUTHOR_NAME}_DOMAIN"
+                    
+                    # Получаем значения переменных
+                    eval "DEV_HOST=\$$DEV_HOST_VAR"
+                    eval "DEV_PASSWORD=\$$DEV_PASSWORD_VAR"
+                    eval "DEV_DOMAIN=\$$DEV_DOMAIN_VAR"
+                    
+                    if [ -z "$DEV_HOST" ] || [ -z "$DEV_PASSWORD" ]; then
+                      echo "❌ Конфигурация сервера для разработчика $AUTHOR_NAME не найдена!"
+                      echo "   Убедитесь, что в .env.runner есть переменные: ${DEV_HOST_VAR} и ${DEV_PASSWORD_VAR}"
+                      exit 1
+                    fi
+                    
+                    echo "DEV_HOST=$SERVER_HOST" >> $GITHUB_ENV
+                    echo "DEV_PASSWORD=$SERVER_PASSWORD" >> $GITHUB_ENV
+                    echo "DEV_DOMAIN=$SERVER_DOMAIN" >> $GITHUB_ENV
+                    echo "✅ Найдена конфигурация сервера для $AUTHOR_NAME: $DEV_HOST"
 
             -   name: Update branch on developer server
                 run: |
                     # Используем sshpass для аутентификации по паролю
-                    sshpass -p "${{ env.SERVER_PASSWORD }}" ssh -o StrictHostKeyChecking=no root@${{ env.SERVER_HOST }} -p 22 << 'EOF'
+                    sshpass -p "${{ env.DEV_PASSWORD }}" ssh -o StrictHostKeyChecking=no root@${{ env.DEV_HOST }} -p 22 << 'EOF'
                     echo "🔄 Обновляем ветку ${{ env.BRANCH_NAME }} для ${{ env.AUTHOR_NAME }}"
                     
                     cd loom/${{ env.SERVICE_NAME }}
@@ -100,7 +122,7 @@ jobs:
                         git checkout -b ${{ env.BRANCH_NAME }} origin/${{ env.BRANCH_NAME }}
                     fi
                     
-                    cd ../loom-system
+                    cd ../${{ env.SYSTEM_REPO }}
                     
                     
                     export $(cat env/.env.app env/.env.db env/.env.monitoring | xargs)
@@ -110,7 +132,7 @@ jobs:
                     
                     check_health() {
                         # Если есть HTTP endpoint
-                        if curl -f -s -o /dev/null -w "%{http_code}" http://localhost:8005/api/tg-bot/health | grep -q "200"; then
+                        if curl -f -s -o /dev/null -w "%{http_code}" ${{ env.DEV_DOMAIN }}${{ env.SERVICE_PREFIX }}/health | grep -q "200"; then
                             return 0
                         else
                             return 1
@@ -140,12 +162,12 @@ jobs:
                     
                     if [ "$SUCCESS" = false ]; then
                         docker logs -f ${{ env.SERVICE_NAME }}
-                        python3 script/tg_bot_alert.py "❌ Ветка ${{ env.SERVICE_NAME }}/${{ env.BRANCH_NAME }} не обновлена на сервере ${{ env.SERVER_HOST }}!
+                        python3 script/tg_bot_alert.py "❌ Ветка ${{ env.SERVICE_NAME }}/${{ env.BRANCH_NAME }} не обновлена на сервере ${{ env.DEV_HOST }}!
                     📋 Подробности в Actions: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
                     
                         exit 1
                     fi
                     
                     echo "✅ Ветка ${{ env.BRANCH_NAME }} успешно обновлена и приложение работает!"
-                    python3 script/tg_bot_alert.py "✅ Ветка ${{ env.SERVICE_NAME }}/${{ env.BRANCH_NAME }} успешно обновлена на сервере ${{ env.SERVER_HOST }}!"
+                    python3 script/tg_bot_alert.py "✅ Ветка ${{ env.SERVICE_NAME }}/${{ env.BRANCH_NAME }} успешно обновлена на сервере ${{ env.DEV_HOST }}!"
                     EOF

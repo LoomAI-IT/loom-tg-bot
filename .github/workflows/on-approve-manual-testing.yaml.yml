@@ -13,12 +13,13 @@ on:
                 type: string
 
 env:
-    SERVICE_NAME: loom-tg-bot
+    SERVICE_NAME: ${{ github.event.repository.name }}
+    SYSTEM_REPO: loom-system
+
 
 jobs:
     deploy-to-production:
         runs-on: self-hosted
-
 
         steps:
             -   name: Validate inputs
@@ -43,45 +44,42 @@ jobs:
 
             -   name: Load server configuration
                 run: |
-                    if [ ! -f "/root/.env.servers" ]; then
-                      echo "❌ Файл конфигурации серверов .env.servers не найден!"
+                    if [ ! -f "/root/.env.runner" ]; then
+                      echo "❌ Файл конфигурации серверов .env.runner не найден!"
                       exit 1
                     fi
                     
-                    # Загружаем переменные окружения из .env.servers
+                    # Загружаем переменные окружения из .env.runner
                     set -a
-                    source /root/.env.servers
+                    source /root/.env.runner
                     set +a
                     
                     # Проверяем наличие API конфигурации
-                    if [ -z "$LOOM_RELEASE_TG_BOT_API_URL" ] || [ -z "$LOOM_INTERSERVER_SECRET_KEY" ]; then
-                      echo "❌ API конфигурация не найдена в .env.servers!"
-                      echo "   Убедитесь, что есть переменные: LOOM_RELEASE_TG_BOT_API_URL и LOOM_INTERSERVER_SECRET_KEY"
+                    if [ -z "$STAGE_DOMAIN" ] || [ -z "$PROD_DOMAIN" ]; then
+                      echo "❌ API конфигурация не найдена в .env.runner!"
+                      echo " Убедитесь, что есть переменные: STAGE_DOMAIN и PROD_DOMAIN"
+                      exit 1
+                    fi
+
+                    if [ -z "$STAGE_HOST" ] || [ -z "$STAGE_PASSWORD" ]; then
+                      echo "❌ Конфигурация stage сервера не найдена!"
+                      echo "   Убедитесь, что в .env.runner есть переменные: STAGE_HOST и STAGE_PASSWORD"
                       exit 1
                     fi
                     
-                    # Формируем имена переменных для продакшн сервера
-                    HOST_VAR="PROD_HOST"
-                    PASSWORD_VAR="PROD_PASSWORD"
+                    SERVICE_PREFIX=$(echo "${{ env.SERVICE_NAME }}" | tr '[:lower:]' '[:upper:]' | tr '-' '_')
+                    SERVICE_PREFIX_VAR_NAME="${SERVICE_PREFIX}_PREFIX"
+                    SERVICE_PREFIX="${!SERVICE_PREFIX_VAR_NAME}"
                     
-                    # Получаем значения переменных
-                    eval "SERVER_HOST=\$$HOST_VAR"
-                    eval "SERVER_PASSWORD=\$$PASSWORD_VAR"
-                    
-                    if [ -z "$SERVER_HOST" ] || [ -z "$SERVER_PASSWORD" ]; then
-                      echo "❌ Конфигурация prod сервера не найдена!"
-                      echo "   Убедитесь, что в .env.servers есть переменные: ${HOST_VAR} и ${PASSWORD_VAR}"
-                      exit 1
-                    fi
-                    
+                    echo "SERVICE_PREFIX=$SERVICE_PREFIX" >> $GITHUB_ENV
+    
                     # Экспортируем все необходимые переменные
-                    echo "LOOM_RELEASE_TG_BOT_API_URL=$LOOM_RELEASE_TG_BOT_API_URL" >> $GITHUB_ENV
+                    echo "PROD_HOST=$PROD_HOST" >> $GITHUB_ENV
+                    echo "PROD_PASSWORD=$PROD_PASSWORD" >> $GITHUB_ENV
+                    echo "PROD_DOMAIN=$PROD_DOMAIN" >> $GITHUB_ENV
+                    
+                    echo "LOOM_RELEASE_TG_BOT_PREFIX=$LOOM_RELEASE_TG_BOT_PREFIX" >> $GITHUB_ENV
                     echo "LOOM_INTERSERVER_SECRET_KEY=$LOOM_INTERSERVER_SECRET_KEY" >> $GITHUB_ENV
-                    echo "SERVER_HOST=$SERVER_HOST" >> $GITHUB_ENV
-                    echo "SERVER_PASSWORD=$SERVER_PASSWORD" >> $GITHUB_ENV
-                    echo "✅ Конфигурация загружена успешно"
-                    echo "✅ API URL: $LOOM_RELEASE_TG_BOT_API_URL"
-                    echo "✅ Prod сервер: $SERVER_HOST"
 
             -   name: Update status to production deployment
                 run: |
@@ -93,7 +91,7 @@ jobs:
                         "github_run_id": "${{ github.run_id }}",
                         "github_action_link": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
                       }' \
-                      "${{ env.LOOM_RELEASE_TG_BOT_API_URL }}/release")
+                      "${{ env.PROD_DOMAIN }}${{ env.LOOM_RELEASE_TG_BOT_PREFIX }}/release")
                     
                     HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
                     BODY=$(echo "$RESPONSE" | head -n -1)
@@ -109,7 +107,7 @@ jobs:
             -   name: Deploy to production server
                 id: deploy_step
                 run: |
-                    SSH_OUTPUT=$(sshpass -p "${{ env.SERVER_PASSWORD }}" ssh -o StrictHostKeyChecking=no root@${{ env.SERVER_HOST }} -p 22 << 'EOF' 2>&1
+                    SSH_OUTPUT=$(sshpass -p "${{ env.PROD_PASSWORD }}" ssh -o StrictHostKeyChecking=no root@${{ env.PROD_HOST }} -p 22 << 'EOF' 2>&1
                     set -e
                     
                     # Создаем директорию для логов если её нет
@@ -132,6 +130,14 @@ jobs:
                     log_message "📥 Обновляем репозиторий и теги"
                     
                     # Сохраняем текущую ветку/тег для проверки
+                    PREVIOUS_TAG=$(git describe --tags --exact-match 2>/dev/null || echo "")
+                    if [ -n "$PREVIOUS_TAG" ]; then
+                        log_message "💾 Сохранен предыдущий тег для отката: $PREVIOUS_TAG"
+                        echo "PREVIOUS_TAG=$PREVIOUS_TAG" > /tmp/previous_tag_${{ env.SERVICE_NAME }}.txt
+                    else
+                        log_message "⚠️ Предыдущий тег не найден, откат будет невозможен"
+                    fi
+                    
                     CURRENT_REF=$(git symbolic-ref --short HEAD 2>/dev/null || git describe --tags --exact-match 2>/dev/null || git rev-parse --short HEAD)
                     log_message "🔍 Текущее состояние: $CURRENT_REF"
                     
@@ -170,7 +176,37 @@ jobs:
                     
                     log_message "✅ Переключение на тег ${{ env.RELEASE_VERSION }} завершено"
                     
-                    cd ../loom-system
+                    log_message "🗄️ Запускаем миграции базы данных..."
+                    # Запускаем миграции в отдельном контейнере
+                    export $(cat env/.env.app env/.env.db env/.env.monitoring | xargs)
+                    docker run --rm \
+                      --network net \
+                      -v ./:/app \
+                      -w /app \
+                      --env-file ../${{ env.SYSTEM_REPO }}/env/.env.app \
+                      --env-file ../${{ env.SYSTEM_REPO }}/env/.env.db \
+                      --env-file ../${{ env.SYSTEM_REPO }}/env/.env.monitoring \
+                      python:3.11-slim \
+                      bash -c '
+                        echo "📦 Установка зависимостей..."
+                        cd .github && pip install -r requirements.txt && cd ..
+                        
+                        echo "✅ Зависимости установлены"
+                        echo "🚀 Запуск миграции..."
+                        
+                        python internal/migration/run.py prod --command up
+                      ' 2>&1 | tee -a "$LOG_FILE"
+                    
+                    MIGRATION_EXIT_CODE=$?
+                    
+                    if [ $MIGRATION_EXIT_CODE -ne 0 ]; then
+                        log_message "❌ Миграции завершились с ошибкой"
+                        exit 1
+                    fi
+                    
+                    log_message "✅ Миграции успешно применены"
+                    
+                    cd ../${{ env.SYSTEM_REPO }}
                     
                     export $(cat env/.env.app env/.env.db env/.env.monitoring | xargs)
                     
@@ -184,7 +220,7 @@ jobs:
                     
                     check_health() {
                         # Если есть HTTP endpoint
-                        if curl -f -s -o /dev/null -w "%{http_code}" http://localhost:8005/api/tg-bot/health | grep -q "200"; then
+                        if curl -f -s -o /dev/null -w "%{http_code}" ${{ env.PROD_DOMAIN }}${{ env.SERVICE_PREFIX }}/health | grep -q "200"; then
                             return 0
                         else
                             return 1
@@ -213,11 +249,86 @@ jobs:
                         ATTEMPT=$((ATTEMPT + 1))
                     done
                     
+                    rollback_to_previous() {
+                        log_message "🔄 Откатываемся на тег: $PREVIOUS_TAG"
+                        
+                        cd /root/loom/${{ env.SERVICE_NAME }}
+                    
+                        docker run --rm \
+                          --network net \
+                          -v ./:/app \
+                          -w /app \
+                          -e PREVIOUS_TAG="$PREVIOUS_TAG" \
+                          --env-file ../${{ env.SYSTEM_REPO }}/env/.env.app \
+                          --env-file ../${{ env.SYSTEM_REPO }}/env/.env.db \
+                          --env-file ../${{ env.SYSTEM_REPO }}/env/.env.monitoring \
+                          python:3.11-slim \
+                          bash -c '
+                            echo "📦 Установка зависимостей..."
+                            cd .github && pip install -r requirements.txt && cd ..
+                            
+                            echo "✅ Зависимости установлены"
+                            echo "🚀 Запуск откачивания миграции..."
+                            
+                            python internal/migration/run.py prod --command down --version $PREVIOUS_TAG
+                          ' 2>&1 | tee -a "$LOG_FILE"
+                    
+                        
+                        log_message "🏷️ Переключаемся на предыдущий тег $PREVIOUS_TAG"
+                        git checkout $PREVIOUS_TAG 2>&1 | tee -a "$LOG_FILE"
+                    
+                        cd /root/loom/${{ env.SYSTEM_REPO }}
+                        
+                        log_message "🔨 Пересобираем контейнер с предыдущим тегом..."
+                        docker compose -f ./docker-compose/app.yaml up -d --build ${{ env.SERVICE_NAME }} 2>&1 | tee -a "$LOG_FILE"
+                        
+                        log_message "⏳ Ждем запуска сервиса после отката..."
+                        sleep 15
+                        
+                        # Проверяем работоспособность после отката
+                        ROLLBACK_ATTEMPTS=3
+                        ROLLBACK_SUCCESS=false
+                        
+                        for i in $(seq 1 $ROLLBACK_ATTEMPTS); do
+                            log_message "🔍 Проверка health после отката (попытка $i из $ROLLBACK_ATTEMPTS)..."
+                            
+                            if check_health; then
+                                log_message "✅ Health check после отката пройден!"
+                                ROLLBACK_SUCCESS=true
+                                break
+                            else
+                                log_message "⏳ Ждем..."
+                                sleep 10
+                            fi
+                        done
+                        
+                        if [ "$ROLLBACK_SUCCESS" = true ]; then
+                            log_message "✅ Откат на $PREVIOUS_TAG выполнен успешно"
+                            return 0
+                        else
+                            log_message "❌ Откат выполнен, но health check не прошел"
+                            log_message "📋 Логи контейнера после отката:"
+                            docker logs --tail 100 ${{ env.SERVICE_NAME }} 2>&1 | tee -a "$LOG_FILE"
+                            return 1
+                        fi
+                    }
+                    
                     if [ "$SUCCESS" = false ]; then
                         log_message "❌ Health check не пройден после $MAX_ATTEMPTS попыток"
                         log_message "📋 Логи контейнера:"
                         docker logs --tail 100 ${{ env.SERVICE_NAME }} 2>&1 | tee -a "$LOG_FILE"
-                        exit 1
+                        
+                        # Выполняем откат
+                        log_message "🔄 Запускаем процедуру отката..."
+                        if rollback_to_previous; then
+                            log_message "✅ Откат выполнен успешно, сервис работает на предыдущей версии"
+                            log_message "⚠️ Деплой тега ${{ env.RELEASE_VERSION }} отменен из-за неудачного health check"
+                            exit 1
+                        else
+                            log_message "❌ Откат не удался или сервис не работает после отката"
+                            log_message "🚨 КРИТИЧЕСКАЯ ОШИБКА: требуется ручное вмешательство"
+                            exit 1
+                        fi
                     fi
                     
                     log_message "🎉 Тег ${{ env.RELEASE_VERSION }} успешно развернут на ПРОДАКШН и приложение работает!"
@@ -248,7 +359,7 @@ jobs:
                         "release_id": ${{ env.RELEASE_ID }},
                         "status": "production_failed"
                       }' \
-                      "${{ env.LOOM_RELEASE_TG_BOT_API_URL }}/release"
+                      "${{ env.PROD_DOMAIN }}${{ env.LOOM_RELEASE_TG_BOT_PREFIX }}/release"
                     echo "✅ Статус обновлен на 'production_failed'"
                     echo "📊 Сервер: ${{ env.SERVER_HOST }}"
                     echo "🏷️ Версия: ${{ env.RELEASE_VERSION }}"
@@ -264,7 +375,7 @@ jobs:
                         "release_id": ${{ env.RELEASE_ID }},
                         "status": "deployed"
                       }' \
-                      "${{ env.LOOM_RELEASE_TG_BOT_API_URL }}/release"
+                      "${{ env.PROD_DOMAIN }}${{ env.LOOM_RELEASE_TG_BOT_PREFIX }}/release"
                     echo "✅ Статус обновлен на 'deployed'"
 
             -   name: Verify production deployment
