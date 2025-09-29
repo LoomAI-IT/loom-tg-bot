@@ -204,8 +204,6 @@ restore_to_original() {
 
     log_message "INFO" "Повторное применение миграций для текущей версии"
 
-    cd loom/$SERVICE_NAME
-
     docker run --rm \
         --network net \
         -v ./:/app \
@@ -223,8 +221,6 @@ restore_to_original() {
         ' >> "$LOG_FILE"
 
     local migration_exit_code=$?
-
-    cd
 
     if [ $migration_exit_code -ne 0 ]; then
         log_message "WARNING" "Повторное применение миграций завершилось с предупреждениями"
