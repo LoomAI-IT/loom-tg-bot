@@ -16,6 +16,12 @@ jobs:
         if: github.event.ref_type == 'tag'
 
         steps:
+            -   name: Checkout кода репозитория
+                uses: actions/checkout@v4
+                with:
+                    ref: ${{ github.ref }}
+                    fetch-depth: 0  # Получаем всю историю для работы с тегами
+
             -   name: Валидация формата тега
                 run: |
                     if [[ ! "${{ env.TAG_NAME }}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+.*$ ]]; then
