@@ -239,7 +239,8 @@ main_menu_service = MainMenuService(
 )
 organization_menu_service = OrganizationMenuService(
     tel,
-    state_repo
+    state_repo,
+    loom_employee_client
 )
 personal_profile_service = PersonalProfileService(
     tel,

@@ -12,10 +12,12 @@ class OrganizationMenuService(interface.IOrganizationMenuService):
             self,
             tel: interface.ITelemetry,
             state_repo: interface.IStateRepo,
+            loom_employee_client: interface.ILoomEmployeeClient
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
         self.state_repo = state_repo
+        self.loom_employee_client = loom_employee_client
 
     async def handle_go_to_employee_settings(
             self,
@@ -29,6 +31,15 @@ class OrganizationMenuService(interface.IOrganizationMenuService):
         ) as span:
             try:
                 state = await self._get_state(dialog_manager)
+
+                employee = await self.loom_employee_client.get_employee_by_account_id(
+                    state.account_id,
+                )
+
+                if not employee.edit_employee_perm_permission:
+                    await callback.answer("У вас нет прав менять права сотрудникам", show_alert=True)
+                    return
+
                 await self.state_repo.change_user_state(
                     state_id=state.id,
                     can_show_alerts=False
@@ -61,11 +72,19 @@ class OrganizationMenuService(interface.IOrganizationMenuService):
         ) as span:
             try:
                 state = await self._get_state(dialog_manager)
+
+                employee = await self.loom_employee_client.get_employee_by_account_id(
+                    state.account_id,
+                )
+
+                if not employee.add_employee_permission:
+                    await callback.answer("У вас нет прав для добавления сотрудников", show_alert=True)
+                    return
+
                 await self.state_repo.change_user_state(
                     state_id=state.id,
                     can_show_alerts=False
                 )
-
 
                 await dialog_manager.start(
                     model.AddEmployeeStates.enter_account_id,
