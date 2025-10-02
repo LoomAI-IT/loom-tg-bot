@@ -188,12 +188,12 @@ class PublicationDraftService(interface.IPublicationDraftService):
             dialog_manager.dialog_data.pop("has_void_title", None)
             dialog_manager.dialog_data["publication_title"] = new_title
 
-            # 💾 Сохраняем в API (название сохраняется как text)
+            # 💾 Сохраняем в API (только название, текст остается прежним)
             publication_id = int(dialog_manager.dialog_data.get("selected_publication_id"))
             current_text = dialog_manager.dialog_data.get("publication_content", "")
             await self.loom_content_client.change_publication(
                 publication_id=publication_id,
-                text=f"{new_title}\n\n{current_text}"  # Объединяем название и текст
+                text=f"{new_title}\n\n{current_text}" if current_text else new_title
             )
 
             self.logger.info("Название черновика изменено")
