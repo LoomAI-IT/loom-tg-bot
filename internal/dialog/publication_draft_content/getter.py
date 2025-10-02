@@ -120,7 +120,7 @@ class PublicationDraftGetter(interface.IPublicationDraftGetter):
                 # 💾 Обновляем данные в dialog_data для редактирования
                 dialog_manager.dialog_data["publication_title"] = publication.text_reference
                 dialog_manager.dialog_data["publication_content"] = publication.text
-                dialog_manager.dialog_data["publication_tags"] = publication.tags or []
+                dialog_manager.dialog_data["publication_tags"] = []
                 dialog_manager.dialog_data["category_name"] = category.name
                 
                 # 📊 Проверяем права пользователя
