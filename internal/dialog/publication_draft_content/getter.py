@@ -119,8 +119,15 @@ class PublicationDraftGetter(interface.IPublicationDraftGetter):
                 current_index = all_publication_ids.index(publication_id) + 1 if publication_id in all_publication_ids else 1
                 
                 # 💾 Обновляем данные в dialog_data для редактирования
-                dialog_manager.dialog_data["publication_title"] = publication.text_reference
-                dialog_manager.dialog_data["publication_content"] = publication.text
+                # Разделяем текст на название и содержимое
+                full_text = publication.text or ""
+                if "\n\n" in full_text:
+                    title, content = full_text.split("\n\n", 1)
+                    dialog_manager.dialog_data["publication_title"] = title.strip()
+                    dialog_manager.dialog_data["publication_content"] = content.strip()
+                else:
+                    dialog_manager.dialog_data["publication_title"] = publication.text_reference or "Без названия"
+                    dialog_manager.dialog_data["publication_content"] = full_text
                 dialog_manager.dialog_data["publication_tags"] = []
                 dialog_manager.dialog_data["category_name"] = category.name
                 dialog_manager.dialog_data["publication_category_id"] = publication.category_id
@@ -141,8 +148,8 @@ class PublicationDraftGetter(interface.IPublicationDraftGetter):
                     )
 
                 data = {
-                    "publication_title": publication.text_reference or "Без названия",
-                    "publication_content": self._clean_html_for_telegram(publication.text or ""),
+                    "publication_title": dialog_manager.dialog_data.get("publication_title", "Без названия"),
+                    "publication_content": self._clean_html_for_telegram(dialog_manager.dialog_data.get("publication_content", "")),
                     "publication_tags": "Нет тегов",
                     "category_name": category.name,
                     "has_tags": False,
