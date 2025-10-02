@@ -140,7 +140,7 @@ class PublicationDraftGetter(interface.IPublicationDraftGetter):
 
                 data = {
                     "publication_title": publication.text_reference or "Без названия",
-                    "publication_content": publication.text or "",
+                    "publication_content": self._escape_html(publication.text or ""),
                     "publication_tags": "Нет тегов",
                     "category_name": category.name,
                     "has_tags": False,
@@ -294,3 +294,8 @@ class PublicationDraftGetter(interface.IPublicationDraftGetter):
         if not state:
             raise ValueError(f"State not found for chat_id: {chat_id}")
         return state[0]
+
+    def _escape_html(self, text: str) -> str:
+        """Экранирует HTML-теги для безопасного отображения в Telegram"""
+        import html
+        return html.escape(text)
