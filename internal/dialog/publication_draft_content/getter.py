@@ -142,7 +142,7 @@ class PublicationDraftGetter(interface.IPublicationDraftGetter):
 
                 data = {
                     "publication_title": publication.text_reference or "Без названия",
-                    "publication_content": publication.text or "",
+                    "publication_content": self._clean_html_for_telegram(publication.text or ""),
                     "publication_tags": "Нет тегов",
                     "category_name": category.name,
                     "has_tags": False,
@@ -297,22 +297,28 @@ class PublicationDraftGetter(interface.IPublicationDraftGetter):
             raise ValueError(f"State not found for chat_id: {chat_id}")
         return state[0]
 
-    def _escape_html(self, text: str) -> str:
-        """Экранирует HTML-теги для безопасного отображения в Telegram"""
-        import html
+    def _clean_html_for_telegram(self, text: str) -> str:
+        """Очищает HTML для Telegram - убирает неподдерживаемые теги, оставляет поддерживаемые"""
         import re
         
-        # Сначала экранируем все HTML-теги
-        escaped = html.escape(text)
+        # Telegram поддерживает: <b>, <strong>, <i>, <em>, <u>, <s>, <strike>, <del>, <code>, <pre>, <a href="">
+        # Убираем неподдерживаемые теги: <p>, <div>, <span>, <br>, <br/>, <h1>-<h6>, и т.д.
         
-        # Затем заменяем экранированные теги на переносы строк для лучшей читаемости
-        escaped = re.sub(r'&lt;/p&gt;', '\n\n', escaped)  # Двойной перенос после </p>
-        escaped = re.sub(r'&lt;p&gt;', '', escaped)      # Убираем <p>
-        escaped = re.sub(r'&lt;br&gt;', '\n', escaped)
-        escaped = re.sub(r'&lt;br/&gt;', '\n', escaped)
+        # Заменяем <p> и </p> на переносы строк
+        text = re.sub(r'<p[^>]*>', '\n', text)
+        text = re.sub(r'</p>', '\n\n', text)
+        
+        # Заменяем <br> и <br/> на переносы строк
+        text = re.sub(r'<br\s*/?>', '\n', text)
+        
+        # Убираем другие неподдерживаемые теги (но оставляем содержимое)
+        unsupported_tags = ['div', 'span', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'blockquote']
+        for tag in unsupported_tags:
+            text = re.sub(f'<{tag}[^>]*>', '', text)
+            text = re.sub(f'</{tag}>', '', text)
         
         # Убираем лишние переносы строк
-        escaped = re.sub(r'\n+', '\n', escaped)
-        escaped = escaped.strip()
+        text = re.sub(r'\n+', '\n', text)
+        text = text.strip()
         
-        return escaped
+        return text
