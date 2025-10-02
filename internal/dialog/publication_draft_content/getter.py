@@ -138,11 +138,11 @@ class PublicationDraftGetter(interface.IPublicationDraftGetter):
                     )
 
                 data = {
-                    "publication_title": publication.name or "Без названия",
+                    "publication_title": publication.text_reference or "Без названия",
                     "publication_content": publication.text or "",
-                    "publication_tags": ", ".join(publication.tags) if publication.tags else "Нет тегов",
+                    "publication_tags": "Нет тегов",
                     "category_name": category.name,
-                    "has_tags": bool(publication.tags),
+                    "has_tags": False,
                     "has_image": has_image,
                     
                     # 🎮 Навигация
