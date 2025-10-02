@@ -148,16 +148,11 @@ class PublicationDraftService(interface.IPublicationDraftService):
                 publication_id = int(dialog_manager.dialog_data.get("selected_publication_id"))
                 
                 # 📝 Получаем измененные данные из dialog_data
-                name = dialog_manager.dialog_data.get("publication_title")
-                text = dialog_manager.dialog_data.get("publication_content") 
-                tags = dialog_manager.dialog_data.get("publication_tags", [])
-                
-                # 🔄 Обновляем через API
+                text = dialog_manager.dialog_data.get("publication_content")
+                # Обновляем только поддерживаемые поля клиента: текст и изображение (если нужно)
                 await self.loom_content_client.change_publication(
                     publication_id=publication_id,
-                    name=name,
                     text=text,
-                    tags=tags
                 )
                 
                 self.logger.info("Изменения в черновике сохранены")
@@ -276,11 +271,48 @@ class PublicationDraftService(interface.IPublicationDraftService):
             dialog_manager: DialogManager,
             text: str
     ) -> None:
-        """🖼️ Обработка изображений (заглушка)"""
+        """🖼️ Генерация изображения по промпту (как в модерации)"""
         try:
             await message.delete()
-            # TODO: Реализовать обработку изображений
-            await message.answer("🚧 Функция в разработке")
+            prompt = text.strip() if isinstance(text, str) else ""
+            dialog_manager.dialog_data.pop("has_void_image_prompt", None)
+            dialog_manager.dialog_data.pop("has_small_image_prompt", None)
+            dialog_manager.dialog_data.pop("has_big_image_prompt", None)
+
+            if not prompt:
+                dialog_manager.dialog_data["has_void_image_prompt"] = True
+                return
+            if len(prompt) < 5:
+                dialog_manager.dialog_data["has_small_image_prompt"] = True
+                return
+            if len(prompt) > 500:
+                dialog_manager.dialog_data["has_big_image_prompt"] = True
+                return
+
+            dialog_manager.dialog_data["image_prompt"] = prompt
+
+            # Берём контекст публикации
+            publication_id = int(dialog_manager.dialog_data.get("selected_publication_id"))
+            category_id = dialog_manager.dialog_data.get("publication_category_id")
+            publication_text = dialog_manager.dialog_data.get("publication_content", "")
+
+            # Текущее изображение как подсказка (если есть)
+            current_image_content = None
+            current_image_filename = None
+
+            # Генерация изображения через API
+            images_url = await self.loom_content_client.generate_publication_image(
+                category_id=category_id,
+                publication_text=publication_text,
+                text_reference=dialog_manager.dialog_data.get("publication_title", ""),
+                prompt=prompt,
+                image_content=current_image_content,
+                image_filename=current_image_filename,
+            )
+
+            # Обновляем флаги/превью
+            dialog_manager.dialog_data["has_image"] = bool(images_url)
+            await message.answer("✅ Изображение сгенерировано")
         except Exception as err:
             await message.answer("❌ Ошибка обработки изображения")
             raise
@@ -303,12 +335,16 @@ class PublicationDraftService(interface.IPublicationDraftService):
             
             publication_id = int(dialog_manager.dialog_data.get("selected_publication_id"))
             
-            # 🔄 Регенерируем через API (нужен соответствующий метод в клиенте)
-            # regenerated_data = await self.loom_content_client.regenerate_publication_text(publication_id)
-            
-            # 💾 Обновляем данные в dialog_data
-            # dialog_manager.dialog_data["publication_title"] = regenerated_data["name"]
-            # dialog_manager.dialog_data["publication_content"] = regenerated_data["text"]
+            category_id = dialog_manager.dialog_data.get("publication_category_id")
+            publication_text = dialog_manager.dialog_data.get("publication_content", "")
+
+            regenerated_data = await self.loom_content_client.regenerate_publication_text(
+                category_id=category_id,
+                publication_text=publication_text,
+                prompt=None,
+            )
+
+            dialog_manager.dialog_data["publication_content"] = regenerated_data["text"]
             
             await callback.message.edit_text("✅ Текст перегенерирован!")
             await dialog_manager.switch_to(model.PublicationDraftStates.edit_preview)
@@ -333,8 +369,19 @@ class PublicationDraftService(interface.IPublicationDraftService):
                 await dialog_manager.switch_to(model.PublicationDraftStates.regenerate_text)
                 return
                 
-            # TODO: Реализовать регенерацию с промптом
-            await message.answer("🚧 Функция в разработке")
+            category_id = dialog_manager.dialog_data.get("publication_category_id")
+            publication_text = dialog_manager.dialog_data.get("publication_content", "")
+
+            regenerated_data = await self.loom_content_client.regenerate_publication_text(
+                category_id=category_id,
+                publication_text=publication_text,
+                prompt=prompt,
+            )
+
+            dialog_manager.dialog_data["publication_content"] = regenerated_data["text"]
+            dialog_manager.dialog_data["regenerate_prompt"] = prompt
+            await message.answer("✅ Текст перегенерирован")
+            await dialog_manager.switch_to(model.PublicationDraftStates.edit_preview)
         except Exception as err:
             await message.answer("❌ Ошибка регенерации")
             raise
