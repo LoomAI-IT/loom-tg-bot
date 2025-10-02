@@ -66,7 +66,7 @@ class PublicationDraftGetter(interface.IPublicationDraftGetter):
                     
                     publications_data.append({
                         "id": draft.id,
-                        "title": draft.name or "Без названия",
+                        "title": draft.text_reference or "Без названия",
                         "created_date": created_date,
                         "preview": draft.text[:50] + "..." if len(draft.text) > 50 else draft.text,
                     })
