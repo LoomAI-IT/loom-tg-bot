@@ -298,4 +298,19 @@ class PublicationDraftGetter(interface.IPublicationDraftGetter):
     def _escape_html(self, text: str) -> str:
         """Экранирует HTML-теги для безопасного отображения в Telegram"""
         import html
-        return html.escape(text)
+        import re
+        
+        # Сначала экранируем все HTML-теги
+        escaped = html.escape(text)
+        
+        # Затем заменяем экранированные теги на переносы строк для лучшей читаемости
+        escaped = re.sub(r'&lt;p&gt;', '\n', escaped)
+        escaped = re.sub(r'&lt;/p&gt;', '\n', escaped)
+        escaped = re.sub(r'&lt;br&gt;', '\n', escaped)
+        escaped = re.sub(r'&lt;br/&gt;', '\n', escaped)
+        
+        # Убираем лишние переносы строк
+        escaped = re.sub(r'\n+', '\n', escaped)
+        escaped = escaped.strip()
+        
+        return escaped
