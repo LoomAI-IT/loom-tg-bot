@@ -123,6 +123,8 @@ class PublicationDraftGetter(interface.IPublicationDraftGetter):
                 dialog_manager.dialog_data["publication_content"] = publication.text
                 dialog_manager.dialog_data["publication_tags"] = []
                 dialog_manager.dialog_data["category_name"] = category.name
+                dialog_manager.dialog_data["publication_category_id"] = publication.category_id
+                dialog_manager.dialog_data["has_image"] = bool(getattr(publication, "image_fid", None))
                 
                 # 📊 Проверяем права пользователя
                 state = await self._get_state(dialog_manager)
