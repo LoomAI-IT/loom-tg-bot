@@ -264,6 +264,65 @@ class PublicationDraftService(interface.IPublicationDraftService):
             await message.answer("❌ Ошибка при сохранении тегов")
             raise
 
+    async def handle_remove_image(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        """🗑️ Удаление изображения из черновика"""
+        try:
+            publication_id = int(dialog_manager.dialog_data.get("selected_publication_id"))
+            
+            # Удаляем изображение через API
+            await self.loom_content_client.delete_publication_image(publication_id)
+            
+            # Обновляем флаг
+            dialog_manager.dialog_data["has_image"] = False
+            
+            await callback.answer("✅ Изображение удалено!", show_alert=True)
+            await dialog_manager.switch_to(model.PublicationDraftStates.edit_preview)
+        except Exception as err:
+            await callback.answer("❌ Ошибка удаления изображения", show_alert=True)
+            raise
+
+    async def handle_image_upload(
+            self,
+            message: Message,
+            widget: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        """📤 Загрузка изображения в черновик"""
+        try:
+            if not message.photo:
+                await message.answer("❌ Отправьте изображение")
+                return
+                
+            await message.delete()
+            
+            publication_id = int(dialog_manager.dialog_data.get("selected_publication_id"))
+            photo = message.photo[-1]  # Берем самое большое разрешение
+            
+            # Скачиваем изображение
+            image_content = await self.bot.download(photo.file_id)
+            image_filename = f"{photo.file_id}.jpg"
+            
+            # Обновляем публикацию с новым изображением
+            await self.loom_content_client.change_publication(
+                publication_id=publication_id,
+                image_content=image_content.read(),
+                image_filename=image_filename
+            )
+            
+            # Обновляем флаг
+            dialog_manager.dialog_data["has_image"] = True
+            
+            await message.answer("✅ Изображение загружено!")
+            await dialog_manager.switch_to(model.PublicationDraftStates.edit_preview)
+        except Exception as err:
+            await message.answer("❌ Ошибка загрузки изображения")
+            raise
+
     async def handle_edit_image_menu_save(
             self,
             message: Message,
