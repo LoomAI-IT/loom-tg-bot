@@ -424,6 +424,13 @@ class PublicationDraftService(interface.IPublicationDraftService):
 
             dialog_manager.dialog_data["publication_content"] = regenerated_data["text"]
             
+            # Сохраняем в API
+            current_title = dialog_manager.dialog_data.get("publication_title", "")
+            await self.loom_content_client.change_publication(
+                publication_id=publication_id,
+                text=f"{current_title}\n\n{regenerated_data['text']}"
+            )
+            
             await callback.message.edit_text("✅ Текст перегенерирован!")
             await dialog_manager.switch_to(model.PublicationDraftStates.edit_preview)
         except Exception as err:
@@ -440,10 +447,27 @@ class PublicationDraftService(interface.IPublicationDraftService):
         """🔄 Регенерация с промптом"""
         try:
             await message.delete()
+            
+            # Очищаем флаги ошибок
+            dialog_manager.dialog_data.pop("has_void_regenerate_prompt", None)
+            dialog_manager.dialog_data.pop("has_small_regenerate_prompt", None)
+            dialog_manager.dialog_data.pop("has_big_regenerate_prompt", None)
+            
             prompt = prompt.strip()
             
+            # Валидация промпта
             if not prompt:
                 dialog_manager.dialog_data["has_void_regenerate_prompt"] = True
+                await dialog_manager.switch_to(model.PublicationDraftStates.regenerate_text)
+                return
+                
+            if len(prompt) < 5:
+                dialog_manager.dialog_data["has_small_regenerate_prompt"] = True
+                await dialog_manager.switch_to(model.PublicationDraftStates.regenerate_text)
+                return
+                
+            if len(prompt) > 500:
+                dialog_manager.dialog_data["has_big_regenerate_prompt"] = True
                 await dialog_manager.switch_to(model.PublicationDraftStates.regenerate_text)
                 return
                 
@@ -456,8 +480,18 @@ class PublicationDraftService(interface.IPublicationDraftService):
                 prompt=prompt,
             )
 
+            # Обновляем данные
             dialog_manager.dialog_data["publication_content"] = regenerated_data["text"]
             dialog_manager.dialog_data["regenerate_prompt"] = prompt
+            
+            # Сохраняем в API
+            publication_id = int(dialog_manager.dialog_data.get("selected_publication_id"))
+            current_title = dialog_manager.dialog_data.get("publication_title", "")
+            await self.loom_content_client.change_publication(
+                publication_id=publication_id,
+                text=f"{current_title}\n\n{regenerated_data['text']}"
+            )
+            
             await message.answer("✅ Текст перегенерирован")
             await dialog_manager.switch_to(model.PublicationDraftStates.edit_preview)
         except Exception as err:
