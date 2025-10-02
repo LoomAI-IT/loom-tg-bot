@@ -118,7 +118,7 @@ class PublicationDraftGetter(interface.IPublicationDraftGetter):
                 current_index = all_publication_ids.index(publication_id) + 1 if publication_id in all_publication_ids else 1
                 
                 # 💾 Обновляем данные в dialog_data для редактирования
-                dialog_manager.dialog_data["publication_title"] = publication.name
+                dialog_manager.dialog_data["publication_title"] = publication.text_reference
                 dialog_manager.dialog_data["publication_content"] = publication.text
                 dialog_manager.dialog_data["publication_tags"] = publication.tags or []
                 dialog_manager.dialog_data["category_name"] = category.name
