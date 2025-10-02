@@ -61,7 +61,8 @@ class PublicationDraftGetter(interface.IPublicationDraftGetter):
                             else:
                                 dt = draft.created_at
                             created_date = dt.strftime("%d.%m.%Y")
-                        except:
+                        except Exception as e:
+                            self.logger.warning(f"Ошибка парсинга даты: {str(e)}")
                             created_date = "неизвестно"
                     
                     publications_data.append({
