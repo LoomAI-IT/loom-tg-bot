@@ -142,7 +142,7 @@ class PublicationDraftGetter(interface.IPublicationDraftGetter):
 
                 data = {
                     "publication_title": publication.text_reference or "Без названия",
-                    "publication_content": self._escape_html(publication.text or ""),
+                    "publication_content": publication.text or "",
                     "publication_tags": "Нет тегов",
                     "category_name": category.name,
                     "has_tags": False,
