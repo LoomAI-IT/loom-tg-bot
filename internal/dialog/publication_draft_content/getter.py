@@ -304,8 +304,8 @@ class PublicationDraftGetter(interface.IPublicationDraftGetter):
         escaped = html.escape(text)
         
         # Затем заменяем экранированные теги на переносы строк для лучшей читаемости
-        escaped = re.sub(r'&lt;p&gt;', '\n', escaped)
-        escaped = re.sub(r'&lt;/p&gt;', '\n', escaped)
+        escaped = re.sub(r'&lt;/p&gt;', '\n\n', escaped)  # Двойной перенос после </p>
+        escaped = re.sub(r'&lt;p&gt;', '', escaped)      # Убираем <p>
         escaped = re.sub(r'&lt;br&gt;', '\n', escaped)
         escaped = re.sub(r'&lt;br/&gt;', '\n', escaped)
         
