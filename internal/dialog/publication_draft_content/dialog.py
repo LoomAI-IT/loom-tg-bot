@@ -432,7 +432,7 @@ class PublicationDraftDialog(interface.IPublicationDraftDialog):
                 Button(
                     Const("🗑 Удалить изображение"),
                     id="remove_image",
-                    on_click=self.publication_draft_service.handle_delete_publication,  # Используем существующий метод
+                    on_click=self.publication_draft_service.handle_remove_image,
                     when="has_image",
                 ),
             ),
@@ -497,7 +497,7 @@ class PublicationDraftDialog(interface.IPublicationDraftDialog):
             ),
 
             MessageInput(
-                func=self.publication_draft_service.handle_edit_image_menu_save,  # Используем существующий метод
+                func=self.publication_draft_service.handle_image_upload,
             ),
 
             Button(
