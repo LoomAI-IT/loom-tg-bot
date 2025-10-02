@@ -188,6 +188,14 @@ class PublicationDraftService(interface.IPublicationDraftService):
             dialog_manager.dialog_data.pop("has_void_title", None)
             dialog_manager.dialog_data["publication_title"] = new_title
 
+            # 💾 Сохраняем в API (название сохраняется как text)
+            publication_id = int(dialog_manager.dialog_data.get("selected_publication_id"))
+            current_text = dialog_manager.dialog_data.get("publication_content", "")
+            await self.loom_content_client.change_publication(
+                publication_id=publication_id,
+                text=f"{new_title}\n\n{current_text}"  # Объединяем название и текст
+            )
+
             self.logger.info("Название черновика изменено")
             await dialog_manager.switch_to(model.PublicationDraftStates.edit_preview)
         except Exception as err:
@@ -233,6 +241,14 @@ class PublicationDraftService(interface.IPublicationDraftService):
             dialog_manager.dialog_data.pop("has_void_content", None)
             dialog_manager.dialog_data["publication_content"] = new_content
 
+            # 💾 Сохраняем в API
+            publication_id = int(dialog_manager.dialog_data.get("selected_publication_id"))
+            current_title = dialog_manager.dialog_data.get("publication_title", "")
+            await self.loom_content_client.change_publication(
+                publication_id=publication_id,
+                text=f"{current_title}\n\n{new_content}"  # Объединяем название и текст
+            )
+
             self.logger.info("Содержимое черновика изменено")
             await dialog_manager.switch_to(model.PublicationDraftStates.edit_preview)
         except Exception as err:
@@ -258,7 +274,10 @@ class PublicationDraftService(interface.IPublicationDraftService):
                 tags = []
             
             dialog_manager.dialog_data["publication_tags"] = tags
-            self.logger.info("Теги черновика изменены")
+            
+            # 💾 Теги сохраняем только локально (API не поддерживает)
+            # В будущем можно добавить поддержку тегов в API
+            self.logger.info(f"Теги черновика изменены: {tags}")
             await dialog_manager.switch_to(model.PublicationDraftStates.edit_preview)
         except Exception as err:
             await message.answer("❌ Ошибка при сохранении тегов")
