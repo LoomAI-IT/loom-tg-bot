@@ -225,7 +225,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
                 dialog_manager.dialog_data.pop("has_small_regenerate_prompt", None)
                 dialog_manager.dialog_data.pop("has_big_regenerate_prompt", None)
 
-                prompt = message.html_text
+                prompt = message.html_text.replace('\n', '<br/>')
                 if not prompt:
                     dialog_manager.dialog_data["has_void_regenerate_prompt"] = True
                     return
@@ -277,7 +277,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
                 dialog_manager.dialog_data.pop("has_big_text", None)
                 dialog_manager.dialog_data.pop("has_small_text", None)
 
-                new_text = message.html_text
+                new_text = message.html_text.replace('\n', '<br/>')
                 if not new_text:
                     dialog_manager.dialog_data["has_void_text"] = True
                     return

@@ -145,7 +145,7 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
                 dialog_manager.show_mode = ShowMode.EDIT
 
                 await message.delete()
-                new_title = message.html_text
+                new_title = message.html_text.replace('\n', '<br/>')
 
                 if not new_title:
                     dialog_manager.dialog_data["has_void_title"] = True
@@ -182,7 +182,7 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
                 dialog_manager.show_mode = ShowMode.EDIT
                 await message.delete()
 
-                new_description = message.html_text
+                new_description = message.html_text.replace('\n', '<br/>')
 
                 if not new_description:
                     dialog_manager.dialog_data["has_void_description"] = True
