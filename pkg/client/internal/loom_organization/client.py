@@ -1,3 +1,5 @@
+from contextvars import ContextVar
+
 from opentelemetry.trace import Status, StatusCode, SpanKind
 
 from internal import model
@@ -10,7 +12,8 @@ class LoomOrganizationClient(interface.ILoomOrganizationClient):
             self,
             tel: interface.ITelemetry,
             host: str,
-            port: int
+            port: int,
+            log_context: ContextVar[dict],
     ):
         logger = tel.logger()
         self.client = AsyncHTTPClient(
@@ -18,6 +21,7 @@ class LoomOrganizationClient(interface.ILoomOrganizationClient):
             port,
             prefix="/api/organization",
             use_tracing=True,
+            log_context=log_context
         )
         self.tracer = tel.tracer()
 
@@ -36,7 +40,6 @@ class LoomOrganizationClient(interface.ILoomOrganizationClient):
                 span.set_status(Status(StatusCode.OK))
                 return model.Organization(**json_response)
             except Exception as e:
-                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -52,7 +55,6 @@ class LoomOrganizationClient(interface.ILoomOrganizationClient):
                 span.set_status(Status(StatusCode.OK))
                 return [model.Organization(**org) for org in json_response["organizations"]]
             except Exception as e:
-                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -86,7 +88,6 @@ class LoomOrganizationClient(interface.ILoomOrganizationClient):
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as e:
-                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -103,7 +104,6 @@ class LoomOrganizationClient(interface.ILoomOrganizationClient):
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as e:
-                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -125,7 +125,6 @@ class LoomOrganizationClient(interface.ILoomOrganizationClient):
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as e:
-                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -147,6 +146,5 @@ class LoomOrganizationClient(interface.ILoomOrganizationClient):
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as e:
-                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise

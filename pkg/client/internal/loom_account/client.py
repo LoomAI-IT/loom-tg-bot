@@ -1,3 +1,5 @@
+from contextvars import ContextVar
+
 from opentelemetry.trace import Status, StatusCode, SpanKind
 
 from internal import interface, model
@@ -9,7 +11,8 @@ class LoomAccountClient(interface.ILoomAccountClient):
             self,
             tel: interface.ITelemetry,
             host: str,
-            port: int
+            port: int,
+            log_context: ContextVar[dict],
     ):
         logger = tel.logger()
         self.client = AsyncHTTPClient(
@@ -17,6 +20,7 @@ class LoomAccountClient(interface.ILoomAccountClient):
             port,
             prefix="/api/account",
             use_tracing=True,
+            log_context=log_context
         )
         self.tracer = tel.tracer()
 
@@ -44,7 +48,6 @@ class LoomAccountClient(interface.ILoomAccountClient):
                 )
 
             except Exception as e:
-                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -72,7 +75,6 @@ class LoomAccountClient(interface.ILoomAccountClient):
                 )
 
             except Exception as e:
-                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -103,7 +105,6 @@ class LoomAccountClient(interface.ILoomAccountClient):
                     refresh_token=response.cookies.get("Refresh-Token"),
                 )
             except Exception as e:
-                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -158,7 +159,6 @@ class LoomAccountClient(interface.ILoomAccountClient):
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as e:
-                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -186,7 +186,6 @@ class LoomAccountClient(interface.ILoomAccountClient):
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as e:
-                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -217,7 +216,6 @@ class LoomAccountClient(interface.ILoomAccountClient):
                 span.set_status(Status(StatusCode.OK))
                 return json_response["verified"]
             except Exception as e:
-                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -246,7 +244,6 @@ class LoomAccountClient(interface.ILoomAccountClient):
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as e:
-                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -277,6 +274,5 @@ class LoomAccountClient(interface.ILoomAccountClient):
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as e:
-                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise

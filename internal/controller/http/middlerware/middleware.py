@@ -75,7 +75,7 @@ class HttpMiddleware(interface.IHttpMiddleware):
 
     def logger_middleware02(self, app: FastAPI):
         @app.middleware("http")
-        async def _logger_middleware03(request: Request, call_next: Callable):
+        async def _logger_middleware02(request: Request, call_next: Callable):
             with self.tracer.start_as_current_span(
                     "HttpMiddleware._logger_middleware03",
                     kind=SpanKind.INTERNAL
@@ -131,4 +131,4 @@ class HttpMiddleware(interface.IHttpMiddleware):
                 finally:
                     self.log_context.reset(context_token)
 
-        return _logger_middleware03
+        return _logger_middleware02

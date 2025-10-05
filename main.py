@@ -121,12 +121,12 @@ bot.session.middleware(AiogramSulgukMiddleware())
 
 # Инициализация клиентов
 db = PG(tel, cfg.db_user, cfg.db_pass, cfg.db_host, cfg.db_port, cfg.db_name)
-loom_account_client = LoomAccountClient(tel, cfg.loom_account_host, cfg.loom_account_port)
+loom_account_client = LoomAccountClient(tel, cfg.loom_account_host, cfg.loom_account_port, log_context)
 loom_authorization_client = LoomAuthorizationClient(tel, cfg.loom_authorization_host,
-                                                    cfg.loom_authorization_port)
-loom_employee_client = LoomEmployeeClient(tel, cfg.loom_employee_host, cfg.loom_employee_port)
-loom_organization_client = LoomOrganizationClient(tel, cfg.loom_organization_host, cfg.loom_organization_port)
-loom_content_client = LoomContentClient(tel, cfg.loom_content_host, cfg.loom_content_port)
+                                                    cfg.loom_authorization_port, log_context)
+loom_employee_client = LoomEmployeeClient(tel, cfg.loom_employee_host, cfg.loom_employee_port, log_context)
+loom_organization_client = LoomOrganizationClient(tel, cfg.loom_organization_host, cfg.loom_organization_port, log_context)
+loom_content_client = LoomContentClient(tel, cfg.loom_content_host, cfg.loom_content_port, log_context)
 
 state_repo = StateRepo(tel, db)
 

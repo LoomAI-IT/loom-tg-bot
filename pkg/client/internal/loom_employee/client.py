@@ -1,3 +1,5 @@
+from contextvars import ContextVar
+
 from opentelemetry.trace import Status, StatusCode, SpanKind
 
 from internal import model
@@ -10,7 +12,8 @@ class LoomEmployeeClient(interface.ILoomEmployeeClient):
             self,
             tel: interface.ITelemetry,
             host: str,
-            port: int
+            port: int,
+            log_context: ContextVar[dict],
     ):
         logger = tel.logger()
         self.client = AsyncHTTPClient(
@@ -18,6 +21,7 @@ class LoomEmployeeClient(interface.ILoomEmployeeClient):
             port,
             prefix="/api/employee",
             use_tracing=True,
+            log_context=log_context
         )
         self.tracer = tel.tracer()
 
@@ -54,7 +58,6 @@ class LoomEmployeeClient(interface.ILoomEmployeeClient):
                 span.set_status(Status(StatusCode.OK))
                 return json_response["employee_id"]
             except Exception as e:
-                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -76,7 +79,6 @@ class LoomEmployeeClient(interface.ILoomEmployeeClient):
                 else:
                     return None
             except Exception as e:
-                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -95,7 +97,6 @@ class LoomEmployeeClient(interface.ILoomEmployeeClient):
                 span.set_status(Status(StatusCode.OK))
                 return [model.Employee(**emp) for emp in json_response["employees"]]
             except Exception as e:
-                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -135,7 +136,6 @@ class LoomEmployeeClient(interface.ILoomEmployeeClient):
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as e:
-                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -160,7 +160,6 @@ class LoomEmployeeClient(interface.ILoomEmployeeClient):
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as e:
-                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -177,7 +176,6 @@ class LoomEmployeeClient(interface.ILoomEmployeeClient):
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as e:
-                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -202,6 +200,5 @@ class LoomEmployeeClient(interface.ILoomEmployeeClient):
                 span.set_status(Status(StatusCode.OK))
                 return json_response["has_permission"]
             except Exception as e:
-                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
