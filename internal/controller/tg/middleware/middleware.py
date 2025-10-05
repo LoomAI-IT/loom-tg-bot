@@ -52,10 +52,10 @@ class TgMiddleware(interface.ITelegramMiddleware):
 
                 context_token = self.log_context.set({
                     common.TELEGRAM_USER_USERNAME_KEY: tg_username,
-                    common.TELEGRAM_CHAT_ID_KEY: tg_chat_id,
+                    common.TELEGRAM_CHAT_ID_KEY: str(tg_chat_id),
                     common.TELEGRAM_EVENT_TYPE_KEY: event_type,
-                    common.ORGANIZATION_ID_KEY: user_state.organization_id,
-                    common.ACCOUNT_ID_KEY: user_state.account_id,
+                    common.ORGANIZATION_ID_KEY: str(user_state.organization_id),
+                    common.ACCOUNT_ID_KEY: str(user_state.account_id),
                 })
 
                 self.logger.info(f"Начали обработку telegram {event_type}")

@@ -89,10 +89,10 @@ class HttpMiddleware(interface.IHttpMiddleware):
                 try:
                     context_token = self.log_context.set({
                         common.TELEGRAM_USER_USERNAME_KEY: request.headers.get(common.TELEGRAM_USER_USERNAME_KEY, ""),
-                        common.TELEGRAM_CHAT_ID_KEY: request.headers.get(common.TELEGRAM_CHAT_ID_KEY, 0),
+                        common.TELEGRAM_CHAT_ID_KEY: request.headers.get(common.TELEGRAM_CHAT_ID_KEY, "0"),
                         common.TELEGRAM_EVENT_TYPE_KEY: request.headers.get(common.TELEGRAM_EVENT_TYPE_KEY, ""),
-                        common.ORGANIZATION_ID_KEY: request.headers.get(common.ORGANIZATION_ID_KEY, 0),
-                        common.ACCOUNT_ID_KEY: request.headers.get(common.ACCOUNT_ID_KEY, 0),
+                        common.ORGANIZATION_ID_KEY: request.headers.get(common.ORGANIZATION_ID_KEY, "0"),
+                        common.ACCOUNT_ID_KEY: request.headers.get(common.ACCOUNT_ID_KEY, "0"),
                     })
 
                     self.logger.info("Началась обработка HTTP запроса", extra_log)
