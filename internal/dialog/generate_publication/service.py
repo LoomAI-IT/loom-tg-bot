@@ -512,6 +512,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 dialog_manager.dialog_data.pop("has_small_text", None)
 
                 new_text = message.html_text
+                self.logger.info("HTML текст", {"html_text": new_text})
                 if not new_text:
                     self.logger.info("Пустой текст")
                     dialog_manager.dialog_data["has_void_text"] = True
