@@ -31,9 +31,10 @@ class OrganizationMenuGetter(interface.IOrganizationMenuGetter):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                self.logger.info("Начало получения данных меню организации")
+
                 state = await self.__get_state(dialog_manager)
 
-                # Получаем данные организации
                 organization = await self.loom_organization_client.get_organization_by_id(
                     state.organization_id
                 )
@@ -42,10 +43,11 @@ class OrganizationMenuGetter(interface.IOrganizationMenuGetter):
                     state.organization_id
                 )
 
-                # Форматируем список рубрик
                 if categories:
+                    self.logger.info("Категории найдены - форматирование списка")
                     categories_list = "\n".join([f"• {category.name}" for category in categories])
                 else:
+                    self.logger.info("Категории не найдены")
                     categories_list = "Нет категорий"
 
                 data = {
@@ -54,10 +56,10 @@ class OrganizationMenuGetter(interface.IOrganizationMenuGetter):
                     "categories_list": categories_list,
                 }
 
+                self.logger.info("Завершение получения данных меню организации")
                 span.set_status(Status(StatusCode.OK))
                 return data
             except Exception as err:
-                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise err
 

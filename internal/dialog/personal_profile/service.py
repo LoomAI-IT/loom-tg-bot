@@ -25,15 +25,17 @@ class PersonalProfileService(interface.IPersonalProfileService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                self.logger.info("Начало обработки перехода в FAQ")
+
                 dialog_manager.show_mode = ShowMode.EDIT
 
                 await dialog_manager.switch_to(model.PersonalProfileStates.faq)
 
-                self.logger.info("Переход в FAQ")
+                await callback.answer("FAQ открыт")
 
+                self.logger.info("Завершение обработки перехода в FAQ")
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
-                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -48,15 +50,17 @@ class PersonalProfileService(interface.IPersonalProfileService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                self.logger.info("Начало обработки перехода в поддержку")
+
                 dialog_manager.show_mode = ShowMode.EDIT
 
                 await dialog_manager.switch_to(model.PersonalProfileStates.support)
 
-                self.logger.info("Переход в техподдержку")
+                await callback.answer("Техподдержка открыта")
 
+                self.logger.info("Завершение обработки перехода в поддержку")
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
-                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -71,15 +75,17 @@ class PersonalProfileService(interface.IPersonalProfileService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                self.logger.info("Начало обработки возврата в личный профиль")
+
                 dialog_manager.show_mode = ShowMode.EDIT
 
                 await dialog_manager.switch_to(model.PersonalProfileStates.personal_profile)
 
-                self.logger.info("Возврат к личному профилю")
+                await callback.answer("Возврат в профиль")
 
+                self.logger.info("Завершение обработки возврата в личный профиль")
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
-                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -94,6 +100,8 @@ class PersonalProfileService(interface.IPersonalProfileService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                self.logger.info("Начало обработки перехода в главное меню")
+
                 dialog_manager.show_mode = ShowMode.EDIT
 
                 await dialog_manager.start(
@@ -101,10 +109,10 @@ class PersonalProfileService(interface.IPersonalProfileService):
                     mode=StartMode.RESET_STACK
                 )
 
-                self.logger.info("Переход в главное меню")
+                await callback.answer("Главное меню открыто")
 
+                self.logger.info("Завершение обработки перехода в главное меню")
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
-                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise

@@ -31,6 +31,8 @@ class GenerateVideoCutService(interface.IGenerateVideoCutService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                self.logger.info("Начало обработки ввода YouTube ссылки")
+
                 dialog_manager.show_mode = ShowMode.EDIT
 
                 await message.delete()
@@ -40,6 +42,7 @@ class GenerateVideoCutService(interface.IGenerateVideoCutService):
 
                 # Валидация YouTube ссылки
                 if not self._is_valid_youtube_url(youtube_url):
+                    self.logger.info("YouTube ссылка не прошла валидацию")
                     dialog_manager.dialog_data["has_invalid_youtube_url"] = True
                     return
 
@@ -54,11 +57,10 @@ class GenerateVideoCutService(interface.IGenerateVideoCutService):
                     youtube_url,
                 )
 
-                self.logger.info("YouTube ссылка принята к обработке")
+                self.logger.info("Завершение обработки ввода YouTube ссылки")
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -73,19 +75,25 @@ class GenerateVideoCutService(interface.IGenerateVideoCutService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                self.logger.info("Начало перехода в меню контента")
+
                 dialog_manager.show_mode = ShowMode.EDIT
 
                 if await self._check_alerts(dialog_manager):
+                    self.logger.info("Найдены алерты, переход к их отображению")
                     return
 
                 await dialog_manager.start(
                     model.ContentMenuStates.content_menu,
                     mode=StartMode.RESET_STACK,
                 )
+
+                await callback.answer("✅ Открываю меню контента")
+
+                self.logger.info("Завершение перехода в меню контента")
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -100,6 +108,8 @@ class GenerateVideoCutService(interface.IGenerateVideoCutService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                self.logger.info("Начало перехода в черновики видео-нарезок")
+
                 dialog_manager.show_mode = ShowMode.EDIT
 
                 state = await self._get_state(dialog_manager)
@@ -113,11 +123,12 @@ class GenerateVideoCutService(interface.IGenerateVideoCutService):
                     mode=StartMode.RESET_STACK
                 )
 
-                self.logger.info("Переход в черновики видео-нарезок")
+                await callback.answer("✅ Открываю черновики")
+
+                self.logger.info("Завершение перехода в черновики видео-нарезок")
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -132,6 +143,8 @@ class GenerateVideoCutService(interface.IGenerateVideoCutService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                self.logger.info("Начало перехода в главное меню")
+
                 dialog_manager.show_mode = ShowMode.EDIT
 
                 state = await self._get_state(dialog_manager)
@@ -145,11 +158,12 @@ class GenerateVideoCutService(interface.IGenerateVideoCutService):
                     mode=StartMode.RESET_STACK
                 )
 
-                self.logger.info("Переход в главное меню")
+                await callback.answer("🏠 Возвращаюсь в главное меню")
+
+                self.logger.info("Завершение перехода в главное меню")
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 

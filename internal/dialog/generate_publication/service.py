@@ -743,6 +743,8 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 dialog_manager.dialog_data.pop("is_custom_image", None)
                 dialog_manager.dialog_data.pop("current_image_index", None)
 
+                await callback.answer("Изображение удалено", show_alert=True)
+
                 await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
 
                 self.logger.info("Конец удаления изображения")

@@ -114,7 +114,7 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
                     autoselect=autoselect
                 )
 
-                await callback.answer(f"Telegram канал '@{telegram_channel_username}' подключен")
+                await callback.answer(f"Telegram канал '@{telegram_channel_username}' подключен", show_alert=True)
 
                 await dialog_manager.switch_to(model.AddSocialNetworkStates.telegram_main)
 
@@ -150,7 +150,7 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
                 # Очищаем dialog_data после удаления
                 dialog_manager.dialog_data.clear()
 
-                await callback.answer("Telegram канал отключен")
+                await callback.answer("Telegram канал отключен", show_alert=True)
 
                 self.logger.info("Завершение отключения Telegram канала")
                 span.set_status(Status(StatusCode.OK))
@@ -232,7 +232,7 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
                 dialog_manager.dialog_data.pop("original_state", None)
                 dialog_manager.dialog_data.pop("working_state", None)
 
-                await callback.answer("Настройки Telegram обновлены")
+                await callback.answer("Настройки Telegram обновлены", show_alert=True)
 
                 await dialog_manager.switch_to(model.AddSocialNetworkStates.telegram_main)
 

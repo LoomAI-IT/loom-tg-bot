@@ -37,6 +37,7 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                self.logger.info("Начало загрузки списка модерации")
                 state = await self._get_state(dialog_manager)
 
                 # Получаем публикации на модерации для организации
@@ -51,6 +52,7 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
                 ]
 
                 if not moderation_publications:
+                    self.logger.info("Нет публикаций на модерации")
                     return {
                         "has_publications": False,
                         "publications_count": 0,
@@ -81,6 +83,7 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
                 preview_image_media = None
                 image_url = None
                 if current_pub.image_fid:
+                    self.logger.info("Загрузка изображения публикации")
                     cache_buster = int(time.time())
                     image_url = f"https://{self.loom_domain}/api/content/publication/{current_pub.id}/image/download?v={cache_buster}"
 
@@ -118,6 +121,7 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
                 selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
 
                 if not selected_networks:
+                    self.logger.info("Инициализация выбранных социальных сетей")
                     social_networks = await self.loom_content_client.get_social_networks_by_organization(
                         organization_id=state.organization_id
                     )
@@ -143,12 +147,11 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
                         dialog_manager.dialog_data["original_publication"])
 
                 self.logger.info("Список модерации загружен")
-
                 span.set_status(Status(StatusCode.OK))
                 return data
 
             except Exception as err:
-                
+
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -162,6 +165,7 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                self.logger.info("Начало загрузки данных комментария отклонения")
                 original_pub = dialog_manager.dialog_data.get("original_publication", {})
 
                 # Получаем информацию об авторе
@@ -175,11 +179,12 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
                     "reject_comment": dialog_manager.dialog_data.get("reject_comment", ""),
                 }
 
+                self.logger.info("Данные комментария отклонения загружены")
                 span.set_status(Status(StatusCode.OK))
                 return data
 
             except Exception as err:
-                
+
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -193,8 +198,10 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                self.logger.info("Начало загрузки данных превью редактирования")
                 # Инициализируем рабочую версию если ее нет
                 if "working_publication" not in dialog_manager.dialog_data:
+                    self.logger.info("Инициализация рабочей публикации")
                     dialog_manager.dialog_data["working_publication"] = dict(
                         dialog_manager.dialog_data["original_publication"]
                     )
@@ -221,11 +228,13 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
                 if working_pub.get("has_image"):
                     # Приоритет: пользовательское > сгенерированные множественные > одиночное
                     if working_pub.get("custom_image_file_id"):
+                        self.logger.info("Загрузка пользовательского изображения")
                         preview_image_media = MediaAttachment(
                             file_id=MediaId(working_pub["custom_image_file_id"]),
                             type=ContentType.PHOTO
                         )
                     elif working_pub.get("generated_images_url"):
+                        self.logger.info("Загрузка сгенерированного изображения")
                         # Множественные сгенерированные изображения
                         images_url = working_pub["generated_images_url"]
                         current_image_index = working_pub.get("current_image_index", 0)
@@ -238,6 +247,7 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
                                 type=ContentType.PHOTO
                             )
                     elif working_pub.get("image_url"):
+                        self.logger.info("Загрузка изображения по URL")
                         preview_image_media = MediaAttachment(
                             url=working_pub["image_url"],
                             type=ContentType.PHOTO
@@ -256,11 +266,12 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
                     "total_images": total_images,
                 }
 
+                self.logger.info("Данные превью редактирования загружены")
                 span.set_status(Status(StatusCode.OK))
                 return data
 
             except Exception as err:
-                
+
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -274,6 +285,7 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                self.logger.info("Начало загрузки данных выбора социальных сетей")
                 state = await self._get_state(dialog_manager)
 
                 social_networks = await self.loom_content_client.get_social_networks_by_organization(
@@ -286,11 +298,13 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
                 selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
 
                 if vkontakte_connected:
+                    self.logger.info("Установка состояния VK чекбокса")
                     widget_id = "vkontakte_checkbox"
                     vkontakte_checkbox: ManagedCheckbox = dialog_manager.find(widget_id)
                     await vkontakte_checkbox.set_checked(selected_networks[widget_id])
 
                 if telegram_connected:
+                    self.logger.info("Установка состояния Telegram чекбокса")
                     widget_id = "telegram_checkbox"
                     telegram_checkbox: ManagedCheckbox = dialog_manager.find(widget_id)
                     await telegram_checkbox.set_checked(selected_networks[widget_id])
@@ -302,11 +316,12 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
                     "has_available_networks": telegram_connected or vkontakte_connected,
                 }
 
+                self.logger.info("Данные выбора социальных сетей загружены")
                 span.set_status(Status(StatusCode.OK))
                 return data
 
             except Exception as err:
-                
+
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 

@@ -32,6 +32,8 @@ class PersonalProfileGetter(interface.IPersonalProfileGetter):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                self.logger.info("Начало получения данных личного профиля")
+
                 state = await self._get_state(dialog_manager)
 
                 employee = await self.loom_employee_client.get_employee_by_account_id(
@@ -65,7 +67,6 @@ class PersonalProfileGetter(interface.IPersonalProfileGetter):
                         if pub.moderation_status == "approved":
                             published_publication_count += 1
 
-                # Формируем список разрешений
                 permissions_list = []
                 if not employee.required_moderation:
                     permissions_list.append("✅ Публикации без модерации")
@@ -81,20 +82,19 @@ class PersonalProfileGetter(interface.IPersonalProfileGetter):
                     permissions_list.append("✅ Подключение соцсетей")
 
                 if not permissions_list:
+                    self.logger.info("Специальных разрешений не обнаружено")
                     permissions_list.append("❌ Нет специальных разрешений")
 
                 permissions_text = "<br>".join(permissions_list)
 
-
-                # Форматируем дату
                 created_at = employee.created_at
                 if isinstance(created_at, str):
                     try:
                         created_date = datetime.fromisoformat(created_at)
                         created_at = created_date.strftime("%d.%m.%Y")
                     except:
+                        self.logger.info("Не удалось отформатировать дату создания")
                         created_at = "неизвестно"
-
 
                 data = {
                     "employee_name": employee.name,
@@ -112,11 +112,11 @@ class PersonalProfileGetter(interface.IPersonalProfileGetter):
                     "has_moderated_publications": bool(rejected_publication_count or approved_publication_count),
                 }
 
+                self.logger.info("Завершение получения данных личного профиля")
                 span.set_status(Status(StatusCode.OK))
                 return data
 
             except Exception as err:
-                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise err
 

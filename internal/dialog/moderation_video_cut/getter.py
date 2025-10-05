@@ -34,6 +34,8 @@ class VideoCutModerationGetter(interface.IVideoCutModerationGetter):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                self.logger.info("Начало получения списка модерации")
+
                 state = await self._get_state(dialog_manager)
 
                 # Получаем видео-нарезки на модерации для организации
@@ -48,6 +50,7 @@ class VideoCutModerationGetter(interface.IVideoCutModerationGetter):
                 ]
 
                 if not moderation_video_cuts:
+                    self.logger.info("Видео-нарезки на модерации отсутствуют")
                     return {
                         "has_video_cuts": False,
                         "video_cuts_count": 0,
@@ -130,6 +133,7 @@ class VideoCutModerationGetter(interface.IVideoCutModerationGetter):
                 selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
 
                 if not selected_networks:
+                    self.logger.info("Инициализация выбранных видео-платформ")
                     social_networks = await self.loom_content_client.get_social_networks_by_organization(
                         organization_id=state.organization_id
                     )
@@ -154,13 +158,11 @@ class VideoCutModerationGetter(interface.IVideoCutModerationGetter):
                     dialog_manager.dialog_data["working_video_cut"] = dict(
                         dialog_manager.dialog_data["original_video_cut"])
 
-                self.logger.info("Список модерации видео загружен")
-
+                self.logger.info("Завершение получения списка модерации")
                 span.set_status(Status(StatusCode.OK))
                 return data
 
             except Exception as err:
-                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -174,6 +176,8 @@ class VideoCutModerationGetter(interface.IVideoCutModerationGetter):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                self.logger.info("Начало получения данных комментария отклонения")
+
                 original_video_cut = dialog_manager.dialog_data.get("original_video_cut", {})
 
                 # Получаем информацию об авторе
@@ -191,11 +195,11 @@ class VideoCutModerationGetter(interface.IVideoCutModerationGetter):
                     "has_big_reject_comment": dialog_manager.dialog_data.get("has_big_reject_comment", False),
                 }
 
+                self.logger.info("Завершение получения данных комментария отклонения")
                 span.set_status(Status(StatusCode.OK))
                 return data
 
             except Exception as err:
-                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -209,8 +213,11 @@ class VideoCutModerationGetter(interface.IVideoCutModerationGetter):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                self.logger.info("Начало получения данных превью редактирования")
+
                 # Инициализируем рабочую версию если ее нет
                 if "working_video_cut" not in dialog_manager.dialog_data:
+                    self.logger.info("Инициализация рабочей версии видео-нарезки")
                     dialog_manager.dialog_data["working_video_cut"] = dict(
                         dialog_manager.dialog_data["original_video_cut"]
                     )
@@ -243,11 +250,11 @@ class VideoCutModerationGetter(interface.IVideoCutModerationGetter):
                     "has_video": bool(working_video_cut.get("video_fid")),
                 }
 
+                self.logger.info("Завершение получения данных превью редактирования")
                 span.set_status(Status(StatusCode.OK))
                 return data
 
             except Exception as err:
-                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -261,6 +268,8 @@ class VideoCutModerationGetter(interface.IVideoCutModerationGetter):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                self.logger.info("Начало получения данных выбора видео-платформ")
+
                 state = await self._get_state(dialog_manager)
 
                 # Получаем подключенные социальные сети для организации
@@ -294,11 +303,11 @@ class VideoCutModerationGetter(interface.IVideoCutModerationGetter):
                     "has_available_networks": youtube_connected or instagram_connected,
                 }
 
+                self.logger.info("Завершение получения данных выбора видео-платформ")
                 span.set_status(Status(StatusCode.OK))
                 return data
 
             except Exception as err:
-                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -373,14 +382,6 @@ class VideoCutModerationGetter(interface.IVideoCutModerationGetter):
             name=working_video_cut["name"],
             description=working_video_cut["description"],
             tags=working_video_cut.get("tags", []),
-        )
-
-        self.logger.info(
-            "Изменения видео-нарезки в модерации сохранены",
-            {
-                "video_cut_id": video_cut_id,
-                "has_changes": self._has_changes(dialog_manager),
-            }
         )
 
     def _format_datetime(self, dt: str) -> str:

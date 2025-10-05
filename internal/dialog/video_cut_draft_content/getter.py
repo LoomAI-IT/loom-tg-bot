@@ -38,6 +38,7 @@ class VideoCutsDraftGetter(interface.IVideoCutsDraftGetter):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                self.logger.info("Начало получения списка черновиков видео")
                 state = await self._get_state(dialog_manager)
                 employee = await self.loom_employee_client.get_employee_by_account_id(state.account_id)
 
@@ -50,6 +51,8 @@ class VideoCutsDraftGetter(interface.IVideoCutsDraftGetter):
                 ]
 
                 if not video_cuts:
+                    self.logger.info("Черновики видео отсутствуют")
+                    self.logger.info("Завершение получения списка черновиков видео")
                     return {
                         "has_video_cuts": False,
                         "video_cuts_count": 0,
@@ -64,20 +67,15 @@ class VideoCutsDraftGetter(interface.IVideoCutsDraftGetter):
                 current_index = dialog_manager.dialog_data["current_index"]
                 current_video_cut = model.VideoCut(**dialog_manager.dialog_data["video_cuts_list"][current_index])
 
-                # Форматируем теги
                 tags = current_video_cut.tags or []
                 tags_text = ", ".join(tags) if tags else ""
 
-                # Определяем период
                 period_text = self._get_period_text(video_cuts)
 
-                # Подготавливаем медиа для видео
                 video_media = await self._get_video_media(current_video_cut)
 
-                # Сохраняем данные текущего черновика для редактирования
                 dialog_manager.dialog_data["original_video_cut"] = current_video_cut.to_dict()
 
-                # Копируем в рабочую версию, если ее еще нет
                 if "working_video_cut" not in dialog_manager.dialog_data:
                     dialog_manager.dialog_data["working_video_cut"] = dict(
                         dialog_manager.dialog_data["original_video_cut"])
@@ -104,6 +102,7 @@ class VideoCutsDraftGetter(interface.IVideoCutsDraftGetter):
                 selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
 
                 if not selected_networks:
+                    self.logger.info("Загрузка социальных сетей для автовыбора")
                     social_networks = await self.loom_content_client.get_social_networks_by_organization(
                         organization_id=state.organization_id
                     )
@@ -123,13 +122,11 @@ class VideoCutsDraftGetter(interface.IVideoCutsDraftGetter):
 
                     dialog_manager.dialog_data["selected_social_networks"] = selected_networks
 
-                self.logger.info("Список черновиков видео загружен")
-
+                self.logger.info("Завершение получения списка черновиков видео")
                 span.set_status(Status(StatusCode.OK))
                 return data
 
             except Exception as err:
-                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -144,8 +141,9 @@ class VideoCutsDraftGetter(interface.IVideoCutsDraftGetter):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                # Инициализируем рабочую версию если ее нет
+                self.logger.info("Начало получения данных предпросмотра редактирования")
                 if "working_video_cut" not in dialog_manager.dialog_data:
+                    self.logger.info("Инициализация рабочей версии черновика")
                     dialog_manager.dialog_data["working_video_cut"] = dict(
                         dialog_manager.dialog_data["original_video_cut"]
                     )
@@ -153,7 +151,6 @@ class VideoCutsDraftGetter(interface.IVideoCutsDraftGetter):
                 working_video_cut = dialog_manager.dialog_data["working_video_cut"]
                 original_video_cut = dialog_manager.dialog_data["original_video_cut"]
 
-                # Форматируем теги
                 tags = working_video_cut.get("tags", [])
                 tags_text = ", ".join(tags) if tags else ""
 
@@ -171,11 +168,11 @@ class VideoCutsDraftGetter(interface.IVideoCutsDraftGetter):
                     "has_changes": self._has_changes(dialog_manager),
                 }
 
+                self.logger.info("Завершение получения данных предпросмотра редактирования")
                 span.set_status(Status(StatusCode.OK))
                 return data
 
             except Exception as err:
-                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -230,25 +227,26 @@ class VideoCutsDraftGetter(interface.IVideoCutsDraftGetter):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                self.logger.info("Начало получения данных выбора социальных сетей")
                 state = await self._get_state(dialog_manager)
 
                 social_networks = await self.loom_content_client.get_social_networks_by_organization(
                     organization_id=state.organization_id
                 )
 
-                # Проверяем подключенные сети
                 youtube_connected = self._is_network_connected(social_networks, "youtube")
                 instagram_connected = self._is_network_connected(social_networks, "instagram")
 
-                # Получаем текущие выбранные сети
                 selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
 
                 if youtube_connected:
+                    self.logger.info("Установка чекбокса YouTube")
                     widget_id = "youtube_checkbox"
                     youtube_checkbox: ManagedCheckbox = dialog_manager.find(widget_id)
                     await youtube_checkbox.set_checked(selected_networks[widget_id])
 
                 if instagram_connected:
+                    self.logger.info("Установка чекбокса Instagram")
                     widget_id = "instagram_checkbox"
                     instagram_checkbox: ManagedCheckbox = dialog_manager.find(widget_id)
                     await instagram_checkbox.set_checked(selected_networks[widget_id])
@@ -260,11 +258,11 @@ class VideoCutsDraftGetter(interface.IVideoCutsDraftGetter):
                     "no_connected_networks": not youtube_connected and not instagram_connected,
                 }
 
+                self.logger.info("Завершение получения данных выбора социальных сетей")
                 span.set_status(Status(StatusCode.OK))
                 return data
 
             except Exception as err:
-                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 

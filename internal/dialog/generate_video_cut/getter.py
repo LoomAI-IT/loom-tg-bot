@@ -25,27 +25,31 @@ class GenerateVideoCutGetter(interface.IGenerateVideoCutGetter):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                self.logger.info("Начало загрузки данных окна ввода YouTube ссылки")
+
                 is_processing_video = False
                 if dialog_manager.start_data:
                     if dialog_manager.start_data.get("is_processing_video"):
+                        self.logger.info("Видео в процессе обработки из start_data")
                         is_processing_video = True
                 else:
                     is_processing_video = dialog_manager.dialog_data.get("is_processing_video", False)
+                    if is_processing_video:
+                        self.logger.info("Видео в процессе обработки из dialog_data")
 
                 data = {
                     "is_processing_video": is_processing_video,
                     "has_invalid_youtube_url": dialog_manager.dialog_data.get("has_invalid_youtube_url", False),
                 }
 
-                self.logger.info("Данные окна ввода YouTube ссылки загружены")
+                self.logger.info("Завершение загрузки данных окна ввода YouTube ссылки")
 
                 span.set_status(Status(StatusCode.OK))
                 return data
 
             except Exception as err:
-                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-                return {}
+                raise
 
     async def get_video_alert_data(
             self,
@@ -57,23 +61,22 @@ class GenerateVideoCutGetter(interface.IGenerateVideoCutGetter):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                # Получаем state_id пользователя
+                self.logger.info("Начало загрузки данных алерта")
+
                 state = await self._get_user_state(dialog_manager)
 
-                # Получаем все алерты пользователя
                 alerts = await self.state_repo.get_vizard_video_cut_alert_by_state_id(state.id)
 
                 if not alerts:
-                    self.logger.warning("Нет алертов для отображения")
+                    self.logger.info("Алерты не найдены")
                     span.set_status(Status(StatusCode.ERROR, "No alerts found"))
                     return {}
 
                 alerts_count = len(alerts)
                 has_multiple_alerts = alerts_count > 1
 
-                # Формируем данные в зависимости от количества алертов
                 if has_multiple_alerts:
-                    # Множественные алерты - формируем текст со списком
+                    self.logger.info("Обнаружено несколько алертов")
                     alerts_text_parts = []
                     for i, alert in enumerate(alerts, 1):
                         video_word = self._get_video_word(alert.video_count)
@@ -92,7 +95,7 @@ class GenerateVideoCutGetter(interface.IGenerateVideoCutGetter):
                         "alerts_text": alerts_text,
                     }
                 else:
-                    # Единственный алерт - как раньше
+                    self.logger.info("Обнаружен один алерт")
                     alert = alerts[0]
                     video_word = self._get_video_word(alert.video_count)
 
@@ -103,14 +106,13 @@ class GenerateVideoCutGetter(interface.IGenerateVideoCutGetter):
                         "youtube_video_reference": alert.youtube_video_reference,
                     }
 
-                self.logger.info(f"Данные алерта загружены: {alerts_count} алертов")
+                self.logger.info("Завершение загрузки данных алерта")
                 span.set_status(Status(StatusCode.OK))
                 return data
 
             except Exception as err:
-                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-                raise err
+                raise
 
     async def _get_user_state(self, dialog_manager: DialogManager) -> model.UserState:
         if hasattr(dialog_manager.event, 'message') and dialog_manager.event.message:

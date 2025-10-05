@@ -398,7 +398,7 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
 
                 dialog_manager.dialog_data["selected_new_role"] = role
 
-                await callback.answer(f"Выбрана роль: {self._get_role_display_name(role)}", show_alert=True)
+                await callback.answer(f"Выбрана роль: {self._get_role_display_name(role)}")
 
                 self.logger.info("Завершение выбора роли")
                 span.set_status(Status(StatusCode.OK))
@@ -425,7 +425,7 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
 
                 dialog_manager.dialog_data.pop("selected_new_role", None)
 
-                await callback.answer("Выбор роли сброшен", show_alert=True)
+                await callback.answer("Выбор роли сброшен")
 
                 self.logger.info("Завершение сброса выбора роли")
                 span.set_status(Status(StatusCode.OK))
