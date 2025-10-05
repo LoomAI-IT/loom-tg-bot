@@ -1,3 +1,5 @@
+from contextvars import ContextVar
+
 import uvicorn
 from aiogram import Bot, Dispatcher
 import redis.asyncio as redis
@@ -88,6 +90,8 @@ alert_manager = AlertManager(
     cfg.monitoring_redis_password
 )
 
+log_context: ContextVar[dict] = ContextVar('log_context', default={})
+
 tel = Telemetry(
     cfg.log_level,
     cfg.root_path,
@@ -96,6 +100,7 @@ tel = Telemetry(
     cfg.service_version,
     cfg.otlp_host,
     cfg.otlp_port,
+    log_context,
     alert_manager
 )
 
@@ -395,7 +400,8 @@ command_controller = CommandController(tel, state_service)
 tg_middleware = TgMiddleware(
     tel,
     state_service,
-    bot
+    bot,
+    log_context
 )
 
 dialog_bg_factory = NewTg(

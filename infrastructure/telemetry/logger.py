@@ -1,6 +1,7 @@
 import logging
 
 import inspect
+from contextvars import ContextVar
 from typing import Union
 
 from opentelemetry import trace
@@ -18,12 +19,15 @@ class OtelLogger(interface.IOtelLogger):
             alert_manger: AlertManager | None,
             logger_provider: LoggerProvider,
             service_name: str,
+            log_context: ContextVar[dict],
     ):
         self.handler = LoggingHandler(
             level=logging.DEBUG,
             logger_provider=logger_provider
         )
         self.service_name = service_name
+        self.log_context = log_context
+
         self.logger = logging.getLogger("main")
         self.logger.setLevel(logging.DEBUG)
         self.logger.addHandler(self.handler)
@@ -34,6 +38,10 @@ class OtelLogger(interface.IOtelLogger):
     def log(self, level: str, message: str, fields: dict = None) -> None:
         file_info = self._get_caller_info(3)
         attributes: dict = {common.FILE_KEY: file_info}
+
+        context_fields = self.log_context.get()
+        if context_fields:
+            attributes.update(context_fields)
 
         if fields:
             extra_fields = self._extract_extra_params(fields)

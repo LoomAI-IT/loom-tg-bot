@@ -1,5 +1,6 @@
 import time
 import traceback
+from contextvars import ContextVar
 
 from aiogram import Bot
 from typing import Callable, Any, Awaitable
@@ -17,6 +18,7 @@ class TgMiddleware(interface.ITelegramMiddleware):
             tel: interface.ITelemetry,
             state_service: interface.IStateService,
             bot: Bot,
+            log_context: ContextVar[dict],
     ):
         self.tracer = tel.tracer()
         self.meter = tel.meter()
@@ -24,6 +26,7 @@ class TgMiddleware(interface.ITelegramMiddleware):
 
         self.state_service = state_service
         self.bot = bot
+        self.log_context = log_context
         self.dialog_bg_factory = None
 
         self.ok_message_counter = self.meter.create_counter(
@@ -125,6 +128,7 @@ class TgMiddleware(interface.ITelegramMiddleware):
             span_ctx = span.get_span_context()
             trace_id = format(span_ctx.trace_id, '032x')
             span_id = format(span_ctx.span_id, '016x')
+
             extra_log: dict = {
                 common.TELEGRAM_EVENT_TYPE_KEY: event_type,
                 common.TELEGRAM_CHAT_ID_KEY: tg_chat_id,
@@ -136,6 +140,12 @@ class TgMiddleware(interface.ITelegramMiddleware):
                 common.SPAN_ID_KEY: span_id,
             }
             try:
+                context_token = self.log_context.set({
+                    common.TELEGRAM_USER_USERNAME_KEY: tg_username or "unknown",
+                    common.TELEGRAM_CHAT_ID_KEY: tg_chat_id,
+                    common.TELEGRAM_EVENT_TYPE_KEY: event_type,
+                })
+
                 self.logger.info(f"Начали обработку telegram {event_type}", extra_log)
 
                 await handler(event, data)
@@ -157,12 +167,14 @@ class TgMiddleware(interface.ITelegramMiddleware):
                     common.TELEGRAM_MESSAGE_DURATION_KEY: int((time.time() - start_time) * 1000),
                     common.TRACEBACK_KEY: traceback.format_exc()
                 }
-                self.logger.error(f"Ошибка обработки telegram {event_type}: {str(err)}", extra_log)
+                self.logger.error(f"Ошибка обработки telegram {event_type}", extra_log)
                 await self._recovery_start_functionality(tg_chat_id, tg_username)
 
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise err
+            finally:
+                self.log_context.reset(context_token)
 
     async def _recovery_start_functionality(self, tg_chat_id: int, tg_username: str):
         with self.tracer.start_as_current_span(
