@@ -49,7 +49,7 @@ class PublicationDraftService(interface.IPublicationDraftService):
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 await callback.answer("❌ Ошибка при выборе публикации", show_alert=True)
                 raise
@@ -93,7 +93,7 @@ class PublicationDraftService(interface.IPublicationDraftService):
                 await dialog_manager.update(dialog_manager.dialog_data)
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -126,7 +126,7 @@ class PublicationDraftService(interface.IPublicationDraftService):
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 await callback.answer("❌ Ошибка при удалении", show_alert=True)
                 raise
@@ -165,7 +165,7 @@ class PublicationDraftService(interface.IPublicationDraftService):
                 await callback.answer("✅ Изменения сохранены!", show_alert=True)
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 await callback.answer("❌ Ошибка сохранения", show_alert=True)
                 raise

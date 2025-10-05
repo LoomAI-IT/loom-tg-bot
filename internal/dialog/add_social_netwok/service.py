@@ -78,7 +78,7 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -122,7 +122,7 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -156,7 +156,7 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -196,7 +196,7 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -240,7 +240,7 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -314,7 +314,7 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -346,7 +346,7 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 

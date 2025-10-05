@@ -66,7 +66,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
 
                 await callback.answer("❌ Ошибка навигации", show_alert=True)
@@ -111,7 +111,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -159,7 +159,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
 
                 await callback.answer("❌ Ошибка при отклонении", show_alert=True)
@@ -199,7 +199,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
 
                 await callback.answer("❌ Ошибка при перегенерации", show_alert=True)
@@ -253,7 +253,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -297,7 +297,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -353,7 +353,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
 
                 await callback.answer("❌ Ошибка генерации", show_alert=True)
@@ -426,7 +426,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -477,7 +477,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -505,7 +505,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
 
                 await callback.answer("❌ Ошибка удаления", show_alert=True)
@@ -541,7 +541,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
 
                 await callback.answer("❌ Ошибка сохранения", show_alert=True)
@@ -563,7 +563,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
                 await dialog_manager.switch_to(model.ModerationPublicationStates.moderation_list)
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
 
                 await callback.answer("❌ Ошибка сохранения", show_alert=True)
@@ -593,7 +593,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
 
                 await callback.answer("❌ Ошибка", show_alert=True)
@@ -626,7 +626,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
 
                 await callback.answer("❌ Ошибка", show_alert=True)
@@ -656,7 +656,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -683,7 +683,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
                 await callback.answer()
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -751,7 +751,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
 
                 await callback.answer("❌ Ошибка при публикации", show_alert=True)

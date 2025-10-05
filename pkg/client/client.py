@@ -1,3 +1,5 @@
+from contextvars import ContextVar
+
 import httpx
 import asyncio
 import random
@@ -19,7 +21,7 @@ class CircuitBreaker:
             failure_threshold: int = 5,
             recovery_timeout: int = 60,
             expected_exceptions: tuple[type[Exception], ...] = (httpx.HTTPError,),
-            logger: interface.IOtelLogger = None
+            logger: interface.IOtelLogger = None,
     ):
         self.failure_threshold = failure_threshold
         self.recovery_timeout = recovery_timeout
@@ -186,6 +188,7 @@ class AsyncHTTPClient:
             circuit_breaker_failure_threshold: int = 5,
             circuit_breaker_recovery_timeout: int = 60,
             logger: interface.IOtelLogger = None,
+            log_context: ContextVar[dict] = None,
     ):
         protocol = "https" if use_https else "http"
         base_url = f"{protocol}://{host}:{port}{prefix}"
@@ -218,6 +221,7 @@ class AsyncHTTPClient:
             circuit_breaker_failure_threshold: int = 5,
             circuit_breaker_recovery_timeout: int = 60,
             logger: interface.IOtelLogger = None,
+            log_context: ContextVar[dict] = None,
     ):
         if hasattr(self, "_initialized"):
             return
@@ -255,6 +259,7 @@ class AsyncHTTPClient:
             base_delay=self.retry_wait_min,
             max_delay=self.retry_wait_max
         )
+        self.log_context = log_context
 
     async def _get_session(self) -> httpx.AsyncClient:
         if self.session is None or self.session.is_closed:
@@ -313,6 +318,9 @@ class AsyncHTTPClient:
             session = await self._get_session()
 
             headers = {**self.default_headers, **kwargs.pop('headers', {})}
+            if self.log_context:
+                headers.update(self.log_context.get())
+
             cookies = {**self.default_cookies, **kwargs.pop('cookies', {})}
 
             if self.use_tracing:

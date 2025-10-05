@@ -61,7 +61,7 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
 
                 await callback.answer("❌ Ошибка навигации", show_alert=True)
@@ -106,7 +106,7 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
 
                 raise
@@ -157,7 +157,7 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
 
                 await callback.answer("❌ Ошибка при отклонении", show_alert=True)
@@ -198,7 +198,7 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -238,7 +238,7 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -279,7 +279,7 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -311,7 +311,7 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
 
                 await callback.answer("❌ Ошибка сохранения", show_alert=True)
@@ -334,7 +334,7 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
 
                 await callback.answer("❌ Ошибка", show_alert=True)
@@ -367,7 +367,7 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -427,7 +427,7 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
 
                 await callback.answer("❌ Ошибка при публикации", show_alert=True)
@@ -457,7 +457,7 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
 
                 await callback.answer("❌ Ошибка", show_alert=True)

@@ -429,6 +429,7 @@ tg_middleware.dialog_bg_factory = dialog_bg_factory
 http_middleware = HttpMiddleware(
     tel,
     cfg.prefix,
+    log_context
 )
 tg_webhook_controller = TelegramWebhookController(
     tel,

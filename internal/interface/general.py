@@ -11,7 +11,6 @@ from opentelemetry.trace import Tracer
 from internal.controller.http.webhook.model import *
 
 
-
 class ICommandController(Protocol):
     @abstractmethod
     async def start_handler(
@@ -22,23 +21,13 @@ class ICommandController(Protocol):
 
 
 class ITelegramMiddleware(Protocol):
-
     @abstractmethod
-    async def metric_middleware01(
+    async def logger_middleware01(
             self,
             handler: Callable[[TelegramObject, dict[str, Any]], Awaitable[Any]],
             event: Update,
             data: dict[str, Any]
     ): pass
-
-    @abstractmethod
-    async def logger_middleware02(
-            self,
-            handler: Callable[[TelegramObject, dict[str, Any]], Awaitable[Any]],
-            event: Update,
-            data: dict[str, Any]
-    ): pass
-
 
 
 class ITelegramWebhookController(Protocol):
@@ -76,10 +65,7 @@ class IHttpMiddleware(Protocol):
     def trace_middleware01(self, app: FastAPI): pass
 
     @abstractmethod
-    def metrics_middleware02(self, app: FastAPI): pass
-
-    @abstractmethod
-    def logger_middleware03(self, app: FastAPI): pass
+    def logger_middleware02(self, app: FastAPI): pass
 
 
 class IOtelLogger(Protocol):

@@ -52,7 +52,7 @@ class PG(interface.IDB):
                     return rows[0][0]
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise err
 
@@ -67,7 +67,7 @@ class PG(interface.IDB):
                     await session.commit()
                     span.set_status(Status(StatusCode.OK))
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise err
 
@@ -82,7 +82,7 @@ class PG(interface.IDB):
                     await session.commit()
                     span.set_status(Status(StatusCode.OK))
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise err
 
@@ -99,7 +99,7 @@ class PG(interface.IDB):
                     span.set_status(Status(StatusCode.OK))
                     return rows
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise err
 

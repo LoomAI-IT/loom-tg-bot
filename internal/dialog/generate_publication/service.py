@@ -79,7 +79,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -167,7 +167,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -210,7 +210,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
 
                 await callback.answer("Ошибка выбора категории", show_alert=True)
@@ -253,7 +253,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
 
                 await callback.answer("Ошибка генерации текста", show_alert=True)
@@ -306,7 +306,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
 
                 await callback.answer("Ошибка генерации текста с изображением", show_alert=True)
@@ -343,7 +343,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
 
                 await callback.answer("Ошибка переключения изображения", show_alert=True)
@@ -380,7 +380,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
 
                 await callback.answer("Ошибка переключения изображения", show_alert=True)
@@ -424,7 +424,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
 
                 await callback.answer("Ошибка регенерации текста", show_alert=True)
@@ -485,7 +485,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -536,7 +536,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -590,7 +590,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
 
                 await callback.answer("Ошибка генерации изображения", show_alert=True)
@@ -664,7 +664,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -718,7 +718,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                     dialog_manager.dialog_data["has_image_processing_error"] = True
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -749,7 +749,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
 
                 await callback.answer("Ошибка удаления изображения", show_alert=True)
@@ -815,7 +815,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 # span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
 
                 await callback.answer("Ошибка сохранения черновика", show_alert=True)
@@ -881,7 +881,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 self.logger.info("Конец отправки на модерацию")
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
 
                 await callback.answer("Ошибка отправки на модерацию", show_alert=True)
@@ -916,7 +916,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
 
                 await callback.answer("Ошибка переключения соцсети", show_alert=True)
@@ -994,7 +994,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
 
                 await callback.answer("Ошибка публикации", show_alert=True)
@@ -1028,7 +1028,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
 
                 await callback.answer("Ошибка перехода в меню", show_alert=True)

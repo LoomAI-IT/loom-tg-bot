@@ -73,7 +73,7 @@ class TelegramWebhookController(interface.ITelegramWebhookController):
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -127,7 +127,7 @@ class TelegramWebhookController(interface.ITelegramWebhookController):
 
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise err
 
@@ -182,7 +182,7 @@ class TelegramWebhookController(interface.ITelegramWebhookController):
                 )
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise err
 
@@ -222,7 +222,7 @@ class TelegramWebhookController(interface.ITelegramWebhookController):
                 )
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 self.logger.error(
                     "Ошибка при сохранении файла в кеш",

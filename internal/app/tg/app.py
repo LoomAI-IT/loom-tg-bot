@@ -57,8 +57,7 @@ def include_tg_middleware(
         dp: Dispatcher,
         tg_middleware: interface.ITelegramMiddleware,
 ):
-    dp.update.middleware(tg_middleware.metric_middleware01)
-    dp.update.middleware(tg_middleware.logger_middleware02)
+    dp.update.middleware(tg_middleware.logger_middleware01)
 
 
 def include_command_handlers(

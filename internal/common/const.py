@@ -15,6 +15,8 @@ EXTRA_LOG_FIELDS_KEY = "extra"
 FILE_KEY = "file"
 ERROR_KEY = "error"
 TRACEBACK_KEY = "traceback"
+ORGANIZATION_ID_KEY = "organization_id"
+ACCOUNT_ID_KEY = "account_id"
 
 HTTP_METHOD_KEY = "http.request.method"
 HTTP_STATUS_KEY = "http.response.status_code"
