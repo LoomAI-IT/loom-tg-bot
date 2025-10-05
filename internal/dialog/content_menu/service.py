@@ -33,24 +33,22 @@ class ContentMenuService(interface.IContentMenuService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                await callback.answer("Черновики публикации в разработке", show_alert=True)
-                return
-                # dialog_manager.show_mode = ShowMode.EDIT
-                #
-                # state = await self._get_state(dialog_manager)
-                # await self.state_repo.change_user_state(
-                #     state_id=state.id,
-                #     can_show_alerts=False
-                # )
-                #
-                # # Запускаем диалог генерации публикации
-                # await dialog_manager.start(
-                #     model.GeneratePublicationStates.select_category,
-                #     mode=StartMode.RESET_STACK
-                # )
-                #
-                # self.logger.info("Пользователь перешел к созданию публикации")
-                # span.set_status(Status(StatusCode.OK))
+                dialog_manager.show_mode = ShowMode.EDIT
+
+                state = await self._get_state(dialog_manager)
+                await self.state_repo.change_user_state(
+                    state_id=state.id,
+                    can_show_alerts=False
+                )
+
+                # Запускаем диалог генерации публикации
+                await dialog_manager.start(
+                    model.GeneratePublicationStates.select_category,
+                    mode=StartMode.RESET_STACK
+                )
+
+                self.logger.info("Пользователь перешел к созданию публикации")
+                span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
                 span.record_exception(err)
@@ -105,22 +103,24 @@ class ContentMenuService(interface.IContentMenuService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                dialog_manager.show_mode = ShowMode.EDIT
-
-                state = await self._get_state(dialog_manager)
-                await self.state_repo.change_user_state(
-                    state_id=state.id,
-                    can_show_alerts=False
-                )
-
-                # Запускаем диалог черновиков публикаций
-                await dialog_manager.start(
-                    model.PublicationDraftStates.publication_list,
-                    mode=StartMode.RESET_STACK
-                )
-
-                self.logger.info("Пользователь перешел к черновикам публикаций")
-                span.set_status(Status(StatusCode.OK))
+                await callback.answer("Черновики публикации в разработке", show_alert=True)
+                return
+                # dialog_manager.show_mode = ShowMode.EDIT
+                #
+                # state = await self._get_state(dialog_manager)
+                # await self.state_repo.change_user_state(
+                #     state_id=state.id,
+                #     can_show_alerts=False
+                # )
+                #
+                # # Запускаем диалог черновиков публикаций
+                # await dialog_manager.start(
+                #     model.PublicationDraftStates.publication_list,
+                #     mode=StartMode.RESET_STACK
+                # )
+                #
+                # self.logger.info("Пользователь перешел к черновикам публикаций")
+                # span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
                 span.record_exception(err)
