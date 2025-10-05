@@ -138,7 +138,6 @@ class TgMiddleware(interface.ITelegramMiddleware):
             try:
                 self.logger.info(f"Начали обработку telegram {event_type}", extra_log)
 
-                del data["trace_id"], data["span_id"]
                 await handler(event, data)
 
                 extra_log = {
