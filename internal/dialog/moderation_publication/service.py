@@ -230,14 +230,6 @@ class ModerationPublicationService(interface.IModerationPublicationService):
                     dialog_manager.dialog_data["has_void_regenerate_prompt"] = True
                     return
 
-                if len(prompt) < 5:
-                    dialog_manager.dialog_data["has_small_regenerate_prompt"] = True
-                    return
-
-                if len(prompt) > 500:
-                    dialog_manager.dialog_data["has_big_regenerate_prompt"] = True
-                    return
-
                 dialog_manager.dialog_data["is_regenerating_text"] = True
                 dialog_manager.dialog_data["has_regenerate_prompt"] = True
                 await dialog_manager.show()
@@ -391,14 +383,6 @@ class ModerationPublicationService(interface.IModerationPublicationService):
                 prompt = prompt.strip()
                 if not prompt:
                     dialog_manager.dialog_data["has_void_image_prompt"] = True
-                    return
-
-                if len(prompt) < 5:
-                    dialog_manager.dialog_data["has_small_image_prompt"] = True
-                    return
-
-                if len(prompt) > 500:
-                    dialog_manager.dialog_data["has_big_image_prompt"] = True
                     return
 
                 dialog_manager.dialog_data["image_prompt"] = prompt

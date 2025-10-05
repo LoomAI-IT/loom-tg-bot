@@ -459,16 +459,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                     dialog_manager.dialog_data["has_void_regenerate_prompt"] = True
                     return
 
-                if len(prompt) < 5:
-                    self.logger.info("Слишком короткий промпт")
-                    dialog_manager.dialog_data["has_small_regenerate_prompt"] = True
-                    return
-
-                if len(prompt) > 500:
-                    self.logger.info("Слишком длинный промпт")
-                    dialog_manager.dialog_data["has_big_regenerate_prompt"] = True
-                    return
-
                 dialog_manager.dialog_data["regenerate_prompt"] = prompt
                 dialog_manager.dialog_data["has_regenerate_prompt"] = True
                 dialog_manager.dialog_data["is_regenerating_text"] = True
@@ -633,17 +623,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                     self.logger.info("Пустой промпт для изображения")
                     dialog_manager.dialog_data["has_void_image_prompt"] = True
                     return
-
-                if len(prompt) < 5:
-                    self.logger.info("Слишком короткий промпт для изображения")
-                    dialog_manager.dialog_data["has_small_image_prompt"] = True
-                    return
-
-                if len(prompt) > 500:
-                    self.logger.info("Слишком длинный промпт для изображения")
-                    dialog_manager.dialog_data["has_big_image_prompt"] = True
-                    return
-
 
                 dialog_manager.dialog_data["image_prompt"] = prompt
                 dialog_manager.dialog_data["is_generating_image"] = True
