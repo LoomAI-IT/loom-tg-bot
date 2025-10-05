@@ -38,7 +38,7 @@ class LoomContentClient(interface.ILoomContentClient):
                 span.set_status(Status(StatusCode.OK))
                 return json_response["data"]
             except Exception as e:
-                span.record_exception(e)
+                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -60,7 +60,7 @@ class LoomContentClient(interface.ILoomContentClient):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as e:
-                span.record_exception(e)
+                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -77,7 +77,7 @@ class LoomContentClient(interface.ILoomContentClient):
                 return json_response["has_permission"]
 
             except Exception as e:
-                span.record_exception(e)
+                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -104,7 +104,7 @@ class LoomContentClient(interface.ILoomContentClient):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as e:
-                span.record_exception(e)
+                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -121,7 +121,7 @@ class LoomContentClient(interface.ILoomContentClient):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as e:
-                span.record_exception(e)
+                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -147,7 +147,7 @@ class LoomContentClient(interface.ILoomContentClient):
                 return json_response
 
             except Exception as e:
-                span.record_exception(e)
+                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -174,7 +174,7 @@ class LoomContentClient(interface.ILoomContentClient):
                 return json_response
 
             except Exception as e:
-                span.record_exception(e)
+                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -222,7 +222,7 @@ class LoomContentClient(interface.ILoomContentClient):
                 return json_response
 
             except Exception as e:
-                span.record_exception(e)
+                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -279,7 +279,7 @@ class LoomContentClient(interface.ILoomContentClient):
                 return json_response
 
             except Exception as e:
-                span.record_exception(e)
+                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -345,7 +345,7 @@ class LoomContentClient(interface.ILoomContentClient):
                 span.set_status(Status(StatusCode.OK))
                 return json_response
             except Exception as e:
-                span.record_exception(e)
+                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -365,7 +365,7 @@ class LoomContentClient(interface.ILoomContentClient):
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as e:
-                span.record_exception(e)
+                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -385,7 +385,7 @@ class LoomContentClient(interface.ILoomContentClient):
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as e:
-                span.record_exception(e)
+                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -405,7 +405,7 @@ class LoomContentClient(interface.ILoomContentClient):
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as e:
-                span.record_exception(e)
+                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -441,7 +441,7 @@ class LoomContentClient(interface.ILoomContentClient):
                 return json_response
 
             except Exception as e:
-                span.record_exception(e)
+                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -460,7 +460,7 @@ class LoomContentClient(interface.ILoomContentClient):
                 span.set_status(Status(StatusCode.OK))
                 return model.Publication(**json_response)
             except Exception as e:
-                span.record_exception(e)
+                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -479,7 +479,7 @@ class LoomContentClient(interface.ILoomContentClient):
                 span.set_status(Status(StatusCode.OK))
                 return [model.Publication(**pub) for pub in json_response]
             except Exception as e:
-                span.record_exception(e)
+                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -509,7 +509,7 @@ class LoomContentClient(interface.ILoomContentClient):
                 span.set_status(Status(StatusCode.OK))
                 return image_data, filename
             except Exception as e:
-                span.record_exception(e)
+                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -539,7 +539,7 @@ class LoomContentClient(interface.ILoomContentClient):
                 span.set_status(Status(StatusCode.OK))
                 return json_response["category_id"]
             except Exception as e:
-                span.record_exception(e)
+                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -558,7 +558,7 @@ class LoomContentClient(interface.ILoomContentClient):
                 span.set_status(Status(StatusCode.OK))
                 return model.Category(**json_response)
             except Exception as e:
-                span.record_exception(e)
+                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -577,7 +577,7 @@ class LoomContentClient(interface.ILoomContentClient):
                 span.set_status(Status(StatusCode.OK))
                 return [model.Category(**cat) for cat in json_response]
             except Exception as e:
-                span.record_exception(e)
+                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -605,7 +605,7 @@ class LoomContentClient(interface.ILoomContentClient):
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as e:
-                span.record_exception(e)
+                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -622,7 +622,7 @@ class LoomContentClient(interface.ILoomContentClient):
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as e:
-                span.record_exception(e)
+                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -656,7 +656,7 @@ class LoomContentClient(interface.ILoomContentClient):
                 span.set_status(Status(StatusCode.OK))
                 return json_response["autoposting_id"]
             except Exception as e:
-                span.record_exception(e)
+                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -675,7 +675,7 @@ class LoomContentClient(interface.ILoomContentClient):
                 span.set_status(Status(StatusCode.OK))
                 return [model.Autoposting(**autoposting) for autoposting in json_response]
             except Exception as e:
-                span.record_exception(e)
+                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -706,7 +706,7 @@ class LoomContentClient(interface.ILoomContentClient):
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as e:
-                span.record_exception(e)
+                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -723,7 +723,7 @@ class LoomContentClient(interface.ILoomContentClient):
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as e:
-                span.record_exception(e)
+                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -753,7 +753,7 @@ class LoomContentClient(interface.ILoomContentClient):
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as e:
-                span.record_exception(e)
+                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -790,7 +790,7 @@ class LoomContentClient(interface.ILoomContentClient):
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as e:
-                span.record_exception(e)
+                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -807,7 +807,7 @@ class LoomContentClient(interface.ILoomContentClient):
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as e:
-                span.record_exception(e)
+                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -827,7 +827,7 @@ class LoomContentClient(interface.ILoomContentClient):
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as e:
-                span.record_exception(e)
+                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -847,7 +847,7 @@ class LoomContentClient(interface.ILoomContentClient):
                 span.set_status(Status(StatusCode.OK))
                 return model.VideoCut(**json_response)
             except Exception as e:
-                span.record_exception(e)
+                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -866,7 +866,7 @@ class LoomContentClient(interface.ILoomContentClient):
                 span.set_status(Status(StatusCode.OK))
                 return [model.VideoCut(**cut) for cut in json_response]
             except Exception as e:
-                span.record_exception(e)
+                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -899,7 +899,7 @@ class LoomContentClient(interface.ILoomContentClient):
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as e:
-                span.record_exception(e)
+                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -929,7 +929,7 @@ class LoomContentClient(interface.ILoomContentClient):
                 span.set_status(Status(StatusCode.OK))
                 return video_data, filename
             except Exception as e:
-                span.record_exception(e)
+                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -961,6 +961,6 @@ class LoomContentClient(interface.ILoomContentClient):
                 return json_response["text"]
 
             except Exception as e:
-                span.record_exception(e)
+                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise

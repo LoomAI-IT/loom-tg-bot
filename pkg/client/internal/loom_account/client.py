@@ -44,7 +44,7 @@ class LoomAccountClient(interface.ILoomAccountClient):
                 )
 
             except Exception as e:
-                span.record_exception(e)
+                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -72,7 +72,7 @@ class LoomAccountClient(interface.ILoomAccountClient):
                 )
 
             except Exception as e:
-                span.record_exception(e)
+                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -103,7 +103,7 @@ class LoomAccountClient(interface.ILoomAccountClient):
                     refresh_token=response.cookies.get("Refresh-Token"),
                 )
             except Exception as e:
-                span.record_exception(e)
+                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -127,7 +127,7 @@ class LoomAccountClient(interface.ILoomAccountClient):
     #             span.set_status(Status(StatusCode.OK))
     #             return key, qr_code_bytes
     #         except Exception as e:
-    #             span.record_exception(e)
+    #             (e)
     #             span.set_status(Status(StatusCode.ERROR, str(e)))
     #             raise
 
@@ -158,7 +158,7 @@ class LoomAccountClient(interface.ILoomAccountClient):
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as e:
-                span.record_exception(e)
+                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -186,7 +186,7 @@ class LoomAccountClient(interface.ILoomAccountClient):
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as e:
-                span.record_exception(e)
+                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -217,7 +217,7 @@ class LoomAccountClient(interface.ILoomAccountClient):
                 span.set_status(Status(StatusCode.OK))
                 return json_response["verified"]
             except Exception as e:
-                span.record_exception(e)
+                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -246,7 +246,7 @@ class LoomAccountClient(interface.ILoomAccountClient):
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as e:
-                span.record_exception(e)
+                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -277,6 +277,6 @@ class LoomAccountClient(interface.ILoomAccountClient):
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as e:
-                span.record_exception(e)
+                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise

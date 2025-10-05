@@ -148,7 +148,7 @@ class TgMiddleware(interface.ITelegramMiddleware):
                     }
                 )
 
-                span.record_exception(recovery_err)
+                (recovery_err)
                 span.set_status(Status(StatusCode.ERROR, str(recovery_err)))
 
                 # Последняя попытка - отправить пользователю сообщение с инструкцией

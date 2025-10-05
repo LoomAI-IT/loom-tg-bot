@@ -39,7 +39,7 @@ class LoomAuthorizationClient(interface.ILoomAuthorizationClient):
                 span.set_status(Status(StatusCode.OK))
                 return model.JWTTokens(**json_response)
             except Exception as e:
-                span.record_exception(e)
+                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -56,6 +56,6 @@ class LoomAuthorizationClient(interface.ILoomAuthorizationClient):
                 span.set_status(Status(StatusCode.OK))
                 return model.AuthorizationData(**json_response)
             except Exception as e:
-                span.record_exception(e)
+                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise

@@ -36,7 +36,7 @@ class LoomOrganizationClient(interface.ILoomOrganizationClient):
                 span.set_status(Status(StatusCode.OK))
                 return model.Organization(**json_response)
             except Exception as e:
-                span.record_exception(e)
+                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -52,7 +52,7 @@ class LoomOrganizationClient(interface.ILoomOrganizationClient):
                 span.set_status(Status(StatusCode.OK))
                 return [model.Organization(**org) for org in json_response["organizations"]]
             except Exception as e:
-                span.record_exception(e)
+                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -86,7 +86,7 @@ class LoomOrganizationClient(interface.ILoomOrganizationClient):
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as e:
-                span.record_exception(e)
+                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -103,7 +103,7 @@ class LoomOrganizationClient(interface.ILoomOrganizationClient):
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as e:
-                span.record_exception(e)
+                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -125,7 +125,7 @@ class LoomOrganizationClient(interface.ILoomOrganizationClient):
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as e:
-                span.record_exception(e)
+                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -147,6 +147,6 @@ class LoomOrganizationClient(interface.ILoomOrganizationClient):
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as e:
-                span.record_exception(e)
+                (e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
