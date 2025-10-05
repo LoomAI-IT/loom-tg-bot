@@ -55,7 +55,7 @@ class OrganizationMenuService(interface.IOrganizationMenuService):
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 await callback.answer("Ошибка при переходе к настройкам", show_alert=True)
                 raise
@@ -95,7 +95,7 @@ class OrganizationMenuService(interface.IOrganizationMenuService):
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 await callback.answer("Ошибка", show_alert=True)
                 raise
@@ -118,7 +118,7 @@ class OrganizationMenuService(interface.IOrganizationMenuService):
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -141,7 +141,7 @@ class OrganizationMenuService(interface.IOrganizationMenuService):
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -165,7 +165,7 @@ class OrganizationMenuService(interface.IOrganizationMenuService):
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 

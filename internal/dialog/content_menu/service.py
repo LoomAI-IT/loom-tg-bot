@@ -52,7 +52,7 @@ class ContentMenuService(interface.IContentMenuService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
 
                 await callback.answer("Не удалось перейти к созданию публикации. Попробуйте позже", show_alert=True)
@@ -88,7 +88,7 @@ class ContentMenuService(interface.IContentMenuService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
 
                 await callback.answer("Не удалось перейти к созданию видео-нарезки. Попробуйте позже", show_alert=True)
@@ -114,7 +114,7 @@ class ContentMenuService(interface.IContentMenuService):
                 return
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -148,7 +148,7 @@ class ContentMenuService(interface.IContentMenuService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -197,7 +197,7 @@ class ContentMenuService(interface.IContentMenuService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -246,7 +246,7 @@ class ContentMenuService(interface.IContentMenuService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -274,7 +274,7 @@ class ContentMenuService(interface.IContentMenuService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -302,7 +302,7 @@ class ContentMenuService(interface.IContentMenuService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 

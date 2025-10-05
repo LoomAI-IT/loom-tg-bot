@@ -57,7 +57,7 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
 
                 await callback.answer("❌ Ошибка навигации", show_alert=True)
@@ -90,7 +90,7 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
 
                 await callback.answer("❌ Ошибка удаления", show_alert=True)
@@ -124,7 +124,7 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
 
                 await callback.answer("❌ Ошибка сохранения", show_alert=True)
@@ -163,7 +163,7 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -200,7 +200,7 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -239,7 +239,7 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -260,7 +260,7 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
 
                 await callback.answer("❌ Ошибка", show_alert=True)
@@ -299,7 +299,7 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
 
                 await callback.answer("❌ Ошибка отправки", show_alert=True)
@@ -353,7 +353,7 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
 
                 await callback.answer("❌ Ошибка публикации", show_alert=True)
@@ -387,7 +387,7 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
                 await callback.answer()
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
 
                 await callback.answer("❌ Ошибка", show_alert=True)
@@ -417,7 +417,7 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
 
                 await callback.answer("❌ Ошибка", show_alert=True)

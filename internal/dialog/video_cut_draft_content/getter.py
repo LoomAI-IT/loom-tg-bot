@@ -129,7 +129,7 @@ class VideoCutsDraftGetter(interface.IVideoCutsDraftGetter):
                 return data
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -175,7 +175,7 @@ class VideoCutsDraftGetter(interface.IVideoCutsDraftGetter):
                 return data
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -264,7 +264,7 @@ class VideoCutsDraftGetter(interface.IVideoCutsDraftGetter):
                 return data
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 

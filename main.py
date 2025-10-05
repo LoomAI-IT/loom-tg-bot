@@ -1,3 +1,5 @@
+from contextvars import ContextVar
+
 import uvicorn
 from aiogram import Bot, Dispatcher
 import redis.asyncio as redis
@@ -13,7 +15,6 @@ from pkg.client.internal.loom_authorization.client import LoomAuthorizationClien
 from pkg.client.internal.loom_employee.client import LoomEmployeeClient
 from pkg.client.internal.loom_organization.client import LoomOrganizationClient
 from pkg.client.internal.loom_content.client import LoomContentClient
-
 
 from internal.controller.http.middlerware.middleware import HttpMiddleware
 from internal.controller.tg.middleware.middleware import TgMiddleware
@@ -89,6 +90,8 @@ alert_manager = AlertManager(
     cfg.monitoring_redis_password
 )
 
+log_context: ContextVar[dict] = ContextVar('log_context', default={})
+
 tel = Telemetry(
     cfg.log_level,
     cfg.root_path,
@@ -97,6 +100,7 @@ tel = Telemetry(
     cfg.service_version,
     cfg.otlp_host,
     cfg.otlp_port,
+    log_context,
     alert_manager
 )
 
@@ -117,12 +121,12 @@ bot.session.middleware(AiogramSulgukMiddleware())
 
 # Инициализация клиентов
 db = PG(tel, cfg.db_user, cfg.db_pass, cfg.db_host, cfg.db_port, cfg.db_name)
-loom_account_client = LoomAccountClient(tel, cfg.loom_account_host, cfg.loom_account_port)
+loom_account_client = LoomAccountClient(tel, cfg.loom_account_host, cfg.loom_account_port, log_context)
 loom_authorization_client = LoomAuthorizationClient(tel, cfg.loom_authorization_host,
-                                                        cfg.loom_authorization_port)
-loom_employee_client = LoomEmployeeClient(tel, cfg.loom_employee_host, cfg.loom_employee_port)
-loom_organization_client = LoomOrganizationClient(tel, cfg.loom_organization_host, cfg.loom_organization_port)
-loom_content_client = LoomContentClient(tel, cfg.loom_content_host, cfg.loom_content_port)
+                                                    cfg.loom_authorization_port, log_context)
+loom_employee_client = LoomEmployeeClient(tel, cfg.loom_employee_host, cfg.loom_employee_port, log_context)
+loom_organization_client = LoomOrganizationClient(tel, cfg.loom_organization_host, cfg.loom_organization_port, log_context)
+loom_content_client = LoomContentClient(tel, cfg.loom_content_host, cfg.loom_content_port, log_context)
 
 state_repo = StateRepo(tel, db)
 
@@ -393,9 +397,17 @@ add_social_network_dialog = AddSocialNetworkDialog(
 
 command_controller = CommandController(tel, state_service)
 
+tg_middleware = TgMiddleware(
+    tel,
+    state_service,
+    bot,
+    log_context
+)
+
 dialog_bg_factory = NewTg(
     dp,
     command_controller,
+    tg_middleware,
     auth_dialog,
     main_menu_dialog,
     personal_profile_dialog,
@@ -409,19 +421,15 @@ dialog_bg_factory = NewTg(
     video_cut_moderation_dialog,
     video_cuts_draft_dialog,
     publication_draft_dialog,
-add_social_network_dialog
+    add_social_network_dialog
 )
+tg_middleware.dialog_bg_factory = dialog_bg_factory
 
 # Инициализация middleware
-tg_middleware = TgMiddleware(
-    tel,
-    state_service,
-    bot,
-    dialog_bg_factory
-)
 http_middleware = HttpMiddleware(
     tel,
     cfg.prefix,
+    log_context
 )
 tg_webhook_controller = TelegramWebhookController(
     tel,

@@ -45,7 +45,7 @@ class AuthService(interface.IAuthService):
                 self.logger.info("Завершение принятия пользовательского соглашения")
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -71,7 +71,7 @@ class AuthService(interface.IAuthService):
                 self.logger.info("Завершение принятия политики конфиденциальности")
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -133,7 +133,7 @@ class AuthService(interface.IAuthService):
                 self.logger.info("Завершение принятия согласия на обработку данных")
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise err
 
@@ -159,7 +159,7 @@ class AuthService(interface.IAuthService):
                 self.logger.info("Завершение обработки отказа в доступе")
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 

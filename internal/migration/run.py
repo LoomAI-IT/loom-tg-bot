@@ -1,5 +1,6 @@
 import asyncio
 import sys
+from contextvars import ContextVar
 from pathlib import Path
 
 # Добавляем корневую директорию в путь
@@ -14,6 +15,8 @@ from internal.migration.manager import MigrationManager
 async def main():
     cfg = Config()
 
+    log_context: ContextVar[dict] = ContextVar('log_context', default={})
+
     tel = Telemetry(
         cfg.log_level,
         cfg.root_path,
@@ -22,7 +25,7 @@ async def main():
         cfg.service_version,
         cfg.otlp_host,
         cfg.otlp_port,
-        None
+        log_context
     )
 
     db = PG(tel, cfg.db_user, cfg.db_pass, cfg.db_host, cfg.db_port, cfg.db_name)

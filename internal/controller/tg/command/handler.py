@@ -63,6 +63,6 @@ class CommandController(interface.ICommandController):
 
                 span.set_status(StatusCode.OK)
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(StatusCode.ERROR, str(err))
                 raise err

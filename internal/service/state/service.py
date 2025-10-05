@@ -23,7 +23,7 @@ class StateService(interface.IStateService):
                 span.set_status(StatusCode.OK)
                 return state_id
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(StatusCode.ERROR, str(err))
                 raise
 
@@ -41,7 +41,7 @@ class StateService(interface.IStateService):
                 span.set_status(StatusCode.OK)
                 return state
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(StatusCode.ERROR, str(err))
                 raise
 
@@ -59,7 +59,7 @@ class StateService(interface.IStateService):
                 span.set_status(StatusCode.OK)
                 return state
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(StatusCode.ERROR, str(err))
                 raise
 
@@ -92,7 +92,7 @@ class StateService(interface.IStateService):
                 )
                 span.set_status(StatusCode.OK)
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(StatusCode.ERROR, str(err))
                 raise
 
@@ -109,7 +109,7 @@ class StateService(interface.IStateService):
 
                 span.set_status(StatusCode.OK)
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(StatusCode.ERROR, str(err))
                 raise
 
@@ -126,7 +126,7 @@ class StateService(interface.IStateService):
                 await self.state_repo.set_cache_file(filename, file_id)
                 span.set_status(StatusCode.OK)
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(StatusCode.ERROR, str(err))
                 raise
 
@@ -150,7 +150,7 @@ class StateService(interface.IStateService):
                 span.set_status(StatusCode.OK)
                 return alert_id
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(StatusCode.ERROR, str(err))
                 raise
 
@@ -168,7 +168,7 @@ class StateService(interface.IStateService):
                 span.set_status(StatusCode.OK)
                 return alert
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(StatusCode.ERROR, str(err))
                 raise
 
@@ -186,6 +186,6 @@ class StateService(interface.IStateService):
 
                 span.set_status(StatusCode.OK)
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(StatusCode.ERROR, str(err))
                 raise

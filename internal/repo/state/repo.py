@@ -28,7 +28,7 @@ class StateRepo(interface.IStateRepo):
                 span.set_status(StatusCode.OK)
                 return state_id
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(StatusCode.ERROR, str(err))
                 raise err
 
@@ -49,7 +49,7 @@ class StateRepo(interface.IStateRepo):
                 span.set_status(StatusCode.OK)
                 return rows
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(StatusCode.ERROR, str(err))
                 raise
 
@@ -70,7 +70,7 @@ class StateRepo(interface.IStateRepo):
                 span.set_status(StatusCode.OK)
                 return rows
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(StatusCode.ERROR, str(err))
                 raise
 
@@ -85,7 +85,7 @@ class StateRepo(interface.IStateRepo):
 
                 span.set_status(StatusCode.OK)
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(StatusCode.ERROR, str(err))
                 raise
 
@@ -102,7 +102,7 @@ class StateRepo(interface.IStateRepo):
                 span.set_status(StatusCode.OK)
                 return rows
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(StatusCode.ERROR, str(err))
                 raise
 
@@ -167,7 +167,7 @@ class StateRepo(interface.IStateRepo):
                 await self.db.update(query, args)
                 span.set_status(StatusCode.OK)
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(StatusCode.ERROR, str(err))
                 raise
 
@@ -187,7 +187,7 @@ class StateRepo(interface.IStateRepo):
 
                 span.set_status(StatusCode.OK)
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(StatusCode.ERROR, str(err))
                 raise
 
@@ -212,7 +212,7 @@ class StateRepo(interface.IStateRepo):
                 span.set_status(StatusCode.OK)
                 return alert_id
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(StatusCode.ERROR, str(err))
                 raise err
 
@@ -233,7 +233,7 @@ class StateRepo(interface.IStateRepo):
                 span.set_status(StatusCode.OK)
                 return rows
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(StatusCode.ERROR, str(err))
                 raise
 
@@ -253,6 +253,6 @@ class StateRepo(interface.IStateRepo):
 
                 span.set_status(StatusCode.OK)
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(StatusCode.ERROR, str(err))
                 raise

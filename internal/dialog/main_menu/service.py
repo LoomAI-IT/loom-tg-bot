@@ -96,7 +96,7 @@ class MainMenuService(interface.IMainMenuService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -180,7 +180,7 @@ class MainMenuService(interface.IMainMenuService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -211,7 +211,7 @@ class MainMenuService(interface.IMainMenuService):
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
 
                 await callback.answer("Ошибка", show_alert=True)
@@ -243,7 +243,7 @@ class MainMenuService(interface.IMainMenuService):
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 await callback.answer("Ошибка при переходе к организации", show_alert=True)
                 raise err
@@ -275,7 +275,7 @@ class MainMenuService(interface.IMainMenuService):
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 await callback.answer("Ошибка", show_alert=True)
                 raise

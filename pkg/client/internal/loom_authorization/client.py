@@ -1,3 +1,5 @@
+from contextvars import ContextVar
+
 from opentelemetry.trace import Status, StatusCode, SpanKind
 
 from internal import model
@@ -10,7 +12,8 @@ class LoomAuthorizationClient(interface.ILoomAuthorizationClient):
             self,
             tel: interface.ITelemetry,
             host: str,
-            port: int
+            port: int,
+            log_context: ContextVar[dict],
     ):
         logger = tel.logger()
         self.client = AsyncHTTPClient(
@@ -18,6 +21,7 @@ class LoomAuthorizationClient(interface.ILoomAuthorizationClient):
             port,
             prefix="/api/authorization",
             use_tracing=True,
+            log_context=log_context
         )
         self.tracer = tel.tracer()
 
@@ -39,7 +43,6 @@ class LoomAuthorizationClient(interface.ILoomAuthorizationClient):
                 span.set_status(Status(StatusCode.OK))
                 return model.JWTTokens(**json_response)
             except Exception as e:
-                span.record_exception(e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
 
@@ -56,6 +59,5 @@ class LoomAuthorizationClient(interface.ILoomAuthorizationClient):
                 span.set_status(Status(StatusCode.OK))
                 return model.AuthorizationData(**json_response)
             except Exception as e:
-                span.record_exception(e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise

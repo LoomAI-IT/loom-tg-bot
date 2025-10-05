@@ -49,7 +49,7 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
                 self.logger.info("Завершение обработки выбора сотрудника")
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -74,7 +74,7 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
                 self.logger.info("Завершение обработки поиска сотрудников")
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -100,7 +100,7 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
                 self.logger.info("Завершение очистки поиска")
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -124,7 +124,7 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
                 self.logger.info("Завершение обновления списка сотрудников")
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -170,7 +170,7 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
                 self.logger.info("Завершение навигации по сотрудникам")
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -201,7 +201,7 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
                 self.logger.info("Завершение перехода в меню организации")
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -258,7 +258,7 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
                 self.logger.info("Завершение переключения разрешения")
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -310,7 +310,7 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -338,7 +338,7 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -365,7 +365,7 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -404,7 +404,7 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -431,7 +431,7 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -494,7 +494,7 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
                 self.logger.info("Завершение подтверждения изменения роли")
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
@@ -550,7 +550,7 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                span.record_exception(err)
+                
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 

@@ -1,3 +1,5 @@
+from contextvars import ContextVar
+
 from opentelemetry import trace, metrics, propagate
 from opentelemetry.sdk.trace import TracerProvider, SpanLimits
 from opentelemetry._logs import set_logger_provider
@@ -30,6 +32,7 @@ class Telemetry(interface.ITelemetry):
             service_version: str,
             otlp_host: str,
             otlp_port: int,
+            log_context: ContextVar[dict],
             alert_manager: AlertManager = None
     ):
 
@@ -37,6 +40,7 @@ class Telemetry(interface.ITelemetry):
         self.environment = environment
         self.root_path = root_path
         self.service_name = service_name
+        self.log_context = log_context
         self.service_version = service_version
         self.otlp_endpoint = f"{otlp_host}:{otlp_port}"
         self.alert_manager = alert_manager
@@ -149,7 +153,12 @@ class Telemetry(interface.ITelemetry):
         )
 
     def _setup_logger(self) -> None:
-        self._logger = OtelLogger(self.alert_manager, self._logger_provider, self.service_name)
+        self._logger = OtelLogger(
+            self.alert_manager,
+            self._logger_provider,
+            self.service_name,
+            self.log_context
+        )
 
     def logger(self) -> interface.IOtelLogger:
         return self._logger
