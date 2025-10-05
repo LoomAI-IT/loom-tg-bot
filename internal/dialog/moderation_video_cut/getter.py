@@ -324,6 +324,7 @@ class VideoCutModerationGetter(interface.IVideoCutModerationGetter):
         description = working_video_cut.get("description", "")
         return {
             "current_description_length": len(description),
+            "video_description": description,
             "has_void_description": dialog_manager.dialog_data.get("has_void_description", False),
             "has_small_description": dialog_manager.dialog_data.get("has_small_description", False),
             "has_big_description": dialog_manager.dialog_data.get("has_big_description", False),

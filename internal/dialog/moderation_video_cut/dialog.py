@@ -325,6 +325,8 @@ class VideoCutModerationDialog(interface.IVideoCutModerationDialog):
             Multi(
                 Const("📄 <b>Изменение описания</b><br><br>"),
                 Format("📊 <b>Длина текущего описания:</b> <code>{current_description_length} символов</code><br><br>"),
+                Const("<b>Ваше описание:</b><br>"),
+                Format("{video_description}<br><br>"),
                 Const("✍️ <b>Введите новое описание:</b><br><br>"),
                 Const("📏 <b>Ограничения по символам:</b><br>"),
                 Const("🎬 YouTube: <code>максимум 5000 символов</code><br>"),

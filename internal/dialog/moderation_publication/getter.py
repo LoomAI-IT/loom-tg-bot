@@ -315,7 +315,9 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
+        working_pub = dialog_manager.dialog_data["working_publication"]
         return {
+            "publication_text": working_pub["text"],
             "has_void_text": dialog_manager.dialog_data.get("has_void_text", False),
             "has_small_text": dialog_manager.dialog_data.get("has_small_text", False),
             "has_big_text": dialog_manager.dialog_data.get("has_big_text", False),

@@ -343,7 +343,9 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
     def get_edit_text_window(self) -> Window:
         return Window(
             Multi(
-                Const("✍️ <b>Редактирование текста</b><br>"),
+                Const("✍️ <b>Редактирование текста</b><br><br>"),
+                Const("<b>Ваш текст:</b><br>"),
+                Format("{publication_text}<br><br>"),
                 Const("📝 <i>Напишите итоговый текст публикации</i>"),
                 # Add error messages
                 Case(
