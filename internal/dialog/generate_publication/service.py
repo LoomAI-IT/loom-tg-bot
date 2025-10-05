@@ -54,7 +54,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 dialog_manager.dialog_data.pop("has_small_input_text", None)
                 dialog_manager.dialog_data.pop("has_big_input_text", None)
 
-                text = message.html_text.strip()
+                text = message.html_text.strip().replace('\n', '<br/>')
                 if not text:
                     self.logger.info("Пустой текст")
                     dialog_manager.dialog_data["has_void_input_text"] = True
@@ -447,7 +447,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 dialog_manager.show_mode = ShowMode.EDIT
 
                 await message.delete()
-                prompt = message.html_text
+                prompt = message.html_text.replace('\n', '<br/>')
 
                 dialog_manager.dialog_data.pop("has_void_regenerate_prompt", None)
                 dialog_manager.dialog_data.pop("has_small_regenerate_prompt", None)
@@ -511,7 +511,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 dialog_manager.dialog_data.pop("has_big_text", None)
                 dialog_manager.dialog_data.pop("has_small_text", None)
 
-                new_text = message.html_text
+                new_text = message.html_text.replace('\n', '<br/>')
                 self.logger.info("HTML текст", {"html_text": new_text})
                 if not new_text:
                     self.logger.info("Пустой текст")
@@ -619,7 +619,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 dialog_manager.dialog_data.pop("has_big_image_prompt", None)
                 dialog_manager.dialog_data.pop("has_image_generation_error", None)
 
-                prompt = message.html_text
+                prompt = message.html_text.replace('\n', '<br/>')
                 if not prompt:
                     self.logger.info("Пустой промпт для изображения")
                     dialog_manager.dialog_data["has_void_image_prompt"] = True
