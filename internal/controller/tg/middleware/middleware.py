@@ -66,6 +66,9 @@ class TgMiddleware(interface.ITelegramMiddleware):
             message, event_type, message_text, tg_username, tg_chat_id, message_id = self.__extract_metadata(event)
 
             callback_query_data = event.callback_query.data if event.callback_query is not None else ""
+            span_ctx = span.get_span_context()
+            trace_id = format(span_ctx.trace_id, '032x')
+            span_id = format(span_ctx.span_id, '016x')
 
             request_attrs: dict = {
                 common.TELEGRAM_EVENT_TYPE_KEY: event_type,
@@ -74,8 +77,8 @@ class TgMiddleware(interface.ITelegramMiddleware):
                 common.TELEGRAM_USER_MESSAGE_KEY: message_text,
                 common.TELEGRAM_MESSAGE_ID_KEY: message_id,
                 common.TELEGRAM_CALLBACK_QUERY_DATA_KEY: callback_query_data,
-                common.TRACE_ID_KEY: data["trace_id"],
-                common.SPAN_ID_KEY: data["span_id"],
+                common.TRACE_ID_KEY: trace_id,
+                common.SPAN_ID_KEY: span_id,
             }
 
             try:
@@ -119,6 +122,9 @@ class TgMiddleware(interface.ITelegramMiddleware):
 
             callback_query_data = event.callback_query.data if event.callback_query is not None else ""
 
+            span_ctx = span.get_span_context()
+            trace_id = format(span_ctx.trace_id, '032x')
+            span_id = format(span_ctx.span_id, '016x')
             extra_log: dict = {
                 common.TELEGRAM_EVENT_TYPE_KEY: event_type,
                 common.TELEGRAM_CHAT_ID_KEY: tg_chat_id,
@@ -126,8 +132,8 @@ class TgMiddleware(interface.ITelegramMiddleware):
                 common.TELEGRAM_USER_MESSAGE_KEY: message_text,
                 common.TELEGRAM_MESSAGE_ID_KEY: message_id,
                 common.TELEGRAM_CALLBACK_QUERY_DATA_KEY: callback_query_data,
-                common.TRACE_ID_KEY: data["trace_id"],
-                common.SPAN_ID_KEY: data["span_id"],
+                common.TRACE_ID_KEY: trace_id,
+                common.SPAN_ID_KEY: span_id,
             }
             try:
                 self.logger.info(f"Начали обработку telegram {event_type}", extra_log)
