@@ -318,6 +318,8 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
         return Window(
             Multi(
                 Const("✍️ <b>Редактирование текста</b><br><br>"),
+                Const("<b>Ваш текст:</b><br>"),
+                Format("{publication_text}<br><br>"),
                 Const("📝 <i>Напишите итоговый текст публикации</i>"),
                 Case(
                     {
