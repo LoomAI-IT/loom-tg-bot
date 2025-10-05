@@ -24,7 +24,7 @@ class ICommandController(Protocol):
 class ITelegramMiddleware(Protocol):
 
     @abstractmethod
-    async def trace_middleware01(
+    async def metric_middleware01(
             self,
             handler: Callable[[TelegramObject, dict[str, Any]], Awaitable[Any]],
             event: Update,
@@ -32,15 +32,7 @@ class ITelegramMiddleware(Protocol):
     ): pass
 
     @abstractmethod
-    async def metric_middleware02(
-            self,
-            handler: Callable[[TelegramObject, dict[str, Any]], Awaitable[Any]],
-            event: Update,
-            data: dict[str, Any]
-    ): pass
-
-    @abstractmethod
-    async def logger_middleware03(
+    async def logger_middleware02(
             self,
             handler: Callable[[TelegramObject, dict[str, Any]], Awaitable[Any]],
             event: Update,

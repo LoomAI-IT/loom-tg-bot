@@ -8,6 +8,7 @@ from internal import interface
 def NewTg(
         dp: Dispatcher,
         command_controller: interface.ICommandController,
+        tg_middleware: interface.ITelegramMiddleware,
         auth_dialog: interface.IAuthDialog,
         main_menu_dialog: interface.IMainMenuDialog,
         personal_profile_dialog: interface.IPersonalProfileDialog,
@@ -26,6 +27,10 @@ def NewTg(
     include_command_handlers(
         dp,
         command_controller
+    )
+    include_tg_middleware(
+        dp,
+        tg_middleware,
     )
     dialog_bg_factory = include_dialogs(
         dp,
@@ -52,9 +57,8 @@ def include_tg_middleware(
         dp: Dispatcher,
         tg_middleware: interface.ITelegramMiddleware,
 ):
-    dp.update.middleware(tg_middleware.trace_middleware01)
-    dp.update.middleware(tg_middleware.metric_middleware02)
-    dp.update.middleware(tg_middleware.logger_middleware03)
+    dp.update.middleware(tg_middleware.metric_middleware01)
+    dp.update.middleware(tg_middleware.logger_middleware02)
 
 
 def include_command_handlers(

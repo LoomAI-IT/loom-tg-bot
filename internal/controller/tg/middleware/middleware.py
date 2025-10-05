@@ -17,7 +17,6 @@ class TgMiddleware(interface.ITelegramMiddleware):
             tel: interface.ITelemetry,
             state_service: interface.IStateService,
             bot: Bot,
-            dialog_bg_factory: BgManagerFactory,
     ):
         self.tracer = tel.tracer()
         self.meter = tel.meter()
@@ -25,7 +24,7 @@ class TgMiddleware(interface.ITelegramMiddleware):
 
         self.state_service = state_service
         self.bot = bot
-        self.dialog_bg_factory = dialog_bg_factory
+        self.dialog_bg_factory = None
 
         self.ok_message_counter = self.meter.create_counter(
             name=common.OK_MESSAGE_TOTAL_METRIC,
@@ -51,47 +50,7 @@ class TgMiddleware(interface.ITelegramMiddleware):
             unit="1"
         )
 
-    async def trace_middleware01(
-            self,
-            handler: Callable[[TelegramObject, dict[str, Any]], Awaitable[Any]],
-            event: Update,
-            data: dict[str, Any]
-    ):
-        message, event_type, message_text, tg_username, tg_chat_id, message_id = self.__extract_metadata(event)
-
-        callback_query_data = event.callback_query.data if event.callback_query is not None else ""
-
-        with self.tracer.start_as_current_span(
-                "TgMiddleware.trace_middleware01",
-                kind=SpanKind.INTERNAL,
-                attributes={
-                    common.TELEGRAM_EVENT_TYPE_KEY: event_type,
-                    common.TELEGRAM_CHAT_ID_KEY: tg_chat_id,
-                    common.TELEGRAM_USER_USERNAME_KEY: tg_username,
-                    common.TELEGRAM_USER_MESSAGE_KEY: message_text,
-                    common.TELEGRAM_MESSAGE_ID_KEY: message_id,
-                    common.TELEGRAM_CALLBACK_QUERY_DATA_KEY: callback_query_data,
-                }
-        ) as root_span:
-            span_ctx = root_span.get_span_context()
-            trace_id = format(span_ctx.trace_id, '032x')
-            span_id = format(span_ctx.span_id, '016x')
-
-            data["trace_id"] = trace_id
-            data["span_id"] = span_id
-            try:
-                await handler(event, data)
-
-                root_span.set_status(Status(StatusCode.OK))
-            except Exception as err:
-                root_span.record_exception(err)
-                root_span.set_status(Status(StatusCode.ERROR, str(err)))
-
-                # При критической ошибке пытаемся восстановить пользователя
-                await self._recovery_start_functionality(tg_chat_id, tg_username)
-                raise err
-
-    async def metric_middleware02(
+    async def metric_middleware01(
             self,
             handler: Callable[[TelegramObject, dict[str, Any]], Awaitable[Any]],
             event: Update,
@@ -144,7 +103,7 @@ class TgMiddleware(interface.ITelegramMiddleware):
             finally:
                 self.active_messages.add(-1)
 
-    async def logger_middleware03(
+    async def logger_middleware02(
             self,
             handler: Callable[[TelegramObject, dict[str, Any]], Awaitable[Any]],
             event: Update,
@@ -184,13 +143,7 @@ class TgMiddleware(interface.ITelegramMiddleware):
 
                 span.set_status(Status(StatusCode.OK))
             except TelegramBadRequest as err:
-                self.logger.warning(
-                    "TelegramBadRequest в dialog middleware",
-                    {
-                        common.ERROR_KEY: str(err),
-                        common.TELEGRAM_CHAT_ID_KEY: self._get_chat_id(event),
-                    }
-                )
+                self.logger.warning("TelegramBadRequest в dialog middleware")
                 pass
 
             except Exception as err:
@@ -200,25 +153,19 @@ class TgMiddleware(interface.ITelegramMiddleware):
                     common.TRACEBACK_KEY: traceback.format_exc()
                 }
                 self.logger.error(f"Ошибка обработки telegram {event_type}: {str(err)}", extra_log)
+                await self._recovery_start_functionality(tg_chat_id, tg_username)
 
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise err
 
     async def _recovery_start_functionality(self, tg_chat_id: int, tg_username: str):
-        """
-        Функция восстановления, повторяющая функционал команды /start
-        Вызывается при критических ошибках для восстановления состояния пользователя
-        """
         with self.tracer.start_as_current_span(
                 "TgMiddleware._recovery_start_functionality",
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                self.logger.info(
-                    f"Начинаем восстановление пользователя через функционал /start",
-                    {common.TELEGRAM_CHAT_ID_KEY: tg_chat_id}
-                )
+                self.logger.info(f"Начинаем восстановление пользователя через функционал /start",)
 
                 # Получаем или создаем состояние пользователя
                 user_state = await self.state_service.state_by_id(tg_chat_id)
@@ -238,13 +185,13 @@ class TgMiddleware(interface.ITelegramMiddleware):
                 # Определяем состояние для запуска на основе данных пользователя
                 if user_state.organization_id == 0 and user_state.account_id == 0:
                     target_state = model.AuthStates.user_agreement
-                    self.logger.info(f"Восстанавливаем в состояние авторизации для пользователя {tg_chat_id}")
+                    self.logger.info(f"Восстанавливаем в состояние авторизации для пользователя")
                 elif user_state.organization_id == 0 and user_state.account_id != 0:
                     target_state = model.AuthStates.access_denied
-                    self.logger.info(f"Восстанавливаем в состояние отказа доступа для пользователя {tg_chat_id}")
+                    self.logger.info(f"Восстанавливаем в состояние отказа доступа для пользователя")
                 else:
                     target_state = model.MainMenuStates.main_menu
-                    self.logger.info(f"Восстанавливаем в главное меню для пользователя {tg_chat_id}")
+                    self.logger.info(f"Восстанавливаем в главное меню для пользователя")
 
                 # Запускаем соответствующий диалог
                 await dialog_manager.start(
