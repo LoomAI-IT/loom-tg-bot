@@ -721,51 +721,53 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                dialog_manager.show_mode = ShowMode.EDIT
-
-                state = await self._get_state(dialog_manager)
-
-                category_id = dialog_manager.dialog_data["category_id"]
-                text_reference = dialog_manager.dialog_data["input_text"]
-                text = dialog_manager.dialog_data["publication_text"]
-
-                image_url, image_content, image_filename = await self._get_selected_image_data(dialog_manager)
-
-                publication_data = await self.loom_content_client.create_publication(
-                    state.organization_id,
-                    category_id,
-                    state.account_id,
-                    text_reference,
-                    text,
-                    "draft",
-                    image_url=image_url,
-                    image_content=image_content,
-                    image_filename=image_filename,
-                )
-
-                selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
-                if selected_networks:
-                    tg_source = selected_networks.get("telegram_checkbox", False)
-                    vk_source = selected_networks.get("vkontakte_checkbox", False)
-
-                    await self.loom_content_client.change_publication(
-                        publication_id=publication_data["publication_id"],
-                        tg_source=tg_source,
-                        vk_source=vk_source,
-                    )
-
-                self.logger.info("Публикация сохранена в черновики")
-
-                await callback.answer("💾 Сохранено в черновики!", show_alert=True)
-
-                if await self._check_alerts(dialog_manager):
-                    return
-
-                await dialog_manager.start(
-                    model.ContentMenuStates.content_menu,
-                    mode=StartMode.RESET_STACK
-                )
-                span.set_status(Status(StatusCode.OK))
+                await callback.answer("Черновики публикации в разработке", show_alert=True)
+                return
+                # dialog_manager.show_mode = ShowMode.EDIT
+                #
+                # state = await self._get_state(dialog_manager)
+                #
+                # category_id = dialog_manager.dialog_data["category_id"]
+                # text_reference = dialog_manager.dialog_data["input_text"]
+                # text = dialog_manager.dialog_data["publication_text"]
+                #
+                # image_url, image_content, image_filename = await self._get_selected_image_data(dialog_manager)
+                #
+                # publication_data = await self.loom_content_client.create_publication(
+                #     state.organization_id,
+                #     category_id,
+                #     state.account_id,
+                #     text_reference,
+                #     text,
+                #     "draft",
+                #     image_url=image_url,
+                #     image_content=image_content,
+                #     image_filename=image_filename,
+                # )
+                #
+                # selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
+                # if selected_networks:
+                #     tg_source = selected_networks.get("telegram_checkbox", False)
+                #     vk_source = selected_networks.get("vkontakte_checkbox", False)
+                #
+                #     await self.loom_content_client.change_publication(
+                #         publication_id=publication_data["publication_id"],
+                #         tg_source=tg_source,
+                #         vk_source=vk_source,
+                #     )
+                #
+                # self.logger.info("Публикация сохранена в черновики")
+                #
+                # await callback.answer("💾 Сохранено в черновики!", show_alert=True)
+                #
+                # if await self._check_alerts(dialog_manager):
+                #     return
+                #
+                # await dialog_manager.start(
+                #     model.ContentMenuStates.content_menu,
+                #     mode=StartMode.RESET_STACK
+                # )
+                # span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
                 span.record_exception(err)
