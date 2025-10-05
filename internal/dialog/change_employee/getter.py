@@ -33,6 +33,8 @@ class ChangeEmployeeGetter(interface.IChangeEmployeeGetter):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                self.logger.info("Начало загрузки списка сотрудников")
+
                 state = await self._get_state(dialog_manager)
                 current_employee = await self.loom_employee_client.get_employee_by_account_id(
                     state.account_id
@@ -42,14 +44,13 @@ class ChangeEmployeeGetter(interface.IChangeEmployeeGetter):
                     current_employee.organization_id
                 )
 
-                # Получаем список всех сотрудников организации
                 all_employees = await self.loom_employee_client.get_employees_by_organization(
                     organization.id
                 )
 
-                # Фильтрация по поисковому запросу
                 search_query = dialog_manager.dialog_data.get("search_query", "")
                 if search_query:
+                    self.logger.info("Применение фильтрации по поисковому запросу")
                     filtered_employees = [
                         e for e in all_employees
                         if search_query.lower() in e.name.lower()
@@ -57,12 +58,10 @@ class ChangeEmployeeGetter(interface.IChangeEmployeeGetter):
                 else:
                     filtered_employees = all_employees
 
-                # Сохраняем полный список для навигации
                 dialog_manager.dialog_data["all_employee_ids"] = [
                     e.account_id for e in filtered_employees
                 ]
 
-                # Форматируем данные для отображения
                 employees_data = []
                 for emp in filtered_employees:
                     role_display = self._get_role_display_name(emp.role)
@@ -83,8 +82,7 @@ class ChangeEmployeeGetter(interface.IChangeEmployeeGetter):
                     "show_pager": len(employees_data) > 6,
                 }
 
-                self.logger.info("Список сотрудников загружен")
-
+                self.logger.info("Завершение загрузки списка сотрудников")
                 span.set_status(Status(StatusCode.OK))
                 return data
             except Exception as err:
@@ -102,21 +100,20 @@ class ChangeEmployeeGetter(interface.IChangeEmployeeGetter):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                self.logger.info("Начало загрузки детальной информации о сотруднике")
+
                 selected_account_id = int(dialog_manager.dialog_data.get("selected_account_id"))
 
-                # Получаем текущего пользователя
                 state = await self._get_state(dialog_manager)
                 current_employee = await self.loom_employee_client.get_employee_by_account_id(
                     state.account_id
                 )
 
-                # Получаем выбранного сотрудника
                 employee = await self.loom_employee_client.get_employee_by_account_id(
                     selected_account_id
                 )
                 employee_state = (await self.state_repo.state_by_account_id(selected_account_id))[0]
 
-                # Получаем статистику публикаций
                 publications = await self.loom_content_client.get_publications_by_organization(
                     employee.organization_id
                 )
@@ -140,8 +137,6 @@ class ChangeEmployeeGetter(interface.IChangeEmployeeGetter):
                         if pub.moderation_status == "approved":
                             published_publication_count += 1
 
-
-                # Формируем список разрешений
                 permissions_list = []
                 if not employee.required_moderation:
                     permissions_list.append("✅ Публикации без модерации")
@@ -161,12 +156,10 @@ class ChangeEmployeeGetter(interface.IChangeEmployeeGetter):
 
                 permissions_text = "<br>".join(permissions_list)
 
-                # Навигация
                 all_employee_ids = dialog_manager.dialog_data.get("all_employee_ids", [])
                 current_index = all_employee_ids.index(
                     selected_account_id) + 1 if selected_account_id in all_employee_ids else 1
 
-                # Форматируем дату
                 created_at = employee.created_at
                 if isinstance(created_at, str):
                     try:
@@ -175,7 +168,6 @@ class ChangeEmployeeGetter(interface.IChangeEmployeeGetter):
                     except:
                         created_at = "неизвестно"
 
-                # Проверяем права на действия
                 is_current_user = (state.account_id == selected_account_id)
                 can_edit = current_employee.edit_employee_perm_permission and not is_current_user
                 can_delete = current_employee.edit_employee_perm_permission and not is_current_user
@@ -204,6 +196,7 @@ class ChangeEmployeeGetter(interface.IChangeEmployeeGetter):
                     "has_moderated_publications": bool(rejected_publication_count or approved_publication_count),
                 }
 
+                self.logger.info("Завершение загрузки детальной информации о сотруднике")
                 span.set_status(Status(StatusCode.OK))
                 return data
 
@@ -222,15 +215,16 @@ class ChangeEmployeeGetter(interface.IChangeEmployeeGetter):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                self.logger.info("Начало загрузки данных разрешений")
+
                 selected_account_id = int(dialog_manager.dialog_data.get("selected_account_id"))
 
-                # Получаем данные сотрудника
                 employee = await self.loom_employee_client.get_employee_by_account_id(
                     selected_account_id
                 )
 
-                # Если нет сохраненных изменений, берем текущие значения
                 if "temp_permissions" not in dialog_manager.dialog_data:
+                    self.logger.info("Инициализация временных разрешений")
                     dialog_manager.dialog_data["temp_permissions"] = {
                         "required_moderation": employee.required_moderation,
                         "autoposting": employee.autoposting_permission,
@@ -245,7 +239,6 @@ class ChangeEmployeeGetter(interface.IChangeEmployeeGetter):
                 permissions = dialog_manager.dialog_data["temp_permissions"]
                 original = dialog_manager.dialog_data["original_permissions"]
 
-                # Проверяем, есть ли изменения
                 has_changes = permissions != original
 
                 data = {
@@ -261,6 +254,7 @@ class ChangeEmployeeGetter(interface.IChangeEmployeeGetter):
                     "has_changes": has_changes,
                 }
 
+                self.logger.info("Завершение загрузки данных разрешений")
                 span.set_status(Status(StatusCode.OK))
                 return data
 
@@ -279,9 +273,10 @@ class ChangeEmployeeGetter(interface.IChangeEmployeeGetter):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                self.logger.info("Начало загрузки данных подтверждения удаления")
+
                 selected_account_id = int(dialog_manager.dialog_data.get("selected_account_id"))
 
-                # Получаем данные сотрудника
                 employee = await self.loom_employee_client.get_employee_by_account_id(
                     selected_account_id
                 )
@@ -293,6 +288,7 @@ class ChangeEmployeeGetter(interface.IChangeEmployeeGetter):
                     "role_display": self._get_role_display_name(employee.role),
                 }
 
+                self.logger.info("Завершение загрузки данных подтверждения удаления")
                 span.set_status(Status(StatusCode.OK))
                 return data
 
@@ -311,27 +307,25 @@ class ChangeEmployeeGetter(interface.IChangeEmployeeGetter):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                self.logger.info("Начало загрузки данных изменения роли")
+
                 selected_account_id = int(dialog_manager.dialog_data.get("selected_account_id"))
                 selected_new_role = dialog_manager.dialog_data.get("selected_new_role")
 
-                # Получаем данные сотрудника
                 employee = await self.loom_employee_client.get_employee_by_account_id(
                     selected_account_id
                 )
 
-                # Получаем данные текущего пользователя для определения доступных ролей
                 state = await self._get_state(dialog_manager)
                 current_employee = await self.loom_employee_client.get_employee_by_account_id(
                     state.account_id
                 )
 
-                # Определяем доступные роли
                 available_roles = self._get_available_roles_for_assignment(
                     current_user_role=current_employee.role,
                     target_employee_role=employee.role
                 )
 
-                # Определяем состояние окна
                 has_selected_role = selected_new_role is not None
                 show_role_list = not has_selected_role
 
@@ -344,20 +338,20 @@ class ChangeEmployeeGetter(interface.IChangeEmployeeGetter):
                     "show_role_list": show_role_list,
                 }
 
-                # Если роль выбрана, добавляем информацию о ней
                 if selected_new_role:
+                    self.logger.info("Роль выбрана, добавление информации о выбранной роли")
                     data.update({
                         "selected_role": selected_new_role,
                         "selected_role_display": self._get_role_display_name(selected_new_role),
                     })
 
+                self.logger.info("Завершение загрузки данных изменения роли")
                 span.set_status(Status(StatusCode.OK))
                 return data
-            
+
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-
                 raise
 
     def _get_available_roles_for_assignment(self, current_user_role: str, target_employee_role: str) -> list[dict]:

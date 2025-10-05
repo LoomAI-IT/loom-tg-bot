@@ -35,18 +35,18 @@ class AuthService(interface.IAuthService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                dialog_manager.dialog_data["user_agreement_accepted"] = True
+                self.logger.info("Начало принятия пользовательского соглашения")
 
-                self.logger.info("Пользователь принял пользовательское соглашение")
+                dialog_manager.dialog_data["user_agreement_accepted"] = True
 
                 # Переходим к следующему окну
                 await dialog_manager.switch_to(model.AuthStates.privacy_policy)
 
+                self.logger.info("Завершение принятия пользовательского соглашения")
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-                await callback.answer("Произошла ошибка. Попробуйте снова.", show_alert=True)
                 raise
 
     async def accept_privacy_policy(
@@ -60,19 +60,19 @@ class AuthService(interface.IAuthService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                self.logger.info("Начало принятия политики конфиденциальности")
+
                 # Сохраняем принятие
                 dialog_manager.dialog_data["privacy_policy_accepted"] = True
-
-                self.logger.info("Пользователь принял политику конфиденциальности")
 
                 # Переходим к следующему окну
                 await dialog_manager.switch_to(model.AuthStates.data_processing)
 
+                self.logger.info("Завершение принятия политики конфиденциальности")
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-                await callback.answer("Произошла ошибка. Попробуйте снова.", show_alert=True)
                 raise
 
     async def accept_data_processing(
@@ -86,6 +86,8 @@ class AuthService(interface.IAuthService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                self.logger.info("Начало принятия согласия на обработку данных")
+
                 chat_id = callback.message.chat.id
 
                 # Сохраняем принятие
@@ -107,14 +109,13 @@ class AuthService(interface.IAuthService):
                     refresh_token=authorized_data.refresh_token
                 )
 
-                self.logger.info("Пользователь завершил процесс авторизации")
-
                 # Проверяем доступ к организации
                 employee = await self.loom_employee_client.get_employee_by_account_id(
                     authorized_data.account_id
                 )
 
                 if employee:
+                    self.logger.info("Сотрудник найден, обновляем organization_id")
                     await self.state_repo.change_user_state(
                         state.id,
                         organization_id=employee.organization_id
@@ -125,9 +126,11 @@ class AuthService(interface.IAuthService):
                         mode=StartMode.RESET_STACK
                     )
                 else:
+                    self.logger.info("Сотрудник не найден, переход к access_denied")
                     # Если нет доступа - переходим к окну отказа
                     await dialog_manager.switch_to(model.AuthStates.access_denied)
 
+                self.logger.info("Завершение принятия согласия на обработку данных")
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
                 span.record_exception(err)
@@ -145,15 +148,15 @@ class AuthService(interface.IAuthService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                await callback.answer(
-                    "Обратитесь к администратору для получения доступа.",
-                    show_alert=True
-                )
+                self.logger.info("Начало обработки отказа в доступе")
+
+                await callback.answer()
 
                 # Завершаем диалог
                 await dialog_manager.done()
                 await dialog_manager.reset_stack()
 
+                self.logger.info("Завершение обработки отказа в доступе")
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
                 span.record_exception(err)

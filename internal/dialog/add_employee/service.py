@@ -33,6 +33,8 @@ class AddEmployeeService(interface.IAddEmployeeService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                self.logger.info("Начало обработки ввода account_id")
+
                 dialog_manager.show_mode = ShowMode.EDIT
 
                 await message.delete()
@@ -48,15 +50,18 @@ class AddEmployeeService(interface.IAddEmployeeService):
                 # Validation
                 account_id = account_id.strip()
                 if not account_id:
+                    self.logger.info("Account_id пустой")
                     dialog_manager.dialog_data["has_void_account_id"] = True
                     return
 
                 try:
                     account_id_int = int(account_id)
                     if account_id_int <= 0:
+                        self.logger.info("Account_id меньше или равен 0")
                         dialog_manager.dialog_data["has_invalid_account_id"] = True
                         return
                 except ValueError:
+                    self.logger.info("Account_id не является числом")
                     dialog_manager.dialog_data["has_invalid_account_id"] = True
                     return
 
@@ -64,7 +69,7 @@ class AddEmployeeService(interface.IAddEmployeeService):
                 dialog_manager.dialog_data["account_id"] = str(account_id_int)
                 dialog_manager.dialog_data["has_account_id"] = True
 
-                self.logger.info("Account ID успешно введен")
+                self.logger.info("Завершение обработки ввода account_id")
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
@@ -84,6 +89,8 @@ class AddEmployeeService(interface.IAddEmployeeService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                self.logger.info("Начало обработки ввода имени")
+
                 dialog_manager.show_mode = ShowMode.EDIT
 
                 await message.delete()
@@ -99,10 +106,12 @@ class AddEmployeeService(interface.IAddEmployeeService):
                 # Validation
                 name = name.strip()
                 if not name:
+                    self.logger.info("Имя пустое")
                     dialog_manager.dialog_data["has_void_name"] = True
                     return
 
                 if len(name) < 2 or len(name) > 100:
+                    self.logger.info("Имя не соответствует требованиям по длине")
                     dialog_manager.dialog_data["has_invalid_name_length"] = True
                     return
 
@@ -110,7 +119,7 @@ class AddEmployeeService(interface.IAddEmployeeService):
                 dialog_manager.dialog_data["name"] = name
                 dialog_manager.dialog_data["has_name"] = True
 
-                self.logger.info("Имя сотрудника успешно введено")
+                self.logger.info("Завершение обработки ввода имени")
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
@@ -130,6 +139,8 @@ class AddEmployeeService(interface.IAddEmployeeService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                self.logger.info("Начало обработки выбора роли")
+
                 dialog_manager.show_mode = ShowMode.EDIT
 
                 selected_role = common.Role(role)
@@ -143,18 +154,15 @@ class AddEmployeeService(interface.IAddEmployeeService):
                 dialog_manager.dialog_data["permissions"] = default_permissions.to_dict()
 
                 await callback.answer(
-                    f"✅ Выбрана роль: {utils.RoleDisplayHelper.get_display_name(selected_role)}",
-                    show_alert=True
+                    f"Роль '{utils.RoleDisplayHelper.get_display_name(selected_role)}' установлена"
                 )
-                self.logger.info(f"Роль выбрана: {selected_role.value}")
 
+                self.logger.info("Завершение обработки выбора роли")
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-
-                await callback.answer("❌ Ошибка", show_alert=True)
                 raise
 
     async def handle_toggle_permission(
@@ -168,13 +176,16 @@ class AddEmployeeService(interface.IAddEmployeeService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                self.logger.info("Начало переключения разрешения")
+
                 dialog_manager.show_mode = ShowMode.EDIT
 
                 button_id = button.widget_id
                 permission_key = utils.PermissionManager.get_permission_key(button_id)
 
                 if not permission_key:
-                    await callback.answer("❌ Неизвестное разрешение", show_alert=True)
+                    self.logger.info("Неизвестное разрешение")
+                    await callback.answer()
                     return
 
                 # Получаем и обновляем разрешения
@@ -189,13 +200,12 @@ class AddEmployeeService(interface.IAddEmployeeService):
 
                 await callback.answer()
 
+                self.logger.info("Завершение переключения разрешения")
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-
-                await callback.answer("❌ Ошибка при изменении разрешения", show_alert=True)
                 raise
 
     async def handle_create_employee(
@@ -209,6 +219,8 @@ class AddEmployeeService(interface.IAddEmployeeService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                self.logger.info("Начало создания сотрудника")
+
                 dialog_manager.show_mode = ShowMode.EDIT
 
                 # Clear previous errors and set loading state
@@ -246,10 +258,10 @@ class AddEmployeeService(interface.IAddEmployeeService):
                 # Success - clear loading state
                 dialog_manager.dialog_data["is_creating_employee"] = False
 
-                await callback.answer(f"Сотрудник {employee_data.name} успешно добавлен!", show_alert=True)
-                self.logger.info(f"Сотрудник успешно создан: {employee_data.name}")
+                await callback.answer(f"Сотрудник '{employee_data.name}' добавлен в организацию")
 
                 if await self._check_alerts(dialog_manager):
+                    self.logger.info("Переход к алертам")
                     return
 
                 # Navigate back to organization menu
@@ -258,6 +270,7 @@ class AddEmployeeService(interface.IAddEmployeeService):
                     mode=StartMode.RESET_STACK
                 )
 
+                self.logger.info("Завершение создания сотрудника")
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
@@ -276,9 +289,12 @@ class AddEmployeeService(interface.IAddEmployeeService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                self.logger.info("Начало перехода в меню организации")
+
                 dialog_manager.show_mode = ShowMode.EDIT
 
                 if await self._check_alerts(dialog_manager):
+                    self.logger.info("Переход к алертам")
                     return
 
                 await dialog_manager.start(
@@ -286,13 +302,12 @@ class AddEmployeeService(interface.IAddEmployeeService):
                     mode=StartMode.RESET_STACK
                 )
 
+                self.logger.info("Завершение перехода в меню организации")
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-
-                await callback.answer("❌ Ошибка при переходе в меню", show_alert=True)
                 raise
 
     async def _check_alerts(self, dialog_manager: DialogManager) -> bool:

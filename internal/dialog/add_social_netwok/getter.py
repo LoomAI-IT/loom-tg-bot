@@ -28,6 +28,8 @@ class AddSocialNetworkGetter(interface.IAddSocialNetworkGetter):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                self.logger.info("Начало получения данных выбора соцсетей")
+
                 state = await self._get_state(dialog_manager)
 
                 # Get social networks data from API
@@ -48,7 +50,7 @@ class AddSocialNetworkGetter(interface.IAddSocialNetworkGetter):
                     "instagram_status": instagram_status,
                 }
 
-                self.logger.info("Social networks status loaded")
+                self.logger.info("Завершение получения данных выбора соцсетей")
                 span.set_status(Status(StatusCode.OK))
                 return data
 
@@ -67,6 +69,8 @@ class AddSocialNetworkGetter(interface.IAddSocialNetworkGetter):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                self.logger.info("Начало получения основных данных Telegram")
+
                 state = await self._get_state(dialog_manager)
 
                 # Get social networks data
@@ -84,6 +88,7 @@ class AddSocialNetworkGetter(interface.IAddSocialNetworkGetter):
                     "telegram_autoselect": telegram_data.get("autoselect", False),
                 }
 
+                self.logger.info("Завершение получения основных данных Telegram")
                 span.set_status(Status(StatusCode.OK))
                 return data
 
@@ -119,6 +124,8 @@ class AddSocialNetworkGetter(interface.IAddSocialNetworkGetter):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                self.logger.info("Начало получения данных редактирования Telegram")
+
                 state = await self._get_state(dialog_manager)
 
                 social_networks = await self.loom_content_client.get_social_networks_by_organization(
@@ -133,6 +140,7 @@ class AddSocialNetworkGetter(interface.IAddSocialNetworkGetter):
                 autoselect_checkbox = dialog_manager.find("telegram_autoselect_checkbox")
 
                 if "original_state" not in dialog_manager.dialog_data:
+                    self.logger.info("Инициализация состояний редактирования")
                     dialog_manager.dialog_data["original_state"] = {
                         "telegram_channel_username": original_username,
                         "autoselect": original_autoselect,
@@ -160,6 +168,7 @@ class AddSocialNetworkGetter(interface.IAddSocialNetworkGetter):
                     ),
                 }
 
+                self.logger.info("Завершение получения данных редактирования Telegram")
                 span.set_status(Status(StatusCode.OK))
                 return data
 
@@ -178,6 +187,8 @@ class AddSocialNetworkGetter(interface.IAddSocialNetworkGetter):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                self.logger.info("Начало получения данных изменения username Telegram")
+
                 state = await self._get_state(dialog_manager)
 
                 # Get current telegram data
@@ -198,6 +209,7 @@ class AddSocialNetworkGetter(interface.IAddSocialNetworkGetter):
                                                                                      False),
                 }
 
+                self.logger.info("Завершение получения данных изменения username Telegram")
                 span.set_status(Status(StatusCode.OK))
                 return data
 

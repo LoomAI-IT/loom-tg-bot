@@ -33,6 +33,8 @@ class ContentMenuService(interface.IContentMenuService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                self.logger.info("Начало перехода к созданию публикации")
+
                 dialog_manager.show_mode = ShowMode.EDIT
 
                 state = await self._get_state(dialog_manager)
@@ -41,20 +43,19 @@ class ContentMenuService(interface.IContentMenuService):
                     can_show_alerts=False
                 )
 
-                # Запускаем диалог генерации публикации
                 await dialog_manager.start(
                     model.GeneratePublicationStates.select_category,
                     mode=StartMode.RESET_STACK
                 )
 
-                self.logger.info("Пользователь перешел к созданию публикации")
+                self.logger.info("Завершение перехода к созданию публикации")
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
 
-                await callback.answer("❌ Ошибка при переходе к созданию публикации", show_alert=True)
+                await callback.answer("Не удалось перейти к созданию публикации. Попробуйте позже", show_alert=True)
                 raise
 
     async def handle_go_to_video_cut_generation(
@@ -68,6 +69,8 @@ class ContentMenuService(interface.IContentMenuService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                self.logger.info("Начало перехода к созданию видео-нарезки")
+
                 dialog_manager.show_mode = ShowMode.EDIT
 
                 state = await self._get_state(dialog_manager)
@@ -76,20 +79,19 @@ class ContentMenuService(interface.IContentMenuService):
                     can_show_alerts=False
                 )
 
-                # Запускаем диалог генерации видео-нарезки
                 await dialog_manager.start(
                     model.GenerateVideoCutStates.input_youtube_link,
                     mode=StartMode.RESET_STACK
                 )
 
-                self.logger.info("Пользователь перешел к созданию видео-нарезки")
+                self.logger.info("Завершение перехода к созданию видео-нарезки")
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
 
-                await callback.answer("❌ Ошибка при переходе к созданию видео-нарезки", show_alert=True)
+                await callback.answer("Не удалось перейти к созданию видео-нарезки. Попробуйте позже", show_alert=True)
                 raise
 
     async def handle_go_to_publication_drafts(
@@ -103,30 +105,17 @@ class ContentMenuService(interface.IContentMenuService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                await callback.answer("Черновики публикации в разработке", show_alert=True)
+                self.logger.info("Начало перехода к черновикам публикаций")
+
+                await callback.answer("Функция черновиков публикаций находится в разработке", show_alert=True)
+
+                self.logger.info("Завершение перехода к черновикам публикаций")
+                span.set_status(Status(StatusCode.OK))
                 return
-                # dialog_manager.show_mode = ShowMode.EDIT
-                #
-                # state = await self._get_state(dialog_manager)
-                # await self.state_repo.change_user_state(
-                #     state_id=state.id,
-                #     can_show_alerts=False
-                # )
-                #
-                # # Запускаем диалог черновиков публикаций
-                # await dialog_manager.start(
-                #     model.PublicationDraftStates.publication_list,
-                #     mode=StartMode.RESET_STACK
-                # )
-                #
-                # self.logger.info("Пользователь перешел к черновикам публикаций")
-                # span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-
-                await callback.answer("❌ Ошибка при переходе к черновикам публикаций", show_alert=True)
                 raise
 
     async def handle_go_to_video_drafts(
@@ -140,6 +129,8 @@ class ContentMenuService(interface.IContentMenuService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                self.logger.info("Начало перехода к черновикам видео-нарезок")
+
                 dialog_manager.show_mode = ShowMode.EDIT
 
                 state = await self._get_state(dialog_manager)
@@ -148,20 +139,17 @@ class ContentMenuService(interface.IContentMenuService):
                     can_show_alerts=False
                 )
 
-                # Запускаем диалог черновиков видео-нарезок
                 await dialog_manager.start(
                     model.VideoCutsDraftStates.video_cut_list,
                     mode=StartMode.RESET_STACK
                 )
 
-                self.logger.info("Пользователь перешел к черновикам видео-нарезок")
+                self.logger.info("Завершение перехода к черновикам видео-нарезок")
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-
-                await callback.answer("❌ Ошибка при переходе к черновикам видео", show_alert=True)
                 raise
 
     async def handle_go_to_publication_moderation(
@@ -175,11 +163,12 @@ class ContentMenuService(interface.IContentMenuService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                self.logger.info("Начало перехода к модерации публикаций")
+
                 dialog_manager.show_mode = ShowMode.EDIT
 
                 state = await self._get_state(dialog_manager)
 
-                # Проверяем права доступа к модерации
                 employee = await self.loom_employee_client.get_employee_by_account_id(
                     state.account_id
                 )
@@ -187,9 +176,9 @@ class ContentMenuService(interface.IContentMenuService):
                 can_moderate = employee.role in ["moderator", "admin"]
 
                 if not can_moderate:
-                    self.logger.warning("Пользователю отказано в доступе к модерации публикаций")
+                    self.logger.info("Отказ в доступе: недостаточно прав для модерации публикаций")
                     await callback.answer(
-                        "❌ У вас нет прав для доступа к модерации",
+                        "У вас нет прав для доступа к модерации публикаций",
                         show_alert=True
                     )
                     return
@@ -199,20 +188,17 @@ class ContentMenuService(interface.IContentMenuService):
                     can_show_alerts=False
                 )
 
-                # Запускаем диалог модерации публикаций
                 await dialog_manager.start(
                     model.ModerationPublicationStates.moderation_list,
                     mode=StartMode.RESET_STACK
                 )
 
-                self.logger.info("Пользователь перешел к модерации публикаций")
+                self.logger.info("Завершение перехода к модерации публикаций")
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-
-                await callback.answer("❌ Ошибка при переходе к модерации публикаций", show_alert=True)
                 raise
 
     async def handle_go_to_video_moderation(
@@ -226,11 +212,12 @@ class ContentMenuService(interface.IContentMenuService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                self.logger.info("Начало перехода к модерации видео-нарезок")
+
                 dialog_manager.show_mode = ShowMode.EDIT
 
                 state = await self._get_state(dialog_manager)
 
-                # Проверяем права доступа к модерации
                 employee = await self.loom_employee_client.get_employee_by_account_id(
                     state.account_id
                 )
@@ -238,9 +225,9 @@ class ContentMenuService(interface.IContentMenuService):
                 can_moderate = employee.role in ["moderator", "admin"]
 
                 if not can_moderate:
-                    self.logger.warning("Пользователю отказано в доступе к модерации видео")
+                    self.logger.info("Отказ в доступе: недостаточно прав для модерации видео-нарезок")
                     await callback.answer(
-                        "❌ У вас нет прав для доступа к модерации",
+                        "У вас нет прав для доступа к модерации видео",
                         show_alert=True
                     )
                     return
@@ -250,20 +237,17 @@ class ContentMenuService(interface.IContentMenuService):
                     can_show_alerts=False
                 )
 
-                # Запускаем диалог модерации видео-нарезок
                 await dialog_manager.start(
                     model.VideoCutModerationStates.moderation_list,
                     mode=StartMode.RESET_STACK
                 )
 
-                self.logger.info("Пользователь перешел к модерации видео-нарезок")
+                self.logger.info("Завершение перехода к модерации видео-нарезок")
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-
-                await callback.answer("❌ Ошибка при переходе к модерации видео", show_alert=True)
                 raise
 
     async def handle_go_to_main_menu(
@@ -277,6 +261,8 @@ class ContentMenuService(interface.IContentMenuService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                self.logger.info("Начало перехода в главное меню")
+
                 dialog_manager.show_mode = ShowMode.EDIT
 
                 await dialog_manager.start(
@@ -284,7 +270,7 @@ class ContentMenuService(interface.IContentMenuService):
                     mode=StartMode.RESET_STACK
                 )
 
-                self.logger.info("Пользователь перешел в главное меню")
+                self.logger.info("Завершение перехода в главное меню")
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
@@ -303,6 +289,8 @@ class ContentMenuService(interface.IContentMenuService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                self.logger.info("Начало перехода в меню контента")
+
                 dialog_manager.show_mode = ShowMode.EDIT
 
                 await dialog_manager.start(
@@ -310,7 +298,7 @@ class ContentMenuService(interface.IContentMenuService):
                     mode=StartMode.RESET_STACK
                 )
 
-                self.logger.info("Пользователь перешел в контент меню")
+                self.logger.info("Завершение перехода в меню контента")
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:

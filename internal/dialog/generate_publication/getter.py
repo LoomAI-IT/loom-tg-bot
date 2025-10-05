@@ -32,6 +32,8 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                self.logger.info("Начало получения данных превью")
+
                 state = await self._get_state(dialog_manager)
                 employee = await self.loom_employee_client.get_employee_by_account_id(
                     state.account_id
@@ -39,15 +41,14 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
 
                 text = dialog_manager.dialog_data.get("publication_text", "")
 
-                # Check for image presence
                 has_image = False
                 preview_image_media = None
                 has_multiple_images = False
                 current_image_index = 0
                 total_images = 0
 
-                # Priority: custom image > generated images
                 if dialog_manager.dialog_data.get("custom_image_file_id"):
+                    self.logger.info("Используется кастомное изображение")
                     has_image = True
                     file_id = dialog_manager.dialog_data["custom_image_file_id"]
                     preview_image_media = MediaAttachment(
@@ -55,6 +56,7 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
                         type=ContentType.PHOTO
                     )
                 elif dialog_manager.dialog_data.get("publication_images_url"):
+                    self.logger.info("Используется сгенерированное изображение")
                     has_image = True
                     images_url = dialog_manager.dialog_data["publication_images_url"]
                     current_image_index = dialog_manager.dialog_data.get("current_image_index", 0)
@@ -70,6 +72,7 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
                 selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
 
                 if not selected_networks:
+                    self.logger.info("Загрузка соцсетей по умолчанию")
                     social_networks = await self.loom_content_client.get_social_networks_by_organization(
                         organization_id=state.organization_id
                     )
@@ -100,13 +103,14 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
                     "has_image": has_image,
                     "preview_image_media": preview_image_media,
                     "has_multiple_images": has_multiple_images,
-                    "current_image_index": current_image_index + 1,  # Show to user starting from 1
+                    "current_image_index": current_image_index + 1,
                     "total_images": total_images,
                     "requires_moderation": requires_moderation,
                     "can_publish_directly": can_publish_directly,
                     "is_custom_image": dialog_manager.dialog_data.get("is_custom_image", False),
                 }
 
+                self.logger.info("Конец получения данных превью")
                 span.set_status(Status(StatusCode.OK))
                 return data
             except Exception as err:
@@ -124,6 +128,8 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                self.logger.info("Начало получения данных соцсетей")
+
                 state = await self._get_state(dialog_manager)
 
                 social_networks = await self.loom_content_client.get_social_networks_by_organization(
@@ -136,11 +142,13 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
                 selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
 
                 if vkontakte_connected:
+                    self.logger.info("Установка состояния чекбокса VK")
                     widget_id = "vkontakte_checkbox"
                     vkontakte_checkbox: ManagedCheckbox = dialog_manager.find(widget_id)
                     await vkontakte_checkbox.set_checked(selected_networks[widget_id])
 
                 if telegram_connected:
+                    self.logger.info("Установка состояния чекбокса Telegram")
                     widget_id = "telegram_checkbox"
                     telegram_checkbox: ManagedCheckbox = dialog_manager.find(widget_id)
                     await telegram_checkbox.set_checked(selected_networks[widget_id])
@@ -152,6 +160,7 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
                     "has_available_networks": telegram_connected or vkontakte_connected,
                 }
 
+                self.logger.info("Конец получения данных соцсетей")
                 span.set_status(Status(StatusCode.OK))
                 return data
 
@@ -190,6 +199,8 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                self.logger.info("Начало получения категорий")
+
                 state = await self._get_state(dialog_manager)
                 employee = await self.loom_employee_client.get_employee_by_account_id(
                     state.account_id
@@ -212,8 +223,7 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
                     "has_categories": len(categories_data) > 0,
                 }
 
-                self.logger.info("Категории загружены")
-
+                self.logger.info("Конец получения категорий")
                 span.set_status(Status(StatusCode.OK))
                 return data
             except Exception as err:

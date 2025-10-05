@@ -23,6 +23,8 @@ class AuthGetter(interface.IAuthGetter):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                self.logger.info("Начало получения данных соглашений")
+
                 # Получаем ссылки на документы из конфига
                 data = {
                     "user_agreement_link": f"https://{self.domain}/agreement",
@@ -30,6 +32,7 @@ class AuthGetter(interface.IAuthGetter):
                     "data_processing_link": f"https://{self.domain}/data-processing",
                 }
 
+                self.logger.info("Завершение получения данных соглашений")
                 span.set_status(Status(StatusCode.OK))
                 return data
             except Exception as err:
@@ -47,6 +50,8 @@ class AuthGetter(interface.IAuthGetter):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                self.logger.info("Начало получения статуса пользователя")
+
                 user = dialog_manager.event.from_user
 
                 state = await self._get_state(dialog_manager)
@@ -57,6 +62,7 @@ class AuthGetter(interface.IAuthGetter):
                     "account_id": state.account_id,
                 }
 
+                self.logger.info("Завершение получения статуса пользователя")
                 span.set_status(Status(StatusCode.OK))
                 return data
             except Exception as err:

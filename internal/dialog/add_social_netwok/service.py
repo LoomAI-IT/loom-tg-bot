@@ -35,6 +35,8 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                self.logger.info("Начало обработки ввода username Telegram канала")
+
                 dialog_manager.show_mode = ShowMode.EDIT
                 await message.delete()
 
@@ -48,6 +50,7 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
 
                 telegram_channel_username = telegram_channel_username.strip()
                 if not telegram_channel_username:
+                    self.logger.info("Username пустой")
                     dialog_manager.dialog_data["has_void_telegram_channel_username"] = True
                     return
 
@@ -55,6 +58,7 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
                     telegram_channel_username = telegram_channel_username[1:]
 
                 if not re.match(r"^[a-zA-Z][a-zA-Z0-9_]{4,31}$", telegram_channel_username):
+                    self.logger.info("Username не соответствует формату")
                     dialog_manager.dialog_data["has_invalid_telegram_channel_username"] = True
                     return
 
@@ -62,6 +66,7 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
                     telegram_channel_username
                 )
                 if not has_telegram_permission:
+                    self.logger.info("Нет прав доступа к каналу")
                     dialog_manager.dialog_data["has_invalid_telegram_permission"] = True
                     return
 
@@ -69,7 +74,7 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
                 dialog_manager.dialog_data["telegram_channel_username"] = telegram_channel_username
                 dialog_manager.dialog_data["has_telegram_channel_username"] = True
 
-                self.logger.info(f"telegram channel username entered: {telegram_channel_username}")
+                self.logger.info("Завершение обработки ввода username Telegram канала")
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
@@ -88,11 +93,14 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                self.logger.info("Начало сохранения подключения Telegram канала")
+
                 dialog_manager.show_mode = ShowMode.EDIT
 
                 telegram_channel_username = dialog_manager.dialog_data.get("telegram_channel_username", "")
                 if not telegram_channel_username:
-                    await callback.answer("❌ Сначала введите username канала", show_alert=True)
+                    self.logger.info("Username канала отсутствует")
+                    await callback.answer()
                     return
 
                 autoselect_checkbox: ManagedCheckbox = dialog_manager.find("autoselect_checkbox")
@@ -106,18 +114,16 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
                     autoselect=autoselect
                 )
 
-                await callback.answer("✅ telegram канал успешно подключен!", show_alert=True)
-                self.logger.info(f"telegram channel connected: @{telegram_channel_username}, autoselect: {autoselect}")
+                await callback.answer(f"Telegram канал '@{telegram_channel_username}' подключен")
 
                 await dialog_manager.switch_to(model.AddSocialNetworkStates.telegram_main)
 
+                self.logger.info("Завершение сохранения подключения Telegram канала")
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-
-                await callback.answer("❌ Не удалось подключить канал", show_alert=True)
                 raise
 
     async def handle_disconnect_telegram(
@@ -131,6 +137,8 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                self.logger.info("Начало отключения Telegram канала")
+
                 dialog_manager.show_mode = ShowMode.EDIT
 
                 state = await self._get_state(dialog_manager)
@@ -142,16 +150,14 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
                 # Очищаем dialog_data после удаления
                 dialog_manager.dialog_data.clear()
 
-                await callback.answer("✅ Telegram канал отключен", show_alert=True)
-                self.logger.info("Telegram channel disconnected")
+                await callback.answer("Telegram канал отключен")
 
-
+                self.logger.info("Завершение отключения Telegram канала")
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-                await callback.answer("❌ Ошибка при отключении канала", show_alert=True)
                 raise
 
     async def handle_toggle_telegram_autoselect(
@@ -165,9 +171,12 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                self.logger.info("Начало переключения автовыбора Telegram")
+
                 new_value = checkbox.is_checked()
 
                 if "working_state" not in dialog_manager.dialog_data:
+                    self.logger.info("Инициализация working_state")
                     state = await self._get_state(dialog_manager)
                     social_networks = await self.loom_content_client.get_social_networks_by_organization(
                         organization_id=state.organization_id
@@ -181,15 +190,14 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
                 else:
                     dialog_manager.dialog_data["working_state"]["autoselect"] = new_value
 
-                self.logger.info(f"Telegram autoselect toggled to: {new_value}")
-
                 await callback.answer()
+
+                self.logger.info("Завершение переключения автовыбора Telegram")
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-                await callback.answer("❌ Ошибка", show_alert=True)
                 raise
 
     async def handle_save_telegram_changes(
@@ -203,6 +211,8 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                self.logger.info("Начало сохранения изменений Telegram")
+
                 dialog_manager.show_mode = ShowMode.EDIT
 
                 # Берем данные из working_state, а не из чекбокса
@@ -222,17 +232,16 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
                 dialog_manager.dialog_data.pop("original_state", None)
                 dialog_manager.dialog_data.pop("working_state", None)
 
-                await callback.answer("✅ Настройки сохранены!", show_alert=True)
-                self.logger.info(
-                    f"Telegram settings updated: username={new_telegram_channel_username}, autoselect={autoselect}")
+                await callback.answer("Настройки Telegram обновлены")
 
                 await dialog_manager.switch_to(model.AddSocialNetworkStates.telegram_main)
+
+                self.logger.info("Завершение сохранения изменений Telegram")
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-                await callback.answer("❌ Ошибка при сохранении", show_alert=True)
                 raise
 
     async def handle_back_from_edit(
@@ -259,6 +268,8 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                self.logger.info("Начало обработки ввода нового username Telegram канала")
+
                 dialog_manager.show_mode = ShowMode.EDIT
 
                 await message.delete()
@@ -274,6 +285,7 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
                 # Validation
                 new_telegram_channel_username = new_telegram_channel_username.strip()
                 if not new_telegram_channel_username:
+                    self.logger.info("Новый username пустой")
                     dialog_manager.dialog_data["has_void_new_telegram_channel_username"] = True
                     return
 
@@ -283,6 +295,7 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
 
                 # Validate username format
                 if not re.match(r"^[a-zA-Z][a-zA-Z0-9_]{4,31}$", new_telegram_channel_username):
+                    self.logger.info("Новый username не соответствует формату")
                     dialog_manager.dialog_data["has_invalid_new_telegram_channel_username"] = True
                     return
 
@@ -290,18 +303,19 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
                     new_telegram_channel_username
                 )
                 if not has_telegram_permission:
+                    self.logger.info("Нет прав доступа к новому каналу")
                     dialog_manager.dialog_data["has_invalid_telegram_permission"] = True
                     return
 
                 dialog_manager.dialog_data["working_state"]["telegram_channel_username"] = new_telegram_channel_username
                 await dialog_manager.switch_to(model.AddSocialNetworkStates.telegram_edit)
 
+                self.logger.info("Завершение обработки ввода нового username Telegram канала")
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-
                 raise
 
     async def handle_go_to_organization_menu(
@@ -315,9 +329,12 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                self.logger.info("Начало перехода в меню организации")
+
                 dialog_manager.show_mode = ShowMode.EDIT
 
                 if await self._check_alerts(dialog_manager):
+                    self.logger.info("Переход к алертам")
                     return
 
                 await dialog_manager.start(
@@ -325,13 +342,12 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
                     mode=StartMode.RESET_STACK
                 )
 
+                self.logger.info("Завершение перехода в меню организации")
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-
-                await callback.answer("❌ Ошибка при переходе в меню", show_alert=True)
                 raise
 
     async def _check_alerts(self, dialog_manager: DialogManager) -> bool:

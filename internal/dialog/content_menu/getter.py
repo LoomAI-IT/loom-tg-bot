@@ -29,19 +29,18 @@ class ContentMenuGetter(interface.IContentMenuGetter):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                self.logger.info("Начало получения данных меню контента")
+
                 state = await self._get_state(dialog_manager)
 
-                # Получаем статистику публикаций
                 publications = await self.loom_content_client.get_publications_by_organization(
                     state.organization_id
                 )
 
-                # Получаем статистику видео-нарезок
                 video_cuts = await self.loom_content_client.get_video_cuts_by_organization(
                     state.organization_id
                 )
 
-                # Подсчитываем статистику
                 drafts_count = 0
                 moderation_count = 0
                 approved_count = 0
@@ -50,29 +49,32 @@ class ContentMenuGetter(interface.IContentMenuGetter):
                 video_cut_count = 0
                 publication_count = 0
 
-                # Статистика публикаций
                 for pub in publications:
-
                     total_generations += 1
                     publication_count += 1
 
                     if pub.moderation_status == "draft":
+                        self.logger.info("Обнаружена публикация со статусом черновик")
                         drafts_count += 1
                     elif pub.moderation_status == "moderation":
+                        self.logger.info("Обнаружена публикация со статусом модерация")
                         moderation_count += 1
                     elif pub.moderation_status == "approved":
+                        self.logger.info("Обнаружена публикация со статусом одобрено")
                         approved_count += 1
 
-                # Статистика видео-нарезок
                 for video in video_cuts:
                     total_generations += 1
                     video_cut_count += 1
 
                     if video.moderation_status == "draft":
+                        self.logger.info("Обнаружена видео-нарезка со статусом черновик")
                         drafts_count += 1
                     elif video.moderation_status == "moderation":
+                        self.logger.info("Обнаружена видео-нарезка со статусом модерация")
                         moderation_count += 1
                     elif video.moderation_status == "approved":
+                        self.logger.info("Обнаружена видео-нарезка со статусом одобрено")
                         approved_count += 1
 
                 data = {
@@ -84,7 +86,7 @@ class ContentMenuGetter(interface.IContentMenuGetter):
                     "publication_count": publication_count,
                 }
 
-                self.logger.info("Данные меню контента успешно загружены")
+                self.logger.info("Завершение получения данных меню контента")
 
                 span.set_status(Status(StatusCode.OK))
                 return data
@@ -92,8 +94,7 @@ class ContentMenuGetter(interface.IContentMenuGetter):
             except Exception as err:
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
-
-                raise err
+                raise
 
     async def get_drafts_type_data(
             self,
@@ -105,19 +106,18 @@ class ContentMenuGetter(interface.IContentMenuGetter):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                self.logger.info("Начало получения данных типов черновиков")
+
                 state = await self._get_state(dialog_manager)
 
-                # Получаем публикации организации
                 publications = await self.loom_content_client.get_publications_by_organization(
                     state.organization_id
                 )
 
-                # Получаем видео-нарезки организации
                 video_cuts = await self.loom_content_client.get_video_cuts_by_organization(
                     state.organization_id
                 )
 
-                # Подсчитываем черновики
                 publication_drafts_count = sum(1 for pub in publications if pub.moderation_status == "draft"
                                                and pub.creator_id == state.account_id)
                 video_drafts_count = sum(1 for video in video_cuts if video.moderation_status == "draft"
@@ -128,7 +128,7 @@ class ContentMenuGetter(interface.IContentMenuGetter):
                     "video_drafts_count": video_drafts_count,
                 }
 
-                self.logger.info("Данные типов черновиков успешно загружены")
+                self.logger.info("Завершение получения данных типов черновиков")
 
                 span.set_status(Status(StatusCode.OK))
                 return data
@@ -148,19 +148,18 @@ class ContentMenuGetter(interface.IContentMenuGetter):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
+                self.logger.info("Начало получения данных типов модерации")
+
                 state = await self._get_state(dialog_manager)
 
-                # Получаем публикации организации
                 publications = await self.loom_content_client.get_publications_by_organization(
                     state.organization_id
                 )
 
-                # Получаем видео-нарезки организации
                 video_cuts = await self.loom_content_client.get_video_cuts_by_organization(
                     state.organization_id
                 )
 
-                # Подсчитываем элементы на модерации
                 publication_moderation_count = sum(1 for pub in publications if pub.moderation_status == "moderation")
                 video_moderation_count = sum(1 for video in video_cuts if video.moderation_status == "moderation")
 
@@ -169,7 +168,7 @@ class ContentMenuGetter(interface.IContentMenuGetter):
                     "video_moderation_count": video_moderation_count,
                 }
 
-                self.logger.info("Данные типов модерации успешно загружены")
+                self.logger.info("Завершение получения данных типов модерации")
 
                 span.set_status(Status(StatusCode.OK))
                 return data
