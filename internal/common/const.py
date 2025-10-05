@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from enum import Enum
 
 
@@ -10,64 +9,19 @@ class Role(Enum):
 
 TRACE_ID_KEY = "trace_id"
 SPAN_ID_KEY = "span_id"
-REQUEST_ID_KEY = "request_id"
-EXTRA_LOG_FIELDS_KEY = "extra"
 FILE_KEY = "file"
 ERROR_KEY = "error"
 TRACEBACK_KEY = "traceback"
-ORGANIZATION_ID_KEY = "organization_id"
-ACCOUNT_ID_KEY = "account_id"
+
+ORGANIZATION_ID_KEY = "organization.id"
+ACCOUNT_ID_KEY = "account.id"
 
 HTTP_METHOD_KEY = "http.request.method"
 HTTP_STATUS_KEY = "http.response.status_code"
 HTTP_ROUTE_KEY = "http.route"
 HTTP_REQUEST_DURATION_KEY = "http.server.request.duration"
 
-CRM_SYSTEM_NAME_KEY = "crm.system.name"
-
-TELEGRAM_EVENT_TYPE_KEY = "telegram.event.type"
-TELEGRAM_CHAT_ID_KEY = "telegram.chat.id"
-TELEGRAM_USER_USERNAME_KEY = "telegram.user.username"
-TELEGRAM_USER_MESSAGE_KEY = "telegram.user.message"
-TELEGRAM_MESSAGE_ID_KEY = "telegram.message.id"
-TELEGRAM_CALLBACK_QUERY_DATA_KEY = "telegram.callback_query.data"
 TELEGRAM_MESSAGE_DURATION_KEY = "telegram.message.duration"
-TELEGRAM_MESSAGE_DIRECTION_KEY = "telegram.message.direction"
-TELEGRAM_CHAT_TYPE_KEY = "telegram.chat.type"
-
-REQUEST_DURATION_METRIC = "http.server.request.duration"
-ACTIVE_REQUESTS_METRIC = "http.server.active_requests"
-REQUEST_BODY_SIZE_METRIC = "http.server.request.body.size"
-RESPONSE_BODY_SIZE_METRIC = "http.server.response.body.size"
-OK_REQUEST_TOTAL_METRIC = "http.server.ok.request.total"
-ERROR_REQUEST_TOTAL_METRIC = "http.server.error.request.total"
-
-OK_MESSAGE_TOTAL_METRIC = "telegram.server.ok.message.total"
-ERROR_MESSAGE_TOTAL_METRIC = "telegram.server.error.message.total"
-OK_JOIN_CHAT_TOTAL_METRIC = "telegram.server.ok.join_chat.total"
-ERROR_JOIN_CHAT_TOTAL_METRIC = "telegram.server.error.join_chat.total"
-MESSAGE_DURATION_METRIC = "telegram.server.message.duration"
-ACTIVE_MESSAGES_METRIC = "telegram.server.active_messages"
-
-TRACE_ID_HEADER = "X-Trace-ID"
-SPAN_ID_HEADER = "X-Span-ID"
-
-MAX_FILE_SIZE = 50 * 1024 * 1024
-MAX_TEXT_SIZE = 1024
-
-@dataclass
-class StateStatuses:
-    post_name = "post_name"
-    post_description = "post_description"
-    post_images = "post_images"
-    post_file = "post_file"
-    confirm_post = "confirm_post"
-
-class PostMessageText:
-    post_description = "Пришлите текст стартового сообщения поста"
-    post_images = "Можете прислать одно изображение для поста, либо любое сообщение, если изображение не требуется"
-    post_file = "Можете прислать один файл размером не более 50 МБ, либо любое сообщение, если файл не требуется"
-
-class PostMessageError:
-    text_size = "Текст стартового сообщения слишком длинный. Максимальная длина - 1024 символа(а). Пришлите текст стартового сообщения поста еще раз"
-    file_size = "Файл слишком большой. Максимальный размер файла - 50 МБ. Пришлите файл еще раз"
+TELEGRAM_CHAT_ID_KEY = "telegram.chat.id"
+TELEGRAM_EVENT_TYPE_KEY = "telegram.event.type"
+TELEGRAM_USER_USERNAME_KEY = "telegram.user.username"

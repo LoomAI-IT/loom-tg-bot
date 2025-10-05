@@ -147,8 +147,6 @@ class TgMiddleware(interface.ITelegramMiddleware):
                         common.TELEGRAM_CHAT_ID_KEY: tg_chat_id,
                     }
                 )
-
-                (recovery_err)
                 span.set_status(Status(StatusCode.ERROR, str(recovery_err)))
 
                 # Последняя попытка - отправить пользователю сообщение с инструкцией
