@@ -1,7 +1,6 @@
 from abc import abstractmethod
 from typing import Protocol, Any
 
-from aiogram import Bot
 from aiogram_dialog import DialogManager, Dialog, Window
 from aiogram.types import CallbackQuery, Message
 
@@ -181,14 +180,12 @@ class IPublicationDraftGetter(Protocol):
     async def get_publication_list_data(
             self,
             dialog_manager: DialogManager,
-            bot: Bot
     ) -> dict: pass
 
     @abstractmethod
     async def get_edit_preview_data(
             self,
             dialog_manager: DialogManager,
-            bot: Bot
     ) -> dict: pass
 
     @abstractmethod

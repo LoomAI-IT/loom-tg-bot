@@ -21,15 +21,6 @@ class PublicationDraftDialog(interface.IPublicationDraftDialog):
         self.publication_draft_service = publication_draft_service
         self.publication_draft_getter = publication_draft_getter
 
-    async def _show_edit_menu(self, dialog_manager, callback, button):
-        """🔥 Показывает инлайн меню редактирования как в модерации"""
-        from aiogram_dialog.widgets.kbd import Multiselect
-        from aiogram_dialog.widgets.text import ScrollingTextWidget
-        from aiogram_dialog.widgets.input import ManagedTextInput
-        
-        # Вызываем обработчик из сервиса для показа меню
-        await self.publication_draft_service.handle_edit_menu_callback(callback, button, dialog_manager)
-
     def get_dialog(self) -> Dialog:
         return Dialog(
             self.get_publication_list_window(),
@@ -47,9 +38,8 @@ class PublicationDraftDialog(interface.IPublicationDraftDialog):
 
     def get_publication_list_window(self) -> Window:
         """
-        🏠 ГЛАВНОЕ ОКНО - Список черновиков публикаций
-        Этот виджет отображает все сохраненные черновики в виде скролльного списка
-        Показывает превью сразу после выбора публикации (как в модерации)
+        Список черновиков публикаций.
+        Отображает все сохраненные черновики в виде скролльного списка.
         """
         return Window(
             Multi(
@@ -67,30 +57,26 @@ class PublicationDraftDialog(interface.IPublicationDraftDialog):
                 sep="",
             ),
 
-            # 📜 СКРОЛЛ-СПИСОК черновиков (аналог change_employee)
             ScrollingGroup(
                 Select(
-                    # 📌 Каждый элемент списка показывает название + дату создания
                     Format("📄 {item[title]}\n🗓 {item[created_date]}"),
                     id="publication_select",
-                    items="publications",  # Список публикаций от геттера
+                    items="publications",
                     item_id_getter=lambda item: str(item["id"]),
                     on_click=self.publication_draft_service.handle_select_publication,
                 ),
                 id="publication_scroll",
                 width=1,
-                height=6,  # Показываем 6 элементов за раз
+                height=6,
                 hide_on_single_page=True,
                 when="has_publications",
             ),
 
-            # 📄 ПАГИНАЦИЯ для большого количества черновиков
             NumberedPager(
                 scroll="publication_scroll",
                 when="show_pager",
             ),
 
-            # ⬅️ КНОПКА НАЗАД в контент-меню
             Button(
                 Const("⬅️ Вернуться в меню контента"),
                 id="back_to_content_menu",
@@ -104,8 +90,8 @@ class PublicationDraftDialog(interface.IPublicationDraftDialog):
 
     def get_edit_preview_window(self) -> Window:
         """
-        📱 ПРЕВЬЮ ЧЕРНОВИКА - Точно как в модерации (копия)
-        Показывает превью черновика с кнопками редактирования прямо здесь
+        Превью черновика.
+        Показывает превью черновика с кнопками редактирования.
         """
         return Window(
             Multi(
@@ -132,7 +118,6 @@ class PublicationDraftDialog(interface.IPublicationDraftDialog):
                 sep="",
             ),
 
-            # Навигация между черновиками (если есть несколько)
             Row(
                 Button(
                     Const("⬅️ Пред черновик"),
@@ -175,13 +160,7 @@ class PublicationDraftDialog(interface.IPublicationDraftDialog):
                 when="has_multiple_images",
             ),
 
-            # Основные действия (точно как в модерации)
             Row(
-                Button(
-                    Const("✏️ Редактировать"),
-                    id="edit",
-                    on_click=lambda c, b, d: self._show_edit_menu(dialog_manager=d, callback=c, button=b),
-                ),
                 Button(
                     Const("🗑 Удалить"),
                     id="delete",
@@ -216,9 +195,7 @@ class PublicationDraftDialog(interface.IPublicationDraftDialog):
         )
 
     def get_edit_text_menu_window(self) -> Window:
-        """
-        ✏️ МЕНЮ РЕДАКТИРОВАНИЯ - Выбор что именно редактировать
-        """
+        """Меню редактирования текста."""
         return Window(
             Multi(
                 Const("✏️ <b>Редактирование черновика</b>\n\n"),
@@ -271,9 +248,7 @@ class PublicationDraftDialog(interface.IPublicationDraftDialog):
         )
 
     def get_regenerate_text_window(self) -> Window:
-        """
-        🔄 ПЕРЕГЕНЕРАЦИЯ с промптом (копия из generate_publication)
-        """
+        """Перегенерация текста с промптом."""
         return Window(
             Multi(
                 Const("🔄 <b>Перегенерация с дополнительными указаниями</b>\n\n"),
@@ -326,9 +301,7 @@ class PublicationDraftDialog(interface.IPublicationDraftDialog):
         )
 
     def get_edit_title_window(self) -> Window:
-        """
-        📝 РЕДАКТИРОВАНИЕ НАЗВАНИЯ
-        """
+        """Редактирование названия."""
         return Window(
             Multi(
                 Const("📝 <b>Изменение названия</b>\n\n"),
@@ -361,9 +334,7 @@ class PublicationDraftDialog(interface.IPublicationDraftDialog):
         )
 
     def get_edit_description_window(self) -> Window:
-        """
-        📝 РЕДАКТИРОВАНИЕ ОПИСАНИЯ (если нужно отдельно от контента)
-        """
+        """Редактирование описания."""
         return Window(
             Multi(
                 Const("📝 <b>Изменение описания</b>\n\n"),
@@ -389,9 +360,7 @@ class PublicationDraftDialog(interface.IPublicationDraftDialog):
         )
 
     def get_edit_content_window(self) -> Window:
-        """
-        📄 РЕДАКТИРОВАНИЕ ОСНОВНОГО ТЕКСТА
-        """
+        """Редактирование основного текста."""
         return Window(
             Multi(
                 Const("📄 <b>Изменение текста публикации</b>\n\n"),
@@ -423,13 +392,8 @@ class PublicationDraftDialog(interface.IPublicationDraftDialog):
             parse_mode=SULGUK_PARSE_MODE,
         )
 
-
-
-
     def get_edit_image_menu_window(self) -> Window:
-        """
-        🖼️ УПРАВЛЕНИЕ ИЗОБРАЖЕНИЕМ
-        """
+        """Управление изображением."""
         return Window(
             Multi(
                 Const("🖼 <b>Управление изображением</b>\n\n"),
@@ -475,9 +439,7 @@ class PublicationDraftDialog(interface.IPublicationDraftDialog):
         )
 
     def get_generate_image_window(self) -> Window:
-        """
-        🎨 ГЕНЕРАЦИЯ ИЗОБРАЖЕНИЯ с промптом
-        """
+        """Генерация изображения с промптом."""
         return Window(
             Multi(
                 Const("🎨 <b>Генерация изображения</b>\n\n"),
@@ -495,7 +457,7 @@ class PublicationDraftDialog(interface.IPublicationDraftDialog):
 
             TextInput(
                 id="image_prompt_input",
-                on_success=self.publication_draft_service.handle_edit_image_menu_save,  # Используем существующий метод
+                on_success=self.publication_draft_service.handle_edit_image_menu_save,
             ),
 
             Button(
@@ -510,9 +472,7 @@ class PublicationDraftDialog(interface.IPublicationDraftDialog):
         )
 
     def get_upload_image_window(self) -> Window:
-        """
-        📤 ЗАГРУЗКА СВОЕГО ИЗОБРАЖЕНИЯ
-        """
+        """Загрузка своего изображения."""
         return Window(
             Multi(
                 Const("📤 <b>Загрузка изображения</b>\n\n"),
@@ -538,9 +498,7 @@ class PublicationDraftDialog(interface.IPublicationDraftDialog):
         )
 
     def get_edit_tags_window(self) -> Window:
-        """
-        🏷️ РЕДАКТИРОВАНИЕ ТЕГОВ
-        """
+        """Редактирование тегов."""
         return Window(
             Multi(
                 Const("🏷 <b>Изменение тегов</b>\n\n"),
@@ -567,9 +525,7 @@ class PublicationDraftDialog(interface.IPublicationDraftDialog):
         )
 
     def get_social_network_select_window(self) -> Window:
-        """
-        🌐 ВЫБОР СОЦСЕТЕЙ для публикации
-        """
+        """Выбор соцсетей для публикации."""
         return Window(
             Multi(
                 Const("🌐 <b>Выбор социальных сетей</b>\n\n"),

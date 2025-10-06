@@ -31,20 +31,19 @@ class PublicationDraftService(interface.IPublicationDraftService):
             publication_id: str
     ) -> None:
         """
-        🎯 ОБРАБОТЧИК ВЫБОРА ЧЕРНОВИКА
-        Сохраняет выбранную публикацию и переходит к превью
+        Обработчик выбора черновика.
+        Сохраняет выбранную публикацию и переходит к превью.
         """
         with self.tracer.start_as_current_span(
                 "PublicationDraftService.handle_select_publication",
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                # 💾 Сохраняем ID выбранной публикации
                 dialog_manager.dialog_data["selected_publication_id"] = int(publication_id)
                 
                 self.logger.info(f"Выбрана публикация для редактирования: {publication_id}")
 
-                # 🔄 Переходим к превью выбранной публикации (как в модерации)
+                # Переходим к превью выбранной публикации
                 await dialog_manager.switch_to(model.PublicationDraftStates.edit_preview)
 
                 span.set_status(Status(StatusCode.OK))
@@ -61,8 +60,8 @@ class PublicationDraftService(interface.IPublicationDraftService):
             dialog_manager: DialogManager
     ) -> None:
         """
-        🎮 НАВИГАЦИЯ между черновиками (стрелки ⬅️➡️)
-        Аналогично navigate_employee - переключение между публикациями
+        Навигация между черновиками.
+        Переключение между публикациями стрелками.
         """
         with self.tracer.start_as_current_span(
                 "PublicationDraftService.handle_navigate_publication",
@@ -79,7 +78,6 @@ class PublicationDraftService(interface.IPublicationDraftService):
 
                 current_index = all_publication_ids.index(current_publication_id)
 
-                # 🔄 Определяем новый индекс
                 if button_id == "prev_publication" and current_index > 0:
                     new_publication_id = all_publication_ids[current_index - 1]
                 elif button_id == "next_publication" and current_index < len(all_publication_ids) - 1:
@@ -87,7 +85,6 @@ class PublicationDraftService(interface.IPublicationDraftService):
                 else:
                     return
 
-                # 💾 Обновляем выбранную публикацию
                 dialog_manager.dialog_data["selected_publication_id"] = new_publication_id
 
                 await dialog_manager.update(dialog_manager.dialog_data)
@@ -103,9 +100,7 @@ class PublicationDraftService(interface.IPublicationDraftService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        """
-        🗑️ УДАЛЕНИЕ ЧЕРНОВИКА
-        """
+        """Удаление черновика."""
         with self.tracer.start_as_current_span(
                 "PublicationDraftService.handle_delete_publication",
                 kind=SpanKind.INTERNAL
@@ -113,14 +108,11 @@ class PublicationDraftService(interface.IPublicationDraftService):
             try:
                 publication_id = int(dialog_manager.dialog_data.get("selected_publication_id"))
                 
-                # 🗑️ Удаляем через API
                 await self.loom_content_client.delete_publication(publication_id)
                 
                 self.logger.info(f"Черновик публикации удален: {publication_id}")
                 
                 await callback.answer("✅ Черновик удален!", show_alert=True)
-                
-                # 🔄 Возвращаемся к списку
                 dialog_manager.dialog_data.pop("selected_publication_id", None)
                 await dialog_manager.switch_to(model.PublicationDraftStates.publication_list)
 
@@ -137,9 +129,7 @@ class PublicationDraftService(interface.IPublicationDraftService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        """
-        💾 СОХРАНЕНИЕ ИЗМЕНЕНИЙ в черновике
-        """
+        """Сохранение изменений в черновике"""
         with self.tracer.start_as_current_span(
                 "PublicationDraftService.handle_save_changes",
                 kind=SpanKind.INTERNAL
@@ -147,9 +137,7 @@ class PublicationDraftService(interface.IPublicationDraftService):
             try:
                 publication_id = int(dialog_manager.dialog_data.get("selected_publication_id"))
                 
-                # 📝 Получаем измененные данные из dialog_data
                 text = dialog_manager.dialog_data.get("publication_content")
-                # Обновляем только поддерживаемые поля клиента: текст и изображение (если нужно)
                 await self.loom_content_client.change_publication(
                     publication_id=publication_id,
                     text=text,
@@ -164,8 +152,6 @@ class PublicationDraftService(interface.IPublicationDraftService):
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 await callback.answer("❌ Ошибка сохранения", show_alert=True)
                 raise
-
-    # 📝 ОБРАБОТЧИКИ РЕДАКТИРОВАНИЯ (копируем из generate_publication)
     
     async def handle_edit_title_save(
             self,
@@ -174,7 +160,7 @@ class PublicationDraftService(interface.IPublicationDraftService):
             dialog_manager: DialogManager,
             text: str
     ) -> None:
-        """📝 Сохранение нового названия"""
+        """Сохранение нового названия"""
         try:
             await message.delete()
             new_title = text.strip()
@@ -184,11 +170,8 @@ class PublicationDraftService(interface.IPublicationDraftService):
                 await dialog_manager.switch_to(model.PublicationDraftStates.edit_title)
                 return
 
-            # ✅ Очищаем ошибки и сохраняем
             dialog_manager.dialog_data.pop("has_void_title", None)
             dialog_manager.dialog_data["publication_title"] = new_title
-
-            # 💾 Сохраняем в API (только название, текст остается прежним)
             publication_id = int(dialog_manager.dialog_data.get("selected_publication_id"))
             current_text = dialog_manager.dialog_data.get("publication_content", "")
             await self.loom_content_client.change_publication(
@@ -209,7 +192,7 @@ class PublicationDraftService(interface.IPublicationDraftService):
             dialog_manager: DialogManager,
             text: str
     ) -> None:
-        """📝 Сохранение описания"""
+        """Сохранение описания."""
         try:
             await message.delete()
             new_description = text.strip()
@@ -228,7 +211,7 @@ class PublicationDraftService(interface.IPublicationDraftService):
             dialog_manager: DialogManager,
             text: str
     ) -> None:
-        """📄 Сохранение основного текста"""
+        """Сохранение основного текста"""
         try:
             await message.delete()
             new_content = text.strip()
@@ -241,12 +224,11 @@ class PublicationDraftService(interface.IPublicationDraftService):
             dialog_manager.dialog_data.pop("has_void_content", None)
             dialog_manager.dialog_data["publication_content"] = new_content
 
-            # 💾 Сохраняем в API
             publication_id = int(dialog_manager.dialog_data.get("selected_publication_id"))
             current_title = dialog_manager.dialog_data.get("publication_title", "")
             await self.loom_content_client.change_publication(
                 publication_id=publication_id,
-                text=f"{current_title}\n\n{new_content}"  # Объединяем название и текст
+                text=f"{current_title}\n\n{new_content}"
             )
 
             self.logger.info("Содержимое черновика изменено")
@@ -262,21 +244,18 @@ class PublicationDraftService(interface.IPublicationDraftService):
             dialog_manager: DialogManager,
             text: str
     ) -> None:
-        """🏷️ Сохранение тегов"""
+        """Сохранение тегов"""
         try:
             await message.delete()
             tags_raw = text.strip()
             
             if tags_raw:
                 tags = [tag.strip() for tag in tags_raw.split(",")]
-                tags = [tag for tag in tags if tag]  # Убираем пустые
+                tags = [tag for tag in tags if tag]
             else:
                 tags = []
             
             dialog_manager.dialog_data["publication_tags"] = tags
-            
-            # 💾 Теги сохраняем только локально (API не поддерживает)
-            # В будущем можно добавить поддержку тегов в API
             self.logger.info(f"Теги черновика изменены: {tags}")
             await dialog_manager.switch_to(model.PublicationDraftStates.edit_preview)
         except Exception as err:
@@ -289,12 +268,11 @@ class PublicationDraftService(interface.IPublicationDraftService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        """🗑️ Удаление изображения из черновика"""
+        """Удаление изображения из черновика"""
         try:
-            publication_id = int(dialog_manager.dialog_data.get("selected_publication_id"))
-            
-            # Удаляем изображение через API
-            await self.loom_content_client.delete_publication_image(publication_id)
+                publication_id = int(dialog_manager.dialog_data.get("selected_publication_id"))
+                
+                await self.loom_content_client.delete_publication_image(publication_id)
             
             # Обновляем флаг
             dialog_manager.dialog_data["has_image"] = False
@@ -311,7 +289,7 @@ class PublicationDraftService(interface.IPublicationDraftService):
             widget: Any,
             dialog_manager: DialogManager
     ) -> None:
-        """📤 Загрузка изображения в черновик"""
+        """Загрузка изображения в черновик"""
         try:
             if not message.photo:
                 await message.answer("❌ Отправьте изображение")
@@ -349,7 +327,7 @@ class PublicationDraftService(interface.IPublicationDraftService):
             dialog_manager: DialogManager,
             text: str
     ) -> None:
-        """🖼️ Генерация изображения по промпту (как в модерации)"""
+        """Генерация изображения по промпту"""
         try:
             await message.delete()
             prompt = text.strip() if isinstance(text, str) else ""
@@ -394,8 +372,6 @@ class PublicationDraftService(interface.IPublicationDraftService):
         except Exception as err:
             await message.answer("❌ Ошибка обработки изображения")
             raise
-
-    # 🔄 РЕГЕНЕРАЦИЯ ТЕКСТА
     
     async def handle_regenerate_text(
             self,
@@ -403,11 +379,10 @@ class PublicationDraftService(interface.IPublicationDraftService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        """🔄 Полная регенерация текста черновика"""
+        """Полная регенерация текста черновика"""
         try:
             await callback.answer()
             
-            # Показываем индикатор загрузки
             dialog_manager.dialog_data["is_regenerating_text"] = True
             dialog_manager.dialog_data["regenerate_prompt"] = ""
             await dialog_manager.show()
@@ -445,11 +420,10 @@ class PublicationDraftService(interface.IPublicationDraftService):
             dialog_manager: DialogManager,
             prompt: str
     ) -> None:
-        """🔄 Регенерация с промптом"""
+        """Регенерация с промптом."""
         try:
             await message.delete()
             
-            # Очищаем флаги ошибок
             dialog_manager.dialog_data.pop("has_void_regenerate_prompt", None)
             dialog_manager.dialog_data.pop("has_small_regenerate_prompt", None)
             dialog_manager.dialog_data.pop("has_big_regenerate_prompt", None)
@@ -472,7 +446,6 @@ class PublicationDraftService(interface.IPublicationDraftService):
                 await dialog_manager.switch_to(model.PublicationDraftStates.regenerate_text)
                 return
                 
-            # Показываем индикатор загрузки
             dialog_manager.dialog_data["is_regenerating_text"] = True
             dialog_manager.dialog_data["regenerate_prompt"] = prompt
             await dialog_manager.show()
@@ -502,8 +475,6 @@ class PublicationDraftService(interface.IPublicationDraftService):
         except Exception as err:
             await message.answer("❌ Ошибка регенерации")
             raise
-
-    # 🌐 СОЦИАЛЬНЫЕ СЕТИ
     
     async def handle_toggle_social_network(
             self,
@@ -511,7 +482,7 @@ class PublicationDraftService(interface.IPublicationDraftService):
             checkbox: Any,
             dialog_manager: DialogManager
     ) -> None:
-        """🌐 Переключение соцсетей"""
+        """Переключение соцсетей."""
         try:
             if "selected_social_networks" not in dialog_manager.dialog_data:
                 dialog_manager.dialog_data["selected_social_networks"] = {}
@@ -524,8 +495,6 @@ class PublicationDraftService(interface.IPublicationDraftService):
         except Exception as err:
             await callback.answer("❌ Ошибка", show_alert=True)
             raise
-
-    # 🚀 ПУБЛИКАЦИЯ
     
     async def handle_send_to_moderation_with_networks_publication(
             self,
@@ -533,11 +502,10 @@ class PublicationDraftService(interface.IPublicationDraftService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        """📤 Отправка на модерацию"""
+        """Отправка на модерацию."""
         try:
             publication_id = int(dialog_manager.dialog_data.get("selected_publication_id"))
             
-            # 📤 Отправляем на модерацию
             await self.loom_content_client.send_publication_to_moderation(publication_id)
             
             await callback.answer("📤 Отправлено на модерацию!", show_alert=True)
@@ -552,7 +520,7 @@ class PublicationDraftService(interface.IPublicationDraftService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        """🚀 Публикация сейчас (точно как в модерации)"""
+        """Публикация сейчас"""
         with self.tracer.start_as_current_span(
                 "PublicationDraftService.handle_publish_with_selected_networks",
                 kind=SpanKind.INTERNAL
@@ -616,8 +584,6 @@ class PublicationDraftService(interface.IPublicationDraftService):
 
                 await callback.answer("❌ Ошибка при публикации", show_alert=True)
                 raise
-
-    # 🔙 НАВИГАЦИЯ
     
     async def handle_back_to_publication_list(
             self,
@@ -625,7 +591,7 @@ class PublicationDraftService(interface.IPublicationDraftService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        """🔙 Возврат к списку черновиков"""
+        """Возврат к списку черновиков."""
         try:
             await dialog_manager.switch_to(model.PublicationDraftStates.publication_list)
         except Exception as err:
@@ -638,7 +604,7 @@ class PublicationDraftService(interface.IPublicationDraftService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        """🔙 Возврат в контент-меню"""
+        """Возврат в контент-меню"""
         try:
             await dialog_manager.start(
                 model.ContentMenuStates.content_menu,
@@ -648,66 +614,13 @@ class PublicationDraftService(interface.IPublicationDraftService):
             await callback.answer("❌ Ошибка навигации", show_alert=True)
             raise
 
-    async def handle_edit_menu_callback(
-            self,
-            callback: CallbackQuery,
-            button: Any,
-            dialog_manager: DialogManager
-    ) -> None:
-        """🔥 Обработчик для инлайн меню редактирования (как в модерации)"""
-        try:
-            # Отправляем инлайн клавиатуру с опциями редактирования
-            await self.bot.send_message(
-                chat_id=callback.from_user.id,
-                text="✏️ <b>Выберите действие для редактирования:</b>",
-                reply_markup=self._create_edit_menu_keyboard(callback, dialog_manager),
-                parse_mode="HTML"
-            )
-            await callback.answer()
-        except Exception as err:
-            await callback.answer("❌ Ошибка", show_alert=True)
-            self.logger.error(f"Ошибка в меню редактирования: {err}")
-            raise
-
-    def _create_edit_menu_keyboard(self, callback, dialog_manager):
-        """📱 Создает инлайн клавиатуру для меню редактирования"""
-        from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-        
-        return InlineKeyboardMarkup(
-            inline_keyboard=[
-                [
-                    InlineKeyboardButton(
-                        text="📝 Изменить текст",
-                        callback_data=f"edit_text_{callback.message.message_id}"
-                    ),
-                    InlineKeyboardButton(
-                        text="🖼 Изменить изображение",
-                        callback_data=f"edit_image_{callback.message.message_id}"
-                    ),
-                ],
-                [
-                    InlineKeyboardButton(
-                        text="🔄 Перегенерировать",
-                        callback_data=f"regenerate_{callback.message.message_id}"
-                    ),
-                ],
-
-                [
-                    InlineKeyboardButton(
-                        text="◀️ Назад к превью",
-                        callback_data=f"back_preview_{callback.message.message_id}"
-                    ),
-                ],
-            ]
-        )
-
     async def handle_prev_image(
             self,
             callback: CallbackQuery,
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        """🖼️ Предыдущее изображение (копия из модерации)"""
+        """Предыдущее изображение"""
         with self.tracer.start_as_current_span(
                 "PublicationDraftService.handle_prev_image",
                 kind=SpanKind.INTERNAL
@@ -736,7 +649,7 @@ class PublicationDraftService(interface.IPublicationDraftService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        """🖼️ Следующее изображение (копия из модерации)"""
+        """Следующее изображение"""
         with self.tracer.start_as_current_span(
                 "PublicationDraftService.handle_next_image",
                 kind=SpanKind.INTERNAL
@@ -758,11 +671,9 @@ class PublicationDraftService(interface.IPublicationDraftService):
                 span.record_exception(err)
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
-
-    # 🛠️ ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ
     
     def _has_changes(self, dialog_manager: DialogManager) -> bool:
-        """🔍 Проверяет есть ли несохраненные изменения (копия из модерации)"""
+        """Проверяет есть ли несохраненные изменения."""
         original = dialog_manager.dialog_data.get("original_publication", {})
         working = dialog_manager.dialog_data.get("working_publication", {})
 
@@ -792,53 +703,44 @@ class PublicationDraftService(interface.IPublicationDraftService):
         return False
 
     async def _save_publication_changes(self, dialog_manager: DialogManager) -> None:
-        """💾 Сохраняет изменения публикации (копия из модерации)"""
+        """Сохраняет изменения публикации"""
         working_pub = dialog_manager.dialog_data["working_publication"]
         original_pub = dialog_manager.dialog_data["original_publication"]
         publication_id = working_pub["id"]
 
-        # Определяем, что делать с изображением
         image_url = None
         image_content = None
         image_filename = None
         should_delete_image = False
 
-        # Проверяем изменения изображения
         original_has_image = original_pub.get("has_image", False)
         working_has_image = working_pub.get("has_image", False)
 
         if not working_has_image and original_has_image:
-            # Изображение было удалено
             should_delete_image = True
 
         elif working_has_image:
-            # Проверяем тип изображения и получаем выбранное
             if working_pub.get("custom_image_file_id"):
-                # Пользовательское изображение
                 image_content = await self.bot.download(working_pub["custom_image_file_id"])
                 image_filename = working_pub["custom_image_file_id"] + ".jpg"
 
             elif working_pub.get("generated_images_url"):
-                # Выбранное из множественных сгенерированных
                 images_url = working_pub["generated_images_url"]
                 current_index = working_pub.get("current_image_index", 0)
 
                 if current_index < len(images_url):
                     selected_url = images_url[current_index]
-                    # Проверяем, изменилось ли изображение
                     original_url = original_pub.get("image_url", "")
                     if original_url != selected_url:
                         image_url = selected_url
 
             elif working_pub.get("image_url"):
-                # Одиночное изображение
                 original_url = original_pub.get("image_url", "")
                 working_url = working_pub.get("image_url", "")
 
                 if original_url != working_url:
                     image_url = working_url
 
-        # Если нужно удалить изображение
         if should_delete_image:
             try:
                 await self.loom_content_client.delete_publication_image(
@@ -848,7 +750,6 @@ class PublicationDraftService(interface.IPublicationDraftService):
             except Exception as e:
                 self.logger.warning(f"Failed to delete image: {str(e)}")
 
-        # Обновляем публикацию через API
         if image_url or image_content:
             await self.loom_content_client.change_publication(
                 publication_id=publication_id,
@@ -858,16 +759,13 @@ class PublicationDraftService(interface.IPublicationDraftService):
                 image_filename=image_filename,
             )
         else:
-            # Обновляем только текстовые поля
             await self.loom_content_client.change_publication(
                 publication_id=publication_id,
                 text=working_pub["text"],
             )
 
     async def _remove_current_publication_from_list(self, dialog_manager: DialogManager) -> None:
-        """🗑️ Удаляет текущий черновик из списка после публикации"""
-        # Для черновиков этого метода может не быть необходимости, 
-        # поскольку мы перенаправляем в контент-меню
+        """Удаляет текущий черновик из списка после публикации"""
         pass
 
     async def _get_state(self, dialog_manager: DialogManager) -> model.UserState:
