@@ -4,6 +4,7 @@ from aiogram_dialog.widgets.kbd import ManagedCheckbox
 from opentelemetry.trace import SpanKind, Status, StatusCode
 
 from internal import interface, model
+from pkg.trace_wrapper import traced_method
 
 
 class AddSocialNetworkGetter(interface.IAddSocialNetworkGetter):
@@ -18,85 +19,65 @@ class AddSocialNetworkGetter(interface.IAddSocialNetworkGetter):
         self.state_repo = state_repo
         self.loom_content_client = loom_content_client
 
+    @traced_method()
     async def get_select_network_data(
             self,
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        with self.tracer.start_as_current_span(
-                "AddSocialNetworkGetter.get_select_network_data",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                self.logger.info("Начало получения данных выбора соцсетей")
+        self.logger.info("Начало получения данных выбора соцсетей")
 
-                state = await self._get_state(dialog_manager)
+        state = await self._get_state(dialog_manager)
 
-                # Get social networks data from API
-                social_networks = await self.loom_content_client.get_social_networks_by_organization(
-                    organization_id=state.organization_id
-                )
+        social_networks = await self.loom_content_client.get_social_networks_by_organization(
+            organization_id=state.organization_id
+        )
 
-                # Determine status for each network
-                telegram_status = self._get_network_status(social_networks, "telegram")
-                vkontakte_status = self._get_network_status(social_networks, "vkontakte")
-                youtube_status = self._get_network_status(social_networks, "youtube")
-                instagram_status = self._get_network_status(social_networks, "instagram")
+        # Determine status for each network
+        telegram_status = self._get_network_status(social_networks, "telegram")
+        vkontakte_status = self._get_network_status(social_networks, "vkontakte")
+        youtube_status = self._get_network_status(social_networks, "youtube")
+        instagram_status = self._get_network_status(social_networks, "instagram")
 
-                data = {
-                    "telegram_status": telegram_status,
-                    "vkontakte_status": vkontakte_status,
-                    "youtube_status": youtube_status,
-                    "instagram_status": instagram_status,
-                }
+        data = {
+            "telegram_status": telegram_status,
+            "vkontakte_status": vkontakte_status,
+            "youtube_status": youtube_status,
+            "instagram_status": instagram_status,
+        }
 
-                self.logger.info("Завершение получения данных выбора соцсетей")
-                span.set_status(Status(StatusCode.OK))
-                return data
+        self.logger.info("Завершение получения данных выбора соцсетей")
+        return data
 
-            except Exception as err:
-                
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                raise
-
+    @traced_method()
     async def get_telegram_main_data(
             self,
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        with self.tracer.start_as_current_span(
-                "AddSocialNetworkGetter.get_telegram_main_data",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                self.logger.info("Начало получения основных данных Telegram")
+        self.logger.info("Начало получения основных данных Telegram")
 
-                state = await self._get_state(dialog_manager)
+        state = await self._get_state(dialog_manager)
 
-                # Get social networks data
-                social_networks = await self.loom_content_client.get_social_networks_by_organization(
-                    organization_id=state.organization_id
-                )
+        # Get social networks data
+        social_networks = await self.loom_content_client.get_social_networks_by_organization(
+            organization_id=state.organization_id
+        )
 
-                telegram_connected = self._is_network_connected(social_networks, "telegram")
-                telegram_data = social_networks.get("telegram", [{}])[0] if telegram_connected else {}
+        telegram_connected = self._is_network_connected(social_networks, "telegram")
+        telegram_data = social_networks.get("telegram", [{}])[0] if telegram_connected else {}
 
-                data = {
-                    "telegram_connected": telegram_connected,
-                    "telegram_not_connected": not telegram_connected,
-                    "telegram_channel_username": telegram_data.get("tg_channel_username", ""),
-                    "telegram_autoselect": telegram_data.get("autoselect", False),
-                }
+        data = {
+            "telegram_connected": telegram_connected,
+            "telegram_not_connected": not telegram_connected,
+            "telegram_channel_username": telegram_data.get("tg_channel_username", ""),
+            "telegram_autoselect": telegram_data.get("autoselect", False),
+        }
 
-                self.logger.info("Завершение получения основных данных Telegram")
-                span.set_status(Status(StatusCode.OK))
-                return data
+        self.logger.info("Завершение получения основных данных Telegram")
+        return data
 
-            except Exception as err:
-                
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                raise
-
+    @traced_method()
     async def get_telegram_connect_data(
             self,
             dialog_manager: DialogManager,
@@ -105,141 +86,125 @@ class AddSocialNetworkGetter(interface.IAddSocialNetworkGetter):
         return {
             "telegram_channel_username": dialog_manager.dialog_data.get("telegram_channel_username", ""),
             "has_telegram_channel_username": dialog_manager.dialog_data.get("has_telegram_channel_username", False),
-
-            # Error flags
-            "has_void_telegram_channel_username": dialog_manager.dialog_data.get("has_void_telegram_channel_username",
-                                                                                 False),
+            "has_void_telegram_channel_username": dialog_manager.dialog_data.get(
+                "has_void_telegram_channel_username",
+                False
+            ),
             "has_invalid_telegram_channel_username": dialog_manager.dialog_data.get(
-                "has_invalid_telegram_channel_username", False),
+                "has_invalid_telegram_channel_username",
+                False
+            ),
             "has_invalid_telegram_permission": dialog_manager.dialog_data.get("has_invalid_telegram_permission", False),
         }
 
+    @traced_method()
     async def get_telegram_edit_data(
             self,
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        with self.tracer.start_as_current_span(
-                "AddSocialNetworkGetter.get_telegram_edit_data",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                self.logger.info("Начало получения данных редактирования Telegram")
+        self.logger.info("Начало получения данных редактирования Telegram")
 
-                state = await self._get_state(dialog_manager)
+        state = await self._get_state(dialog_manager)
 
-                social_networks = await self.loom_content_client.get_social_networks_by_organization(
-                    organization_id=state.organization_id
-                )
+        social_networks = await self.loom_content_client.get_social_networks_by_organization(
+            organization_id=state.organization_id
+        )
 
-                telegram_data = social_networks["telegram"][0]
-                original_autoselect = telegram_data["autoselect"]
-                original_username = telegram_data["tg_channel_username"]
+        telegram_data = social_networks["telegram"][0]
+        original_autoselect = telegram_data["autoselect"]
+        original_username = telegram_data["tg_channel_username"]
 
-                # Инициализация состояний при первом входе
-                autoselect_checkbox = dialog_manager.find("telegram_autoselect_checkbox")
+        # Инициализация состояний при первом входе
+        autoselect_checkbox = dialog_manager.find("telegram_autoselect_checkbox")
 
-                if "original_state" not in dialog_manager.dialog_data:
-                    self.logger.info("Инициализация состояний редактирования")
-                    dialog_manager.dialog_data["original_state"] = {
-                        "telegram_channel_username": original_username,
-                        "autoselect": original_autoselect,
-                    }
+        if "original_state" not in dialog_manager.dialog_data:
+            self.logger.info("Инициализация состояний редактирования")
+            dialog_manager.dialog_data["original_state"] = {
+                "telegram_channel_username": original_username,
+                "autoselect": original_autoselect,
+            }
 
-                    dialog_manager.dialog_data["working_state"] = {
-                        "telegram_channel_username": original_username,
-                        "autoselect": original_autoselect,
-                    }
+            dialog_manager.dialog_data["working_state"] = {
+                "telegram_channel_username": original_username,
+                "autoselect": original_autoselect,
+            }
 
-                    await autoselect_checkbox.set_checked(original_autoselect)
+            await autoselect_checkbox.set_checked(original_autoselect)
 
-                working_state = dialog_manager.dialog_data["working_state"]
-                working_state["autoselect"] = autoselect_checkbox.is_checked()
-                dialog_manager.dialog_data["working_state"] = working_state
+        working_state = dialog_manager.dialog_data["working_state"]
+        working_state["autoselect"] = autoselect_checkbox.is_checked()
+        dialog_manager.dialog_data["working_state"] = working_state
 
+        data = {
+            "telegram_channel_username": working_state["telegram_channel_username"],
+            "has_telegram_autoselect": working_state["autoselect"],
+            "has_changes": self._has_changes(dialog_manager),
+            "has_new_telegram_channel_username": (
+                    working_state["telegram_channel_username"] !=
+                    dialog_manager.dialog_data["original_state"]["telegram_channel_username"]
+            ),
+        }
 
-                data = {
-                    "telegram_channel_username": working_state["telegram_channel_username"],
-                    "has_telegram_autoselect": working_state["autoselect"],
-                    "has_changes": self._has_changes(dialog_manager),
-                    "has_new_telegram_channel_username": (
-                            working_state["telegram_channel_username"] !=
-                            dialog_manager.dialog_data["original_state"]["telegram_channel_username"]
-                    ),
-                }
+        self.logger.info("Завершение получения данных редактирования Telegram")
+        return data
 
-                self.logger.info("Завершение получения данных редактирования Telegram")
-                span.set_status(Status(StatusCode.OK))
-                return data
-
-            except Exception as err:
-                
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                raise
-
+    @traced_method()
     async def get_telegram_change_username_data(
             self,
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        with self.tracer.start_as_current_span(
-                "AddSocialNetworkGetter.get_telegram_change_username_data",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                self.logger.info("Начало получения данных изменения username Telegram")
+        self.logger.info("Начало получения данных изменения username Telegram")
 
-                state = await self._get_state(dialog_manager)
+        state = await self._get_state(dialog_manager)
 
-                # Get current telegram data
-                social_networks = await self.loom_content_client.get_social_networks_by_organization(
-                    organization_id=state.organization_id
-                )
+        social_networks = await self.loom_content_client.get_social_networks_by_organization(
+            organization_id=state.organization_id
+        )
 
-                telegram_data = social_networks.get("telegram", [{}])[0]
-                data = {
-                    "telegram_channel_username": telegram_data.get("tg_channel_username", ""),
-                    "has_void_telegram_channel_username": dialog_manager.dialog_data.get(
-                        "has_void_telegram_channel_username",
-                        False),
-                    "has_invalid_telegram_channel_username": dialog_manager.dialog_data.get(
-                        "has_invalid_telegram_channel_username",
-                        False),
-                    "has_invalid_telegram_permission": dialog_manager.dialog_data.get("has_invalid_telegram_permission",
-                                                                                     False),
-                }
+        telegram_data = social_networks.get("telegram", [{}])[0]
+        data = {
+            "telegram_channel_username": telegram_data.get("tg_channel_username", ""),
+            "has_void_telegram_channel_username": dialog_manager.dialog_data.get(
+                "has_void_telegram_channel_username",
+                False
+            ),
+            "has_invalid_telegram_channel_username": dialog_manager.dialog_data.get(
+                "has_invalid_telegram_channel_username",
+                False
+            ),
+            "has_invalid_telegram_permission": dialog_manager.dialog_data.get(
+                "has_invalid_telegram_permission",
+                False
+            ),
+        }
 
-                self.logger.info("Завершение получения данных изменения username Telegram")
-                span.set_status(Status(StatusCode.OK))
-                return data
+        self.logger.info("Завершение получения данных изменения username Telegram")
+        return data
 
-            except Exception as err:
-                
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                raise
-
+    @traced_method()
     async def get_vkontakte_setup_data(
             self,
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        # Static data for development placeholder
         return {}
 
+    @traced_method()
     async def get_youtube_setup_data(
             self,
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        # Static data for development placeholder
         return {}
 
+    @traced_method()
     async def get_instagram_setup_data(
             self,
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        # Static data for development placeholder
         return {}
 
     def _has_changes(self, dialog_manager: DialogManager) -> bool:

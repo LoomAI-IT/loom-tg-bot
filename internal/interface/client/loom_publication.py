@@ -108,59 +108,13 @@ class ILoomContentClient(Protocol):
     @abstractmethod
     async def get_publications_by_organization(self, organization_id: int) -> list[model.Publication]: pass
 
-    @abstractmethod
-    async def download_publication_image(self, publication_id: int) -> tuple[io.BytesIO, str]: pass
-
     # РУБРИКИ
-    @abstractmethod
-    async def create_category(
-            self,
-            organization_id: int,
-            prompt_for_image_style: str,
-            prompt_for_text_style: str
-    ) -> int: pass
-
     @abstractmethod
     async def get_category_by_id(self, category_id: int) -> model.Category: pass
 
     @abstractmethod
     async def get_categories_by_organization(self, organization_id: int) -> list[model.Category]: pass
 
-    @abstractmethod
-    async def update_category(
-            self,
-            category_id: int,
-            prompt_for_image_style: str = None,
-            prompt_for_text_style: str = None
-    ) -> None: pass
-
-    @abstractmethod
-    async def delete_category(self, category_id: int) -> None: pass
-
-    # АВТОПОСТИНГ
-    @abstractmethod
-    async def create_autoposting(
-            self,
-            organization_id: int,
-            filter_prompt: str,
-            rewrite_prompt: str,
-            tg_channels: list[str] = None
-    ) -> int: pass
-
-    @abstractmethod
-    async def get_autoposting_by_organization(self, organization_id: int) -> list[model.Autoposting]: pass
-
-    @abstractmethod
-    async def update_autoposting(
-            self,
-            autoposting_id: int,
-            filter_prompt: str = None,
-            rewrite_prompt: str = None,
-            tg_channels: list[str] = None
-    ) -> None: pass
-
-    @abstractmethod
-    async def delete_autoposting(self, autoposting_id: int) -> None: pass
 
     # НАРЕЗКА
     @abstractmethod
@@ -202,9 +156,6 @@ class ILoomContentClient(Protocol):
             moderation_status: str,
             moderation_comment: str = ""
     ) -> None: pass
-
-    @abstractmethod
-    async def download_video_cut(self, video_cut_id: int) -> tuple[io.BytesIO, str]: pass
 
     @abstractmethod
     async def transcribe_audio(

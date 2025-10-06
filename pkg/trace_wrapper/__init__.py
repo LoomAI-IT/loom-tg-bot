@@ -1,0 +1,1 @@
+from pkg.trace_wrapper.trace_wrapper import traced_method
