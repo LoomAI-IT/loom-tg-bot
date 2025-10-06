@@ -69,7 +69,9 @@ class TgMiddleware(interface.ITelegramMiddleware):
                 span.set_status(Status(StatusCode.OK))
 
             except TelegramBadRequest as err:
-                self.logger.warning("TelegramBadRequest в tg middleware")
+                self.logger.warning("TelegramBadRequest в tg middleware", {
+                    "traceback": traceback.format_exc(),
+                })
                 pass
 
             except Exception as err:
