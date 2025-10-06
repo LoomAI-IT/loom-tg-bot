@@ -290,6 +290,8 @@ class TelegramWebhookController(interface.ITelegramWebhookController):
 
             user_state = user_state[0]
 
+
+
             # Создаем dialog_manager для восстановления
             dialog_manager = self.dialog_bg_factory.bg(
                 bot=self.bot,
