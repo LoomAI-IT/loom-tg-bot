@@ -144,7 +144,7 @@ class PublicationDraftGetter(interface.IPublicationDraftGetter):
                         url=image_url,
                         type=ContentType.PHOTO
                     )
-
+           
                 # Подготавливаем данные как в модерации
                 working_pub = dialog_manager.dialog_data.get("working_publication", {})
                 original_pub = dialog_manager.dialog_data.get("original_publication", {})
