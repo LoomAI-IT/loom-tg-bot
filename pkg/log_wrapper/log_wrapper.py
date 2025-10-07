@@ -1,4 +1,5 @@
 import functools
+import traceback
 from typing import Callable, Any
 import inspect
 
@@ -23,7 +24,9 @@ def auto_log():
                 return result
             except Exception as e:
                 if logger:
-                    logger.error(f"Ошибка в {class_name}.{method_name}: {str(e)}")
+                    logger.error(f"Ошибка в {class_name}.{method_name}: {str(e)}", {
+                        "traceback": traceback.format_exc(),
+                    })
                 raise
 
         @functools.wraps(func)
@@ -45,7 +48,9 @@ def auto_log():
                 return result
             except Exception as e:
                 if logger:
-                    logger.error(f"Ошибка в {class_name}.{method_name}: {str(e)}")
+                    logger.error(f"Ошибка в {class_name}.{method_name}: {str(e)}", {
+                        "traceback": traceback.format_exc(),
+                    })
                 raise
 
         if inspect.iscoroutinefunction(func):

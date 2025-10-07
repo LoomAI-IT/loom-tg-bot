@@ -1,5 +1,3 @@
-import time
-import traceback
 from contextvars import ContextVar
 from typing import Callable
 from fastapi import FastAPI, Request
@@ -11,6 +9,7 @@ from opentelemetry.trace import SpanKind, Status, StatusCode
 
 from internal import interface
 from internal import common
+from pkg.trace_wrapper import traced_method
 
 
 class HttpMiddleware(interface.IHttpMiddleware):
@@ -64,8 +63,7 @@ class HttpMiddleware(interface.IHttpMiddleware):
                     return response
 
                 except Exception as err:
-                    root_span.set_status(Status(StatusCode.ERROR, str(err)))
-                    root_span.set_attribute(common.ERROR_KEY, True)
+                    root_span.set_status(StatusCode.ERROR, str(err))
                     return JSONResponse(
                         status_code=500,
                         content={"message": "Internal Server Error"},
@@ -76,59 +74,23 @@ class HttpMiddleware(interface.IHttpMiddleware):
     def logger_middleware02(self, app: FastAPI):
         @app.middleware("http")
         async def _logger_middleware02(request: Request, call_next: Callable):
-            with self.tracer.start_as_current_span(
-                    "HttpMiddleware._logger_middleware03",
-                    kind=SpanKind.INTERNAL
-            ) as span:
-                start_time = time.time()
+            context_token = self.log_context.set({
+                common.TELEGRAM_USER_USERNAME_KEY: request.headers.get(common.TELEGRAM_USER_USERNAME_KEY, ""),
+                common.TELEGRAM_CHAT_ID_KEY: request.headers.get(common.TELEGRAM_CHAT_ID_KEY, "0"),
+                common.TELEGRAM_EVENT_TYPE_KEY: request.headers.get(common.TELEGRAM_EVENT_TYPE_KEY, ""),
+                common.ORGANIZATION_ID_KEY: request.headers.get(common.ORGANIZATION_ID_KEY, "0"),
+                common.ACCOUNT_ID_KEY: request.headers.get(common.ACCOUNT_ID_KEY, "0"),
+            })
+            try:
+                response = await call_next(request)
 
-                extra_log = {
-                    common.HTTP_METHOD_KEY: request.method,
-                    common.HTTP_ROUTE_KEY: request.url.path,
-                }
-                try:
-                    context_token = self.log_context.set({
-                        common.TELEGRAM_USER_USERNAME_KEY: request.headers.get(common.TELEGRAM_USER_USERNAME_KEY, ""),
-                        common.TELEGRAM_CHAT_ID_KEY: request.headers.get(common.TELEGRAM_CHAT_ID_KEY, "0"),
-                        common.TELEGRAM_EVENT_TYPE_KEY: request.headers.get(common.TELEGRAM_EVENT_TYPE_KEY, ""),
-                        common.ORGANIZATION_ID_KEY: request.headers.get(common.ORGANIZATION_ID_KEY, "0"),
-                        common.ACCOUNT_ID_KEY: request.headers.get(common.ACCOUNT_ID_KEY, "0"),
-                    })
+                status_code = response.status_code
 
-                    self.logger.info("Началась обработка HTTP запроса", extra_log)
-                    response = await call_next(request)
+                if 400 <= status_code < 500:
+                    self.logger.warning("Обработка HTTP запроса завершена с ошибкой клиента")
 
-                    status_code = response.status_code
-
-                    extra_log = {
-                        **extra_log,
-                        common.HTTP_REQUEST_DURATION_KEY: time.time() - start_time,
-                        common.HTTP_STATUS_KEY: response.status_code,
-                    }
-
-                    if 400 <= status_code < 500:
-                        self.logger.warning("Обработка HTTP запроса завершена с ошибкой клиента", extra_log)
-                    else:
-                        self.logger.info("Обработка HTTP запроса завершена успешно", extra_log)
-                        span.set_status(Status(StatusCode.OK))
-
-                    return response
-
-                except Exception as err:
-                    extra_log = {
-                        **extra_log,
-                        common.HTTP_REQUEST_DURATION_KEY: time.time() - start_time,
-                        common.HTTP_STATUS_KEY: 500,
-                        common.ERROR_KEY: str(err),
-                        common.TRACEBACK_KEY: traceback.format_exc()
-                    }
-
-                    self.logger.error(f"Обработка HTTP запроса завершена с ошибкой", extra_log)
-
-                    
-                    span.set_status(Status(StatusCode.ERROR, str(err)))
-                    raise err
-                finally:
-                    self.log_context.reset(context_token)
+                return response
+            finally:
+                self.log_context.reset(context_token)
 
         return _logger_middleware02
