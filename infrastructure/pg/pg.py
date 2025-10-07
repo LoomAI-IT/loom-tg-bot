@@ -39,75 +39,32 @@ class PG(interface.IDB):
         self.tracer = tel.tracer()
 
     async def insert(self, query: str, query_params: dict) -> int:
-        with self.tracer.start_as_current_span(
-                "PG.insert",
-                kind=SpanKind.CLIENT,
-        ) as span:
-            try:
-                async with self.pool() as session:
-                    result = await session.execute(text(query), query_params)
-                    rows = result.all()
-                    await session.commit()
-                    span.set_status(Status(StatusCode.OK))
-                    return rows[0][0]
-
-            except Exception as err:
-                
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                raise err
+        async with self.pool() as session:
+            result = await session.execute(text(query), query_params)
+            await session.commit()
+            rows = result.all()
+            return rows[0][0]
 
     async def delete(self, query: str, query_params: dict) -> None:
-        with self.tracer.start_as_current_span(
-                "PG.delete",
-                kind=SpanKind.CLIENT,
-        ) as span:
-            try:
-                async with self.pool() as session:
-                    await session.execute(text(query), query_params)
-                    await session.commit()
-                    span.set_status(Status(StatusCode.OK))
-            except Exception as err:
-                
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                raise err
+        async with self.pool() as session:
+            await session.execute(text(query), query_params)
+            await session.commit()
 
     async def update(self, query: str, query_params: dict) -> None:
-        with self.tracer.start_as_current_span(
-                "PG.update",
-                kind=SpanKind.CLIENT,
-        ) as span:
-            try:
-                async with self.pool() as session:
-                    await session.execute(text(query), query_params)
-                    await session.commit()
-                    span.set_status(Status(StatusCode.OK))
-            except Exception as err:
-                
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                raise err
+        async with self.pool() as session:
+            await session.execute(text(query), query_params)
+            await session.commit()
 
     async def select(self, query: str, query_params: dict) -> Sequence[Any]:
-        with self.tracer.start_as_current_span(
-                "PG.select",
-                kind=SpanKind.CLIENT,
-        ) as span:
-            try:
-                async with self.pool() as session:
-                    result = await session.execute(text(query), query_params)
-                    await session.commit()
-                    rows = result.all()
-                    span.set_status(Status(StatusCode.OK))
-                    return rows
-            except Exception as err:
-                
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                raise err
+        async with self.pool() as session:
+            result = await session.execute(text(query), query_params)
+            rows = result.all()
+            return rows
 
     async def multi_query(
             self,
             queries: list[str]
     ) -> None:
-
         async with self.pool() as session:
             for query in queries:
                 await session.execute(text(query))
