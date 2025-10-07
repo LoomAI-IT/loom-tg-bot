@@ -1,7 +1,4 @@
 from aiogram_dialog import DialogManager
-from aiogram_dialog.widgets.kbd import ManagedCheckbox
-
-from opentelemetry.trace import SpanKind, Status, StatusCode
 
 from internal import interface, model
 from pkg.trace_wrapper import traced_method
@@ -58,8 +55,6 @@ class AddSocialNetworkGetter(interface.IAddSocialNetworkGetter):
         self.logger.info("Начало получения основных данных Telegram")
 
         state = await self._get_state(dialog_manager)
-
-        # Get social networks data
         social_networks = await self.loom_content_client.get_social_networks_by_organization(
             organization_id=state.organization_id
         )
@@ -117,7 +112,6 @@ class AddSocialNetworkGetter(interface.IAddSocialNetworkGetter):
 
         # Инициализация состояний при первом входе
         autoselect_checkbox = dialog_manager.find("telegram_autoselect_checkbox")
-
         if "original_state" not in dialog_manager.dialog_data:
             self.logger.info("Инициализация состояний редактирования")
             dialog_manager.dialog_data["original_state"] = {
@@ -214,21 +208,13 @@ class AddSocialNetworkGetter(interface.IAddSocialNetworkGetter):
         if not original or not working:
             return False
 
-        # Сравниваем все поля
         for field in ["telegram_channel_username", "autoselect"]:
             if original.get(field) != working.get(field):
                 return True
 
         return False
 
-    # Helper methods
     def _get_network_status(self, social_networks: dict, network_type: str) -> str:
-        """
-        Returns status string for Case widget selector:
-        - 'connected_autoselect': network is connected and has autoselect enabled
-        - 'connected_no_autoselect': network is connected but autoselect is disabled
-        - 'not_connected': network is not connected
-        """
         if not self._is_network_connected(social_networks, network_type):
             return "not_connected"
 
@@ -238,7 +224,6 @@ class AddSocialNetworkGetter(interface.IAddSocialNetworkGetter):
         return "connected_autoselect" if autoselect else "connected_no_autoselect"
 
     def _is_network_connected(self, social_networks: dict, network_type: str) -> bool:
-        """Check if a specific network type is connected"""
         if not social_networks:
             return False
         return network_type in social_networks and len(social_networks[network_type]) > 0

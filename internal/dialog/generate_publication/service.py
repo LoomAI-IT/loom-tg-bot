@@ -11,6 +11,7 @@ from aiogram_dialog.widgets.kbd import ManagedCheckbox
 from opentelemetry.trace import SpanKind, Status, StatusCode
 
 from internal import interface, model
+from pkg.trace_wrapper import traced_method
 
 
 class GeneratePublicationService(interface.IGeneratePublicationService):
@@ -27,6 +28,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         self.state_repo = state_repo
         self.loom_content_client = loom_content_client
 
+    @traced_method()
     async def handle_text_input(
             self,
             message: Message,
@@ -34,143 +36,122 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             dialog_manager: DialogManager,
             text: str
     ) -> None:
-        with self.tracer.start_as_current_span(
-                "GeneratePublicationDialogService.handle_text_input",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                self.logger.info("Начало обработки текстового ввода")
+        self.logger.info("Начало обработки текстового ввода")
 
-                dialog_manager.show_mode = ShowMode.EDIT
+        dialog_manager.show_mode = ShowMode.EDIT
 
-                await message.delete()
+        await message.delete()
 
-                dialog_manager.dialog_data.pop("has_invalid_voice_type", None)
-                dialog_manager.dialog_data.pop("has_long_voice_duration", None)
-                dialog_manager.dialog_data.pop("has_empty_voice_text", None)
-                dialog_manager.dialog_data.pop("has_small_input_text", None)
-                dialog_manager.dialog_data.pop("has_big_input_text", None)
-                dialog_manager.dialog_data.pop("has_void_input_text", None)
-                dialog_manager.dialog_data.pop("has_small_input_text", None)
-                dialog_manager.dialog_data.pop("has_big_input_text", None)
+        dialog_manager.dialog_data.pop("has_invalid_voice_type", None)
+        dialog_manager.dialog_data.pop("has_long_voice_duration", None)
+        dialog_manager.dialog_data.pop("has_empty_voice_text", None)
+        dialog_manager.dialog_data.pop("has_small_input_text", None)
+        dialog_manager.dialog_data.pop("has_big_input_text", None)
+        dialog_manager.dialog_data.pop("has_void_input_text", None)
+        dialog_manager.dialog_data.pop("has_small_input_text", None)
+        dialog_manager.dialog_data.pop("has_big_input_text", None)
 
-                text = message.html_text.strip().replace('\n', '<br/>')
-                if not text:
-                    self.logger.info("Пустой текст")
-                    dialog_manager.dialog_data["has_void_input_text"] = True
-                    return
+        text = message.html_text.strip().replace('\n', '<br/>')
+        if not text:
+            self.logger.info("Пустой текст")
+            dialog_manager.dialog_data["has_void_input_text"] = True
+            return
 
-                if len(text) < 10:
-                    self.logger.info("Слишком короткий текст")
-                    dialog_manager.dialog_data["has_small_input_text"] = True
-                    return
+        if len(text) < 10:
+            self.logger.info("Слишком короткий текст")
+            dialog_manager.dialog_data["has_small_input_text"] = True
+            return
 
-                if len(text) > 2000:
-                    self.logger.info("Слишком длинный текст")
-                    dialog_manager.dialog_data["has_big_input_text"] = True
-                    return
+        if len(text) > 2000:
+            self.logger.info("Слишком длинный текст")
+            dialog_manager.dialog_data["has_big_input_text"] = True
+            return
 
-                dialog_manager.dialog_data["input_text"] = text
-                dialog_manager.dialog_data["has_input_text"] = True
+        dialog_manager.dialog_data["input_text"] = text
+        dialog_manager.dialog_data["has_input_text"] = True
 
-                await dialog_manager.switch_to(model.GeneratePublicationStates.generation)
+        await dialog_manager.switch_to(model.GeneratePublicationStates.generation)
 
-                self.logger.info("Конец обработки текстового ввода")
-                span.set_status(Status(StatusCode.OK))
+        self.logger.info("Конец обработки текстового ввода")
 
-            except Exception as err:
-                
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                raise
-
+    @traced_method()
     async def handle_voice_input(
             self,
             message: Message,
             widget: MessageInput,
             dialog_manager: DialogManager
     ) -> None:
-        with self.tracer.start_as_current_span(
-                "GeneratePublicationDialogService.handle_voice_input",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                self.logger.info("Начало обработки голосового ввода")
+        self.logger.info("Начало обработки голосового ввода")
 
-                dialog_manager.show_mode = ShowMode.EDIT
+        dialog_manager.show_mode = ShowMode.EDIT
 
-                await message.delete()
+        await message.delete()
 
-                dialog_manager.dialog_data.pop("has_void_input_text", None)
-                dialog_manager.dialog_data.pop("has_small_input_text", None)
-                dialog_manager.dialog_data.pop("has_big_input_text", None)
-                dialog_manager.dialog_data.pop("has_invalid_voice_type", None)
-                dialog_manager.dialog_data.pop("has_long_voice_duration", None)
-                dialog_manager.dialog_data.pop("has_empty_voice_text", None)
-                dialog_manager.dialog_data.pop("has_small_input_text", None)
-                dialog_manager.dialog_data.pop("has_big_input_text", None)
+        dialog_manager.dialog_data.pop("has_void_input_text", None)
+        dialog_manager.dialog_data.pop("has_small_input_text", None)
+        dialog_manager.dialog_data.pop("has_big_input_text", None)
+        dialog_manager.dialog_data.pop("has_invalid_voice_type", None)
+        dialog_manager.dialog_data.pop("has_long_voice_duration", None)
+        dialog_manager.dialog_data.pop("has_empty_voice_text", None)
+        dialog_manager.dialog_data.pop("has_small_input_text", None)
+        dialog_manager.dialog_data.pop("has_big_input_text", None)
 
-                state = await self._get_state(dialog_manager)
+        state = await self._get_state(dialog_manager)
 
-                if message.content_type not in [ContentType.VOICE, ContentType.AUDIO]:
-                    self.logger.info("Неверный тип контента")
-                    dialog_manager.dialog_data["has_invalid_voice_type"] = True
-                    return
+        if message.content_type not in [ContentType.VOICE, ContentType.AUDIO]:
+            self.logger.info("Неверный тип контента")
+            dialog_manager.dialog_data["has_invalid_voice_type"] = True
+            return
 
-                if message.voice:
-                    file_id = message.voice.file_id
-                    duration = message.voice.duration
-                else:
-                    file_id = message.audio.file_id
-                    duration = message.audio.duration
+        if message.voice:
+            file_id = message.voice.file_id
+            duration = message.voice.duration
+        else:
+            file_id = message.audio.file_id
+            duration = message.audio.duration
 
-                if duration > 300:
-                    self.logger.info("Длительность превышает лимит")
-                    dialog_manager.dialog_data["has_long_voice_duration"] = True
-                    return
+        if duration > 300:
+            self.logger.info("Длительность превышает лимит")
+            dialog_manager.dialog_data["has_long_voice_duration"] = True
+            return
 
-                dialog_manager.dialog_data["voice_transcribe"] = True
-                await dialog_manager.show()
+        dialog_manager.dialog_data["voice_transcribe"] = True
+        await dialog_manager.show()
 
-                file = await self.bot.get_file(file_id)
-                file_data = await self.bot.download_file(file.file_path)
+        file = await self.bot.get_file(file_id)
+        file_data = await self.bot.download_file(file.file_path)
 
-                text = await self.loom_content_client.transcribe_audio(
-                    state.organization_id,
-                    audio_content=file_data.read(),
-                    audio_filename="audio.mp3",
-                )
+        text = await self.loom_content_client.transcribe_audio(
+            state.organization_id,
+            audio_content=file_data.read(),
+            audio_filename="audio.mp3",
+        )
 
-                if not text or not text.strip():
-                    self.logger.info("Пустой результат транскрибации")
-                    dialog_manager.dialog_data["has_empty_voice_text"] = True
-                    return
+        if not text or not text.strip():
+            self.logger.info("Пустой результат транскрибации")
+            dialog_manager.dialog_data["has_empty_voice_text"] = True
+            return
 
-                text = text.strip()
+        text = text.strip()
 
-                if len(text) < 10:
-                    self.logger.info("Слишком короткий текст из аудио")
-                    dialog_manager.dialog_data["has_small_input_text"] = True
-                    return
+        if len(text) < 10:
+            self.logger.info("Слишком короткий текст из аудио")
+            dialog_manager.dialog_data["has_small_input_text"] = True
+            return
 
-                if len(text) > 2000:
-                    self.logger.info("Слишком длинный текст из аудио")
-                    dialog_manager.dialog_data["has_big_input_text"] = True
-                    return
+        if len(text) > 2000:
+            self.logger.info("Слишком длинный текст из аудио")
+            dialog_manager.dialog_data["has_big_input_text"] = True
+            return
 
-                dialog_manager.dialog_data["input_text"] = text
-                dialog_manager.dialog_data["has_input_text"] = True
-                dialog_manager.dialog_data["voice_transcribe"] = False
+        dialog_manager.dialog_data["input_text"] = text
+        dialog_manager.dialog_data["has_input_text"] = True
+        dialog_manager.dialog_data["voice_transcribe"] = False
 
-                await dialog_manager.switch_to(model.GeneratePublicationStates.generation)
+        await dialog_manager.switch_to(model.GeneratePublicationStates.generation)
+        self.logger.info("Конец обработки голосового ввода")
 
-                self.logger.info("Конец обработки голосового ввода")
-                span.set_status(Status(StatusCode.OK))
-
-            except Exception as err:
-                
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                raise
-
+    @traced_method()
     async def handle_select_category(
             self,
             callback: CallbackQuery,
@@ -178,258 +159,182 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             dialog_manager: DialogManager,
             category_id: str
     ) -> None:
-        with self.tracer.start_as_current_span(
-                "GeneratePublicationDialogService.handle_select_category",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                self.logger.info("Начало выбора категории")
+        self.logger.info("Начало выбора категории")
 
-                dialog_manager.show_mode = ShowMode.EDIT
-                category = await self.loom_content_client.get_category_by_id(
-                    int(category_id)
-                )
+        dialog_manager.show_mode = ShowMode.EDIT
+        category = await self.loom_content_client.get_category_by_id(
+            int(category_id)
+        )
 
-                dialog_manager.dialog_data["category_id"] = category.id
-                dialog_manager.dialog_data["category_name"] = category.name
+        dialog_manager.dialog_data["category_id"] = category.id
+        dialog_manager.dialog_data["category_name"] = category.name
 
-                if dialog_manager.start_data:
-                    if dialog_manager.start_data.get("has_input_text"):
-                        self.logger.info("Есть стартовый текст")
-                        dialog_manager.dialog_data["has_input_text"] = True
-                        dialog_manager.dialog_data["input_text"] = dialog_manager.start_data["input_text"]
-                        await dialog_manager.switch_to(model.GeneratePublicationStates.generation)
-                    else:
-                        self.logger.info("Нет стартового текста")
-                        await dialog_manager.switch_to(model.GeneratePublicationStates.input_text)
-                else:
-                    self.logger.info("Нет стартовых данных")
-                    await dialog_manager.switch_to(model.GeneratePublicationStates.input_text)
+        if dialog_manager.start_data:
+            if dialog_manager.start_data.get("has_input_text"):
+                self.logger.info("Есть стартовый текст")
+                dialog_manager.dialog_data["has_input_text"] = True
+                dialog_manager.dialog_data["input_text"] = dialog_manager.start_data["input_text"]
+                await dialog_manager.switch_to(model.GeneratePublicationStates.generation)
+            else:
+                self.logger.info("Нет стартового текста")
+                await dialog_manager.switch_to(model.GeneratePublicationStates.input_text)
+        else:
+            self.logger.info("Нет стартовых данных")
+            await dialog_manager.switch_to(model.GeneratePublicationStates.input_text)
 
-                self.logger.info("Конец выбора категории")
-                span.set_status(Status(StatusCode.OK))
+        self.logger.info("Конец выбора категории")
 
-            except Exception as err:
-                
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-
-                await callback.answer("Ошибка выбора категории", show_alert=True)
-                raise
-
+    @traced_method()
     async def handle_generate_text(
             self,
             callback: CallbackQuery,
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        with self.tracer.start_as_current_span(
-                "GeneratePublicationDialogService.handle_generate_text",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                self.logger.info("Начало генерации текста")
+        self.logger.info("Начало генерации текста")
 
-                dialog_manager.show_mode = ShowMode.EDIT
+        dialog_manager.show_mode = ShowMode.EDIT
 
-                await callback.answer()
-                await callback.message.edit_text(
-                    "Генерирую текст, это может занять время... Не совершайте никаких действий",
-                    reply_markup=None
-                )
+        await callback.answer()
+        await callback.message.edit_text(
+            "Генерирую текст, это может занять время... Не совершайте никаких действий",
+            reply_markup=None
+        )
 
-                category_id = dialog_manager.dialog_data["category_id"]
-                input_text = dialog_manager.dialog_data["input_text"]
+        category_id = dialog_manager.dialog_data["category_id"]
+        input_text = dialog_manager.dialog_data["input_text"]
 
-                publication_data = await self.loom_content_client.generate_publication_text(
-                    category_id=category_id,
-                    text_reference=input_text,
-                )
+        publication_data = await self.loom_content_client.generate_publication_text(
+            category_id=category_id,
+            text_reference=input_text,
+        )
 
-                dialog_manager.dialog_data["publication_text"] = publication_data["text"]
+        dialog_manager.dialog_data["publication_text"] = publication_data["text"]
 
-                await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
+        await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
 
-                self.logger.info("Конец генерации текста")
-                span.set_status(Status(StatusCode.OK))
+        self.logger.info("Конец генерации текста")
 
-            except Exception as err:
-                
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-
-                await callback.answer("Ошибка генерации текста", show_alert=True)
-                raise
-
+    @traced_method()
     async def handle_generate_text_with_image(
             self,
             callback: CallbackQuery,
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        with self.tracer.start_as_current_span(
-                "GeneratePublicationDialogService.handle_generate_text_with_image",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                self.logger.info("Начало генерации текста с изображением")
+        self.logger.info("Начало генерации текста с изображением")
 
-                dialog_manager.show_mode = ShowMode.EDIT
-                await callback.answer()
-                await callback.message.edit_text(
-                    "Генерирую текст с картинкой, это может занять минуты 3. Не совершайте никаких действий...",
-                    reply_markup=None
-                )
+        dialog_manager.show_mode = ShowMode.EDIT
+        await callback.answer()
+        await callback.message.edit_text(
+            "Генерирую текст с картинкой, это может занять минуты 3. Не совершайте никаких действий...",
+            reply_markup=None
+        )
 
-                category_id = dialog_manager.dialog_data["category_id"]
-                input_text = dialog_manager.dialog_data["input_text"]
+        category_id = dialog_manager.dialog_data["category_id"]
+        input_text = dialog_manager.dialog_data["input_text"]
 
-                publication_data = await self.loom_content_client.generate_publication_text(
-                    category_id=category_id,
-                    text_reference=input_text,
-                )
+        publication_data = await self.loom_content_client.generate_publication_text(
+            category_id=category_id,
+            text_reference=input_text,
+        )
 
-                dialog_manager.dialog_data["publication_text"] = publication_data["text"]
+        dialog_manager.dialog_data["publication_text"] = publication_data["text"]
 
-                images_url = await self.loom_content_client.generate_publication_image(
-                    category_id,
-                    publication_data["text"],
-                    input_text,
-                )
+        images_url = await self.loom_content_client.generate_publication_image(
+            category_id,
+            publication_data["text"],
+            input_text,
+        )
 
-                dialog_manager.dialog_data["publication_images_url"] = images_url
-                dialog_manager.dialog_data["has_image"] = True
-                dialog_manager.dialog_data["is_custom_image"] = False
-                dialog_manager.dialog_data["current_image_index"] = 0
+        dialog_manager.dialog_data["publication_images_url"] = images_url
+        dialog_manager.dialog_data["has_image"] = True
+        dialog_manager.dialog_data["is_custom_image"] = False
+        dialog_manager.dialog_data["current_image_index"] = 0
 
-                await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
+        await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
+        self.logger.info("Конец генерации текста с изображением")
 
-                self.logger.info("Конец генерации текста с изображением")
-                span.set_status(Status(StatusCode.OK))
-
-            except Exception as err:
-                
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-
-                await callback.answer("Ошибка генерации текста с изображением", show_alert=True)
-                raise
-
+    @traced_method()
     async def handle_next_image(
             self,
             callback: CallbackQuery,
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        with self.tracer.start_as_current_span(
-                "GeneratePublicationDialogService.handle_next_image",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                self.logger.info("Начало переключения на следующее изображение")
+        self.logger.info("Начало переключения на следующее изображение")
 
-                dialog_manager.show_mode = ShowMode.EDIT
+        dialog_manager.show_mode = ShowMode.EDIT
 
-                images_url = dialog_manager.dialog_data.get("publication_images_url", [])
-                current_index = dialog_manager.dialog_data.get("current_image_index", 0)
+        images_url = dialog_manager.dialog_data.get("publication_images_url", [])
+        current_index = dialog_manager.dialog_data.get("current_image_index", 0)
 
-                if current_index < len(images_url) - 1:
-                    self.logger.info("Переход к следующему изображению")
-                    dialog_manager.dialog_data["current_image_index"] = current_index + 1
-                else:
-                    self.logger.info("Переход к первому изображению")
-                    dialog_manager.dialog_data["current_image_index"] = 0
+        if current_index < len(images_url) - 1:
+            self.logger.info("Переход к следующему изображению")
+            dialog_manager.dialog_data["current_image_index"] = current_index + 1
+        else:
+            self.logger.info("Переход к первому изображению")
+            dialog_manager.dialog_data["current_image_index"] = 0
 
-                await callback.answer()
+        await callback.answer()
+        self.logger.info("Конец переключения на следующее изображение")
 
-                self.logger.info("Конец переключения на следующее изображение")
-                span.set_status(Status(StatusCode.OK))
-
-            except Exception as err:
-                
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-
-                await callback.answer("Ошибка переключения изображения", show_alert=True)
-                raise
-
+    @traced_method()
     async def handle_prev_image(
             self,
             callback: CallbackQuery,
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        with self.tracer.start_as_current_span(
-                "GeneratePublicationDialogService.handle_prev_image",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                self.logger.info("Начало переключения на предыдущее изображение")
+        self.logger.info("Начало переключения на предыдущее изображение")
 
-                dialog_manager.show_mode = ShowMode.EDIT
+        dialog_manager.show_mode = ShowMode.EDIT
 
-                images_url = dialog_manager.dialog_data.get("publication_images_url", [])
-                current_index = dialog_manager.dialog_data.get("current_image_index", 0)
+        images_url = dialog_manager.dialog_data.get("publication_images_url", [])
+        current_index = dialog_manager.dialog_data.get("current_image_index", 0)
 
-                if current_index > 0:
-                    self.logger.info("Переход к предыдущему изображению")
-                    dialog_manager.dialog_data["current_image_index"] = current_index - 1
-                else:
-                    self.logger.info("Переход к последнему изображению")
-                    dialog_manager.dialog_data["current_image_index"] = len(images_url) - 1
+        if current_index > 0:
+            self.logger.info("Переход к предыдущему изображению")
+            dialog_manager.dialog_data["current_image_index"] = current_index - 1
+        else:
+            self.logger.info("Переход к последнему изображению")
+            dialog_manager.dialog_data["current_image_index"] = len(images_url) - 1
 
-                await callback.answer()
+        await callback.answer()
+        self.logger.info("Конец переключения на предыдущее изображение")
 
-                self.logger.info("Конец переключения на предыдущее изображение")
-                span.set_status(Status(StatusCode.OK))
-
-            except Exception as err:
-                
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-
-                await callback.answer("Ошибка переключения изображения", show_alert=True)
-                raise
-
+    @traced_method()
     async def handle_regenerate_text(
             self,
             callback: CallbackQuery,
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        with self.tracer.start_as_current_span(
-                "GeneratePublicationDialogService.handle_regenerate_text",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                self.logger.info("Начало регенерации текста")
+        self.logger.info("Начало регенерации текста")
 
-                dialog_manager.show_mode = ShowMode.EDIT
+        dialog_manager.show_mode = ShowMode.EDIT
 
-                await callback.answer()
-                dialog_manager.dialog_data["is_regenerating_text"] = True
-                await dialog_manager.show()
+        await callback.answer()
+        dialog_manager.dialog_data["is_regenerating_text"] = True
+        await dialog_manager.show()
 
-                category_id = dialog_manager.dialog_data["category_id"]
-                current_text = dialog_manager.dialog_data["publication_text"]
+        category_id = dialog_manager.dialog_data["category_id"]
+        current_text = dialog_manager.dialog_data["publication_text"]
 
-                regenerated_data = await self.loom_content_client.regenerate_publication_text(
-                    category_id=category_id,
-                    publication_text=current_text,
-                    prompt=None
-                )
+        regenerated_data = await self.loom_content_client.regenerate_publication_text(
+            category_id=category_id,
+            publication_text=current_text,
+            prompt=None
+        )
 
-                dialog_manager.dialog_data["is_regenerating_text"] = False
+        dialog_manager.dialog_data["is_regenerating_text"] = False
 
-                dialog_manager.dialog_data["publication_text"] = regenerated_data["text"]
+        dialog_manager.dialog_data["publication_text"] = regenerated_data["text"]
 
-                await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
+        await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
+        self.logger.info("Конец регенерации текста")
 
-                self.logger.info("Конец регенерации текста")
-                span.set_status(Status(StatusCode.OK))
-
-            except Exception as err:
-                
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-
-                await callback.answer("Ошибка регенерации текста", show_alert=True)
-                raise
-
+    @traced_method()
     async def handle_regenerate_text_with_prompt(
             self,
             message: Message,
@@ -437,58 +342,48 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             dialog_manager: DialogManager,
             prompt: str
     ) -> None:
-        with self.tracer.start_as_current_span(
-                "GeneratePublicationDialogService.handle_regenerate_text_with_prompt",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                self.logger.info("Начало регенерации текста с промптом")
+        self.logger.info("Начало регенерации текста с промптом")
 
-                dialog_manager.show_mode = ShowMode.EDIT
+        dialog_manager.show_mode = ShowMode.EDIT
 
-                await message.delete()
-                prompt = message.html_text.replace('\n', '<br/>')
+        await message.delete()
+        prompt = message.html_text.replace('\n', '<br/>')
 
-                dialog_manager.dialog_data.pop("has_void_regenerate_prompt", None)
-                dialog_manager.dialog_data.pop("has_small_regenerate_prompt", None)
-                dialog_manager.dialog_data.pop("has_big_regenerate_prompt", None)
-                dialog_manager.dialog_data.pop("has_regenerate_api_error", None)
+        dialog_manager.dialog_data.pop("has_void_regenerate_prompt", None)
+        dialog_manager.dialog_data.pop("has_small_regenerate_prompt", None)
+        dialog_manager.dialog_data.pop("has_big_regenerate_prompt", None)
+        dialog_manager.dialog_data.pop("has_regenerate_api_error", None)
 
-                if not prompt:
-                    self.logger.info("Пустой промпт")
-                    dialog_manager.dialog_data["has_void_regenerate_prompt"] = True
-                    return
+        if not prompt:
+            self.logger.info("Пустой промпт")
+            dialog_manager.dialog_data["has_void_regenerate_prompt"] = True
+            return
 
-                dialog_manager.dialog_data["regenerate_prompt"] = prompt
-                dialog_manager.dialog_data["has_regenerate_prompt"] = True
-                dialog_manager.dialog_data["is_regenerating_text"] = True
+        dialog_manager.dialog_data["regenerate_prompt"] = prompt
+        dialog_manager.dialog_data["has_regenerate_prompt"] = True
+        dialog_manager.dialog_data["is_regenerating_text"] = True
 
-                await dialog_manager.show()
+        await dialog_manager.show()
 
-                category_id = dialog_manager.dialog_data["category_id"]
-                current_text = dialog_manager.dialog_data["publication_text"]
+        category_id = dialog_manager.dialog_data["category_id"]
+        current_text = dialog_manager.dialog_data["publication_text"]
 
-                regenerated_data = await self.loom_content_client.regenerate_publication_text(
-                    category_id=category_id,
-                    publication_text=current_text,
-                    prompt=prompt
-                )
+        regenerated_data = await self.loom_content_client.regenerate_publication_text(
+            category_id=category_id,
+            publication_text=current_text,
+            prompt=prompt
+        )
 
-                dialog_manager.dialog_data["publication_text"] = regenerated_data["text"]
+        dialog_manager.dialog_data["publication_text"] = regenerated_data["text"]
 
-                dialog_manager.dialog_data["is_regenerating_text"] = False
-                dialog_manager.dialog_data["has_regenerate_prompt"] = False
+        dialog_manager.dialog_data["is_regenerating_text"] = False
+        dialog_manager.dialog_data["has_regenerate_prompt"] = False
 
-                await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
+        await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
 
-                self.logger.info("Конец регенерации текста с промптом")
-                span.set_status(Status(StatusCode.OK))
+        self.logger.info("Конец регенерации текста с промптом")
 
-            except Exception as err:
-                
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                raise
-
+    @traced_method()
     async def handle_edit_text(
             self,
             message: Message,
@@ -496,106 +391,83 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             dialog_manager: DialogManager,
             text: str
     ) -> None:
-        with self.tracer.start_as_current_span(
-                "GeneratePublicationDialogService.handle_edit_text",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                self.logger.info("Начало редактирования текста")
+        self.logger.info("Начало редактирования текста")
 
-                dialog_manager.show_mode = ShowMode.EDIT
+        dialog_manager.show_mode = ShowMode.EDIT
 
-                await message.delete()
+        await message.delete()
 
-                dialog_manager.dialog_data.pop("has_void_text", None)
-                dialog_manager.dialog_data.pop("has_big_text", None)
-                dialog_manager.dialog_data.pop("has_small_text", None)
+        dialog_manager.dialog_data.pop("has_void_text", None)
+        dialog_manager.dialog_data.pop("has_big_text", None)
+        dialog_manager.dialog_data.pop("has_small_text", None)
 
-                new_text = message.html_text.replace('\n', '<br/>')
-                self.logger.info("HTML текст", {"html_text": new_text})
-                if not new_text:
-                    self.logger.info("Пустой текст")
-                    dialog_manager.dialog_data["has_void_text"] = True
-                    return
+        new_text = message.html_text.replace('\n', '<br/>')
+        self.logger.info("HTML текст", {"html_text": new_text})
+        if not new_text:
+            self.logger.info("Пустой текст")
+            dialog_manager.dialog_data["has_void_text"] = True
+            return
 
-                if len(new_text) > 4000:
-                    self.logger.info("Слишком длинный текст")
-                    dialog_manager.dialog_data["has_big_text"] = True
-                    return
+        if len(new_text) > 4000:
+            self.logger.info("Слишком длинный текст")
+            dialog_manager.dialog_data["has_big_text"] = True
+            return
 
-                if len(new_text) < 50:
-                    self.logger.info("Слишком короткий текст")
-                    dialog_manager.dialog_data["has_small_text"] = True
-                    return
+        if len(new_text) < 50:
+            self.logger.info("Слишком короткий текст")
+            dialog_manager.dialog_data["has_small_text"] = True
+            return
 
-                dialog_manager.dialog_data["publication_text"] = new_text
+        dialog_manager.dialog_data["publication_text"] = new_text
 
-                await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
+        await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
 
-                self.logger.info("Конец редактирования текста")
-                span.set_status(Status(StatusCode.OK))
+        self.logger.info("Конец редактирования текста")
 
-            except Exception as err:
-                
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                raise
-
+    @traced_method()
     async def handle_generate_new_image(
             self,
             callback: CallbackQuery,
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        with self.tracer.start_as_current_span(
-                "GeneratePublicationDialogService.handle_generate_new_image",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                self.logger.info("Начало генерации нового изображения")
+        self.logger.info("Начало генерации нового изображения")
 
-                dialog_manager.show_mode = ShowMode.EDIT
+        dialog_manager.show_mode = ShowMode.EDIT
 
-                await callback.answer()
-                dialog_manager.dialog_data["is_generating_image"] = True
-                await dialog_manager.show()
+        await callback.answer()
+        dialog_manager.dialog_data["is_generating_image"] = True
+        await dialog_manager.show()
 
-                category_id = dialog_manager.dialog_data["category_id"]
-                publication_text = dialog_manager.dialog_data["publication_text"]
-                text_reference = dialog_manager.dialog_data["input_text"]
+        category_id = dialog_manager.dialog_data["category_id"]
+        publication_text = dialog_manager.dialog_data["publication_text"]
+        text_reference = dialog_manager.dialog_data["input_text"]
 
-                current_image_content = None
-                current_image_filename = None
+        current_image_content = None
+        current_image_filename = None
 
-                if await self._get_current_image_data(dialog_manager):
-                    current_image_content, current_image_filename = await self._get_current_image_data(dialog_manager)
+        if await self._get_current_image_data(dialog_manager):
+            current_image_content, current_image_filename = await self._get_current_image_data(dialog_manager)
 
-                images_url = await self.loom_content_client.generate_publication_image(
-                    category_id=category_id,
-                    publication_text=publication_text,
-                    text_reference=text_reference,
-                    image_content=current_image_content,
-                    image_filename=current_image_filename,
-                )
+        images_url = await self.loom_content_client.generate_publication_image(
+            category_id=category_id,
+            publication_text=publication_text,
+            text_reference=text_reference,
+            image_content=current_image_content,
+            image_filename=current_image_filename,
+        )
 
-                dialog_manager.dialog_data["is_generating_image"] = False
-                dialog_manager.dialog_data["publication_images_url"] = images_url
-                dialog_manager.dialog_data["has_image"] = True
-                dialog_manager.dialog_data["is_custom_image"] = False
-                dialog_manager.dialog_data["current_image_index"] = 0
-                dialog_manager.dialog_data.pop("custom_image_file_id", None)
+        dialog_manager.dialog_data["is_generating_image"] = False
+        dialog_manager.dialog_data["publication_images_url"] = images_url
+        dialog_manager.dialog_data["has_image"] = True
+        dialog_manager.dialog_data["is_custom_image"] = False
+        dialog_manager.dialog_data["current_image_index"] = 0
+        dialog_manager.dialog_data.pop("custom_image_file_id", None)
 
-                await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
+        await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
+        self.logger.info("Конец генерации нового изображения")
 
-                self.logger.info("Конец генерации нового изображения")
-                span.set_status(Status(StatusCode.OK))
-
-            except Exception as err:
-                
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-
-                await callback.answer("Ошибка генерации изображения", show_alert=True)
-                raise
-
+    @traced_method()
     async def handle_generate_image_with_prompt(
             self,
             message: Message,
@@ -603,405 +475,321 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             dialog_manager: DialogManager,
             prompt: str
     ) -> None:
-        with self.tracer.start_as_current_span(
-                "GeneratePublicationDialogService.handle_generate_image_with_prompt",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                self.logger.info("Начало генерации изображения с промптом")
+        self.logger.info("Начало генерации изображения с промптом")
 
-                dialog_manager.show_mode = ShowMode.EDIT
+        dialog_manager.show_mode = ShowMode.EDIT
 
-                await message.delete()
+        await message.delete()
 
-                dialog_manager.dialog_data.pop("has_void_image_prompt", None)
-                dialog_manager.dialog_data.pop("has_small_image_prompt", None)
-                dialog_manager.dialog_data.pop("has_big_image_prompt", None)
-                dialog_manager.dialog_data.pop("has_image_generation_error", None)
+        dialog_manager.dialog_data.pop("has_void_image_prompt", None)
+        dialog_manager.dialog_data.pop("has_small_image_prompt", None)
+        dialog_manager.dialog_data.pop("has_big_image_prompt", None)
+        dialog_manager.dialog_data.pop("has_image_generation_error", None)
 
-                prompt = message.html_text.replace('\n', '<br/>')
-                if not prompt:
-                    self.logger.info("Пустой промпт для изображения")
-                    dialog_manager.dialog_data["has_void_image_prompt"] = True
-                    return
+        prompt = message.html_text.replace('\n', '<br/>')
+        if not prompt:
+            self.logger.info("Пустой промпт для изображения")
+            dialog_manager.dialog_data["has_void_image_prompt"] = True
+            return
 
-                dialog_manager.dialog_data["image_prompt"] = prompt
-                dialog_manager.dialog_data["is_generating_image"] = True
+        dialog_manager.dialog_data["image_prompt"] = prompt
+        dialog_manager.dialog_data["is_generating_image"] = True
 
-                await dialog_manager.show()
+        await dialog_manager.show()
 
-                category_id = dialog_manager.dialog_data["category_id"]
-                publication_text = dialog_manager.dialog_data["publication_text"]
-                text_reference = dialog_manager.dialog_data["input_text"]
+        category_id = dialog_manager.dialog_data["category_id"]
+        publication_text = dialog_manager.dialog_data["publication_text"]
+        text_reference = dialog_manager.dialog_data["input_text"]
 
-                current_image_content = None
-                current_image_filename = None
+        current_image_content = None
+        current_image_filename = None
 
-                if await self._get_current_image_data(dialog_manager):
-                    current_image_content, current_image_filename = await self._get_current_image_data(
-                        dialog_manager
-                    )
+        if await self._get_current_image_data(dialog_manager):
+            current_image_content, current_image_filename = await self._get_current_image_data(
+                dialog_manager
+            )
 
-                images_url = await self.loom_content_client.generate_publication_image(
-                    category_id=category_id,
-                    publication_text=publication_text,
-                    text_reference=text_reference,
-                    prompt=prompt,
-                    image_content=current_image_content,
-                    image_filename=current_image_filename,
-                )
+        images_url = await self.loom_content_client.generate_publication_image(
+            category_id=category_id,
+            publication_text=publication_text,
+            text_reference=text_reference,
+            prompt=prompt,
+            image_content=current_image_content,
+            image_filename=current_image_filename,
+        )
 
-                dialog_manager.dialog_data["publication_images_url"] = images_url
-                dialog_manager.dialog_data["has_image"] = True
-                dialog_manager.dialog_data["is_custom_image"] = False
-                dialog_manager.dialog_data["current_image_index"] = 0
-                dialog_manager.dialog_data.pop("custom_image_file_id", None)
-                dialog_manager.dialog_data["is_generating_image"] = False
+        dialog_manager.dialog_data["publication_images_url"] = images_url
+        dialog_manager.dialog_data["has_image"] = True
+        dialog_manager.dialog_data["is_custom_image"] = False
+        dialog_manager.dialog_data["current_image_index"] = 0
+        dialog_manager.dialog_data.pop("custom_image_file_id", None)
+        dialog_manager.dialog_data["is_generating_image"] = False
 
-                await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
+        await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
+        self.logger.info("Конец генерации изображения с промптом")
 
-                self.logger.info("Конец генерации изображения с промптом")
-                span.set_status(Status(StatusCode.OK))
-
-            except Exception as err:
-                
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                raise
-
+    @traced_method()
     async def handle_image_upload(
             self,
             message: Message,
             widget: MessageInput,
             dialog_manager: DialogManager
     ) -> None:
-        with self.tracer.start_as_current_span(
-                "GeneratePublicationDialogService.handle_image_upload",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                self.logger.info("Начало загрузки изображения")
+        self.logger.info("Начало загрузки изображения")
 
-                dialog_manager.show_mode = ShowMode.EDIT
+        dialog_manager.show_mode = ShowMode.EDIT
 
-                await message.delete()
+        await message.delete()
 
-                dialog_manager.dialog_data.pop("has_invalid_image_type", None)
-                dialog_manager.dialog_data.pop("has_big_image_size", None)
+        dialog_manager.dialog_data.pop("has_invalid_image_type", None)
+        dialog_manager.dialog_data.pop("has_big_image_size", None)
 
-                if message.content_type != ContentType.PHOTO:
-                    self.logger.info("Неверный тип контента для изображения")
-                    dialog_manager.dialog_data["has_invalid_image_type"] = True
+        if message.content_type != ContentType.PHOTO:
+            self.logger.info("Неверный тип контента для изображения")
+            dialog_manager.dialog_data["has_invalid_image_type"] = True
+            return
+
+        if message.photo:
+            photo = message.photo[-1]
+
+            if hasattr(photo, 'file_size') and photo.file_size:
+                if photo.file_size > 10 * 1024 * 1024:
+                    self.logger.info("Размер изображения превышает лимит")
+                    dialog_manager.dialog_data["has_big_image_size"] = True
                     return
 
-                if message.photo:
-                    photo = message.photo[-1]
+            dialog_manager.dialog_data["custom_image_file_id"] = photo.file_id
+            dialog_manager.dialog_data["has_image"] = True
+            dialog_manager.dialog_data["is_custom_image"] = True
 
-                    if hasattr(photo, 'file_size') and photo.file_size:
-                        if photo.file_size > 10 * 1024 * 1024:
-                            self.logger.info("Размер изображения превышает лимит")
-                            dialog_manager.dialog_data["has_big_image_size"] = True
-                            return
+            dialog_manager.dialog_data.pop("publication_images_url", None)
+            dialog_manager.dialog_data.pop("current_image_index", None)
 
-                    dialog_manager.dialog_data["custom_image_file_id"] = photo.file_id
-                    dialog_manager.dialog_data["has_image"] = True
-                    dialog_manager.dialog_data["is_custom_image"] = True
+            await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
 
-                    dialog_manager.dialog_data.pop("publication_images_url", None)
-                    dialog_manager.dialog_data.pop("current_image_index", None)
+            self.logger.info("Конец загрузки изображения")
+        else:
+            self.logger.info("Ошибка обработки изображения")
+            dialog_manager.dialog_data["has_image_processing_error"] = True
 
-                    await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
-
-                    self.logger.info("Конец загрузки изображения")
-                    span.set_status(Status(StatusCode.OK))
-                else:
-                    self.logger.info("Ошибка обработки изображения")
-                    dialog_manager.dialog_data["has_image_processing_error"] = True
-
-            except Exception as err:
-                
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                raise
-
+    @traced_method()
     async def handle_remove_image(
             self,
             callback: CallbackQuery,
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        with self.tracer.start_as_current_span(
-                "GeneratePublicationDialogService.handle_remove_image",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                self.logger.info("Начало удаления изображения")
+        self.logger.info("Начало удаления изображения")
 
-                dialog_manager.show_mode = ShowMode.EDIT
+        dialog_manager.show_mode = ShowMode.EDIT
 
-                dialog_manager.dialog_data["has_image"] = False
-                dialog_manager.dialog_data.pop("publication_images_url", None)
-                dialog_manager.dialog_data.pop("custom_image_file_id", None)
-                dialog_manager.dialog_data.pop("is_custom_image", None)
-                dialog_manager.dialog_data.pop("current_image_index", None)
+        dialog_manager.dialog_data["has_image"] = False
+        dialog_manager.dialog_data.pop("publication_images_url", None)
+        dialog_manager.dialog_data.pop("custom_image_file_id", None)
+        dialog_manager.dialog_data.pop("is_custom_image", None)
+        dialog_manager.dialog_data.pop("current_image_index", None)
 
-                await callback.answer("Изображение удалено", show_alert=True)
+        await callback.answer("Изображение удалено", show_alert=True)
+        await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
+        self.logger.info("Конец удаления изображения")
 
-                await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
-
-                self.logger.info("Конец удаления изображения")
-                span.set_status(Status(StatusCode.OK))
-
-            except Exception as err:
-                
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-
-                await callback.answer("Ошибка удаления изображения", show_alert=True)
-                raise
-
+    @traced_method()
     async def handle_add_to_drafts(
             self,
             callback: CallbackQuery,
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        with self.tracer.start_as_current_span(
-                "GeneratePublicationDialogService.handle_add_to_drafts",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                await callback.answer("Черновики публикации в разработке", show_alert=True)
-                return
-                # dialog_manager.show_mode = ShowMode.EDIT
-                #
-                # state = await self._get_state(dialog_manager)
-                #
-                # category_id = dialog_manager.dialog_data["category_id"]
-                # text_reference = dialog_manager.dialog_data["input_text"]
-                # text = dialog_manager.dialog_data["publication_text"]
-                #
-                # image_url, image_content, image_filename = await self._get_selected_image_data(dialog_manager)
-                #
-                # publication_data = await self.loom_content_client.create_publication(
-                #     state.organization_id,
-                #     category_id,
-                #     state.account_id,
-                #     text_reference,
-                #     text,
-                #     "draft",
-                #     image_url=image_url,
-                #     image_content=image_content,
-                #     image_filename=image_filename,
-                # )
-                #
-                # selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
-                # if selected_networks:
-                #     tg_source = selected_networks.get("telegram_checkbox", False)
-                #     vk_source = selected_networks.get("vkontakte_checkbox", False)
-                #
-                #     await self.loom_content_client.change_publication(
-                #         publication_id=publication_data["publication_id"],
-                #         tg_source=tg_source,
-                #         vk_source=vk_source,
-                #     )
-                #
-                # self.logger.info("Публикация сохранена в черновики")
-                #
-                # await callback.answer("💾 Сохранено в черновики!", show_alert=True)
-                #
-                # if await self._check_alerts(dialog_manager):
-                #     return
-                #
-                # await dialog_manager.start(
-                #     model.ContentMenuStates.content_menu,
-                #     mode=StartMode.RESET_STACK
-                # )
-                # span.set_status(Status(StatusCode.OK))
+        await callback.answer("Черновики публикации в разработке", show_alert=True)
+        return
+        # dialog_manager.show_mode = ShowMode.EDIT
+        #
+        # state = await self._get_state(dialog_manager)
+        #
+        # category_id = dialog_manager.dialog_data["category_id"]
+        # text_reference = dialog_manager.dialog_data["input_text"]
+        # text = dialog_manager.dialog_data["publication_text"]
+        #
+        # image_url, image_content, image_filename = await self._get_selected_image_data(dialog_manager)
+        #
+        # publication_data = await self.loom_content_client.create_publication(
+        #     state.organization_id,
+        #     category_id,
+        #     state.account_id,
+        #     text_reference,
+        #     text,
+        #     "draft",
+        #     image_url=image_url,
+        #     image_content=image_content,
+        #     image_filename=image_filename,
+        # )
+        #
+        # selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
+        # if selected_networks:
+        #     tg_source = selected_networks.get("telegram_checkbox", False)
+        #     vk_source = selected_networks.get("vkontakte_checkbox", False)
+        #
+        #     await self.loom_content_client.change_publication(
+        #         publication_id=publication_data["publication_id"],
+        #         tg_source=tg_source,
+        #         vk_source=vk_source,
+        #     )
+        #
+        # self.logger.info("Публикация сохранена в черновики")
+        #
+        # await callback.answer("💾 Сохранено в черновики!", show_alert=True)
+        #
+        # if await self._check_alerts(dialog_manager):
+        #     return
+        #
+        # await dialog_manager.start(
+        #     model.ContentMenuStates.content_menu,
+        #     mode=StartMode.RESET_STACK
+        # )
+        # span.set_status(Status(StatusCode.OK))
 
-            except Exception as err:
-                
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-
-                await callback.answer("Ошибка сохранения черновика", show_alert=True)
-                raise
-
+    @traced_method()
     async def handle_send_to_moderation(
             self,
             callback: CallbackQuery,
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        with self.tracer.start_as_current_span(
-                "GeneratePublicationDialogService.handle_send_to_moderation",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                self.logger.info("Начало отправки на модерацию")
+        self.logger.info("Начало отправки на модерацию")
 
-                dialog_manager.show_mode = ShowMode.EDIT
+        dialog_manager.show_mode = ShowMode.EDIT
 
-                state = await self._get_state(dialog_manager)
+        state = await self._get_state(dialog_manager)
 
-                category_id = dialog_manager.dialog_data["category_id"]
-                text_reference = dialog_manager.dialog_data["input_text"]
-                text = dialog_manager.dialog_data["publication_text"]
+        category_id = dialog_manager.dialog_data["category_id"]
+        text_reference = dialog_manager.dialog_data["input_text"]
+        text = dialog_manager.dialog_data["publication_text"]
 
-                image_url, image_content, image_filename = await self._get_selected_image_data(dialog_manager)
+        image_url, image_content, image_filename = await self._get_selected_image_data(dialog_manager)
 
-                publication_data = await self.loom_content_client.create_publication(
-                    state.organization_id,
-                    category_id,
-                    state.account_id,
-                    text_reference,
-                    text,
-                    "moderation",
-                    image_url=image_url,
-                    image_content=image_content,
-                    image_filename=image_filename,
-                )
+        publication_data = await self.loom_content_client.create_publication(
+            state.organization_id,
+            category_id,
+            state.account_id,
+            text_reference,
+            text,
+            "moderation",
+            image_url=image_url,
+            image_content=image_content,
+            image_filename=image_filename,
+        )
 
-                selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
-                if selected_networks:
-                    self.logger.info("Установка выбранных соцсетей")
-                    tg_source = selected_networks.get("telegram_checkbox", False)
-                    vk_source = selected_networks.get("vkontakte_checkbox", False)
+        selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
+        if selected_networks:
+            self.logger.info("Установка выбранных соцсетей")
+            tg_source = selected_networks.get("telegram_checkbox", False)
+            vk_source = selected_networks.get("vkontakte_checkbox", False)
 
-                    await self.loom_content_client.change_publication(
-                        publication_id=publication_data["publication_id"],
-                        tg_source=tg_source,
-                        vk_source=vk_source,
-                    )
+            await self.loom_content_client.change_publication(
+                publication_id=publication_data["publication_id"],
+                tg_source=tg_source,
+                vk_source=vk_source,
+            )
 
-                await callback.answer("Публикация отправлена на модерацию", show_alert=True)
+        await callback.answer("Публикация отправлена на модерацию", show_alert=True)
 
-                if await self._check_alerts(dialog_manager):
-                    return
+        if await self._check_alerts(dialog_manager):
+            return
 
-                await dialog_manager.start(
-                    model.ContentMenuStates.content_menu,
-                    mode=StartMode.RESET_STACK
-                )
+        await dialog_manager.start(
+            model.ContentMenuStates.content_menu,
+            mode=StartMode.RESET_STACK
+        )
 
-                self.logger.info("Конец отправки на модерацию")
-                span.set_status(Status(StatusCode.OK))
-            except Exception as err:
-                
-                span.set_status(Status(StatusCode.ERROR, str(err)))
+        self.logger.info("Конец отправки на модерацию")
 
-                await callback.answer("Ошибка отправки на модерацию", show_alert=True)
-                raise
-
+    @traced_method()
     async def handle_toggle_social_network(
             self,
             callback: CallbackQuery,
             checkbox: ManagedCheckbox,
             dialog_manager: DialogManager
     ) -> None:
-        with self.tracer.start_as_current_span(
-                "GeneratePublicationDialogService.handle_toggle_social_network",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                self.logger.info("Начало переключения соцсети")
+        self.logger.info("Начало переключения соцсети")
 
-                dialog_manager.show_mode = ShowMode.EDIT
+        dialog_manager.show_mode = ShowMode.EDIT
 
-                if "selected_social_networks" not in dialog_manager.dialog_data:
-                    dialog_manager.dialog_data["selected_social_networks"] = {}
+        if "selected_social_networks" not in dialog_manager.dialog_data:
+            dialog_manager.dialog_data["selected_social_networks"] = {}
 
-                network_id = checkbox.widget_id
-                is_checked = checkbox.is_checked()
+        network_id = checkbox.widget_id
+        is_checked = checkbox.is_checked()
 
-                dialog_manager.dialog_data["selected_social_networks"][network_id] = is_checked
+        dialog_manager.dialog_data["selected_social_networks"][network_id] = is_checked
 
-                await callback.answer()
+        await callback.answer()
+        self.logger.info("Конец переключения соцсети")
 
-                self.logger.info("Конец переключения соцсети")
-                span.set_status(Status(StatusCode.OK))
-
-            except Exception as err:
-                
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-
-                await callback.answer("Ошибка переключения соцсети", show_alert=True)
-                raise
-
+    @traced_method()
     async def handle_publish_now(
             self,
             callback: CallbackQuery,
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        with self.tracer.start_as_current_span(
-                "GeneratePublicationDialogService.handle_publish_now",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                self.logger.info("Начало публикации")
+        self.logger.info("Начало публикации")
 
-                dialog_manager.show_mode = ShowMode.EDIT
+        dialog_manager.show_mode = ShowMode.EDIT
 
-                state = await self._get_state(dialog_manager)
+        state = await self._get_state(dialog_manager)
 
-                selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
-                has_selected_networks = any(selected_networks.values())
+        selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
+        has_selected_networks = any(selected_networks.values())
 
-                if not has_selected_networks:
-                    self.logger.info("Не выбрана ни одна соцсеть")
-                    await callback.answer(
-                        "Выберите хотя бы одну социальную сеть",
-                        show_alert=True
-                    )
-                    return
+        if not has_selected_networks:
+            self.logger.info("Не выбрана ни одна соцсеть")
+            await callback.answer(
+                "Выберите хотя бы одну социальную сеть",
+                show_alert=True
+            )
+            return
 
-                category_id = dialog_manager.dialog_data["category_id"]
-                text_reference = dialog_manager.dialog_data["input_text"]
-                text = dialog_manager.dialog_data["publication_text"]
+        category_id = dialog_manager.dialog_data["category_id"]
+        text_reference = dialog_manager.dialog_data["input_text"]
+        text = dialog_manager.dialog_data["publication_text"]
 
-                image_url, image_content, image_filename = await self._get_selected_image_data(dialog_manager)
+        image_url, image_content, image_filename = await self._get_selected_image_data(dialog_manager)
 
-                publication_data = await self.loom_content_client.create_publication(
-                    state.organization_id,
-                    category_id,
-                    state.account_id,
-                    text_reference,
-                    text,
-                    "draft",
-                    image_url=image_url,
-                    image_content=image_content,
-                    image_filename=image_filename,
-                )
+        publication_data = await self.loom_content_client.create_publication(
+            state.organization_id,
+            category_id,
+            state.account_id,
+            text_reference,
+            text,
+            "draft",
+            image_url=image_url,
+            image_content=image_content,
+            image_filename=image_filename,
+        )
 
-                selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
-                tg_source = selected_networks.get("telegram_checkbox", False)
-                vk_source = selected_networks.get("vkontakte_checkbox", False)
+        selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
+        tg_source = selected_networks.get("telegram_checkbox", False)
+        vk_source = selected_networks.get("vkontakte_checkbox", False)
 
-                await self.loom_content_client.change_publication(
-                    publication_id=publication_data["publication_id"],
-                    tg_source=tg_source,
-                    vk_source=vk_source,
-                )
+        await self.loom_content_client.change_publication(
+            publication_id=publication_data["publication_id"],
+            tg_source=tg_source,
+            vk_source=vk_source,
+        )
 
-                post_links = await self.loom_content_client.moderate_publication(
-                    publication_data["publication_id"],
-                    state.account_id,
-                    "approved"
-                )
+        post_links = await self.loom_content_client.moderate_publication(
+            publication_data["publication_id"],
+            state.account_id,
+            "approved"
+        )
 
-                dialog_manager.dialog_data["post_links"] = post_links
+        dialog_manager.dialog_data["post_links"] = post_links
 
-                await callback.answer("Публикация успешно опубликована", show_alert=True)
+        await callback.answer("Публикация успешно опубликована", show_alert=True)
+        await dialog_manager.switch_to(model.GeneratePublicationStates.publication_success)
+        self.logger.info("Конец публикации")
 
-                await dialog_manager.switch_to(model.GeneratePublicationStates.publication_success)
-
-                self.logger.info("Конец публикации")
-                span.set_status(Status(StatusCode.OK))
-
-            except Exception as err:
-                
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-
-                await callback.answer("Ошибка публикации", show_alert=True)
-                raise
-
+    @traced_method()
     async def handle_go_to_content_menu(
             self,
             callback: CallbackQuery,
@@ -1030,7 +818,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 span.set_status(Status(StatusCode.OK))
 
             except Exception as err:
-                
+
                 span.set_status(Status(StatusCode.ERROR, str(err)))
 
                 await callback.answer("Ошибка перехода в меню", show_alert=True)
