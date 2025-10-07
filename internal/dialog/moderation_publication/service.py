@@ -116,6 +116,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             moderation_status="rejected",
             moderation_comment=reject_comment,
         )
+        # TODO сделать вебхук для отклонения публикации
 
         await self._remove_current_publication_from_list(dialog_manager)
 

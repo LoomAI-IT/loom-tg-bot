@@ -107,23 +107,13 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
         video_cut_id = original_video_cut["id"]
         reject_comment = dialog_manager.dialog_data.get("reject_comment", "Нет комментария")
 
-        # Отклоняем видео-нарезку через API
         await self.loom_content_client.moderate_video_cut(
             video_cut_id=video_cut_id,
             moderator_id=state.account_id,
             moderation_status="rejected",
             moderation_comment=reject_comment,
         )
-
-        # Отправляем уведомление автору
-        creator_state = await self.state_repo.state_by_account_id(original_video_cut["creator_id"])
-        if creator_state:
-            self.logger.info("Отправка уведомления автору об отклонении")
-            await self.bot.send_message(
-                chat_id=creator_state[0].tg_chat_id,
-                text=f"Ваша видео-нарезка: <b>{original_video_cut['name'] or 'Без названия'}</b> была отклонена с комментарием:\n<b>{reject_comment}</b>",
-                parse_mode=ParseMode.HTML,
-            )
+        # TODO сделать вебхук для отклонения нарезки
 
         await callback.answer("Видео отклонено", show_alert=True)
 

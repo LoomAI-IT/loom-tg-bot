@@ -187,6 +187,7 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
             top_up_balance_permission=permissions.get("top_up_balance", False),
             sign_up_social_net_permission=permissions.get("social_networks", False),
         )
+        # TODO сделать вебхук для алерта об изменении прав
 
         dialog_manager.dialog_data.pop("temp_permissions", None)
         dialog_manager.dialog_data.pop("original_permissions", None)
@@ -279,6 +280,7 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
             account_id=selected_account_id,
             role=new_role
         )
+        # TODO сделать вебхук для алерта об изменении роли
 
         dialog_manager.dialog_data.pop("selected_new_role", None)
 
@@ -306,7 +308,7 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
                 employee_state[0].id,
                 organization_id=0
             )
-            # TODO сделать вебух и отправлять удаление туда
+            # TODO сделать вебух и отправлять удаление туда, это должно далться в вебхуке
 
 
         dialog_manager.dialog_data.pop("selected_account_id", None)
