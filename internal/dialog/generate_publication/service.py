@@ -53,8 +53,10 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             self.logger.info("Неверный тип контента")
             dialog_manager.dialog_data["has_invalid_content_type"] = True
             return
-
-        text = await self._speech_to_text(message, dialog_manager, state.organization_id)
+        if message.content_type == ContentType.TEXT:
+            text = message.text
+        else:
+            text = await self._speech_to_text(message, dialog_manager, state.organization_id)
 
         if not text:
             self.logger.info("Пустой текст")
