@@ -1,6 +1,7 @@
 from aiogram_dialog import DialogManager
 
 from internal import interface, model
+from pkg.log_wrapper import auto_log
 from pkg.trace_wrapper import traced_method
 
 
@@ -18,14 +19,13 @@ class ContentMenuGetter(interface.IContentMenuGetter):
         self.loom_employee_client = loom_employee_client
         self.loom_content_client = loom_content_client
 
+    @auto_log()
     @traced_method()
     async def get_content_menu_data(
             self,
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        self.logger.info("Начало получения данных меню контента")
-
         state = await self._get_state(dialog_manager)
 
         publications = await self.loom_content_client.get_publications_by_organization(
@@ -75,17 +75,15 @@ class ContentMenuGetter(interface.IContentMenuGetter):
             "publication_count": publication_count,
         }
 
-        self.logger.info("Завершение получения данных меню контента")
         return data
 
+    @auto_log()
     @traced_method()
     async def get_drafts_type_data(
             self,
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        self.logger.info("Начало получения данных типов черновиков")
-
         state = await self._get_state(dialog_manager)
 
         publications = await self.loom_content_client.get_publications_by_organization(
@@ -106,18 +104,15 @@ class ContentMenuGetter(interface.IContentMenuGetter):
             "video_drafts_count": video_drafts_count,
         }
 
-        self.logger.info("Завершение получения данных типов черновиков")
         return data
 
+    @auto_log()
     @traced_method()
     async def get_moderation_type_data(
             self,
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-
-        self.logger.info("Начало получения данных типов модерации")
-
         state = await self._get_state(dialog_manager)
 
         publications = await self.loom_content_client.get_publications_by_organization(
@@ -135,8 +130,6 @@ class ContentMenuGetter(interface.IContentMenuGetter):
             "publication_moderation_count": publication_moderation_count,
             "video_moderation_count": video_moderation_count,
         }
-
-        self.logger.info("Завершение получения данных типов модерации")
         return data
 
     async def _get_state(self, dialog_manager: DialogManager) -> model.UserState:

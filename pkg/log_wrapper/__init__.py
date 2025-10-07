@@ -1,0 +1,1 @@
+from pkg.log_wrapper.log_wrapper import auto_log

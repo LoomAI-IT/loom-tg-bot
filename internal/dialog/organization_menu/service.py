@@ -3,6 +3,7 @@ from aiogram.types import CallbackQuery
 from aiogram_dialog import DialogManager, StartMode, ShowMode
 
 from internal import interface, model
+from pkg.log_wrapper import auto_log
 from pkg.trace_wrapper import traced_method
 
 
@@ -18,6 +19,7 @@ class OrganizationMenuService(interface.IOrganizationMenuService):
         self.state_repo = state_repo
         self.loom_employee_client = loom_employee_client
 
+    @auto_log()
     @traced_method()
     async def handle_go_to_employee_settings(
             self,
@@ -25,8 +27,6 @@ class OrganizationMenuService(interface.IOrganizationMenuService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало обработки перехода к настройкам сотрудников")
-
         state = await self._get_state(dialog_manager)
 
         employee = await self.loom_employee_client.get_employee_by_account_id(
@@ -48,8 +48,7 @@ class OrganizationMenuService(interface.IOrganizationMenuService):
             mode=StartMode.RESET_STACK
         )
 
-        self.logger.info("Завершение обработки перехода к настройкам сотрудников")
-
+    @auto_log()
     @traced_method()
     async def handle_go_to_add_employee(
             self,
@@ -57,8 +56,6 @@ class OrganizationMenuService(interface.IOrganizationMenuService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало обработки перехода к добавлению сотрудника")
-
         state = await self._get_state(dialog_manager)
 
         employee = await self.loom_employee_client.get_employee_by_account_id(
@@ -80,8 +77,7 @@ class OrganizationMenuService(interface.IOrganizationMenuService):
             mode=StartMode.RESET_STACK
         )
 
-        self.logger.info("Завершение обработки перехода к добавлению сотрудника")
-
+    @auto_log()
     @traced_method()
     async def handle_go_to_top_up_balance(
             self,
@@ -89,12 +85,9 @@ class OrganizationMenuService(interface.IOrganizationMenuService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало обработки перехода к пополнению баланса")
-
         await callback.answer("Функция в разработке", show_alert=True)
 
-        self.logger.info("Завершение обработки перехода к пополнению баланса")
-
+    @auto_log()
     @traced_method()
     async def handle_go_to_social_networks(
             self,
@@ -102,14 +95,10 @@ class OrganizationMenuService(interface.IOrganizationMenuService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало обработки перехода к социальным сетям")
-
         dialog_manager.show_mode = ShowMode.EDIT
-
         await dialog_manager.start(model.AddSocialNetworkStates.select_network)
 
-        self.logger.info("Завершение обработки перехода к социальным сетям")
-
+    @auto_log()
     @traced_method()
     async def handle_go_to_main_menu(
             self,
@@ -117,14 +106,11 @@ class OrganizationMenuService(interface.IOrganizationMenuService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало обработки перехода в главное меню")
-
         await dialog_manager.start(
             model.MainMenuStates.main_menu,
             mode=StartMode.RESET_STACK
         )
 
-        self.logger.info("Завершение обработки перехода в главное меню")
 
     async def _get_state(self, dialog_manager: DialogManager) -> model.UserState:
         if hasattr(dialog_manager.event, 'message') and dialog_manager.event.message:

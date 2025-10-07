@@ -7,6 +7,7 @@ from aiogram_dialog import DialogManager, StartMode, ShowMode
 from aiogram_dialog.widgets.kbd import ManagedCheckbox
 
 from internal import interface, model
+from pkg.log_wrapper import auto_log
 from pkg.trace_wrapper import traced_method
 
 
@@ -24,6 +25,7 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
         self.state_repo = state_repo
         self.loom_content_client = loom_content_client
 
+    @auto_log()
     @traced_method()
     async def handle_navigate_video_cut(
             self,
@@ -31,8 +33,6 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало навигации по видео-нарезкам")
-
         current_index = dialog_manager.dialog_data.get("current_index", 0)
         moderation_list = dialog_manager.dialog_data.get("moderation_list", [])
 
@@ -54,11 +54,9 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
 
         # Сбрасываем рабочие данные для нового видео
         dialog_manager.dialog_data.pop("working_video_cut", None)
-
         await callback.answer()
 
-        self.logger.info("Завершение навигации по видео-нарезкам")
-
+    @auto_log()
     @traced_method()
     async def handle_reject_comment_input(
             self,
@@ -67,8 +65,6 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
             dialog_manager: DialogManager,
             comment: str
     ) -> None:
-        self.logger.info("Начало обработки комментария к отклонению")
-
         dialog_manager.show_mode = ShowMode.EDIT
 
         await message.delete()
@@ -95,8 +91,7 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
 
         dialog_manager.dialog_data["reject_comment"] = comment
 
-        self.logger.info("Завершение обработки комментария к отклонению")
-
+    @auto_log()
     @traced_method()
     async def handle_send_rejection(
             self,
@@ -104,8 +99,6 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало отклонения видео-нарезки")
-
         dialog_manager.show_mode = ShowMode.EDIT
 
         state = await self._get_state(dialog_manager)
@@ -137,8 +130,7 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
         await self._remove_current_video_cut_from_list(dialog_manager)
         await dialog_manager.switch_to(model.VideoCutModerationStates.moderation_list)
 
-        self.logger.info("Завершение отклонения видео-нарезки")
-
+    @auto_log()
     @traced_method()
     async def handle_edit_title(
             self,
@@ -147,8 +139,6 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
             dialog_manager: DialogManager,
             text: str
     ) -> None:
-        self.logger.info("Начало редактирования названия")
-
         dialog_manager.show_mode = ShowMode.EDIT
 
         await message.delete()
@@ -172,8 +162,7 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
 
         await dialog_manager.switch_to(model.VideoCutModerationStates.edit_preview)
 
-        self.logger.info("Завершение редактирования названия")
-
+    @auto_log()
     @traced_method()
     async def handle_edit_description(
             self,
@@ -182,8 +171,6 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
             dialog_manager: DialogManager,
             text: str
     ) -> None:
-        self.logger.info("Начало редактирования описания")
-
         dialog_manager.show_mode = ShowMode.EDIT
 
         await message.delete()
@@ -207,8 +194,7 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
 
         await dialog_manager.switch_to(model.VideoCutModerationStates.edit_preview)
 
-        self.logger.info("Завершение редактирования описания")
-
+    @auto_log()
     @traced_method()
     async def handle_edit_tags(
             self,
@@ -217,8 +203,6 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
             dialog_manager: DialogManager,
             text: str
     ) -> None:
-        self.logger.info("Начало редактирования тегов")
-
         dialog_manager.show_mode = ShowMode.EDIT
 
         await message.delete()
@@ -243,8 +227,7 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
         dialog_manager.dialog_data["working_video_cut"]["tags"] = new_tags
         await dialog_manager.switch_to(model.VideoCutModerationStates.edit_preview)
 
-        self.logger.info("Завершение редактирования тегов")
-
+    @auto_log()
     @traced_method()
     async def handle_save_edits(
             self,
@@ -252,8 +235,6 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало сохранения изменений")
-
         dialog_manager.show_mode = ShowMode.EDIT
 
         if not self._has_changes(dialog_manager):
@@ -270,8 +251,7 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
 
         await dialog_manager.switch_to(model.VideoCutModerationStates.moderation_list)
 
-        self.logger.info("Завершение сохранения изменений")
-
+    @auto_log()
     @traced_method()
     async def handle_back_to_moderation_list(
             self,
@@ -279,14 +259,11 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало возврата к списку модерации")
-
         dialog_manager.show_mode = ShowMode.EDIT
 
         await dialog_manager.switch_to(model.VideoCutModerationStates.moderation_list)
 
-        self.logger.info("Завершение возврата к списку модерации")
-
+    @auto_log()
     @traced_method()
     async def handle_toggle_social_network(
             self,
@@ -294,8 +271,6 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
             checkbox: ManagedCheckbox,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало переключения видео-платформы")
-
         # Инициализируем словарь выбранных соцсетей если его нет
         if "selected_social_networks" not in dialog_manager.dialog_data:
             dialog_manager.dialog_data["selected_social_networks"] = {}
@@ -308,8 +283,7 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
 
         await callback.answer()
 
-        self.logger.info("Завершение переключения видео-платформы")
-
+    @auto_log()
     @traced_method()
     async def handle_publish_now(
             self,
@@ -317,8 +291,6 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало публикации видео-нарезки")
-
         dialog_manager.show_mode = ShowMode.EDIT
 
         selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
@@ -364,8 +336,7 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
         await self._remove_current_video_cut_from_list(dialog_manager)
         await dialog_manager.switch_to(model.VideoCutModerationStates.moderation_list)
 
-        self.logger.info("Завершение публикации видео-нарезки")
-
+    @auto_log()
     @traced_method()
     async def handle_back_to_content_menu(
             self,
@@ -373,8 +344,6 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало возврата в меню контента")
-
         dialog_manager.show_mode = ShowMode.EDIT
 
         if await self._check_alerts(dialog_manager):
@@ -385,8 +354,6 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
             model.ContentMenuStates.content_menu,
             mode=StartMode.RESET_STACK
         )
-
-        self.logger.info("Завершение возврата в меню контента")
 
     async def _remove_current_video_cut_from_list(self, dialog_manager: DialogManager) -> None:
         moderation_list = dialog_manager.dialog_data.get("moderation_list", [])

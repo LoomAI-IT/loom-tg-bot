@@ -9,6 +9,7 @@ from aiogram_dialog import DialogManager, StartMode, ShowMode
 from aiogram_dialog.widgets.kbd import ManagedCheckbox
 
 from internal import interface, model
+from pkg.log_wrapper import auto_log
 from pkg.trace_wrapper import traced_method
 
 
@@ -26,6 +27,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         self.state_repo = state_repo
         self.loom_content_client = loom_content_client
 
+    @auto_log()
     @traced_method()
     async def handle_generate_publication_prompt_input(
             self,
@@ -33,8 +35,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             widget: MessageInput,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало обработки ввода промпта для генерации публикации")
-
         dialog_manager.show_mode = ShowMode.EDIT
 
         await message.delete()
@@ -75,8 +75,8 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         dialog_manager.dialog_data["has_input_text"] = True
 
         await dialog_manager.switch_to(model.GeneratePublicationStates.generation)
-        self.logger.info("Конец обработки ввода промпта для генерации публикации")
 
+    @auto_log()
     @traced_method()
     async def handle_select_category(
             self,
@@ -85,8 +85,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             dialog_manager: DialogManager,
             category_id: str
     ) -> None:
-        self.logger.info("Начало выбора категории")
-
         dialog_manager.show_mode = ShowMode.EDIT
         category = await self.loom_content_client.get_category_by_id(
             int(category_id)
@@ -108,8 +106,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             self.logger.info("Нет стартовых данных")
             await dialog_manager.switch_to(model.GeneratePublicationStates.input_text)
 
-        self.logger.info("Конец выбора категории")
-
+    @auto_log()
     @traced_method()
     async def handle_generate_text(
             self,
@@ -117,8 +114,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало генерации текста")
-
         dialog_manager.show_mode = ShowMode.EDIT
 
         await callback.answer()
@@ -138,8 +133,8 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         dialog_manager.dialog_data["publication_text"] = publication_data["text"]
 
         await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
-        self.logger.info("Конец генерации текста")
 
+    @auto_log()
     @traced_method()
     async def handle_generate_text_with_image(
             self,
@@ -147,8 +142,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало генерации текста с изображением")
-
         dialog_manager.show_mode = ShowMode.EDIT
         await callback.answer()
         await callback.message.edit_text(
@@ -178,8 +171,8 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         dialog_manager.dialog_data["current_image_index"] = 0
 
         await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
-        self.logger.info("Конец генерации текста с изображением")
 
+    @auto_log()
     @traced_method()
     async def handle_next_image(
             self,
@@ -187,8 +180,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало переключения на следующее изображение")
-
         dialog_manager.show_mode = ShowMode.EDIT
 
         images_url = dialog_manager.dialog_data.get("publication_images_url", [])
@@ -202,8 +193,8 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             dialog_manager.dialog_data["current_image_index"] = 0
 
         await callback.answer()
-        self.logger.info("Конец переключения на следующее изображение")
 
+    @auto_log()
     @traced_method()
     async def handle_prev_image(
             self,
@@ -211,8 +202,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало переключения на предыдущее изображение")
-
         dialog_manager.show_mode = ShowMode.EDIT
 
         images_url = dialog_manager.dialog_data.get("publication_images_url", [])
@@ -226,8 +215,8 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             dialog_manager.dialog_data["current_image_index"] = len(images_url) - 1
 
         await callback.answer()
-        self.logger.info("Конец переключения на предыдущее изображение")
 
+    @auto_log()
     @traced_method()
     async def handle_regenerate_text(
             self,
@@ -235,8 +224,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало регенерации текста")
-
         dialog_manager.show_mode = ShowMode.EDIT
 
         await callback.answer()
@@ -257,8 +244,8 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         dialog_manager.dialog_data["publication_text"] = regenerated_data["text"]
 
         await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
-        self.logger.info("Конец регенерации текста")
 
+    @auto_log()
     @traced_method()
     async def handle_regenerate_text_with_prompt(
             self,
@@ -267,8 +254,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             dialog_manager: DialogManager,
             prompt: str
     ) -> None:
-        self.logger.info("Начало регенерации текста с промптом")
-
         dialog_manager.show_mode = ShowMode.EDIT
 
         await message.delete()
@@ -306,8 +291,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
 
-        self.logger.info("Конец регенерации текста с промптом")
-
+    @auto_log()
     @traced_method()
     async def handle_edit_text(
             self,
@@ -316,8 +300,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             dialog_manager: DialogManager,
             text: str
     ) -> None:
-        self.logger.info("Начало редактирования текста")
-
         dialog_manager.show_mode = ShowMode.EDIT
 
         await message.delete()
@@ -344,11 +326,9 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             return
 
         dialog_manager.dialog_data["publication_text"] = new_text
-
         await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
 
-        self.logger.info("Конец редактирования текста")
-
+    @auto_log()
     @traced_method()
     async def handle_generate_new_image(
             self,
@@ -356,8 +336,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало генерации нового изображения")
-
         dialog_manager.show_mode = ShowMode.EDIT
 
         await callback.answer()
@@ -390,8 +368,8 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         dialog_manager.dialog_data.pop("custom_image_file_id", None)
 
         await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
-        self.logger.info("Конец генерации нового изображения")
 
+    @auto_log()
     @traced_method()
     async def handle_generate_image_with_prompt(
             self,
@@ -400,8 +378,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             dialog_manager: DialogManager,
             prompt: str
     ) -> None:
-        self.logger.info("Начало генерации изображения с промптом")
-
         dialog_manager.show_mode = ShowMode.EDIT
 
         await message.delete()
@@ -451,8 +427,8 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         dialog_manager.dialog_data["is_generating_image"] = False
 
         await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
-        self.logger.info("Конец генерации изображения с промптом")
 
+    @auto_log()
     @traced_method()
     async def handle_image_upload(
             self,
@@ -460,8 +436,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             widget: MessageInput,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало загрузки изображения")
-
         dialog_manager.show_mode = ShowMode.EDIT
 
         await message.delete()
@@ -497,6 +471,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             self.logger.info("Ошибка обработки изображения")
             dialog_manager.dialog_data["has_image_processing_error"] = True
 
+    @auto_log()
     @traced_method()
     async def handle_remove_image(
             self,
@@ -504,8 +479,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало удаления изображения")
-
         dialog_manager.show_mode = ShowMode.EDIT
 
         dialog_manager.dialog_data["has_image"] = False
@@ -516,8 +489,8 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         await callback.answer("Изображение удалено", show_alert=True)
         await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
-        self.logger.info("Конец удаления изображения")
 
+    @auto_log()
     @traced_method()
     async def handle_add_to_drafts(
             self,
@@ -573,6 +546,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         # )
         # span.set_status(Status(StatusCode.OK))
 
+    @auto_log()
     @traced_method()
     async def handle_send_to_moderation(
             self,
@@ -580,8 +554,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало отправки на модерацию")
-
         dialog_manager.show_mode = ShowMode.EDIT
 
         state = await self._get_state(dialog_manager)
@@ -626,8 +598,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             mode=StartMode.RESET_STACK
         )
 
-        self.logger.info("Конец отправки на модерацию")
-
+    @auto_log()
     @traced_method()
     async def handle_toggle_social_network(
             self,
@@ -635,8 +606,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             checkbox: ManagedCheckbox,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало переключения соцсети")
-
         dialog_manager.show_mode = ShowMode.EDIT
 
         if "selected_social_networks" not in dialog_manager.dialog_data:
@@ -648,8 +617,8 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         dialog_manager.dialog_data["selected_social_networks"][network_id] = is_checked
 
         await callback.answer()
-        self.logger.info("Конец переключения соцсети")
 
+    @auto_log()
     @traced_method()
     async def handle_publish_now(
             self,
@@ -657,8 +626,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало публикации")
-
         dialog_manager.show_mode = ShowMode.EDIT
 
         state = await self._get_state(dialog_manager)
@@ -712,8 +679,8 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         await callback.answer("Публикация успешно опубликована", show_alert=True)
         await dialog_manager.switch_to(model.GeneratePublicationStates.publication_success)
-        self.logger.info("Конец публикации")
 
+    @auto_log()
     @traced_method()
     async def handle_go_to_content_menu(
             self,
@@ -721,8 +688,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало перехода в меню контента")
-
         dialog_manager.show_mode = ShowMode.EDIT
 
         if await self._check_alerts(dialog_manager):
@@ -733,8 +698,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             model.ContentMenuStates.content_menu,
             mode=StartMode.RESET_STACK
         )
-
-        self.logger.info("Конец перехода в меню контента")
 
     async def _check_alerts(self, dialog_manager: DialogManager) -> bool:
         state = await self._get_state(dialog_manager)

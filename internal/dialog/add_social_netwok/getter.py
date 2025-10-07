@@ -1,6 +1,7 @@
 from aiogram_dialog import DialogManager
 
 from internal import interface, model
+from pkg.log_wrapper import auto_log
 from pkg.trace_wrapper import traced_method
 
 
@@ -16,14 +17,13 @@ class AddSocialNetworkGetter(interface.IAddSocialNetworkGetter):
         self.state_repo = state_repo
         self.loom_content_client = loom_content_client
 
+    @auto_log()
     @traced_method()
     async def get_select_network_data(
             self,
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        self.logger.info("Начало получения данных выбора соцсетей")
-
         state = await self._get_state(dialog_manager)
 
         social_networks = await self.loom_content_client.get_social_networks_by_organization(
@@ -43,16 +43,15 @@ class AddSocialNetworkGetter(interface.IAddSocialNetworkGetter):
             "instagram_status": instagram_status,
         }
 
-        self.logger.info("Завершение получения данных выбора соцсетей")
         return data
 
+    @auto_log()
     @traced_method()
     async def get_telegram_main_data(
             self,
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        self.logger.info("Начало получения основных данных Telegram")
 
         state = await self._get_state(dialog_manager)
         social_networks = await self.loom_content_client.get_social_networks_by_organization(
@@ -69,9 +68,9 @@ class AddSocialNetworkGetter(interface.IAddSocialNetworkGetter):
             "telegram_autoselect": telegram_data.get("autoselect", False),
         }
 
-        self.logger.info("Завершение получения основных данных Telegram")
         return data
 
+    @auto_log()
     @traced_method()
     async def get_telegram_connect_data(
             self,
@@ -92,14 +91,13 @@ class AddSocialNetworkGetter(interface.IAddSocialNetworkGetter):
             "has_invalid_telegram_permission": dialog_manager.dialog_data.get("has_invalid_telegram_permission", False),
         }
 
+    @auto_log()
     @traced_method()
     async def get_telegram_edit_data(
             self,
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        self.logger.info("Начало получения данных редактирования Telegram")
-
         state = await self._get_state(dialog_manager)
 
         social_networks = await self.loom_content_client.get_social_networks_by_organization(
@@ -140,17 +138,15 @@ class AddSocialNetworkGetter(interface.IAddSocialNetworkGetter):
             ),
         }
 
-        self.logger.info("Завершение получения данных редактирования Telegram")
         return data
 
+    @auto_log()
     @traced_method()
     async def get_telegram_change_username_data(
             self,
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        self.logger.info("Начало получения данных изменения username Telegram")
-
         state = await self._get_state(dialog_manager)
 
         social_networks = await self.loom_content_client.get_social_networks_by_organization(
@@ -173,10 +169,9 @@ class AddSocialNetworkGetter(interface.IAddSocialNetworkGetter):
                 False
             ),
         }
-
-        self.logger.info("Завершение получения данных изменения username Telegram")
         return data
 
+    @auto_log()
     @traced_method()
     async def get_vkontakte_setup_data(
             self,
@@ -185,6 +180,7 @@ class AddSocialNetworkGetter(interface.IAddSocialNetworkGetter):
     ) -> dict:
         return {}
 
+    @auto_log()
     @traced_method()
     async def get_youtube_setup_data(
             self,
@@ -193,6 +189,7 @@ class AddSocialNetworkGetter(interface.IAddSocialNetworkGetter):
     ) -> dict:
         return {}
 
+    @auto_log()
     @traced_method()
     async def get_instagram_setup_data(
             self,

@@ -5,6 +5,7 @@ from aiogram.types import CallbackQuery, Message
 from aiogram_dialog import DialogManager, StartMode, ShowMode
 
 from internal import interface, model
+from pkg.log_wrapper import auto_log
 from pkg.trace_wrapper import traced_method
 
 
@@ -22,6 +23,7 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
         self.state_repo = state_repo
         self.loom_employee_client = loom_employee_client
 
+    @auto_log()
     @traced_method()
     async def handle_select_employee(
             self,
@@ -30,8 +32,6 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
             dialog_manager: DialogManager,
             employee_id: str
     ) -> None:
-        self.logger.info("Начало обработки выбора сотрудника")
-
         dialog_manager.show_mode = ShowMode.EDIT
 
         dialog_manager.dialog_data["selected_account_id"] = employee_id
@@ -40,8 +40,8 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
         dialog_manager.dialog_data.pop("original_permissions", None)
 
         await dialog_manager.switch_to(model.ChangeEmployeeStates.employee_detail)
-        self.logger.info("Завершение обработки выбора сотрудника")
 
+    @auto_log()
     @traced_method()
     async def handle_search_employee(
             self,
@@ -50,14 +50,10 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
             dialog_manager: DialogManager,
             search_query: str
     ) -> None:
-        self.logger.info("Начало обработки поиска сотрудников")
-
         dialog_manager.show_mode = ShowMode.EDIT
-
         dialog_manager.dialog_data["search_query"] = search_query.strip()
 
-        self.logger.info("Завершение обработки поиска сотрудников")
-
+    @auto_log()
     @traced_method()
     async def handle_clear_search(
             self,
@@ -65,15 +61,11 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало очистки поиска")
-
         dialog_manager.show_mode = ShowMode.EDIT
-
         dialog_manager.dialog_data.pop("search_query", None)
-
         await callback.answer()
-        self.logger.info("Завершение очистки поиска")
 
+    @auto_log()
     @traced_method()
     async def handle_refresh_list(
             self,
@@ -88,6 +80,7 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
         await callback.answer()
         self.logger.info("Завершение обновления списка сотрудников")
 
+    @auto_log()
     @traced_method()
     async def handle_navigate_employee(
             self,
@@ -95,8 +88,6 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало навигации по сотрудникам")
-
         dialog_manager.show_mode = ShowMode.EDIT
 
         button_id = button.widget_id
@@ -123,8 +114,7 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
         dialog_manager.dialog_data.pop("temp_permissions", None)
         dialog_manager.dialog_data.pop("original_permissions", None)
 
-        self.logger.info("Завершение навигации по сотрудникам")
-
+    @auto_log()
     @traced_method()
     async def handle_go_to_organization_menu(
             self,
@@ -132,8 +122,6 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало перехода в меню организации")
-
         dialog_manager.show_mode = ShowMode.EDIT
 
         if await self._check_alerts(dialog_manager):
@@ -145,8 +133,8 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
             mode=StartMode.RESET_STACK
         )
 
-        self.logger.info("Завершение перехода в меню организации")
 
+    @auto_log()
     @traced_method()
     async def handle_toggle_permission(
             self,
@@ -154,8 +142,6 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало переключения разрешения")
-
         dialog_manager.show_mode = ShowMode.EDIT
 
         permission_map = {
@@ -178,8 +164,8 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
         dialog_manager.dialog_data["temp_permissions"] = permissions
 
         await callback.answer()
-        self.logger.info("Завершение переключения разрешения")
 
+    @auto_log()
     @traced_method()
     async def handle_save_permissions(
             self,
@@ -187,8 +173,6 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало сохранения разрешений")
-
         dialog_manager.show_mode = ShowMode.EDIT
 
         selected_account_id = int(dialog_manager.dialog_data.get("selected_account_id"))
@@ -209,8 +193,8 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
 
         await callback.answer("Разрешения успешно сохранены", show_alert=True)
         await dialog_manager.switch_to(model.ChangeEmployeeStates.employee_detail)
-        self.logger.info("Завершение сохранения разрешений")
 
+    @auto_log()
     @traced_method()
     async def handle_reset_permissions(
             self,
@@ -218,17 +202,12 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало сброса разрешений")
-
         dialog_manager.show_mode = ShowMode.EDIT
-
         original = dialog_manager.dialog_data.get("original_permissions", {})
         dialog_manager.dialog_data["temp_permissions"] = original.copy()
-
         await callback.answer("Изменения отменены", show_alert=True)
 
-        self.logger.info("Завершение сброса разрешений")
-
+    @auto_log()
     @traced_method()
     async def handle_show_role_change(
             self,
@@ -236,15 +215,11 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало открытия окна изменения роли")
-
         dialog_manager.show_mode = ShowMode.EDIT
         dialog_manager.dialog_data.pop("selected_new_role", None)
-
         await dialog_manager.switch_to(model.ChangeEmployeeStates.change_role)
 
-        self.logger.info("Завершение открытия окна изменения роли")
-
+    @auto_log()
     @traced_method()
     async def handle_select_role(
             self,
@@ -253,8 +228,6 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
             dialog_manager: DialogManager,
             role: str
     ) -> None:
-        self.logger.info("Начало выбора роли")
-
         dialog_manager.show_mode = ShowMode.EDIT
 
         selected_account_id = int(dialog_manager.dialog_data.get("selected_account_id"))
@@ -271,8 +244,8 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
         dialog_manager.dialog_data["selected_new_role"] = role
 
         await callback.answer()
-        self.logger.info("Завершение выбора роли")
 
+    @auto_log()
     @traced_method()
     async def handle_reset_role_selection(
             self,
@@ -280,15 +253,11 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало сброса выбора роли")
-
         dialog_manager.show_mode = ShowMode.EDIT
-
         dialog_manager.dialog_data.pop("selected_new_role", None)
-
         await callback.answer()
-        self.logger.info("Завершение сброса выбора роли")
 
+    @auto_log()
     @traced_method()
     async def handle_confirm_role_change(
             self,
@@ -296,8 +265,6 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало подтверждения изменения роли")
-
         dialog_manager.show_mode = ShowMode.EDIT
 
         selected_account_id = int(dialog_manager.dialog_data.get("selected_account_id"))
@@ -317,8 +284,8 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
 
         await callback.answer(f"Роль успешно изменена", show_alert=True)
         await dialog_manager.switch_to(model.ChangeEmployeeStates.employee_detail)
-        self.logger.info("Завершение подтверждения изменения роли")
 
+    @auto_log()
     @traced_method()
     async def handle_delete_employee(
             self,
@@ -326,8 +293,6 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало удаления сотрудника")
-
         dialog_manager.show_mode = ShowMode.EDIT
 
         selected_account_id = int(dialog_manager.dialog_data.get("selected_account_id"))
@@ -350,7 +315,6 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
 
         await callback.answer(f"Сотрудник успешно удален",show_alert=True)
         await dialog_manager.switch_to(model.ChangeEmployeeStates.employee_list)
-        self.logger.info("Завершение удаления сотрудника")
 
     async def _check_alerts(self, dialog_manager: DialogManager) -> bool:
         state = await self._get_state(dialog_manager)

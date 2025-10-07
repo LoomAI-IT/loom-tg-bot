@@ -1,6 +1,7 @@
 from aiogram_dialog import DialogManager
 
 from internal import interface, model
+from pkg.log_wrapper import auto_log
 from pkg.trace_wrapper import traced_method
 
 
@@ -15,6 +16,7 @@ class MainMenuGetter(interface.IMainMenuGetter):
 
         self.state_repo = state_repo
 
+    @auto_log()
     @traced_method()
     async def get_main_menu_data(
             self,

@@ -6,6 +6,7 @@ from aiogram_dialog import DialogManager, StartMode, ShowMode
 from aiogram_dialog.widgets.kbd import ManagedCheckbox
 
 from internal import interface, model
+from pkg.log_wrapper import auto_log
 from pkg.trace_wrapper import traced_method
 
 
@@ -21,6 +22,7 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
         self.state_repo = state_repo
         self.loom_content_client = loom_content_client
 
+    @auto_log()
     @traced_method()
     async def handle_telegram_channel_username_input(
             self,
@@ -29,8 +31,6 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
             dialog_manager: DialogManager,
             telegram_channel_username: str
     ) -> None:
-        self.logger.info("Начало обработки ввода username Telegram канала")
-
         dialog_manager.show_mode = ShowMode.EDIT
         await message.delete()
 
@@ -68,8 +68,7 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
         dialog_manager.dialog_data["telegram_channel_username"] = telegram_channel_username
         dialog_manager.dialog_data["has_telegram_channel_username"] = True
 
-        self.logger.info("Завершение обработки ввода username Telegram канала")
-
+    @auto_log()
     @traced_method()
     async def handle_save_telegram_connection(
             self,
@@ -77,8 +76,6 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало сохранения подключения Telegram канала")
-
         dialog_manager.show_mode = ShowMode.EDIT
 
         telegram_channel_username = dialog_manager.dialog_data.get("telegram_channel_username", "")
@@ -102,8 +99,7 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
 
         await dialog_manager.switch_to(model.AddSocialNetworkStates.telegram_main)
 
-        self.logger.info("Завершение сохранения подключения Telegram канала")
-
+    @auto_log()
     @traced_method()
     async def handle_disconnect_telegram(
             self,
@@ -111,8 +107,6 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало отключения Telegram канала")
-
         dialog_manager.show_mode = ShowMode.EDIT
 
         state = await self._get_state(dialog_manager)
@@ -125,9 +119,7 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
         dialog_manager.dialog_data.clear()
 
         await callback.answer("Telegram канал отключен", show_alert=True)
-
-        self.logger.info("Завершение отключения Telegram канала")
-
+    @auto_log()
     @traced_method()
     async def handle_toggle_telegram_autoselect(
             self,
@@ -135,8 +127,6 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
             checkbox: ManagedCheckbox,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало переключения автовыбора Telegram")
-
         new_value = checkbox.is_checked()
 
         if "working_state" not in dialog_manager.dialog_data:
@@ -156,8 +146,7 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
 
         await callback.answer()
 
-        self.logger.info("Завершение переключения автовыбора Telegram")
-
+    @auto_log()
     @traced_method()
     async def handle_save_telegram_changes(
             self,
@@ -165,8 +154,6 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало сохранения изменений Telegram")
-
         dialog_manager.show_mode = ShowMode.EDIT
 
         # Берем данные из working_state, а не из чекбокса
@@ -187,11 +174,9 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
         dialog_manager.dialog_data.pop("working_state", None)
 
         await callback.answer("Настройки Telegram обновлены", show_alert=True)
-
         await dialog_manager.switch_to(model.AddSocialNetworkStates.telegram_main)
 
-        self.logger.info("Завершение сохранения изменений Telegram")
-
+    @auto_log()
     @traced_method()
     async def handle_back_from_edit(
             self,
@@ -205,6 +190,7 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
 
         await dialog_manager.switch_to(model.AddSocialNetworkStates.telegram_main, ShowMode.EDIT)
 
+    @auto_log()
     @traced_method()
     async def handle_new_telegram_channel_username_input(
             self,
@@ -213,8 +199,6 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
             dialog_manager: DialogManager,
             new_telegram_channel_username: str
     ) -> None:
-        self.logger.info("Начало обработки ввода нового username Telegram канала")
-
         dialog_manager.show_mode = ShowMode.EDIT
 
         await message.delete()
@@ -255,8 +239,7 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
         dialog_manager.dialog_data["working_state"]["telegram_channel_username"] = new_telegram_channel_username
         await dialog_manager.switch_to(model.AddSocialNetworkStates.telegram_edit)
 
-        self.logger.info("Завершение обработки ввода нового username Telegram канала")
-
+    @auto_log()
     @traced_method()
     async def handle_go_to_organization_menu(
             self,
@@ -264,8 +247,6 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало перехода в меню организации")
-
         dialog_manager.show_mode = ShowMode.EDIT
 
         if await self._check_alerts(dialog_manager):
@@ -276,8 +257,6 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
             model.OrganizationMenuStates.organization_menu,
             mode=StartMode.RESET_STACK
         )
-
-        self.logger.info("Завершение перехода в меню организации")
 
     async def _check_alerts(self, dialog_manager: DialogManager) -> bool:
         state = await self._get_state(dialog_manager)

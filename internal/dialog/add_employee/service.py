@@ -6,6 +6,7 @@ from aiogram_dialog import DialogManager, StartMode, ShowMode
 
 from internal import interface, model, common
 from pkg.trace_wrapper import traced_method
+from pkg.log_wrapper import auto_log
 from . import utils
 
 
@@ -21,6 +22,7 @@ class AddEmployeeService(interface.IAddEmployeeService):
         self.state_repo = state_repo
         self.loom_employee_client = loom_employee_client
 
+    @auto_log()
     @traced_method()
     async def handle_account_id_input(
             self,
@@ -29,8 +31,6 @@ class AddEmployeeService(interface.IAddEmployeeService):
             dialog_manager: DialogManager,
             account_id: str
     ) -> None:
-        self.logger.info("Начало обработки ввода account_id")
-
         dialog_manager.show_mode = ShowMode.EDIT
 
         await message.delete()
@@ -64,8 +64,7 @@ class AddEmployeeService(interface.IAddEmployeeService):
         dialog_manager.dialog_data["account_id"] = str(account_id_int)
         dialog_manager.dialog_data["has_account_id"] = True
 
-        self.logger.info("Завершение обработки ввода account_id")
-
+    @auto_log()
     @traced_method()
     async def handle_name_input(
             self,
@@ -74,8 +73,6 @@ class AddEmployeeService(interface.IAddEmployeeService):
             dialog_manager: DialogManager,
             name: str
     ) -> None:
-        self.logger.info("Начало обработки ввода имени")
-
         dialog_manager.show_mode = ShowMode.EDIT
 
         await message.delete()
@@ -102,8 +99,7 @@ class AddEmployeeService(interface.IAddEmployeeService):
         dialog_manager.dialog_data["name"] = name
         dialog_manager.dialog_data["has_name"] = True
 
-        self.logger.info("Завершение обработки ввода имени")
-
+    @auto_log()
     @traced_method()
     async def handle_role_selection(
             self,
@@ -112,8 +108,6 @@ class AddEmployeeService(interface.IAddEmployeeService):
             dialog_manager: DialogManager,
             role: str
     ) -> None:
-        self.logger.info("Начало обработки выбора роли")
-
         dialog_manager.show_mode = ShowMode.EDIT
 
         selected_role = common.Role(role)
@@ -126,8 +120,7 @@ class AddEmployeeService(interface.IAddEmployeeService):
         default_permissions = utils.PermissionManager.get_default_permissions(selected_role)
         dialog_manager.dialog_data["permissions"] = default_permissions.to_dict()
 
-        self.logger.info("Завершение обработки выбора роли")
-
+    @auto_log()
     @traced_method()
     async def handle_toggle_permission(
             self,
@@ -135,8 +128,6 @@ class AddEmployeeService(interface.IAddEmployeeService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало переключения разрешения")
-
         dialog_manager.show_mode = ShowMode.EDIT
 
         button_id = button.widget_id
@@ -158,8 +149,8 @@ class AddEmployeeService(interface.IAddEmployeeService):
         dialog_manager.dialog_data["permissions"] = permissions.to_dict()
 
         await callback.answer()
-        self.logger.info("Завершение переключения разрешения")
 
+    @auto_log()
     @traced_method()
     async def handle_create_employee(
             self,
@@ -167,8 +158,6 @@ class AddEmployeeService(interface.IAddEmployeeService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало создания сотрудника")
-
         dialog_manager.show_mode = ShowMode.EDIT
 
         # Очищаем предыдущие ошибки
@@ -216,8 +205,7 @@ class AddEmployeeService(interface.IAddEmployeeService):
             mode=StartMode.RESET_STACK
         )
 
-        self.logger.info("Завершение создания сотрудника")
-
+    @auto_log()
     @traced_method()
     async def handle_go_to_organization_menu(
             self,
@@ -225,8 +213,6 @@ class AddEmployeeService(interface.IAddEmployeeService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало перехода в меню организации")
-
         dialog_manager.show_mode = ShowMode.EDIT
 
         if await self._check_alerts(dialog_manager):
@@ -237,8 +223,6 @@ class AddEmployeeService(interface.IAddEmployeeService):
             model.OrganizationMenuStates.organization_menu,
             mode=StartMode.RESET_STACK
         )
-
-        self.logger.info("Завершение перехода в меню организации")
 
     async def _check_alerts(self, dialog_manager: DialogManager) -> bool:
         state = await self._get_state(dialog_manager)

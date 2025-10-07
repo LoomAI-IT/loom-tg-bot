@@ -1,6 +1,5 @@
 from typing import Any
 
-from aiogram.enums import ParseMode
 from aiogram_dialog.widgets.input import MessageInput
 
 from aiogram import Bot
@@ -9,6 +8,7 @@ from aiogram_dialog import DialogManager, StartMode, ShowMode
 from aiogram_dialog.widgets.kbd import ManagedCheckbox
 
 from internal import interface, model
+from pkg.log_wrapper import auto_log
 from pkg.trace_wrapper import traced_method
 
 
@@ -26,6 +26,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         self.state_repo = state_repo
         self.loom_content_client = loom_content_client
 
+    @auto_log()
     @traced_method()
     async def handle_navigate_publication(
             self,
@@ -33,7 +34,6 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало навигации по публикациям")
         dialog_manager.show_mode = ShowMode.EDIT
 
         current_index = dialog_manager.dialog_data.get("current_index", 0)
@@ -59,8 +59,8 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         dialog_manager.dialog_data.pop("working_publication", None)
 
         await callback.answer()
-        self.logger.info("Навигация завершена")
 
+    @auto_log()
     @traced_method()
     async def handle_reject_comment_input(
             self,
@@ -69,7 +69,6 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             dialog_manager: DialogManager,
             comment: str
     ) -> None:
-        self.logger.info("Начало обработки комментария отклонения")
         dialog_manager.show_mode = ShowMode.EDIT
 
         await message.delete()
@@ -96,8 +95,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
 
         dialog_manager.dialog_data["reject_comment"] = comment
 
-        self.logger.info("Комментарий отклонения сохранен")
-
+    @auto_log()
     @traced_method()
     async def handle_send_rejection(
             self,
@@ -105,7 +103,6 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало отклонения публикации")
         dialog_manager.show_mode = ShowMode.EDIT
 
         state = await self._get_state(dialog_manager)
@@ -124,8 +121,8 @@ class ModerationPublicationService(interface.IModerationPublicationService):
 
         await callback.answer("Публикация отклонена", show_alert=True)
         await dialog_manager.switch_to(model.ModerationPublicationStates.moderation_list)
-        self.logger.info("Публикация отклонена успешно")
 
+    @auto_log()
     @traced_method()
     async def handle_regenerate_text(
             self,
@@ -133,7 +130,6 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало перегенерации текста")
         dialog_manager.show_mode = ShowMode.EDIT
 
         await callback.answer()
@@ -153,8 +149,8 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         dialog_manager.dialog_data["is_regenerating_text"] = False
 
         await dialog_manager.switch_to(model.ModerationPublicationStates.edit_preview)
-        self.logger.info("Текст перегенерирован")
 
+    @auto_log()
     @traced_method()
     async def handle_regenerate_text_with_prompt(
             self,
@@ -163,7 +159,6 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             dialog_manager: DialogManager,
             prompt: str
     ) -> None:
-        self.logger.info("Начало перегенерации текста с промптом")
         dialog_manager.show_mode = ShowMode.EDIT
 
         await message.delete()
@@ -198,8 +193,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
 
         await dialog_manager.switch_to(model.ModerationPublicationStates.edit_preview)
 
-        self.logger.info("Текст перегенерирован с промптом")
-
+    @auto_log()
     @traced_method()
     async def handle_edit_text(
             self,
@@ -208,7 +202,6 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             dialog_manager: DialogManager,
             text: str
     ) -> None:
-        self.logger.info("Начало редактирования текста")
         dialog_manager.show_mode = ShowMode.EDIT
 
         await message.delete()
@@ -237,8 +230,8 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         dialog_manager.dialog_data["working_publication"]["text"] = new_text
 
         await dialog_manager.switch_to(model.ModerationPublicationStates.edit_preview)
-        self.logger.info("Текст отредактирован")
 
+    @auto_log()
     @traced_method()
     async def handle_generate_new_image(
             self,
@@ -246,7 +239,6 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало генерации нового изображения")
         dialog_manager.show_mode = ShowMode.EDIT
 
         await callback.answer()
@@ -286,8 +278,8 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         dialog_manager.dialog_data["is_generating_image"] = False
 
         await dialog_manager.switch_to(model.ModerationPublicationStates.edit_preview)
-        self.logger.info("Изображение сгенерировано")
 
+    @auto_log()
     @traced_method()
     async def handle_generate_image_with_prompt(
             self,
@@ -296,7 +288,6 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             dialog_manager: DialogManager,
             prompt: str
     ) -> None:
-        self.logger.info("Начало генерации изображения с промптом")
         dialog_manager.show_mode = ShowMode.EDIT
 
         await message.delete()
@@ -351,8 +342,8 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         dialog_manager.dialog_data["is_generating_image"] = False
 
         await dialog_manager.switch_to(model.ModerationPublicationStates.edit_preview)
-        self.logger.info("Изображение сгенерировано с промптом")
 
+    @auto_log()
     @traced_method()
     async def handle_image_upload(
             self,
@@ -360,7 +351,6 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             widget: MessageInput,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало загрузки изображения")
         dialog_manager.show_mode = ShowMode.EDIT
 
         await message.delete()
@@ -394,6 +384,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             self.logger.info("Ошибка обработки изображения")
             dialog_manager.dialog_data["has_image_processing_error"] = True
 
+    @auto_log()
     @traced_method()
     async def handle_remove_image(
             self,
@@ -401,7 +392,6 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало удаления изображения")
         dialog_manager.show_mode = ShowMode.EDIT
 
         dialog_manager.dialog_data["working_publication"]["has_image"] = False
@@ -412,8 +402,8 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         await callback.answer("Изображение удалено", show_alert=True)
 
         await dialog_manager.switch_to(model.ModerationPublicationStates.edit_preview)
-        self.logger.info("Изображение удалено")
 
+    @auto_log()
     @traced_method()
     async def handle_save_edits(
             self,
@@ -421,7 +411,6 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало сохранения изменений")
         dialog_manager.show_mode = ShowMode.EDIT
 
         if not self._has_changes(dialog_manager):
@@ -439,8 +428,8 @@ class ModerationPublicationService(interface.IModerationPublicationService):
 
         await callback.answer("Изменения сохранены", show_alert=True)
         await dialog_manager.switch_to(model.ModerationPublicationStates.moderation_list)
-        self.logger.info("Изменения сохранены")
 
+    @auto_log()
     @traced_method()
     async def handle_back_to_moderation_list(
             self,
@@ -448,12 +437,10 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Возврат к списку модерации")
         dialog_manager.show_mode = ShowMode.EDIT
-
         await dialog_manager.switch_to(model.ModerationPublicationStates.moderation_list)
-        self.logger.info("Возврат к списку модерации выполнен")
 
+    @auto_log()
     @traced_method()
     async def handle_back_to_content_menu(
             self,
@@ -461,7 +448,6 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Возврат к меню контента")
         dialog_manager.show_mode = ShowMode.EDIT
 
         if await self._check_alerts(dialog_manager):
@@ -473,8 +459,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             mode=StartMode.RESET_STACK
         )
 
-        self.logger.info("Возврат к меню контента выполнен")
-
+    @auto_log()
     @traced_method()
     async def handle_toggle_social_network(
             self,
@@ -482,8 +467,6 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             checkbox: ManagedCheckbox,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало переключения социальной сети")
-
         if "selected_social_networks" not in dialog_manager.dialog_data:
             dialog_manager.dialog_data["selected_social_networks"] = {}
 
@@ -494,8 +477,8 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         dialog_manager.dialog_data["selected_social_networks"][network_id] = is_checked
 
         await callback.answer()
-        self.logger.info("Социальная сеть переключена")
 
+    @auto_log()
     @traced_method()
     async def handle_prev_image(
             self,
@@ -503,7 +486,6 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало переключения на предыдущее изображение")
         working_pub = dialog_manager.dialog_data.get("working_publication", {})
         images_url = working_pub.get("generated_images_url", [])
         current_index = working_pub.get("current_image_index", 0)
@@ -515,8 +497,8 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             dialog_manager.dialog_data["working_publication"]["current_image_index"] = len(images_url) - 1
 
         await callback.answer()
-        self.logger.info("Переключение на предыдущее изображение выполнено")
 
+    @auto_log()
     @traced_method()
     async def handle_next_image(
             self,
@@ -524,7 +506,6 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало переключения на следующее изображение")
         working_pub = dialog_manager.dialog_data.get("working_publication", {})
         images_url = working_pub.get("generated_images_url", [])
         current_index = working_pub.get("current_image_index", 0)
@@ -536,8 +517,8 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             dialog_manager.dialog_data["working_publication"]["current_image_index"] = 0
 
         await callback.answer()
-        self.logger.info("Переключение на следующее изображение выполнено")
 
+    @auto_log()
     @traced_method()
     async def handle_publish_now(
             self,
@@ -545,8 +526,6 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало публикации")
-
         selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
         has_selected_networks = any(selected_networks.values())
 
@@ -597,7 +576,6 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         await callback.answer("Опубликовано!", show_alert=True)
 
         await dialog_manager.switch_to(model.ModerationPublicationStates.publication_success)
-        self.logger.info("Публикация одобрена и опубликована")
 
     # Вспомогательные методы
     def _has_changes(self, dialog_manager: DialogManager) -> bool:

@@ -3,6 +3,7 @@ from datetime import datetime
 from aiogram_dialog import DialogManager
 
 from internal import interface, model
+from pkg.log_wrapper import auto_log
 from pkg.trace_wrapper import traced_method
 
 
@@ -22,14 +23,13 @@ class ChangeEmployeeGetter(interface.IChangeEmployeeGetter):
         self.loom_organization_client = loom_organization_client
         self.loom_content_client = loom_content_client
 
+    @auto_log()
     @traced_method()
     async def get_employee_list_data(
             self,
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        self.logger.info("Начало загрузки списка сотрудников")
-
         state = await self._get_state(dialog_manager)
         current_employee = await self.loom_employee_client.get_employee_by_account_id(
             state.account_id
@@ -76,18 +76,15 @@ class ChangeEmployeeGetter(interface.IChangeEmployeeGetter):
             "search_query": search_query,
             "show_pager": len(employees_data) > 6,
         }
-
-        self.logger.info("Завершение загрузки списка сотрудников")
         return data
 
+    @auto_log()
     @traced_method()
     async def get_employee_detail_data(
             self,
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        self.logger.info("Начало загрузки детальной информации о сотруднике")
-
         selected_account_id = int(dialog_manager.dialog_data.get("selected_account_id"))
 
         state = await self._get_state(dialog_manager)
@@ -182,17 +179,15 @@ class ChangeEmployeeGetter(interface.IChangeEmployeeGetter):
             "has_moderated_publications": bool(rejected_publication_count or approved_publication_count),
         }
 
-        self.logger.info("Завершение загрузки детальной информации о сотруднике")
         return data
 
+    @auto_log()
     @traced_method()
     async def get_permissions_data(
             self,
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        self.logger.info("Начало загрузки данных разрешений")
-
         selected_account_id = int(dialog_manager.dialog_data.get("selected_account_id"))
 
         employee = await self.loom_employee_client.get_employee_by_account_id(
@@ -230,17 +225,15 @@ class ChangeEmployeeGetter(interface.IChangeEmployeeGetter):
             "has_changes": has_changes,
         }
 
-        self.logger.info("Завершение загрузки данных разрешений")
         return data
 
+    @auto_log()
     @traced_method()
     async def get_delete_confirmation_data(
             self,
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        self.logger.info("Начало загрузки данных подтверждения удаления")
-
         selected_account_id = int(dialog_manager.dialog_data.get("selected_account_id"))
 
         employee = await self.loom_employee_client.get_employee_by_account_id(
@@ -253,18 +246,15 @@ class ChangeEmployeeGetter(interface.IChangeEmployeeGetter):
             "role": employee.role,
             "role_display": self._get_role_display_name(employee.role),
         }
-
-        self.logger.info("Завершение загрузки данных подтверждения удаления")
         return data
 
+    @auto_log()
     @traced_method()
     async def get_role_change_data(
             self,
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        self.logger.info("Начало загрузки данных изменения роли")
-
         selected_account_id = int(dialog_manager.dialog_data.get("selected_account_id"))
         selected_new_role = dialog_manager.dialog_data.get("selected_new_role")
 
@@ -300,8 +290,6 @@ class ChangeEmployeeGetter(interface.IChangeEmployeeGetter):
                 "selected_role": selected_new_role,
                 "selected_role_display": self._get_role_display_name(selected_new_role),
             })
-
-        self.logger.info("Завершение загрузки данных изменения роли")
         return data
 
     def _get_available_roles_for_assignment(self, current_user_role: str, target_employee_role: str) -> list[dict]:

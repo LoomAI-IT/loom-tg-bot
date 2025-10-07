@@ -1,6 +1,7 @@
 from aiogram_dialog import DialogManager
 
-from internal import interface, model, common
+from internal import interface, model
+from pkg.log_wrapper import auto_log
 from pkg.trace_wrapper import traced_method
 
 
@@ -20,14 +21,13 @@ class OrganizationMenuGetter(interface.IOrganizationMenuGetter):
         self.loom_employee_client = loom_employee_client
         self.loom_content_client = loom_content_client
 
+    @auto_log()
     @traced_method()
     async def get_organization_menu_data(
             self,
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        self.logger.info("Начало получения данных меню организации")
-
         state = await self.__get_state(dialog_manager)
 
         organization = await self.loom_organization_client.get_organization_by_id(
@@ -51,7 +51,6 @@ class OrganizationMenuGetter(interface.IOrganizationMenuGetter):
             "categories_list": categories_list,
         }
 
-        self.logger.info("Завершение получения данных меню организации")
         return data
 
     async def __get_state(self, dialog_manager: DialogManager) -> model.UserState:

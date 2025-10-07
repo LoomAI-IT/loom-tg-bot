@@ -4,6 +4,7 @@ from aiogram.types import CallbackQuery, Message
 from aiogram_dialog import DialogManager, StartMode, ShowMode
 
 from internal import interface, model
+from pkg.log_wrapper import auto_log
 from pkg.trace_wrapper import traced_method
 
 
@@ -19,6 +20,7 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
         self.state_repo = state_repo
         self.loom_content_client = loom_content_client
 
+    @auto_log()
     @traced_method()
     async def handle_navigate_video_cut(
             self,
@@ -26,7 +28,6 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало обработки навигации по черновикам видео")
         dialog_manager.show_mode = ShowMode.EDIT
 
         current_index = dialog_manager.dialog_data.get("current_index", 0)
@@ -42,15 +43,14 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
         if new_index == current_index:
             self.logger.info("Достигнут край списка черновиков")
             await callback.answer()
-            self.logger.info("Завершение обработки навигации по черновикам видео")
             return
 
         dialog_manager.dialog_data["current_index"] = new_index
         dialog_manager.dialog_data.pop("working_video_cut", None)
 
         await callback.answer()
-        self.logger.info("Завершение обработки навигации по черновикам видео")
 
+    @auto_log()
     @traced_method()
     async def handle_delete_video_cut(
             self,
@@ -58,7 +58,6 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало удаления черновика видео")
         dialog_manager.show_mode = ShowMode.EDIT
 
         original_video_cut = dialog_manager.dialog_data["original_video_cut"]
@@ -71,8 +70,8 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
         await callback.answer("Черновик успешно удален", show_alert=True)
 
         await self._remove_current_video_cut_from_list(dialog_manager)
-        self.logger.info("Завершение удаления черновика видео")
 
+    @auto_log()
     @traced_method()
     async def handle_save_changes(
             self,
@@ -80,13 +79,11 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало сохранения изменений черновика")
         dialog_manager.show_mode = ShowMode.EDIT
 
         if not self._has_changes(dialog_manager):
             self.logger.info("Изменения отсутствуют")
             await callback.answer("Нет изменений для сохранения", show_alert=True)
-            self.logger.info("Завершение сохранения изменений черновика")
             return
 
         await self._save_video_cut_changes(dialog_manager)
@@ -95,8 +92,8 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
         await callback.answer("Изменения успешно сохранены", show_alert=True)
 
         await dialog_manager.switch_to(model.VideoCutsDraftStates.video_cut_list)
-        self.logger.info("Завершение сохранения изменений черновика")
 
+    @auto_log()
     @traced_method()
     async def handle_edit_title(
             self,
@@ -105,7 +102,6 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
             dialog_manager: DialogManager,
             text: str
     ) -> None:
-        self.logger.info("Начало редактирования названия черновика")
         dialog_manager.show_mode = ShowMode.EDIT
 
         await message.delete()
@@ -114,22 +110,20 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
         if not new_title:
             self.logger.info("Название пустое")
             dialog_manager.dialog_data["has_void_title"] = True
-            self.logger.info("Завершение редактирования названия черновика")
             return
         dialog_manager.dialog_data.pop("has_void_title", None)
 
         if len(new_title) > 100:
             self.logger.info("Название превышает лимит")
             dialog_manager.dialog_data["has_big_title"] = True
-            self.logger.info("Завершение редактирования названия черновика")
             return
         dialog_manager.dialog_data.pop("has_big_title", None)
 
         dialog_manager.dialog_data["working_video_cut"]["name"] = new_title
 
         await dialog_manager.switch_to(model.VideoCutsDraftStates.edit_preview)
-        self.logger.info("Завершение редактирования названия черновика")
 
+    @auto_log()
     @traced_method()
     async def handle_edit_description(
             self,
@@ -138,7 +132,6 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
             dialog_manager: DialogManager,
             text: str
     ) -> None:
-        self.logger.info("Начало редактирования описания черновика")
         dialog_manager.show_mode = ShowMode.EDIT
         await message.delete()
 
@@ -147,22 +140,20 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
         if not new_description:
             self.logger.info("Описание пустое")
             dialog_manager.dialog_data["has_void_description"] = True
-            self.logger.info("Завершение редактирования описания черновика")
             return
         dialog_manager.dialog_data.pop("has_void_description", None)
 
         if len(new_description) > 2200:
             self.logger.info("Описание превышает лимит")
             dialog_manager.dialog_data["has_big_description"] = True
-            self.logger.info("Завершение редактирования описания черновика")
             return
         dialog_manager.dialog_data.pop("has_big_description", None)
 
         dialog_manager.dialog_data["working_video_cut"]["description"] = new_description
 
         await dialog_manager.switch_to(model.VideoCutsDraftStates.edit_preview)
-        self.logger.info("Завершение редактирования описания черновика")
 
+    @auto_log()
     @traced_method()
     async def handle_edit_tags(
             self,
@@ -171,7 +162,6 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
             dialog_manager: DialogManager,
             text: str
     ) -> None:
-        self.logger.info("Начало редактирования тегов черновика")
         dialog_manager.show_mode = ShowMode.EDIT
 
         await message.delete()
@@ -187,15 +177,14 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
             if len(new_tags) > 15:
                 self.logger.info("Превышен лимит количества тегов")
                 dialog_manager.dialog_data["has_many_tags"] = True
-                self.logger.info("Завершение редактирования тегов черновика")
                 return
             dialog_manager.dialog_data.pop("has_many_tags", None)
 
         dialog_manager.dialog_data["working_video_cut"]["tags"] = new_tags
 
         await dialog_manager.switch_to(model.VideoCutsDraftStates.edit_preview)
-        self.logger.info("Завершение редактирования тегов черновика")
 
+    @auto_log()
     @traced_method()
     async def handle_back_to_video_cut_list(
             self,
@@ -203,12 +192,10 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало возврата к списку черновиков")
         dialog_manager.show_mode = ShowMode.EDIT
-
         await dialog_manager.switch_to(model.VideoCutsDraftStates.video_cut_list)
-        self.logger.info("Завершение возврата к списку черновиков")
 
+    @auto_log()
     @traced_method()
     async def handle_send_to_moderation(
             self,
@@ -216,7 +203,6 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало отправки черновика на модерацию")
         dialog_manager.show_mode = ShowMode.EDIT
 
         if self._has_changes(dialog_manager):
@@ -235,8 +221,8 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
         await self._remove_current_video_cut_from_list(dialog_manager)
 
         await dialog_manager.switch_to(model.VideoCutsDraftStates.video_cut_list)
-        self.logger.info("Завершение отправки черновика на модерацию")
 
+    @auto_log()
     @traced_method()
     async def handle_publish_now(
             self,
@@ -244,7 +230,6 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало публикации черновика")
         dialog_manager.show_mode = ShowMode.EDIT
 
         selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
@@ -256,7 +241,6 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
                 "Выберите хотя бы одну социальную сеть для публикации",
                 show_alert=True
             )
-            self.logger.info("Завершение публикации черновика")
             return
 
         if self._has_changes(dialog_manager):
@@ -280,8 +264,8 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
         await self._remove_current_video_cut_from_list(dialog_manager)
 
         await dialog_manager.switch_to(model.VideoCutsDraftStates.video_cut_list)
-        self.logger.info("Завершение публикации черновика")
 
+    @auto_log()
     @traced_method()
     async def handle_toggle_social_network(
             self,
@@ -289,7 +273,6 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
             checkbox: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало переключения социальной сети")
         dialog_manager.show_mode = ShowMode.EDIT
 
         if "selected_social_networks" not in dialog_manager.dialog_data:
@@ -302,8 +285,8 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
         dialog_manager.dialog_data["selected_social_networks"][network_id] = is_checked
 
         await callback.answer()
-        self.logger.info("Завершение переключения социальной сети")
 
+    @auto_log()
     @traced_method()
     async def handle_back_to_content_menu(
             self,
@@ -311,20 +294,16 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало возврата в меню контента")
         dialog_manager.show_mode = ShowMode.EDIT
 
         if await self._check_alerts(dialog_manager):
             self.logger.info("Обнаружены алерты, переход к алертам")
-            self.logger.info("Завершение возврата в меню контента")
             return
 
         await dialog_manager.start(
             model.ContentMenuStates.content_menu,
             mode=StartMode.RESET_STACK
         )
-
-        self.logger.info("Завершение возврата в меню контента")
 
     # Вспомогательные методы
     def _has_changes(self, dialog_manager: DialogManager) -> bool:

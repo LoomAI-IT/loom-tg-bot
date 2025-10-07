@@ -7,6 +7,7 @@ from aiogram_dialog import DialogManager
 from aiogram_dialog.widgets.kbd import ManagedCheckbox
 
 from internal import interface, model
+from pkg.log_wrapper import auto_log
 from pkg.trace_wrapper import traced_method
 
 
@@ -26,13 +27,13 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
         self.loom_content_client = loom_content_client
         self.loom_domain = loom_domain
 
+    @auto_log()
     @traced_method()
     async def get_moderation_list_data(
             self,
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        self.logger.info("Начало загрузки списка модерации")
         state = await self._get_state(dialog_manager)
 
         publications = await self.loom_content_client.get_publications_by_organization(
@@ -135,16 +136,15 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
             dialog_manager.dialog_data["working_publication"] = dict(
                 dialog_manager.dialog_data["original_publication"])
 
-        self.logger.info("Список модерации загружен")
         return data
 
+    @auto_log()
     @traced_method()
     async def get_reject_comment_data(
             self,
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        self.logger.info("Начало загрузки данных комментария отклонения")
         original_pub = dialog_manager.dialog_data.get("original_publication", {})
 
         creator = await self.loom_employee_client.get_employee_by_account_id(
@@ -157,17 +157,15 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
             "reject_comment": dialog_manager.dialog_data.get("reject_comment", ""),
         }
 
-        self.logger.info("Данные комментария отклонения загружены")
         return data
 
+    @auto_log()
     @traced_method()
     async def get_edit_preview_data(
             self,
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        self.logger.info("Начало загрузки данных превью редактирования")
-
         if "working_publication" not in dialog_manager.dialog_data:
             self.logger.info("Инициализация рабочей публикации")
             dialog_manager.dialog_data["working_publication"] = dict(
@@ -208,16 +206,15 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
             "total_images": total_images,
         }
 
-        self.logger.info("Данные превью редактирования загружены")
         return data
 
+    @auto_log()
     @traced_method()
     async def get_social_network_select_data(
             self,
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        self.logger.info("Начало загрузки данных выбора социальных сетей")
         state = await self._get_state(dialog_manager)
 
         social_networks = await self.loom_content_client.get_social_networks_by_organization(
@@ -247,10 +244,9 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
             "no_connected_networks": not telegram_connected and not vkontakte_connected,
             "has_available_networks": telegram_connected or vkontakte_connected,
         }
-
-        self.logger.info("Данные выбора социальных сетей загружены")
         return data
 
+    @auto_log()
     @traced_method()
     async def get_edit_text_data(
             self,
@@ -268,6 +264,7 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
             "has_regenerate_prompt": bool(dialog_manager.dialog_data.get("regenerate_prompt", "")),
         }
 
+    @auto_log()
     @traced_method()
     async def get_image_menu_data(
             self,
@@ -287,6 +284,7 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
             "is_custom_image": working_pub.get("is_custom_image", False),
         }
 
+    @auto_log()
     @traced_method()
     async def get_upload_image_data(
             self,
@@ -302,6 +300,7 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
             "is_custom_image": working_pub.get("is_custom_image", False),
         }
 
+    @auto_log()
     @traced_method()
     async def get_publication_success_data(
             self,

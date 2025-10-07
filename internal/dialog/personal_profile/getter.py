@@ -3,6 +3,7 @@ from datetime import datetime
 from aiogram_dialog import DialogManager
 
 from internal import interface, model
+from pkg.log_wrapper import auto_log
 from pkg.trace_wrapper import traced_method
 
 
@@ -22,14 +23,13 @@ class PersonalProfileGetter(interface.IPersonalProfileGetter):
         self.loom_organization_client = loom_organization_client
         self.loom_content_client = loom_content_client
 
+    @auto_log()
     @traced_method()
     async def get_personal_profile_data(
             self,
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        self.logger.info("Начало получения данных личного профиля")
-
         state = await self._get_state(dialog_manager)
 
         employee = await self.loom_employee_client.get_employee_by_account_id(
@@ -106,8 +106,6 @@ class PersonalProfileGetter(interface.IPersonalProfileGetter):
             "approved_publication_count": approved_publication_count,
             "has_moderated_publications": bool(rejected_publication_count or approved_publication_count),
         }
-
-        self.logger.info("Завершение получения данных личного профиля")
         return data
 
     def _get_role_display_name(self, role: str) -> str:

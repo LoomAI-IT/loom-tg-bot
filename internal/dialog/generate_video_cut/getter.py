@@ -1,6 +1,7 @@
 from aiogram_dialog import DialogManager
 
 from internal import interface, model
+from pkg.log_wrapper import auto_log
 from pkg.trace_wrapper import traced_method
 
 
@@ -14,14 +15,13 @@ class GenerateVideoCutGetter(interface.IGenerateVideoCutGetter):
         self.logger = tel.logger()
         self.state_repo = state_repo
 
+    @auto_log()
     @traced_method()
     async def get_youtube_input_data(
             self,
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        self.logger.info("Начало загрузки данных окна ввода YouTube ссылки")
-
         is_processing_video = False
         if dialog_manager.start_data:
             if dialog_manager.start_data.get("is_processing_video"):
@@ -36,18 +36,15 @@ class GenerateVideoCutGetter(interface.IGenerateVideoCutGetter):
             "is_processing_video": is_processing_video,
             "has_invalid_youtube_url": dialog_manager.dialog_data.get("has_invalid_youtube_url", False),
         }
-
-        self.logger.info("Завершение загрузки данных окна ввода YouTube ссылки")
         return data
 
+    @auto_log()
     @traced_method()
     async def get_video_alert_data(
             self,
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        self.logger.info("Начало загрузки данных алерта")
-
         state = await self._get_user_state(dialog_manager)
 
         alerts = await self.state_repo.get_vizard_video_cut_alert_by_state_id(state.id)
@@ -90,7 +87,6 @@ class GenerateVideoCutGetter(interface.IGenerateVideoCutGetter):
                 "youtube_video_reference": alert.youtube_video_reference,
             }
 
-        self.logger.info("Завершение загрузки данных алерта")
         return data
 
     async def _get_user_state(self, dialog_manager: DialogManager) -> model.UserState:

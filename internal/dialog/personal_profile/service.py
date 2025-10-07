@@ -3,6 +3,7 @@ from aiogram.types import CallbackQuery
 from aiogram_dialog import DialogManager, StartMode, ShowMode
 
 from internal import interface, model
+from pkg.log_wrapper import auto_log
 from pkg.trace_wrapper import traced_method
 
 
@@ -14,6 +15,7 @@ class PersonalProfileService(interface.IPersonalProfileService):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
 
+    @auto_log()
     @traced_method()
     async def handle_go_faq(
             self,
@@ -21,16 +23,12 @@ class PersonalProfileService(interface.IPersonalProfileService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало обработки перехода в FAQ")
-
         dialog_manager.show_mode = ShowMode.EDIT
-
         await dialog_manager.switch_to(model.PersonalProfileStates.faq)
+        await callback.answer()
 
-        await callback.answer("FAQ открыт")
 
-        self.logger.info("Завершение обработки перехода в FAQ")
-
+    @auto_log()
     @traced_method()
     async def handle_go_to_support(
             self,
@@ -38,16 +36,11 @@ class PersonalProfileService(interface.IPersonalProfileService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало обработки перехода в поддержку")
-
         dialog_manager.show_mode = ShowMode.EDIT
-
         await dialog_manager.switch_to(model.PersonalProfileStates.support)
+        await callback.answer()
 
-        await callback.answer("Техподдержка открыта")
-
-        self.logger.info("Завершение обработки перехода в поддержку")
-
+    @auto_log()
     @traced_method()
     async def handle_back_to_profile(
             self,
@@ -55,16 +48,12 @@ class PersonalProfileService(interface.IPersonalProfileService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало обработки возврата в личный профиль")
-
         dialog_manager.show_mode = ShowMode.EDIT
-
         await dialog_manager.switch_to(model.PersonalProfileStates.personal_profile)
+        await callback.answer()
 
-        await callback.answer("Возврат в профиль")
 
-        self.logger.info("Завершение обработки возврата в личный профиль")
-
+    @auto_log()
     @traced_method()
     async def handle_go_to_main_menu(
             self,
@@ -72,8 +61,6 @@ class PersonalProfileService(interface.IPersonalProfileService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало обработки перехода в главное меню")
-
         dialog_manager.show_mode = ShowMode.EDIT
 
         await dialog_manager.start(
@@ -81,6 +68,4 @@ class PersonalProfileService(interface.IPersonalProfileService):
             mode=StartMode.RESET_STACK
         )
 
-        await callback.answer("Главное меню открыто")
-
-        self.logger.info("Завершение обработки перехода в главное меню")
+        await callback.answer()

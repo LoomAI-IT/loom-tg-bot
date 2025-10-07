@@ -6,6 +6,7 @@ from aiogram_dialog import DialogManager, StartMode, ShowMode
 from opentelemetry.trace import SpanKind, Status, StatusCode
 
 from internal import interface, model
+from pkg.log_wrapper import auto_log
 from pkg.trace_wrapper import traced_method
 
 
@@ -21,6 +22,7 @@ class GenerateVideoCutService(interface.IGenerateVideoCutService):
         self.state_repo = state_repo
         self.loom_content_client = loom_content_client
 
+    @auto_log()
     @traced_method()
     async def handle_youtube_link_input(
             self,
@@ -28,8 +30,6 @@ class GenerateVideoCutService(interface.IGenerateVideoCutService):
             message_input: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало обработки ввода YouTube ссылки")
-
         dialog_manager.show_mode = ShowMode.EDIT
 
         await message.delete()
@@ -54,8 +54,7 @@ class GenerateVideoCutService(interface.IGenerateVideoCutService):
             youtube_url,
         )
 
-        self.logger.info("Завершение обработки ввода YouTube ссылки")
-
+    @auto_log()
     @traced_method()
     async def handle_go_to_content_menu(
             self,
@@ -63,8 +62,6 @@ class GenerateVideoCutService(interface.IGenerateVideoCutService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало перехода в меню контента")
-
         dialog_manager.show_mode = ShowMode.EDIT
 
         if await self._check_alerts(dialog_manager):
@@ -77,8 +74,8 @@ class GenerateVideoCutService(interface.IGenerateVideoCutService):
         )
 
         await callback.answer()
-        self.logger.info("Завершение перехода в меню контента")
 
+    @auto_log()
     @traced_method()
     async def handle_go_to_video_drafts(
             self,
@@ -86,8 +83,6 @@ class GenerateVideoCutService(interface.IGenerateVideoCutService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало перехода в черновики видео-нарезок")
-
         dialog_manager.show_mode = ShowMode.EDIT
 
         state = await self._get_state(dialog_manager)
@@ -102,8 +97,8 @@ class GenerateVideoCutService(interface.IGenerateVideoCutService):
         )
 
         await callback.answer()
-        self.logger.info("Завершение перехода в черновики видео-нарезок")
 
+    @auto_log()
     @traced_method()
     async def handle_go_to_main_menu(
             self,
@@ -111,8 +106,6 @@ class GenerateVideoCutService(interface.IGenerateVideoCutService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало перехода в главное меню")
-
         dialog_manager.show_mode = ShowMode.EDIT
 
         state = await self._get_state(dialog_manager)
@@ -127,7 +120,6 @@ class GenerateVideoCutService(interface.IGenerateVideoCutService):
         )
 
         await callback.answer()
-        self.logger.info("Завершение перехода в главное меню")
 
     async def _check_alerts(self, dialog_manager: DialogManager) -> bool:
         state = await self._get_state(dialog_manager)

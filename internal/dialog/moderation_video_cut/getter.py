@@ -6,6 +6,7 @@ from aiogram_dialog import DialogManager
 from aiogram_dialog.widgets.kbd import ManagedCheckbox
 
 from internal import interface, model
+from pkg.log_wrapper import auto_log
 from pkg.trace_wrapper import traced_method
 
 
@@ -23,14 +24,13 @@ class VideoCutModerationGetter(interface.IVideoCutModerationGetter):
         self.loom_employee_client = loom_employee_client
         self.loom_content_client = loom_content_client
 
+    @auto_log()
     @traced_method()
     async def get_moderation_list_data(
             self,
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        self.logger.info("Начало получения списка модерации")
-
         state = await self._get_state(dialog_manager)
 
         video_cuts = await self.loom_content_client.get_video_cuts_by_organization(
@@ -142,17 +142,15 @@ class VideoCutModerationGetter(interface.IVideoCutModerationGetter):
             dialog_manager.dialog_data["working_video_cut"] = dict(
                 dialog_manager.dialog_data["original_video_cut"])
 
-        self.logger.info("Завершение получения списка модерации")
         return data
 
+    @auto_log()
     @traced_method()
     async def get_reject_comment_data(
             self,
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        self.logger.info("Начало получения данных комментария отклонения")
-
         original_video_cut = dialog_manager.dialog_data.get("original_video_cut", {})
 
         creator = await self.loom_employee_client.get_employee_by_account_id(
@@ -168,18 +166,15 @@ class VideoCutModerationGetter(interface.IVideoCutModerationGetter):
             "has_small_reject_comment": dialog_manager.dialog_data.get("has_small_reject_comment", False),
             "has_big_reject_comment": dialog_manager.dialog_data.get("has_big_reject_comment", False),
         }
-
-        self.logger.info("Завершение получения данных комментария отклонения")
         return data
 
+    @auto_log()
     @traced_method()
     async def get_edit_preview_data(
             self,
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        self.logger.info("Начало получения данных превью редактирования")
-
         # Инициализируем рабочую версию если ее нет
         if "working_video_cut" not in dialog_manager.dialog_data:
             self.logger.info("Инициализация рабочей версии видео-нарезки")
@@ -211,16 +206,15 @@ class VideoCutModerationGetter(interface.IVideoCutModerationGetter):
             "has_video": bool(working_video_cut.get("video_fid")),
         }
 
-        self.logger.info("Завершение получения данных превью редактирования")
         return data
 
+    @auto_log()
     @traced_method()
     async def get_social_network_select_data(
             self,
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        self.logger.info("Начало получения данных выбора видео-платформ")
 
         state = await self._get_state(dialog_manager)
 
@@ -253,10 +247,9 @@ class VideoCutModerationGetter(interface.IVideoCutModerationGetter):
             "no_connected_networks": not youtube_connected and not instagram_connected,
             "has_available_networks": youtube_connected or instagram_connected,
         }
-
-        self.logger.info("Завершение получения данных выбора видео-платформ")
         return data
 
+    @auto_log()
     @traced_method()
     async def get_edit_title_data(
             self,
@@ -271,6 +264,7 @@ class VideoCutModerationGetter(interface.IVideoCutModerationGetter):
             "has_big_title": dialog_manager.dialog_data.get("has_big_title", False),
         }
 
+    @auto_log()
     @traced_method()
     async def get_edit_description_data(
             self,
@@ -287,6 +281,7 @@ class VideoCutModerationGetter(interface.IVideoCutModerationGetter):
             "has_big_description": dialog_manager.dialog_data.get("has_big_description", False),
         }
 
+    @auto_log()
     @traced_method()
     async def get_edit_tags_data(
             self,

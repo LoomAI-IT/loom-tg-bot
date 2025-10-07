@@ -6,6 +6,7 @@ from aiogram_dialog import DialogManager, StartMode, ShowMode
 from opentelemetry.trace import SpanKind, Status, StatusCode
 
 from internal import interface, model
+from pkg.log_wrapper import auto_log
 from pkg.trace_wrapper import traced_method
 
 
@@ -21,6 +22,7 @@ class ContentMenuService(interface.IContentMenuService):
         self.state_repo = state_repo
         self.loom_employee_client = loom_employee_client
 
+    @auto_log()
     @traced_method()
     async def handle_go_to_publication_generation(
             self,
@@ -28,8 +30,6 @@ class ContentMenuService(interface.IContentMenuService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало перехода к созданию публикации")
-
         dialog_manager.show_mode = ShowMode.EDIT
 
         state = await self._get_state(dialog_manager)
@@ -43,8 +43,7 @@ class ContentMenuService(interface.IContentMenuService):
             mode=StartMode.RESET_STACK
         )
 
-        self.logger.info("Завершение перехода к созданию публикации")
-
+    @auto_log()
     @traced_method()
     async def handle_go_to_video_cut_generation(
             self,
@@ -52,8 +51,6 @@ class ContentMenuService(interface.IContentMenuService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало перехода к созданию видео-нарезки")
-
         dialog_manager.show_mode = ShowMode.EDIT
 
         state = await self._get_state(dialog_manager)
@@ -67,8 +64,7 @@ class ContentMenuService(interface.IContentMenuService):
             mode=StartMode.RESET_STACK
         )
 
-        self.logger.info("Завершение перехода к созданию видео-нарезки")
-
+    @auto_log()
     @traced_method()
     async def handle_go_to_publication_drafts(
             self,
@@ -76,12 +72,9 @@ class ContentMenuService(interface.IContentMenuService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало перехода к черновикам публикаций")
-
         await callback.answer("Функция черновиков публикаций находится в разработке", show_alert=True)
 
-        self.logger.info("Завершение перехода к черновикам публикаций")
-
+    @auto_log()
     @traced_method()
     async def handle_go_to_video_drafts(
             self,
@@ -89,8 +82,6 @@ class ContentMenuService(interface.IContentMenuService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало перехода к черновикам видео-нарезок")
-
         dialog_manager.show_mode = ShowMode.EDIT
 
         state = await self._get_state(dialog_manager)
@@ -104,8 +95,7 @@ class ContentMenuService(interface.IContentMenuService):
             mode=StartMode.RESET_STACK
         )
 
-        self.logger.info("Завершение перехода к черновикам видео-нарезок")
-
+    @auto_log()
     @traced_method()
     async def handle_go_to_publication_moderation(
             self,
@@ -113,8 +103,6 @@ class ContentMenuService(interface.IContentMenuService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало перехода к модерации публикаций")
-
         dialog_manager.show_mode = ShowMode.EDIT
 
         state = await self._get_state(dialog_manager)
@@ -143,8 +131,7 @@ class ContentMenuService(interface.IContentMenuService):
             mode=StartMode.RESET_STACK
         )
 
-        self.logger.info("Завершение перехода к модерации публикаций")
-
+    @auto_log()
     @traced_method()
     async def handle_go_to_video_moderation(
             self,
@@ -152,8 +139,6 @@ class ContentMenuService(interface.IContentMenuService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало перехода к модерации видео-нарезок")
-
         dialog_manager.show_mode = ShowMode.EDIT
 
         state = await self._get_state(dialog_manager)
@@ -182,8 +167,7 @@ class ContentMenuService(interface.IContentMenuService):
             mode=StartMode.RESET_STACK
         )
 
-        self.logger.info("Завершение перехода к модерации видео-нарезок")
-
+    @auto_log()
     @traced_method()
     async def handle_go_to_main_menu(
             self,
@@ -191,8 +175,6 @@ class ContentMenuService(interface.IContentMenuService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало перехода в главное меню")
-
         dialog_manager.show_mode = ShowMode.EDIT
 
         await dialog_manager.start(
@@ -200,8 +182,7 @@ class ContentMenuService(interface.IContentMenuService):
             mode=StartMode.RESET_STACK
         )
 
-        self.logger.info("Завершение перехода в главное меню")
-
+    @auto_log()
     @traced_method()
     async def handle_go_to_content_menu(
             self,
@@ -209,16 +190,12 @@ class ContentMenuService(interface.IContentMenuService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало перехода в меню контента")
-
         dialog_manager.show_mode = ShowMode.EDIT
 
         await dialog_manager.start(
             model.ContentMenuStates.content_menu,
             mode=StartMode.RESET_STACK
         )
-
-        self.logger.info("Завершение перехода в меню контента")
 
     async def _get_state(self, dialog_manager: DialogManager) -> model.UserState:
         if hasattr(dialog_manager.event, 'message') and dialog_manager.event.message:

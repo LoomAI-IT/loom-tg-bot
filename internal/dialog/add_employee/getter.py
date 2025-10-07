@@ -1,6 +1,7 @@
 from aiogram_dialog import DialogManager
 
 from internal import interface
+from pkg.log_wrapper import auto_log
 from pkg.trace_wrapper import traced_method
 from . import utils
 
@@ -17,6 +18,7 @@ class AddEmployeeGetter(interface.IAddEmployeeGetter):
         self.state_repo = state_repo
         self.loom_employee_client = loom_employee_client
 
+    @auto_log()
     @traced_method()
     async def get_enter_account_id_data(
             self,
@@ -31,6 +33,7 @@ class AddEmployeeGetter(interface.IAddEmployeeGetter):
             "has_invalid_account_id": dialog_manager.dialog_data.get("has_invalid_account_id", False),
         }
 
+    @auto_log()
     @traced_method()
     async def get_enter_name_data(
             self,
@@ -46,6 +49,7 @@ class AddEmployeeGetter(interface.IAddEmployeeGetter):
             "has_invalid_name_length": dialog_manager.dialog_data.get("has_invalid_name_length", False),
         }
 
+    @auto_log()
     @traced_method()
     async def get_enter_role_data(
             self,
@@ -61,6 +65,7 @@ class AddEmployeeGetter(interface.IAddEmployeeGetter):
             "roles": utils.RoleDisplayHelper.ROLE_OPTIONS,
         }
 
+    @auto_log()
     @traced_method()
     async def get_permissions_data(
             self,
@@ -85,6 +90,7 @@ class AddEmployeeGetter(interface.IAddEmployeeGetter):
             "sign_up_social_networks_icon": "✅" if permissions.sign_up_social_networks else "❌",
         }
 
+    @auto_log()
     @traced_method()
     async def get_confirm_data(
             self,

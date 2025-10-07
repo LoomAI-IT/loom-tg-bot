@@ -9,6 +9,7 @@ from aiogram_dialog.widgets.input import MessageInput
 
 
 from internal import interface, model
+from pkg.log_wrapper import auto_log
 from pkg.trace_wrapper import traced_method
 
 
@@ -26,6 +27,7 @@ class MainMenuService(interface.IMainMenuService):
         self.bot = bot
         self.loom_content_client = loom_content_client
 
+    @auto_log()
     @traced_method()
     async def handle_generate_publication_prompt_input(
             self,
@@ -33,8 +35,6 @@ class MainMenuService(interface.IMainMenuService):
             widget: MessageInput,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало обработки ввода промпта для генерации публикации")
-
         dialog_manager.show_mode = ShowMode.EDIT
 
         await message.delete()
@@ -74,9 +74,12 @@ class MainMenuService(interface.IMainMenuService):
         dialog_manager.dialog_data["input_text"] = text
         dialog_manager.dialog_data["has_input_text"] = True
 
-        await dialog_manager.switch_to(model.GeneratePublicationStates.generation)
-        self.logger.info("Конец обработки ввода промпта для генерации публикации")
+        await dialog_manager.start(
+            model.GeneratePublicationStates.select_category,
+            data=dialog_manager.dialog_data,
+        )
 
+    @auto_log()
     @traced_method()
     async def handle_go_to_content(
             self,
@@ -84,8 +87,6 @@ class MainMenuService(interface.IMainMenuService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало перехода к контенту")
-
         state = await self._get_state(dialog_manager)
         await self.state_repo.change_user_state(
             state_id=state.id,
@@ -98,8 +99,8 @@ class MainMenuService(interface.IMainMenuService):
         )
 
         await callback.answer()
-        self.logger.info("Завершение перехода к контенту")
 
+    @auto_log()
     @traced_method()
     async def handle_go_to_organization(
             self,
@@ -107,8 +108,6 @@ class MainMenuService(interface.IMainMenuService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало перехода к меню организации")
-
         state = await self._get_state(dialog_manager)
         await self.state_repo.change_user_state(
             state_id=state.id,
@@ -121,8 +120,8 @@ class MainMenuService(interface.IMainMenuService):
         )
 
         await callback.answer()
-        self.logger.info("Завершение перехода к меню организации")
 
+    @auto_log()
     @traced_method()
     async def handle_go_to_personal_profile(
             self,
@@ -130,8 +129,6 @@ class MainMenuService(interface.IMainMenuService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало перехода к личному профилю")
-
         state = await self._get_state(dialog_manager)
         await self.state_repo.change_user_state(
             state_id=state.id,
@@ -144,7 +141,6 @@ class MainMenuService(interface.IMainMenuService):
         )
 
         await callback.answer()
-        self.logger.info("Завершение перехода к личному профилю")
 
     async def _speech_to_text(self, message: Message, dialog_manager: DialogManager, organization_id: int) -> str:
         if message.voice:

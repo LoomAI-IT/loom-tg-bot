@@ -7,6 +7,7 @@ from aiogram_dialog import DialogManager
 from aiogram_dialog.widgets.kbd import ManagedCheckbox
 
 from internal import interface, model
+from pkg.log_wrapper import auto_log
 from pkg.trace_wrapper import traced_method
 
 
@@ -26,6 +27,7 @@ class VideoCutsDraftGetter(interface.IVideoCutsDraftGetter):
         self.loom_organization_client = loom_organization_client
         self.loom_content_client = loom_content_client
 
+    @auto_log()
     @traced_method()
     async def get_video_cut_list_data(
             self,
@@ -33,7 +35,6 @@ class VideoCutsDraftGetter(interface.IVideoCutsDraftGetter):
             bot: Bot,
             **kwargs
     ) -> dict:
-        self.logger.info("Начало получения списка черновиков видео")
         state = await self._get_state(dialog_manager)
         employee = await self.loom_employee_client.get_employee_by_account_id(state.account_id)
 
@@ -47,7 +48,6 @@ class VideoCutsDraftGetter(interface.IVideoCutsDraftGetter):
 
         if not video_cuts:
             self.logger.info("Черновики видео отсутствуют")
-            self.logger.info("Завершение получения списка черновиков видео")
             return {
                 "has_video_cuts": False,
                 "video_cuts_count": 0,
@@ -117,9 +117,9 @@ class VideoCutsDraftGetter(interface.IVideoCutsDraftGetter):
 
             dialog_manager.dialog_data["selected_social_networks"] = selected_networks
 
-        self.logger.info("Завершение получения списка черновиков видео")
         return data
 
+    @auto_log()
     @traced_method()
     async def get_edit_preview_data(
             self,
@@ -127,7 +127,6 @@ class VideoCutsDraftGetter(interface.IVideoCutsDraftGetter):
             bot: Bot,
             **kwargs
     ) -> dict:
-        self.logger.info("Начало получения данных предпросмотра редактирования")
         if "working_video_cut" not in dialog_manager.dialog_data:
             self.logger.info("Инициализация рабочей версии черновика")
             dialog_manager.dialog_data["working_video_cut"] = dict(
@@ -154,9 +153,9 @@ class VideoCutsDraftGetter(interface.IVideoCutsDraftGetter):
             "has_changes": self._has_changes(dialog_manager),
         }
 
-        self.logger.info("Завершение получения данных предпросмотра редактирования")
         return data
 
+    @auto_log()
     @traced_method()
     async def get_edit_title_data(
             self,
@@ -171,6 +170,7 @@ class VideoCutsDraftGetter(interface.IVideoCutsDraftGetter):
             "has_big_title": dialog_manager.dialog_data.get("has_big_title", False),
         }
 
+    @auto_log()
     @traced_method()
     async def get_edit_description_data(
             self,
@@ -187,6 +187,7 @@ class VideoCutsDraftGetter(interface.IVideoCutsDraftGetter):
             "has_big_description": dialog_manager.dialog_data.get("has_big_description", False),
         }
 
+    @auto_log()
     @traced_method()
     async def get_edit_tags_data(
             self,
@@ -201,13 +202,13 @@ class VideoCutsDraftGetter(interface.IVideoCutsDraftGetter):
             "has_void_tags": dialog_manager.dialog_data.get("has_void_tags", False),
         }
 
+    @auto_log()
     @traced_method()
     async def get_social_network_select_data(
             self,
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        self.logger.info("Начало получения данных выбора социальных сетей")
         state = await self._get_state(dialog_manager)
 
         social_networks = await self.loom_content_client.get_social_networks_by_organization(
@@ -238,7 +239,6 @@ class VideoCutsDraftGetter(interface.IVideoCutsDraftGetter):
             "no_connected_networks": not youtube_connected and not instagram_connected,
         }
 
-        self.logger.info("Завершение получения данных выбора социальных сетей")
         return data
 
     # Вспомогательные методы
