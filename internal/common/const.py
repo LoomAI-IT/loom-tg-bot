@@ -7,6 +7,14 @@ class Role(Enum):
     ADMIN = "admin"
 
 
+class ModerationStatus(Enum):
+    DRAFT = "draft"
+    MODERATION = "moderation"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+    PUBLISHED = "published"
+
+
 TRACE_ID_KEY = "trace_id"
 SPAN_ID_KEY = "span_id"
 FILE_KEY = "file"
