@@ -1,4 +1,5 @@
 from aiogram import F
+from aiogram.enums import ContentType
 from aiogram_dialog import Window, Dialog, ShowMode
 from aiogram_dialog.widgets.text import Const, Format, Multi, Case
 from aiogram_dialog.widgets.kbd import Button, Column, Row, Back, Select, Checkbox, Next
@@ -115,17 +116,10 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                         Case(
                             {
                                 True: Const(
-                                    "<br>🎤 <b>Неверный формат</b><br><i>Отправьте голосовое сообщение или аудиофайл</i>"),
+                                    "<br>🎤 <b>Неверный формат</b><br><i>Отправьте голосовое сообщение, аудиофайл или текст</i>"),
                                 False: Const(""),
                             },
-                            selector="has_invalid_voice_type"
-                        ),
-                        Case(
-                            {
-                                True: Const("<br>⏱️ <b>Слишком длинное сообщение</b><br><i>Максимум 5 минут</i>"),
-                                False: Const(""),
-                            },
-                            selector="has_long_voice_duration"
+                            selector="has_invalid_content_type"
                         ),
                         Case(
                             {
@@ -142,14 +136,8 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                 selector="voice_transcribe"
             ),
 
-            TextInput(
-                id="text_input",
-                on_success=self.generate_publication_service.handle_text_input,
-            ),
-
             MessageInput(
-                func=self.generate_publication_service.handle_voice_input,
-                content_types=["voice", "audio"],
+                func=self.generate_publication_service.handle_generate_publication_prompt_input,
             ),
 
             Row(

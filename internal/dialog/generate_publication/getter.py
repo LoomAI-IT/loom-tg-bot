@@ -184,7 +184,7 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
             "has_small_input_text": dialog_manager.dialog_data.get("has_small_input_text", False),
             "has_big_input_text": dialog_manager.dialog_data.get("has_big_input_text", False),
             # Voice input error flags
-            "has_invalid_voice_type": dialog_manager.dialog_data.get("has_invalid_voice_type", False),
+            "has_invalid_content_type": dialog_manager.dialog_data.get("has_invalid_content_type", False),
             "has_long_voice_duration": dialog_manager.dialog_data.get("has_long_voice_duration", False),
             "has_empty_voice_text": dialog_manager.dialog_data.get("has_empty_voice_text", False),
         }

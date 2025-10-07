@@ -8,8 +8,6 @@ from aiogram.types import CallbackQuery, Message, ContentType
 from aiogram_dialog import DialogManager, StartMode, ShowMode
 from aiogram_dialog.widgets.kbd import ManagedCheckbox
 
-from opentelemetry.trace import SpanKind, Status, StatusCode
-
 from internal import interface, model
 from pkg.trace_wrapper import traced_method
 
@@ -29,29 +27,35 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         self.loom_content_client = loom_content_client
 
     @traced_method()
-    async def handle_text_input(
+    async def handle_generate_publication_prompt_input(
             self,
             message: Message,
-            widget: Any,
-            dialog_manager: DialogManager,
-            text: str
+            widget: MessageInput,
+            dialog_manager: DialogManager
     ) -> None:
-        self.logger.info("Начало обработки текстового ввода")
+        self.logger.info("Начало обработки ввода промпта для генерации публикации")
 
         dialog_manager.show_mode = ShowMode.EDIT
 
         await message.delete()
 
-        dialog_manager.dialog_data.pop("has_invalid_voice_type", None)
-        dialog_manager.dialog_data.pop("has_long_voice_duration", None)
-        dialog_manager.dialog_data.pop("has_empty_voice_text", None)
-        dialog_manager.dialog_data.pop("has_small_input_text", None)
-        dialog_manager.dialog_data.pop("has_big_input_text", None)
         dialog_manager.dialog_data.pop("has_void_input_text", None)
         dialog_manager.dialog_data.pop("has_small_input_text", None)
         dialog_manager.dialog_data.pop("has_big_input_text", None)
+        dialog_manager.dialog_data.pop("has_invalid_content_type", None)
+        dialog_manager.dialog_data.pop("has_empty_voice_text", None)
+        dialog_manager.dialog_data.pop("has_small_input_text", None)
+        dialog_manager.dialog_data.pop("has_big_input_text", None)
 
-        text = message.html_text.strip().replace('\n', '<br/>')
+        state = await self._get_state(dialog_manager)
+
+        if message.content_type not in [ContentType.VOICE, ContentType.AUDIO, ContentType.TEXT]:
+            self.logger.info("Неверный тип контента")
+            dialog_manager.dialog_data["has_invalid_content_type"] = True
+            return
+
+        text = await self._speech_to_text(message, dialog_manager, state.organization_id)
+
         if not text:
             self.logger.info("Пустой текст")
             dialog_manager.dialog_data["has_void_input_text"] = True
@@ -71,85 +75,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         dialog_manager.dialog_data["has_input_text"] = True
 
         await dialog_manager.switch_to(model.GeneratePublicationStates.generation)
-
-        self.logger.info("Конец обработки текстового ввода")
-
-    @traced_method()
-    async def handle_voice_input(
-            self,
-            message: Message,
-            widget: MessageInput,
-            dialog_manager: DialogManager
-    ) -> None:
-        self.logger.info("Начало обработки голосового ввода")
-
-        dialog_manager.show_mode = ShowMode.EDIT
-
-        await message.delete()
-
-        dialog_manager.dialog_data.pop("has_void_input_text", None)
-        dialog_manager.dialog_data.pop("has_small_input_text", None)
-        dialog_manager.dialog_data.pop("has_big_input_text", None)
-        dialog_manager.dialog_data.pop("has_invalid_voice_type", None)
-        dialog_manager.dialog_data.pop("has_long_voice_duration", None)
-        dialog_manager.dialog_data.pop("has_empty_voice_text", None)
-        dialog_manager.dialog_data.pop("has_small_input_text", None)
-        dialog_manager.dialog_data.pop("has_big_input_text", None)
-
-        state = await self._get_state(dialog_manager)
-
-        if message.content_type not in [ContentType.VOICE, ContentType.AUDIO]:
-            self.logger.info("Неверный тип контента")
-            dialog_manager.dialog_data["has_invalid_voice_type"] = True
-            return
-
-        if message.voice:
-            file_id = message.voice.file_id
-            duration = message.voice.duration
-        else:
-            file_id = message.audio.file_id
-            duration = message.audio.duration
-
-        if duration > 300:
-            self.logger.info("Длительность превышает лимит")
-            dialog_manager.dialog_data["has_long_voice_duration"] = True
-            return
-
-        dialog_manager.dialog_data["voice_transcribe"] = True
-        await dialog_manager.show()
-
-        file = await self.bot.get_file(file_id)
-        file_data = await self.bot.download_file(file.file_path)
-
-        text = await self.loom_content_client.transcribe_audio(
-            state.organization_id,
-            audio_content=file_data.read(),
-            audio_filename="audio.mp3",
-        )
-
-        if not text or not text.strip():
-            self.logger.info("Пустой результат транскрибации")
-            dialog_manager.dialog_data["has_empty_voice_text"] = True
-            return
-
-        text = text.strip()
-
-        if len(text) < 10:
-            self.logger.info("Слишком короткий текст из аудио")
-            dialog_manager.dialog_data["has_small_input_text"] = True
-            return
-
-        if len(text) > 2000:
-            self.logger.info("Слишком длинный текст из аудио")
-            dialog_manager.dialog_data["has_big_input_text"] = True
-            return
-
-        dialog_manager.dialog_data["input_text"] = text
-        dialog_manager.dialog_data["has_input_text"] = True
-        dialog_manager.dialog_data["voice_transcribe"] = False
-
-        await dialog_manager.switch_to(model.GeneratePublicationStates.generation)
-        self.logger.info("Конец обработки голосового ввода")
+        self.logger.info("Конец обработки ввода промпта для генерации публикации")
 
     @traced_method()
     async def handle_select_category(
@@ -212,7 +138,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         dialog_manager.dialog_data["publication_text"] = publication_data["text"]
 
         await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
-
         self.logger.info("Конец генерации текста")
 
     @traced_method()
@@ -796,33 +721,20 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        with self.tracer.start_as_current_span(
-                "GeneratePublicationDialogService.handle_go_to_content_menu",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                self.logger.info("Начало перехода в меню контента")
+        self.logger.info("Начало перехода в меню контента")
 
-                dialog_manager.show_mode = ShowMode.EDIT
+        dialog_manager.show_mode = ShowMode.EDIT
 
-                if await self._check_alerts(dialog_manager):
-                    self.logger.info("Обнаружены алерты")
-                    return
+        if await self._check_alerts(dialog_manager):
+            self.logger.info("Обнаружены алерты")
+            return
 
-                await dialog_manager.start(
-                    model.ContentMenuStates.content_menu,
-                    mode=StartMode.RESET_STACK
-                )
+        await dialog_manager.start(
+            model.ContentMenuStates.content_menu,
+            mode=StartMode.RESET_STACK
+        )
 
-                self.logger.info("Конец перехода в меню контента")
-                span.set_status(Status(StatusCode.OK))
-
-            except Exception as err:
-
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-
-                await callback.answer("Ошибка перехода в меню", show_alert=True)
-                raise
+        self.logger.info("Конец перехода в меню контента")
 
     async def _check_alerts(self, dialog_manager: DialogManager) -> bool:
         state = await self._get_state(dialog_manager)
@@ -842,6 +754,26 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             return True
 
         return False
+
+    async def _speech_to_text(self, message: Message, dialog_manager: DialogManager, organization_id: int) -> str:
+        if message.voice:
+            file_id = message.voice.file_id
+        else:
+            file_id = message.audio.file_id
+
+        dialog_manager.dialog_data["voice_transcribe"] = True
+        await dialog_manager.show()
+
+        file = await self.bot.get_file(file_id)
+        file_data = await self.bot.download_file(file.file_path)
+
+        text = await self.loom_content_client.transcribe_audio(
+            organization_id,
+            audio_content=file_data.read(),
+            audio_filename="audio.mp3",
+        )
+        dialog_manager.dialog_data["voice_transcribe"] = False
+        return text
 
     async def _get_current_image_data(self, dialog_manager: DialogManager) -> tuple[bytes, str] | None:
         try:
