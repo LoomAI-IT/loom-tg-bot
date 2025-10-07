@@ -50,14 +50,14 @@ class MainMenuDialog(interface.IMainMenuDialog):
                         ),
                         Case(
                             {
-                                True: Const("<br><br>📏 <b>Слишком короткий текст</b>\n<i>Минимум 10 символов</i>"),
+                                True: Const("<br><br>📏 <b>Слишком короткий текст</b><br/><i>Минимум 10 символов</i>"),
                                 False: Const(""),
                             },
                             selector="has_small_input_text"
                         ),
                         Case(
                             {
-                                True: Const("<br><br>📏 <b>Слишком длинный текст</b>\n<i>Максимум 2000 символов</i>"),
+                                True: Const("<br><br>📏 <b>Слишком длинный текст</b><br/><i>Максимум 2000 символов</i>"),
                                 False: Const(""),
                             },
                             selector="has_big_input_text"
@@ -66,10 +66,10 @@ class MainMenuDialog(interface.IMainMenuDialog):
                         Case(
                             {
                                 True: Const(
-                                    "<br><br>🎤 <b>Неверный формат</b>\n<i>Отправьте голосовое сообщение или аудиофайл</i>"),
+                                    "<br>🎤 <b>Неверный формат</b><br><i>Отправьте голосовое сообщение, аудиофайл или текст</i>"),
                                 False: Const(""),
                             },
-                            selector="has_invalid_voice_type"
+                            selector="has_invalid_content_type"
                         ),
                         Case(
                             {
@@ -119,14 +119,9 @@ class MainMenuDialog(interface.IMainMenuDialog):
                 ),
                 when=~F["voice_transcribe"]
             ),
-            TextInput(
-                id="text_input",
-                on_success=self.main_menu_service.handle_text_input,
-            ),
 
             MessageInput(
-                func=self.main_menu_service.handle_voice_input,
-                content_types=["voice", "audio"],
+                func=self.main_menu_service.handle_generate_publication_prompt_input,
             ),
 
             state=model.MainMenuStates.main_menu,

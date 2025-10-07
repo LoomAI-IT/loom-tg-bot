@@ -5,9 +5,8 @@ from aiogram.types import ContentType
 from aiogram_dialog import DialogManager
 from aiogram_dialog.widgets.kbd import ManagedCheckbox
 
-from opentelemetry.trace import SpanKind, Status, StatusCode
-
 from internal import interface, model
+from pkg.trace_wrapper import traced_method
 
 
 class VideoCutModerationGetter(interface.IVideoCutModerationGetter):
@@ -24,293 +23,241 @@ class VideoCutModerationGetter(interface.IVideoCutModerationGetter):
         self.loom_employee_client = loom_employee_client
         self.loom_content_client = loom_content_client
 
+    @traced_method()
     async def get_moderation_list_data(
             self,
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        with self.tracer.start_as_current_span(
-                "VideoCutModerationGetter.get_moderation_list_data",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                self.logger.info("Начало получения списка модерации")
+        self.logger.info("Начало получения списка модерации")
 
-                state = await self._get_state(dialog_manager)
+        state = await self._get_state(dialog_manager)
 
-                # Получаем видео-нарезки на модерации для организации
-                video_cuts = await self.loom_content_client.get_video_cuts_by_organization(
-                    organization_id=state.organization_id
-                )
+        video_cuts = await self.loom_content_client.get_video_cuts_by_organization(
+            organization_id=state.organization_id
+        )
 
-                # Фильтруем только те, что на модерации
-                moderation_video_cuts = [
-                    video_cut.to_dict() for video_cut in video_cuts
-                    if video_cut.moderation_status == "moderation"
-                ]
+        moderation_video_cuts = [
+            video_cut.to_dict() for video_cut in video_cuts
+            if video_cut.moderation_status == "moderation"
+        ]
 
-                if not moderation_video_cuts:
-                    self.logger.info("Видео-нарезки на модерации отсутствуют")
-                    return {
-                        "has_video_cuts": False,
-                        "video_cuts_count": 0,
-                        "period_text": "",
-                    }
+        if not moderation_video_cuts:
+            self.logger.info("Видео-нарезки на модерации отсутствуют")
+            return {
+                "has_video_cuts": False,
+                "video_cuts_count": 0,
+                "period_text": "",
+            }
 
-                # Сохраняем список для навигации
-                dialog_manager.dialog_data["moderation_list"] = moderation_video_cuts
+        dialog_manager.dialog_data["moderation_list"] = moderation_video_cuts
 
-                # Устанавливаем текущий индекс (0 если не был установлен)
-                if "current_index" not in dialog_manager.dialog_data:
-                    dialog_manager.dialog_data["current_index"] = 0
+        # Устанавливаем текущий индекс (0 если не был установлен)
+        if "current_index" not in dialog_manager.dialog_data:
+            dialog_manager.dialog_data["current_index"] = 0
 
-                current_index = dialog_manager.dialog_data["current_index"]
-                current_video_cut = model.VideoCut(**moderation_video_cuts[current_index])
+        current_index = dialog_manager.dialog_data["current_index"]
+        current_video_cut = model.VideoCut(**moderation_video_cuts[current_index])
 
-                # Получаем информацию об авторе
-                creator = await self.loom_employee_client.get_employee_by_account_id(
-                    current_video_cut.creator_id
-                )
+        creator = await self.loom_employee_client.get_employee_by_account_id(
+            current_video_cut.creator_id
+        )
 
-                # Форматируем теги
-                tags = current_video_cut.tags or []
-                tags_text = ", ".join(tags) if tags else ""
+        tags = current_video_cut.tags or []
+        tags_text = ", ".join(tags) if tags else ""
+        waiting_time = self._calculate_waiting_time_text(current_video_cut.created_at)
+        video_media = await self._get_video_media(current_video_cut)
+        period_text = self._get_period_text(moderation_video_cuts)
 
-                # Рассчитываем время ожидания
-                waiting_time = self._calculate_waiting_time_text(current_video_cut.created_at)
+        data = {
+            "has_video_cuts": True,
+            "video_cuts_count": len(moderation_video_cuts),
+            "period_text": period_text,
+            "creator_name": creator.name,
+            "created_at": self._format_datetime(current_video_cut.created_at),
+            "has_waiting_time": bool(waiting_time),
+            "waiting_time": waiting_time,
+            "youtube_reference": current_video_cut.youtube_video_reference or "Не указан",
+            "video_name": current_video_cut.name or "Без названия",
+            "video_description": current_video_cut.description or "Описание отсутствует",
+            "has_tags": bool(tags),
+            "video_tags": tags_text,
+            "has_video": bool(current_video_cut.video_fid),
+            "video_media": video_media,
+            "current_index": current_index + 1,
+            "total_count": len(moderation_video_cuts),
+            "has_prev": current_index > 0,
+            "has_next": current_index < len(moderation_video_cuts) - 1,
+        }
 
-                # Подготавливаем медиа для видео
-                video_media = await self._get_video_media(current_video_cut)
+        # Сохраняем данные текущего видео для редактирования
+        dialog_manager.dialog_data["original_video_cut"] = {
+            "id": current_video_cut.id,
+            "creator_id": current_video_cut.creator_id,
+            "organization_id": current_video_cut.organization_id,
+            "project_id": current_video_cut.project_id,
+            "moderator_id": current_video_cut.moderator_id,
+            "transcript": current_video_cut.transcript,
+            "video_name": current_video_cut.video_name,
+            "original_url": current_video_cut.original_url,
+            "vizard_rub_cost": current_video_cut.vizard_rub_cost,
+            "moderation_comment": current_video_cut.moderation_comment,
+            "publication_at": current_video_cut.publication_at,
+            "name": current_video_cut.name,
+            "description": current_video_cut.description,
+            "tags": current_video_cut.tags or [],
+            "youtube_video_reference": current_video_cut.youtube_video_reference,
+            "video_fid": current_video_cut.video_fid,
+            "moderation_status": current_video_cut.moderation_status,
+            "created_at": current_video_cut.created_at,
+            "youtube_source": current_video_cut.youtube_source,
+            "inst_source": current_video_cut.inst_source,
+        }
 
-                # Определяем период
-                period_text = self._get_period_text(moderation_video_cuts)
+        selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
 
-                data = {
-                    "has_video_cuts": True,
-                    "video_cuts_count": len(moderation_video_cuts),
-                    "period_text": period_text,
-                    "creator_name": creator.name,
-                    "created_at": self._format_datetime(current_video_cut.created_at),
-                    "has_waiting_time": bool(waiting_time),
-                    "waiting_time": waiting_time,
-                    "youtube_reference": current_video_cut.youtube_video_reference or "Не указан",
-                    "video_name": current_video_cut.name or "Без названия",
-                    "video_description": current_video_cut.description or "Описание отсутствует",
-                    "has_tags": bool(tags),
-                    "video_tags": tags_text,
-                    "has_video": bool(current_video_cut.video_fid),
-                    "video_media": video_media,
-                    "current_index": current_index + 1,
-                    "total_count": len(moderation_video_cuts),
-                    "has_prev": current_index > 0,
-                    "has_next": current_index < len(moderation_video_cuts) - 1,
-                }
+        if not selected_networks:
+            self.logger.info("Инициализация выбранных видео-платформ")
+            social_networks = await self.loom_content_client.get_social_networks_by_organization(
+                organization_id=state.organization_id
+            )
 
-                # Сохраняем данные текущего видео для редактирования
-                dialog_manager.dialog_data["original_video_cut"] = {
-                    "id": current_video_cut.id,
-                    "creator_id": current_video_cut.creator_id,
-                    "organization_id": current_video_cut.organization_id,
-                    "project_id": current_video_cut.project_id,
-                    "moderator_id": current_video_cut.moderator_id,
-                    "transcript": current_video_cut.transcript,
-                    "video_name": current_video_cut.video_name,
-                    "original_url": current_video_cut.original_url,
-                    "vizard_rub_cost": current_video_cut.vizard_rub_cost,
-                    "moderation_comment": current_video_cut.moderation_comment,
-                    "publication_at": current_video_cut.publication_at,
-                    "name": current_video_cut.name,
-                    "description": current_video_cut.description,
-                    "tags": current_video_cut.tags or [],
-                    "youtube_video_reference": current_video_cut.youtube_video_reference,
-                    "video_fid": current_video_cut.video_fid,
-                    "moderation_status": current_video_cut.moderation_status,
-                    "created_at": current_video_cut.created_at,
-                    "youtube_source": current_video_cut.youtube_source,
-                    "inst_source": current_video_cut.inst_source,
-                }
+            youtube_connected = self._is_network_connected(social_networks, "youtube")
+            instagram_connected = self._is_network_connected(social_networks, "instagram")
 
-                selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
+            if youtube_connected:
+                widget_id = "youtube_checkbox"
+                autoselect = social_networks["youtube"][0].get("autoselect", False)
+                selected_networks[widget_id] = autoselect
 
-                if not selected_networks:
-                    self.logger.info("Инициализация выбранных видео-платформ")
-                    social_networks = await self.loom_content_client.get_social_networks_by_organization(
-                        organization_id=state.organization_id
-                    )
+            if instagram_connected:
+                widget_id = "instagram_checkbox"
+                autoselect = social_networks["instagram"][0].get("autoselect", False)
+                selected_networks[widget_id] = autoselect
 
-                    youtube_connected = self._is_network_connected(social_networks, "youtube")
-                    instagram_connected = self._is_network_connected(social_networks, "instagram")
+            dialog_manager.dialog_data["selected_social_networks"] = selected_networks
 
-                    if youtube_connected:
-                        widget_id = "youtube_checkbox"
-                        autoselect = social_networks["youtube"][0].get("autoselect", False)
-                        selected_networks[widget_id] = autoselect
+        # Копируем в рабочую версию, если ее еще нет
+        if "working_video_cut" not in dialog_manager.dialog_data:
+            dialog_manager.dialog_data["working_video_cut"] = dict(
+                dialog_manager.dialog_data["original_video_cut"])
 
-                    if instagram_connected:
-                        widget_id = "instagram_checkbox"
-                        autoselect = social_networks["instagram"][0].get("autoselect", False)
-                        selected_networks[widget_id] = autoselect
+        self.logger.info("Завершение получения списка модерации")
+        return data
 
-                    dialog_manager.dialog_data["selected_social_networks"] = selected_networks
-
-                # Копируем в рабочую версию, если ее еще нет
-                if "working_video_cut" not in dialog_manager.dialog_data:
-                    dialog_manager.dialog_data["working_video_cut"] = dict(
-                        dialog_manager.dialog_data["original_video_cut"])
-
-                self.logger.info("Завершение получения списка модерации")
-                span.set_status(Status(StatusCode.OK))
-                return data
-
-            except Exception as err:
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                raise
-
+    @traced_method()
     async def get_reject_comment_data(
             self,
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        with self.tracer.start_as_current_span(
-                "VideoCutModerationGetter.get_reject_comment_data",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                self.logger.info("Начало получения данных комментария отклонения")
+        self.logger.info("Начало получения данных комментария отклонения")
 
-                original_video_cut = dialog_manager.dialog_data.get("original_video_cut", {})
+        original_video_cut = dialog_manager.dialog_data.get("original_video_cut", {})
 
-                # Получаем информацию об авторе
-                creator = await self.loom_employee_client.get_employee_by_account_id(
-                    original_video_cut["creator_id"],
-                )
+        creator = await self.loom_employee_client.get_employee_by_account_id(
+            original_video_cut["creator_id"],
+        )
 
-                data = {
-                    "video_name": original_video_cut["name"] or "Без названия",
-                    "creator_name": creator.name,
-                    "has_comment": bool(dialog_manager.dialog_data.get("reject_comment")),
-                    "reject_comment": dialog_manager.dialog_data.get("reject_comment", ""),
-                    "has_void_reject_comment": dialog_manager.dialog_data.get("has_void_reject_comment", False),
-                    "has_small_reject_comment": dialog_manager.dialog_data.get("has_small_reject_comment", False),
-                    "has_big_reject_comment": dialog_manager.dialog_data.get("has_big_reject_comment", False),
-                }
+        data = {
+            "video_name": original_video_cut["name"] or "Без названия",
+            "creator_name": creator.name,
+            "has_comment": bool(dialog_manager.dialog_data.get("reject_comment")),
+            "reject_comment": dialog_manager.dialog_data.get("reject_comment", ""),
+            "has_void_reject_comment": dialog_manager.dialog_data.get("has_void_reject_comment", False),
+            "has_small_reject_comment": dialog_manager.dialog_data.get("has_small_reject_comment", False),
+            "has_big_reject_comment": dialog_manager.dialog_data.get("has_big_reject_comment", False),
+        }
 
-                self.logger.info("Завершение получения данных комментария отклонения")
-                span.set_status(Status(StatusCode.OK))
-                return data
+        self.logger.info("Завершение получения данных комментария отклонения")
+        return data
 
-            except Exception as err:
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                raise
-
+    @traced_method()
     async def get_edit_preview_data(
             self,
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        with self.tracer.start_as_current_span(
-                "VideoCutModerationGetter.get_edit_preview_data",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                self.logger.info("Начало получения данных превью редактирования")
+        self.logger.info("Начало получения данных превью редактирования")
 
-                # Инициализируем рабочую версию если ее нет
-                if "working_video_cut" not in dialog_manager.dialog_data:
-                    self.logger.info("Инициализация рабочей версии видео-нарезки")
-                    dialog_manager.dialog_data["working_video_cut"] = dict(
-                        dialog_manager.dialog_data["original_video_cut"]
-                    )
+        # Инициализируем рабочую версию если ее нет
+        if "working_video_cut" not in dialog_manager.dialog_data:
+            self.logger.info("Инициализация рабочей версии видео-нарезки")
+            dialog_manager.dialog_data["working_video_cut"] = dict(
+                dialog_manager.dialog_data["original_video_cut"]
+            )
 
-                working_video_cut = dialog_manager.dialog_data["working_video_cut"]
-                original_video_cut = dialog_manager.dialog_data["original_video_cut"]
+        working_video_cut = dialog_manager.dialog_data["working_video_cut"]
+        original_video_cut = dialog_manager.dialog_data["original_video_cut"]
 
-                # Получаем информацию об авторе
-                creator = await self.loom_employee_client.get_employee_by_account_id(
-                    working_video_cut["creator_id"]
-                )
+        creator = await self.loom_employee_client.get_employee_by_account_id(
+            working_video_cut["creator_id"]
+        )
 
-                # Форматируем теги
-                tags = working_video_cut.get("tags", [])
-                tags_text = ", ".join(tags) if tags else ""
+        tags = working_video_cut.get("tags", [])
+        tags_text = ", ".join(tags) if tags else ""
+        video_media = await self._get_video_media(model.VideoCut(**working_video_cut))
 
-                # Подготавливаем медиа для видео
-                video_media = await self._get_video_media(model.VideoCut(**working_video_cut))
+        data = {
+            "video_name": working_video_cut["name"] or "Без названия",
+            "video_description": working_video_cut["description"] or "Описание отсутствует",
+            "video_tags": tags_text,
+            "youtube_reference": working_video_cut["youtube_video_reference"],
+            "has_tags": bool(tags),
+            "creator_name": creator.name,
+            "created_at": self._format_datetime(original_video_cut["created_at"]),
+            "video_media": video_media,
+            "has_changes": self._has_changes(dialog_manager),
+            "has_video": bool(working_video_cut.get("video_fid")),
+        }
 
-                data = {
-                    "video_name": working_video_cut["name"] or "Без названия",
-                    "video_description": working_video_cut["description"] or "Описание отсутствует",
-                    "video_tags": tags_text,
-                    "youtube_reference": working_video_cut["youtube_video_reference"],
-                    "has_tags": bool(tags),
-                    "creator_name": creator.name,
-                    "created_at": self._format_datetime(original_video_cut["created_at"]),
-                    "video_media": video_media,
-                    "has_changes": self._has_changes(dialog_manager),
-                    "has_video": bool(working_video_cut.get("video_fid")),
-                }
+        self.logger.info("Завершение получения данных превью редактирования")
+        return data
 
-                self.logger.info("Завершение получения данных превью редактирования")
-                span.set_status(Status(StatusCode.OK))
-                return data
-
-            except Exception as err:
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                raise
-
+    @traced_method()
     async def get_social_network_select_data(
             self,
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        with self.tracer.start_as_current_span(
-                "VideoCutModerationGetter.get_social_network_select_data",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                self.logger.info("Начало получения данных выбора видео-платформ")
+        self.logger.info("Начало получения данных выбора видео-платформ")
 
-                state = await self._get_state(dialog_manager)
+        state = await self._get_state(dialog_manager)
 
-                # Получаем подключенные социальные сети для организации
-                social_networks = await self.loom_content_client.get_social_networks_by_organization(
-                    organization_id=state.organization_id
-                )
+        social_networks = await self.loom_content_client.get_social_networks_by_organization(
+            organization_id=state.organization_id
+        )
 
-                # Проверяем подключенные сети
-                youtube_connected = self._is_network_connected(social_networks, "youtube")
-                instagram_connected = self._is_network_connected(social_networks, "instagram")
+        # Проверяем подключенные сети
+        youtube_connected = self._is_network_connected(social_networks, "youtube")
+        instagram_connected = self._is_network_connected(social_networks, "instagram")
 
-                # Получаем текущие выбранные сети
-                selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
+        # Получаем текущие выбранные сети
+        selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
 
-                if youtube_connected:
-                    widget_id = "youtube_checkbox"
-                    youtube_checkbox: ManagedCheckbox = dialog_manager.find(widget_id)
-                    await youtube_checkbox.set_checked(selected_networks[widget_id])
+        if youtube_connected:
+            widget_id = "youtube_checkbox"
+            youtube_checkbox: ManagedCheckbox = dialog_manager.find(widget_id)
+            await youtube_checkbox.set_checked(selected_networks[widget_id])
 
-                if instagram_connected:
-                    widget_id = "instagram_checkbox"
-                    instagram_checkbox: ManagedCheckbox = dialog_manager.find(widget_id)
-                    await instagram_checkbox.set_checked(selected_networks[widget_id])
+        if instagram_connected:
+            widget_id = "instagram_checkbox"
+            instagram_checkbox: ManagedCheckbox = dialog_manager.find(widget_id)
+            await instagram_checkbox.set_checked(selected_networks[widget_id])
 
-                dialog_manager.dialog_data["selected_social_networks"] = selected_networks
+        dialog_manager.dialog_data["selected_social_networks"] = selected_networks
 
-                data = {
-                    "youtube_connected": youtube_connected,
-                    "instagram_connected": instagram_connected,
-                    "no_connected_networks": not youtube_connected and not instagram_connected,
-                    "has_available_networks": youtube_connected or instagram_connected,
-                }
+        data = {
+            "youtube_connected": youtube_connected,
+            "instagram_connected": instagram_connected,
+            "no_connected_networks": not youtube_connected and not instagram_connected,
+            "has_available_networks": youtube_connected or instagram_connected,
+        }
 
-                self.logger.info("Завершение получения данных выбора видео-платформ")
-                span.set_status(Status(StatusCode.OK))
-                return data
+        self.logger.info("Завершение получения данных выбора видео-платформ")
+        return data
 
-            except Exception as err:
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                raise
-
+    @traced_method()
     async def get_edit_title_data(
             self,
             dialog_manager: DialogManager,
@@ -324,6 +271,7 @@ class VideoCutModerationGetter(interface.IVideoCutModerationGetter):
             "has_big_title": dialog_manager.dialog_data.get("has_big_title", False),
         }
 
+    @traced_method()
     async def get_edit_description_data(
             self,
             dialog_manager: DialogManager,
@@ -339,6 +287,7 @@ class VideoCutModerationGetter(interface.IVideoCutModerationGetter):
             "has_big_description": dialog_manager.dialog_data.get("has_big_description", False),
         }
 
+    @traced_method()
     async def get_edit_tags_data(
             self,
             dialog_manager: DialogManager,

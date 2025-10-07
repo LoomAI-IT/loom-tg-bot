@@ -3,9 +3,8 @@ from typing import Any
 from aiogram.types import CallbackQuery, Message
 from aiogram_dialog import DialogManager, StartMode, ShowMode
 
-from opentelemetry.trace import SpanKind, Status, StatusCode
-
 from internal import interface, model
+from pkg.trace_wrapper import traced_method
 
 
 class VideoCutsDraftService(interface.IVideoCutsDraftService):
@@ -20,114 +19,85 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
         self.state_repo = state_repo
         self.loom_content_client = loom_content_client
 
+    @traced_method()
     async def handle_navigate_video_cut(
             self,
             callback: CallbackQuery,
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        with self.tracer.start_as_current_span(
-                "VideoCutsDraftService.handle_navigate_video_cut",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                self.logger.info("Начало обработки навигации по черновикам видео")
-                dialog_manager.show_mode = ShowMode.EDIT
+        self.logger.info("Начало обработки навигации по черновикам видео")
+        dialog_manager.show_mode = ShowMode.EDIT
 
-                current_index = dialog_manager.dialog_data.get("current_index", 0)
-                video_cuts_list = dialog_manager.dialog_data.get("video_cuts_list", [])
+        current_index = dialog_manager.dialog_data.get("current_index", 0)
+        video_cuts_list = dialog_manager.dialog_data.get("video_cuts_list", [])
 
-                if button.widget_id == "prev_video_cut":
-                    self.logger.info("Переключение на предыдущий черновик")
-                    new_index = max(0, current_index - 1)
-                else:
-                    self.logger.info("Переключение на следующий черновик")
-                    new_index = min(len(video_cuts_list) - 1, current_index + 1)
+        if button.widget_id == "prev_video_cut":
+            self.logger.info("Переключение на предыдущий черновик")
+            new_index = max(0, current_index - 1)
+        else:
+            self.logger.info("Переключение на следующий черновик")
+            new_index = min(len(video_cuts_list) - 1, current_index + 1)
 
-                if new_index == current_index:
-                    self.logger.info("Достигнут край списка черновиков")
-                    await callback.answer()
-                    self.logger.info("Завершение обработки навигации по черновикам видео")
-                    return
+        if new_index == current_index:
+            self.logger.info("Достигнут край списка черновиков")
+            await callback.answer()
+            self.logger.info("Завершение обработки навигации по черновикам видео")
+            return
 
-                dialog_manager.dialog_data["current_index"] = new_index
-                dialog_manager.dialog_data.pop("working_video_cut", None)
+        dialog_manager.dialog_data["current_index"] = new_index
+        dialog_manager.dialog_data.pop("working_video_cut", None)
 
-                await callback.answer()
-                self.logger.info("Завершение обработки навигации по черновикам видео")
-                span.set_status(Status(StatusCode.OK))
+        await callback.answer()
+        self.logger.info("Завершение обработки навигации по черновикам видео")
 
-            except Exception as err:
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                await callback.answer("Не удалось переключить черновик", show_alert=True)
-                raise
-
+    @traced_method()
     async def handle_delete_video_cut(
             self,
             callback: CallbackQuery,
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        with self.tracer.start_as_current_span(
-                "VideoCutsDraftService.handle_delete_video_cut",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                self.logger.info("Начало удаления черновика видео")
-                dialog_manager.show_mode = ShowMode.EDIT
+        self.logger.info("Начало удаления черновика видео")
+        dialog_manager.show_mode = ShowMode.EDIT
 
-                original_video_cut = dialog_manager.dialog_data["original_video_cut"]
-                video_cut_id = original_video_cut["id"]
+        original_video_cut = dialog_manager.dialog_data["original_video_cut"]
+        video_cut_id = original_video_cut["id"]
 
-                await self.loom_content_client.delete_video_cut(
-                    video_cut_id=video_cut_id
-                )
+        await self.loom_content_client.delete_video_cut(
+            video_cut_id=video_cut_id
+        )
 
-                await callback.answer("Черновик успешно удален", show_alert=True)
+        await callback.answer("Черновик успешно удален", show_alert=True)
 
-                await self._remove_current_video_cut_from_list(dialog_manager)
-                self.logger.info("Завершение удаления черновика видео")
-                span.set_status(Status(StatusCode.OK))
+        await self._remove_current_video_cut_from_list(dialog_manager)
+        self.logger.info("Завершение удаления черновика видео")
 
-            except Exception as err:
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                await callback.answer("Не удалось удалить черновик", show_alert=True)
-                raise
-
+    @traced_method()
     async def handle_save_changes(
             self,
             callback: CallbackQuery,
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        with self.tracer.start_as_current_span(
-                "VideoCutsDraftService.handle_save_changes",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                self.logger.info("Начало сохранения изменений черновика")
-                dialog_manager.show_mode = ShowMode.EDIT
+        self.logger.info("Начало сохранения изменений черновика")
+        dialog_manager.show_mode = ShowMode.EDIT
 
-                if not self._has_changes(dialog_manager):
-                    self.logger.info("Изменения отсутствуют")
-                    await callback.answer("Нет изменений для сохранения", show_alert=True)
-                    self.logger.info("Завершение сохранения изменений черновика")
-                    return
+        if not self._has_changes(dialog_manager):
+            self.logger.info("Изменения отсутствуют")
+            await callback.answer("Нет изменений для сохранения", show_alert=True)
+            self.logger.info("Завершение сохранения изменений черновика")
+            return
 
-                await self._save_video_cut_changes(dialog_manager)
+        await self._save_video_cut_changes(dialog_manager)
 
-                dialog_manager.dialog_data["original_video_cut"] = dict(dialog_manager.dialog_data["working_video_cut"])
-                await callback.answer("Изменения успешно сохранены", show_alert=True)
+        dialog_manager.dialog_data["original_video_cut"] = dict(dialog_manager.dialog_data["working_video_cut"])
+        await callback.answer("Изменения успешно сохранены", show_alert=True)
 
-                await dialog_manager.switch_to(model.VideoCutsDraftStates.video_cut_list)
-                self.logger.info("Завершение сохранения изменений черновика")
-                span.set_status(Status(StatusCode.OK))
+        await dialog_manager.switch_to(model.VideoCutsDraftStates.video_cut_list)
+        self.logger.info("Завершение сохранения изменений черновика")
 
-            except Exception as err:
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                await callback.answer("Не удалось сохранить изменения", show_alert=True)
-                raise
-
+    @traced_method()
     async def handle_edit_title(
             self,
             message: Message,
@@ -135,41 +105,32 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
             dialog_manager: DialogManager,
             text: str
     ) -> None:
-        with self.tracer.start_as_current_span(
-                "VideoCutsDraftService.handle_edit_title_save",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                self.logger.info("Начало редактирования названия черновика")
-                dialog_manager.show_mode = ShowMode.EDIT
+        self.logger.info("Начало редактирования названия черновика")
+        dialog_manager.show_mode = ShowMode.EDIT
 
-                await message.delete()
-                new_title = message.html_text.replace('\n', '<br/>')
+        await message.delete()
+        new_title = message.html_text.replace('\n', '<br/>')
 
-                if not new_title:
-                    self.logger.info("Название пустое")
-                    dialog_manager.dialog_data["has_void_title"] = True
-                    self.logger.info("Завершение редактирования названия черновика")
-                    return
-                dialog_manager.dialog_data.pop("has_void_title", None)
+        if not new_title:
+            self.logger.info("Название пустое")
+            dialog_manager.dialog_data["has_void_title"] = True
+            self.logger.info("Завершение редактирования названия черновика")
+            return
+        dialog_manager.dialog_data.pop("has_void_title", None)
 
-                if len(new_title) > 100:
-                    self.logger.info("Название превышает лимит")
-                    dialog_manager.dialog_data["has_big_title"] = True
-                    self.logger.info("Завершение редактирования названия черновика")
-                    return
-                dialog_manager.dialog_data.pop("has_big_title", None)
+        if len(new_title) > 100:
+            self.logger.info("Название превышает лимит")
+            dialog_manager.dialog_data["has_big_title"] = True
+            self.logger.info("Завершение редактирования названия черновика")
+            return
+        dialog_manager.dialog_data.pop("has_big_title", None)
 
-                dialog_manager.dialog_data["working_video_cut"]["name"] = new_title
+        dialog_manager.dialog_data["working_video_cut"]["name"] = new_title
 
-                await dialog_manager.switch_to(model.VideoCutsDraftStates.edit_preview)
-                self.logger.info("Завершение редактирования названия черновика")
-                span.set_status(Status(StatusCode.OK))
+        await dialog_manager.switch_to(model.VideoCutsDraftStates.edit_preview)
+        self.logger.info("Завершение редактирования названия черновика")
 
-            except Exception as err:
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                raise
-
+    @traced_method()
     async def handle_edit_description(
             self,
             message: Message,
@@ -177,41 +138,32 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
             dialog_manager: DialogManager,
             text: str
     ) -> None:
-        with self.tracer.start_as_current_span(
-                "VideoCutsDraftService.handle_edit_description_save",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                self.logger.info("Начало редактирования описания черновика")
-                dialog_manager.show_mode = ShowMode.EDIT
-                await message.delete()
+        self.logger.info("Начало редактирования описания черновика")
+        dialog_manager.show_mode = ShowMode.EDIT
+        await message.delete()
 
-                new_description = message.html_text.replace('\n', '<br/>')
+        new_description = message.html_text.replace('\n', '<br/>')
 
-                if not new_description:
-                    self.logger.info("Описание пустое")
-                    dialog_manager.dialog_data["has_void_description"] = True
-                    self.logger.info("Завершение редактирования описания черновика")
-                    return
-                dialog_manager.dialog_data.pop("has_void_description", None)
+        if not new_description:
+            self.logger.info("Описание пустое")
+            dialog_manager.dialog_data["has_void_description"] = True
+            self.logger.info("Завершение редактирования описания черновика")
+            return
+        dialog_manager.dialog_data.pop("has_void_description", None)
 
-                if len(new_description) > 2200:
-                    self.logger.info("Описание превышает лимит")
-                    dialog_manager.dialog_data["has_big_description"] = True
-                    self.logger.info("Завершение редактирования описания черновика")
-                    return
-                dialog_manager.dialog_data.pop("has_big_description", None)
+        if len(new_description) > 2200:
+            self.logger.info("Описание превышает лимит")
+            dialog_manager.dialog_data["has_big_description"] = True
+            self.logger.info("Завершение редактирования описания черновика")
+            return
+        dialog_manager.dialog_data.pop("has_big_description", None)
 
-                dialog_manager.dialog_data["working_video_cut"]["description"] = new_description
+        dialog_manager.dialog_data["working_video_cut"]["description"] = new_description
 
-                await dialog_manager.switch_to(model.VideoCutsDraftStates.edit_preview)
-                self.logger.info("Завершение редактирования описания черновика")
-                span.set_status(Status(StatusCode.OK))
+        await dialog_manager.switch_to(model.VideoCutsDraftStates.edit_preview)
+        self.logger.info("Завершение редактирования описания черновика")
 
-            except Exception as err:
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                raise
-
+    @traced_method()
     async def handle_edit_tags(
             self,
             message: Message,
@@ -219,219 +171,160 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
             dialog_manager: DialogManager,
             text: str
     ) -> None:
-        with self.tracer.start_as_current_span(
-                "VideoCutsDraftService.handle_edit_tags_save",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                self.logger.info("Начало редактирования тегов черновика")
-                dialog_manager.show_mode = ShowMode.EDIT
+        self.logger.info("Начало редактирования тегов черновика")
+        dialog_manager.show_mode = ShowMode.EDIT
 
-                await message.delete()
-                tags_raw = text.strip()
+        await message.delete()
+        tags_raw = text.strip()
 
-                if not tags_raw:
-                    self.logger.info("Теги пустые")
-                    new_tags = []
-                else:
-                    new_tags = [tag.strip() for tag in tags_raw.split(",")]
-                    new_tags = [tag for tag in new_tags if tag]
+        if not tags_raw:
+            self.logger.info("Теги пустые")
+            new_tags = []
+        else:
+            new_tags = [tag.strip() for tag in tags_raw.split(",")]
+            new_tags = [tag for tag in new_tags if tag]
 
-                    if len(new_tags) > 15:
-                        self.logger.info("Превышен лимит количества тегов")
-                        dialog_manager.dialog_data["has_many_tags"] = True
-                        self.logger.info("Завершение редактирования тегов черновика")
-                        return
-                    dialog_manager.dialog_data.pop("has_many_tags", None)
-
-                dialog_manager.dialog_data["working_video_cut"]["tags"] = new_tags
-
-                await dialog_manager.switch_to(model.VideoCutsDraftStates.edit_preview)
+            if len(new_tags) > 15:
+                self.logger.info("Превышен лимит количества тегов")
+                dialog_manager.dialog_data["has_many_tags"] = True
                 self.logger.info("Завершение редактирования тегов черновика")
-                span.set_status(Status(StatusCode.OK))
+                return
+            dialog_manager.dialog_data.pop("has_many_tags", None)
 
-            except Exception as err:
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                raise
+        dialog_manager.dialog_data["working_video_cut"]["tags"] = new_tags
 
+        await dialog_manager.switch_to(model.VideoCutsDraftStates.edit_preview)
+        self.logger.info("Завершение редактирования тегов черновика")
+
+    @traced_method()
     async def handle_back_to_video_cut_list(
             self,
             callback: CallbackQuery,
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        with self.tracer.start_as_current_span(
-                "VideoCutsDraftService.handle_back_to_video_cut_list",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                self.logger.info("Начало возврата к списку черновиков")
-                dialog_manager.show_mode = ShowMode.EDIT
+        self.logger.info("Начало возврата к списку черновиков")
+        dialog_manager.show_mode = ShowMode.EDIT
 
-                await dialog_manager.switch_to(model.VideoCutsDraftStates.video_cut_list)
-                self.logger.info("Завершение возврата к списку черновиков")
-                span.set_status(Status(StatusCode.OK))
+        await dialog_manager.switch_to(model.VideoCutsDraftStates.video_cut_list)
+        self.logger.info("Завершение возврата к списку черновиков")
 
-            except Exception as err:
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                await callback.answer("Не удалось вернуться к списку", show_alert=True)
-                raise
-
+    @traced_method()
     async def handle_send_to_moderation(
             self,
             callback: CallbackQuery,
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        with self.tracer.start_as_current_span(
-                "VideoCutsDraftService.handle_send_to_moderation_with_networks",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                self.logger.info("Начало отправки черновика на модерацию")
-                dialog_manager.show_mode = ShowMode.EDIT
+        self.logger.info("Начало отправки черновика на модерацию")
+        dialog_manager.show_mode = ShowMode.EDIT
 
-                if self._has_changes(dialog_manager):
-                    self.logger.info("Сохранение изменений перед отправкой")
-                    await self._save_video_cut_changes(dialog_manager)
+        if self._has_changes(dialog_manager):
+            self.logger.info("Сохранение изменений перед отправкой")
+            await self._save_video_cut_changes(dialog_manager)
 
-                original_video_cut = dialog_manager.dialog_data["original_video_cut"]
-                video_cut_id = original_video_cut["id"]
+        original_video_cut = dialog_manager.dialog_data["original_video_cut"]
+        video_cut_id = original_video_cut["id"]
 
-                await self.loom_content_client.send_video_cut_to_moderation(
-                    video_cut_id=video_cut_id
-                )
+        await self.loom_content_client.send_video_cut_to_moderation(
+            video_cut_id=video_cut_id
+        )
 
-                await callback.answer("Черновик успешно отправлен на модерацию", show_alert=True)
+        await callback.answer("Черновик успешно отправлен на модерацию", show_alert=True)
 
-                await self._remove_current_video_cut_from_list(dialog_manager)
+        await self._remove_current_video_cut_from_list(dialog_manager)
 
-                await dialog_manager.switch_to(model.VideoCutsDraftStates.video_cut_list)
-                self.logger.info("Завершение отправки черновика на модерацию")
-                span.set_status(Status(StatusCode.OK))
+        await dialog_manager.switch_to(model.VideoCutsDraftStates.video_cut_list)
+        self.logger.info("Завершение отправки черновика на модерацию")
 
-            except Exception as err:
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                await callback.answer("Не удалось отправить на модерацию", show_alert=True)
-                raise
-
+    @traced_method()
     async def handle_publish_now(
             self,
             callback: CallbackQuery,
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        with self.tracer.start_as_current_span(
-                "VideoCutsDraftService.handle_publish_with_selected_networks",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                self.logger.info("Начало публикации черновика")
-                dialog_manager.show_mode = ShowMode.EDIT
+        self.logger.info("Начало публикации черновика")
+        dialog_manager.show_mode = ShowMode.EDIT
 
-                selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
-                has_selected_networks = any(selected_networks.values())
+        selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
+        has_selected_networks = any(selected_networks.values())
 
-                if not has_selected_networks:
-                    self.logger.info("Не выбраны социальные сети")
-                    await callback.answer(
-                        "Выберите хотя бы одну социальную сеть для публикации",
-                        show_alert=True
-                    )
-                    self.logger.info("Завершение публикации черновика")
-                    return
+        if not has_selected_networks:
+            self.logger.info("Не выбраны социальные сети")
+            await callback.answer(
+                "Выберите хотя бы одну социальную сеть для публикации",
+                show_alert=True
+            )
+            self.logger.info("Завершение публикации черновика")
+            return
 
-                if self._has_changes(dialog_manager):
-                    self.logger.info("Сохранение изменений перед публикацией")
-                    await self._save_video_cut_changes(dialog_manager)
+        if self._has_changes(dialog_manager):
+            self.logger.info("Сохранение изменений перед публикацией")
+            await self._save_video_cut_changes(dialog_manager)
 
-                await self._save_selected_networks(dialog_manager)
+        await self._save_selected_networks(dialog_manager)
 
-                state = await self._get_state(dialog_manager)
-                original_video_cut = dialog_manager.dialog_data["original_video_cut"]
-                video_cut_id = original_video_cut["id"]
+        state = await self._get_state(dialog_manager)
+        original_video_cut = dialog_manager.dialog_data["original_video_cut"]
+        video_cut_id = original_video_cut["id"]
 
-                await self.loom_content_client.moderate_video_cut(
-                    video_cut_id=video_cut_id,
-                    moderator_id=state.account_id,
-                    moderation_status="approved",
-                )
+        await self.loom_content_client.moderate_video_cut(
+            video_cut_id=video_cut_id,
+            moderator_id=state.account_id,
+            moderation_status="approved",
+        )
 
-                await callback.answer("Черновик успешно опубликован", show_alert=True)
+        await callback.answer("Черновик успешно опубликован", show_alert=True)
 
-                await self._remove_current_video_cut_from_list(dialog_manager)
+        await self._remove_current_video_cut_from_list(dialog_manager)
 
-                await dialog_manager.switch_to(model.VideoCutsDraftStates.video_cut_list)
-                self.logger.info("Завершение публикации черновика")
-                span.set_status(Status(StatusCode.OK))
+        await dialog_manager.switch_to(model.VideoCutsDraftStates.video_cut_list)
+        self.logger.info("Завершение публикации черновика")
 
-            except Exception as err:
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                await callback.answer("Не удалось опубликовать черновик", show_alert=True)
-                raise
-
+    @traced_method()
     async def handle_toggle_social_network(
             self,
             callback: CallbackQuery,
             checkbox: Any,
             dialog_manager: DialogManager
     ) -> None:
-        with self.tracer.start_as_current_span(
-                "VideoCutsDraftService.handle_toggle_social_network",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                self.logger.info("Начало переключения социальной сети")
-                dialog_manager.show_mode = ShowMode.EDIT
+        self.logger.info("Начало переключения социальной сети")
+        dialog_manager.show_mode = ShowMode.EDIT
 
-                if "selected_social_networks" not in dialog_manager.dialog_data:
-                    self.logger.info("Инициализация выбранных социальных сетей")
-                    dialog_manager.dialog_data["selected_social_networks"] = {}
+        if "selected_social_networks" not in dialog_manager.dialog_data:
+            self.logger.info("Инициализация выбранных социальных сетей")
+            dialog_manager.dialog_data["selected_social_networks"] = {}
 
-                network_id = checkbox.widget_id
-                is_checked = checkbox.is_checked()
+        network_id = checkbox.widget_id
+        is_checked = checkbox.is_checked()
 
-                dialog_manager.dialog_data["selected_social_networks"][network_id] = is_checked
+        dialog_manager.dialog_data["selected_social_networks"][network_id] = is_checked
 
-                await callback.answer()
-                self.logger.info("Завершение переключения социальной сети")
-                span.set_status(Status(StatusCode.OK))
-            except Exception as err:
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                await callback.answer("Не удалось изменить выбор социальной сети", show_alert=True)
-                raise
+        await callback.answer()
+        self.logger.info("Завершение переключения социальной сети")
 
+    @traced_method()
     async def handle_back_to_content_menu(
             self,
             callback: CallbackQuery,
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        with self.tracer.start_as_current_span(
-                "VideoCutsDraftService.handle_back_to_content_menu",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                self.logger.info("Начало возврата в меню контента")
-                dialog_manager.show_mode = ShowMode.EDIT
+        self.logger.info("Начало возврата в меню контента")
+        dialog_manager.show_mode = ShowMode.EDIT
 
-                if await self._check_alerts(dialog_manager):
-                    self.logger.info("Обнаружены алерты, переход к алертам")
-                    self.logger.info("Завершение возврата в меню контента")
-                    return
+        if await self._check_alerts(dialog_manager):
+            self.logger.info("Обнаружены алерты, переход к алертам")
+            self.logger.info("Завершение возврата в меню контента")
+            return
 
-                await dialog_manager.start(
-                    model.ContentMenuStates.content_menu,
-                    mode=StartMode.RESET_STACK
-                )
+        await dialog_manager.start(
+            model.ContentMenuStates.content_menu,
+            mode=StartMode.RESET_STACK
+        )
 
-                self.logger.info("Завершение возврата в меню контента")
-                span.set_status(Status(StatusCode.OK))
-
-            except Exception as err:
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                await callback.answer("Не удалось вернуться в меню", show_alert=True)
-                raise
+        self.logger.info("Завершение возврата в меню контента")
 
     # Вспомогательные методы
     def _has_changes(self, dialog_manager: DialogManager) -> bool:

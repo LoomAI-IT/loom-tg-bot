@@ -125,4 +125,4 @@ class AddEmployeeGetter(interface.IAddEmployeeGetter):
         if not permissions_text_list:
             permissions_text_list.append("❌ Нет специальных разрешений")
 
-        return "\n".join(permissions_text_list)
+        return "<br/>".join(permissions_text_list)

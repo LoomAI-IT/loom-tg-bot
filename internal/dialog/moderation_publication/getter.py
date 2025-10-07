@@ -6,9 +6,8 @@ from aiogram.types import ContentType
 from aiogram_dialog import DialogManager
 from aiogram_dialog.widgets.kbd import ManagedCheckbox
 
-from opentelemetry.trace import SpanKind, Status, StatusCode
-
 from internal import interface, model
+from pkg.trace_wrapper import traced_method
 
 
 class ModerationPublicationGetter(interface.IModerationPublicationGetter):
@@ -27,304 +26,232 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
         self.loom_content_client = loom_content_client
         self.loom_domain = loom_domain
 
+    @traced_method()
     async def get_moderation_list_data(
             self,
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        with self.tracer.start_as_current_span(
-                "ModerationPublicationGetter.get_moderation_list_data",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                self.logger.info("Начало загрузки списка модерации")
-                state = await self._get_state(dialog_manager)
+        self.logger.info("Начало загрузки списка модерации")
+        state = await self._get_state(dialog_manager)
 
-                # Получаем публикации на модерации для организации
-                publications = await self.loom_content_client.get_publications_by_organization(
-                    organization_id=state.organization_id
-                )
+        publications = await self.loom_content_client.get_publications_by_organization(
+            organization_id=state.organization_id
+        )
 
-                # Фильтруем только те, что на модерации
-                moderation_publications = [
-                    pub.to_dict() for pub in publications
-                    if pub.moderation_status == "moderation"
-                ]
+        moderation_publications = [
+            pub.to_dict() for pub in publications
+            if pub.moderation_status == "moderation"
+        ]
 
-                if not moderation_publications:
-                    self.logger.info("Нет публикаций на модерации")
-                    return {
-                        "has_publications": False,
-                        "publications_count": 0,
-                        "period_text": "",
-                    }
+        if not moderation_publications:
+            self.logger.info("Нет публикаций на модерации")
+            return {
+                "has_publications": False,
+                "publications_count": 0,
+                "period_text": "",
+            }
 
-                # Сохраняем список для навигации
-                dialog_manager.dialog_data["moderation_list"] = moderation_publications
+        dialog_manager.dialog_data["moderation_list"] = moderation_publications
 
-                # Устанавливаем текущий индекс (0 если не был установлен)
-                if "current_index" not in dialog_manager.dialog_data:
-                    dialog_manager.dialog_data["current_index"] = 0
+        if "current_index" not in dialog_manager.dialog_data:
+            dialog_manager.dialog_data["current_index"] = 0
 
-                current_index = dialog_manager.dialog_data["current_index"]
-                current_pub = model.Publication(**moderation_publications[current_index])
+        current_index = dialog_manager.dialog_data["current_index"]
+        current_pub = model.Publication(**moderation_publications[current_index])
 
-                # Получаем информацию об авторе
-                creator = await self.loom_employee_client.get_employee_by_account_id(
-                    current_pub.creator_id
-                )
+        creator = await self.loom_employee_client.get_employee_by_account_id(
+            current_pub.creator_id
+        )
 
-                # Получаем категорию
-                category = await self.loom_content_client.get_category_by_id(
-                    current_pub.category_id
-                )
+        category = await self.loom_content_client.get_category_by_id(
+            current_pub.category_id
+        )
 
-                # Подготавливаем медиа для изображения
-                preview_image_media = None
-                image_url = None
-                if current_pub.image_fid:
-                    self.logger.info("Загрузка изображения публикации")
-                    cache_buster = int(time.time())
-                    image_url = f"https://{self.loom_domain}/api/content/publication/{current_pub.id}/image/download?v={cache_buster}"
+        # Подготавливаем медиа для изображения
+        preview_image_media = None
+        image_url = None
+        if current_pub.image_fid:
+            self.logger.info("Загрузка изображения публикации")
+            cache_buster = int(time.time())
+            image_url = f"https://{self.loom_domain}/api/content/publication/{current_pub.id}/image/download?v={cache_buster}"
 
-                    preview_image_media = MediaAttachment(
-                        url=image_url,
-                        type=ContentType.PHOTO
-                    )
+            preview_image_media = MediaAttachment(
+                url=image_url,
+                type=ContentType.PHOTO
+            )
 
-                data = {
-                    "has_publications": True,
-                    "creator_name": creator.name,
-                    "category_name": category.name,
-                    "created_at": self._format_datetime(current_pub.created_at),
-                    "publication_text": current_pub.text,
-                    "has_image": bool(current_pub.image_fid),
-                    "preview_image_media": preview_image_media,
-                    "current_index": current_index + 1,
-                    "total_count": len(moderation_publications),
-                    "has_prev": current_index > 0,
-                    "has_next": current_index < len(moderation_publications) - 1,
-                }
+        data = {
+            "has_publications": True,
+            "creator_name": creator.name,
+            "category_name": category.name,
+            "created_at": self._format_datetime(current_pub.created_at),
+            "publication_text": current_pub.text,
+            "has_image": bool(current_pub.image_fid),
+            "preview_image_media": preview_image_media,
+            "current_index": current_index + 1,
+            "total_count": len(moderation_publications),
+            "has_prev": current_index > 0,
+            "has_next": current_index < len(moderation_publications) - 1,
+        }
 
-                # Сохраняем данные текущей публикации для редактирования
-                dialog_manager.dialog_data["original_publication"] = {
-                    "id": current_pub.id,
-                    "creator_id": current_pub.creator_id,
-                    "text": current_pub.text,
-                    "category_id": current_pub.category_id,
-                    "image_url": image_url,
-                    "has_image": bool(current_pub.image_fid),
-                    "moderation_status": current_pub.moderation_status,
-                    "created_at": current_pub.created_at,
-                }
+        # Сохраняем данные текущей публикации для редактирования
+        dialog_manager.dialog_data["original_publication"] = {
+            "id": current_pub.id,
+            "creator_id": current_pub.creator_id,
+            "text": current_pub.text,
+            "category_id": current_pub.category_id,
+            "image_url": image_url,
+            "has_image": bool(current_pub.image_fid),
+            "moderation_status": current_pub.moderation_status,
+            "created_at": current_pub.created_at,
+        }
 
-                selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
+        selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
 
-                if not selected_networks:
-                    self.logger.info("Инициализация выбранных социальных сетей")
-                    social_networks = await self.loom_content_client.get_social_networks_by_organization(
-                        organization_id=state.organization_id
-                    )
+        if not selected_networks:
+            self.logger.info("Инициализация выбранных социальных сетей")
+            social_networks = await self.loom_content_client.get_social_networks_by_organization(
+                organization_id=state.organization_id
+            )
 
-                    telegram_connected = self._is_network_connected(social_networks, "telegram")
-                    vkontakte_connected = self._is_network_connected(social_networks, "vkontakte")
+            telegram_connected = self._is_network_connected(social_networks, "telegram")
+            vkontakte_connected = self._is_network_connected(social_networks, "vkontakte")
 
-                    if vkontakte_connected:
-                        widget_id = "vkontakte_checkbox"
-                        autoselect = social_networks["vkontakte"][0].get("autoselect", False)
-                        selected_networks[widget_id] = autoselect
+            if vkontakte_connected:
+                widget_id = "vkontakte_checkbox"
+                autoselect = social_networks["vkontakte"][0].get("autoselect", False)
+                selected_networks[widget_id] = autoselect
 
-                    if telegram_connected:
-                        widget_id = "telegram_checkbox"
-                        autoselect = social_networks["telegram"][0].get("autoselect", False)
-                        selected_networks[widget_id] = autoselect
+            if telegram_connected:
+                widget_id = "telegram_checkbox"
+                autoselect = social_networks["telegram"][0].get("autoselect", False)
+                selected_networks[widget_id] = autoselect
 
-                    dialog_manager.dialog_data["selected_social_networks"] = selected_networks
+            dialog_manager.dialog_data["selected_social_networks"] = selected_networks
 
-                # Копируем в рабочую версию, если ее еще нет
-                if "working_publication" not in dialog_manager.dialog_data:
-                    dialog_manager.dialog_data["working_publication"] = dict(
-                        dialog_manager.dialog_data["original_publication"])
+        # Копируем в рабочую версию, если ее еще нет
+        if "working_publication" not in dialog_manager.dialog_data:
+            dialog_manager.dialog_data["working_publication"] = dict(
+                dialog_manager.dialog_data["original_publication"])
 
-                self.logger.info("Список модерации загружен")
-                span.set_status(Status(StatusCode.OK))
-                return data
+        self.logger.info("Список модерации загружен")
+        return data
 
-            except Exception as err:
-
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                raise
-
+    @traced_method()
     async def get_reject_comment_data(
             self,
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        with self.tracer.start_as_current_span(
-                "ModerationPublicationGetter.get_reject_comment_data",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                self.logger.info("Начало загрузки данных комментария отклонения")
-                original_pub = dialog_manager.dialog_data.get("original_publication", {})
+        self.logger.info("Начало загрузки данных комментария отклонения")
+        original_pub = dialog_manager.dialog_data.get("original_publication", {})
 
-                # Получаем информацию об авторе
-                creator = await self.loom_employee_client.get_employee_by_account_id(
-                    original_pub["creator_id"],
-                )
+        creator = await self.loom_employee_client.get_employee_by_account_id(
+            original_pub["creator_id"],
+        )
 
-                data = {
-                    "creator_name": creator.name,
-                    "has_comment": bool(dialog_manager.dialog_data.get("reject_comment")),
-                    "reject_comment": dialog_manager.dialog_data.get("reject_comment", ""),
-                }
+        data = {
+            "creator_name": creator.name,
+            "has_comment": bool(dialog_manager.dialog_data.get("reject_comment")),
+            "reject_comment": dialog_manager.dialog_data.get("reject_comment", ""),
+        }
 
-                self.logger.info("Данные комментария отклонения загружены")
-                span.set_status(Status(StatusCode.OK))
-                return data
+        self.logger.info("Данные комментария отклонения загружены")
+        return data
 
-            except Exception as err:
-
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                raise
-
+    @traced_method()
     async def get_edit_preview_data(
             self,
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        with self.tracer.start_as_current_span(
-                "ModerationPublicationGetter.get_edit_preview_data",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                self.logger.info("Начало загрузки данных превью редактирования")
-                # Инициализируем рабочую версию если ее нет
-                if "working_publication" not in dialog_manager.dialog_data:
-                    self.logger.info("Инициализация рабочей публикации")
-                    dialog_manager.dialog_data["working_publication"] = dict(
-                        dialog_manager.dialog_data["original_publication"]
-                    )
+        self.logger.info("Начало загрузки данных превью редактирования")
 
-                working_pub = dialog_manager.dialog_data["working_publication"]
-                original_pub = dialog_manager.dialog_data["original_publication"]
+        if "working_publication" not in dialog_manager.dialog_data:
+            self.logger.info("Инициализация рабочей публикации")
+            dialog_manager.dialog_data["working_publication"] = dict(
+                dialog_manager.dialog_data["original_publication"]
+            )
 
-                # Получаем информацию об авторе
-                creator = await self.loom_employee_client.get_employee_by_account_id(
-                    working_pub["creator_id"]
-                )
+        working_pub = dialog_manager.dialog_data["working_publication"]
+        original_pub = dialog_manager.dialog_data["original_publication"]
 
-                # Получаем категорию
-                category = await self.loom_content_client.get_category_by_id(
-                    working_pub["category_id"]
-                )
+        creator = await self.loom_employee_client.get_employee_by_account_id(
+            working_pub["creator_id"]
+        )
 
-                # Подготавливаем медиа для изображения
-                preview_image_media = None
-                has_multiple_images = False
-                current_image_index = 0
-                total_images = 0
+        category = await self.loom_content_client.get_category_by_id(
+            working_pub["category_id"]
+        )
 
-                if working_pub.get("has_image"):
-                    # Приоритет: пользовательское > сгенерированные множественные > одиночное
-                    if working_pub.get("custom_image_file_id"):
-                        self.logger.info("Загрузка пользовательского изображения")
-                        preview_image_media = MediaAttachment(
-                            file_id=MediaId(working_pub["custom_image_file_id"]),
-                            type=ContentType.PHOTO
-                        )
-                    elif working_pub.get("generated_images_url"):
-                        self.logger.info("Загрузка сгенерированного изображения")
-                        # Множественные сгенерированные изображения
-                        images_url = working_pub["generated_images_url"]
-                        current_image_index = working_pub.get("current_image_index", 0)
-                        total_images = len(images_url)
-                        has_multiple_images = total_images > 1
+        preview_image_media = self._get_edit_preview_image_media(working_pub)
+        has_multiple_images = False
+        current_image_index = 0
+        total_images = 0
+        if working_pub.get("generated_images_url"):
+            images_url = working_pub["generated_images_url"]
+            current_image_index = working_pub.get("current_image_index", 0)
+            total_images = len(images_url)
+            has_multiple_images = total_images > 1
 
-                        if current_image_index < len(images_url):
-                            preview_image_media = MediaAttachment(
-                                url=images_url[current_image_index],
-                                type=ContentType.PHOTO
-                            )
-                    elif working_pub.get("image_url"):
-                        self.logger.info("Загрузка изображения по URL")
-                        preview_image_media = MediaAttachment(
-                            url=working_pub["image_url"],
-                            type=ContentType.PHOTO
-                        )
+        data = {
+            "creator_name": creator.name,
+            "category_name": category.name,
+            "created_at": self._format_datetime(original_pub["created_at"]),
+            "publication_text": working_pub["text"],
+            "has_image": working_pub.get("has_image", False),
+            "preview_image_media": preview_image_media,
+            "has_changes": self._has_changes(dialog_manager),
+            "has_multiple_images": has_multiple_images,
+            "current_image_index": current_image_index + 1,  # Показываем с 1
+            "total_images": total_images,
+        }
 
-                data = {
-                    "creator_name": creator.name,
-                    "category_name": category.name,
-                    "created_at": self._format_datetime(original_pub["created_at"]),
-                    "publication_text": working_pub["text"],
-                    "has_image": working_pub.get("has_image", False),
-                    "preview_image_media": preview_image_media,
-                    "has_changes": self._has_changes(dialog_manager),
-                    "has_multiple_images": has_multiple_images,
-                    "current_image_index": current_image_index + 1,  # Показываем с 1
-                    "total_images": total_images,
-                }
+        self.logger.info("Данные превью редактирования загружены")
+        return data
 
-                self.logger.info("Данные превью редактирования загружены")
-                span.set_status(Status(StatusCode.OK))
-                return data
-
-            except Exception as err:
-
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                raise
-
+    @traced_method()
     async def get_social_network_select_data(
             self,
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        with self.tracer.start_as_current_span(
-                "ModerationPublicationGetter.get_social_network_select_data",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                self.logger.info("Начало загрузки данных выбора социальных сетей")
-                state = await self._get_state(dialog_manager)
+        self.logger.info("Начало загрузки данных выбора социальных сетей")
+        state = await self._get_state(dialog_manager)
 
-                social_networks = await self.loom_content_client.get_social_networks_by_organization(
-                    organization_id=state.organization_id
-                )
+        social_networks = await self.loom_content_client.get_social_networks_by_organization(
+            organization_id=state.organization_id
+        )
 
-                telegram_connected = self._is_network_connected(social_networks, "telegram")
-                vkontakte_connected = self._is_network_connected(social_networks, "vkontakte")
+        telegram_connected = self._is_network_connected(social_networks, "telegram")
+        vkontakte_connected = self._is_network_connected(social_networks, "vkontakte")
 
-                selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
+        selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
 
-                if vkontakte_connected:
-                    self.logger.info("Установка состояния VK чекбокса")
-                    widget_id = "vkontakte_checkbox"
-                    vkontakte_checkbox: ManagedCheckbox = dialog_manager.find(widget_id)
-                    await vkontakte_checkbox.set_checked(selected_networks[widget_id])
+        if vkontakte_connected:
+            self.logger.info("Установка состояния VK чекбокса")
+            widget_id = "vkontakte_checkbox"
+            vkontakte_checkbox: ManagedCheckbox = dialog_manager.find(widget_id)
+            await vkontakte_checkbox.set_checked(selected_networks[widget_id])
 
-                if telegram_connected:
-                    self.logger.info("Установка состояния Telegram чекбокса")
-                    widget_id = "telegram_checkbox"
-                    telegram_checkbox: ManagedCheckbox = dialog_manager.find(widget_id)
-                    await telegram_checkbox.set_checked(selected_networks[widget_id])
+        if telegram_connected:
+            self.logger.info("Установка состояния Telegram чекбокса")
+            widget_id = "telegram_checkbox"
+            telegram_checkbox: ManagedCheckbox = dialog_manager.find(widget_id)
+            await telegram_checkbox.set_checked(selected_networks[widget_id])
 
-                data = {
-                    "telegram_connected": telegram_connected,
-                    "vkontakte_connected": vkontakte_connected,
-                    "no_connected_networks": not telegram_connected and not vkontakte_connected,
-                    "has_available_networks": telegram_connected or vkontakte_connected,
-                }
+        data = {
+            "telegram_connected": telegram_connected,
+            "vkontakte_connected": vkontakte_connected,
+            "no_connected_networks": not telegram_connected and not vkontakte_connected,
+            "has_available_networks": telegram_connected or vkontakte_connected,
+        }
 
-                self.logger.info("Данные выбора социальных сетей загружены")
-                span.set_status(Status(StatusCode.OK))
-                return data
+        self.logger.info("Данные выбора социальных сетей загружены")
+        return data
 
-            except Exception as err:
-
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                raise
-
+    @traced_method()
     async def get_edit_text_data(
             self,
             dialog_manager: DialogManager,
@@ -341,37 +268,14 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
             "has_regenerate_prompt": bool(dialog_manager.dialog_data.get("regenerate_prompt", "")),
         }
 
+    @traced_method()
     async def get_image_menu_data(
             self,
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        preview_image_media = None
-
         working_pub = dialog_manager.dialog_data.get("working_publication", {})
-        if working_pub.get("has_image"):
-            # Приоритет: пользовательское > сгенерированные множественные > одиночное
-            if working_pub.get("custom_image_file_id"):
-                preview_image_media = MediaAttachment(
-                    file_id=MediaId(working_pub["custom_image_file_id"]),
-                    type=ContentType.PHOTO
-                )
-            elif working_pub.get("generated_images_url"):
-                # Множественные сгенерированные изображения
-                images_url = working_pub["generated_images_url"]
-                current_image_index = working_pub.get("current_image_index", 0)
-
-                if current_image_index < len(images_url):
-                    preview_image_media = MediaAttachment(
-                        url=images_url[current_image_index],
-                        type=ContentType.PHOTO
-                    )
-            elif working_pub.get("image_url"):
-                preview_image_media = MediaAttachment(
-                    url=working_pub["image_url"],
-                    type=ContentType.PHOTO
-                )
-
+        preview_image_media = self._get_edit_preview_image_media(working_pub)
 
         return {
             "preview_image_media": preview_image_media,
@@ -383,6 +287,7 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
             "is_custom_image": working_pub.get("is_custom_image", False),
         }
 
+    @traced_method()
     async def get_upload_image_data(
             self,
             dialog_manager: DialogManager,
@@ -397,6 +302,7 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
             "is_custom_image": working_pub.get("is_custom_image", False),
         }
 
+    @traced_method()
     async def get_publication_success_data(
             self,
             dialog_manager: DialogManager,
@@ -455,6 +361,35 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
             return True
 
         return False
+
+    def _get_edit_preview_image_media(self, working_pub: dict) -> MediaAttachment | None:
+        preview_image_media = None
+
+        if working_pub.get("has_image"):
+            if working_pub.get("custom_image_file_id"):
+                self.logger.info("Загрузка пользовательского изображения")
+                preview_image_media = MediaAttachment(
+                    file_id=MediaId(working_pub["custom_image_file_id"]),
+                    type=ContentType.PHOTO
+                )
+            elif working_pub.get("generated_images_url"):
+                self.logger.info("Загрузка сгенерированного изображения")
+
+                images_url = working_pub["generated_images_url"]
+                current_image_index = working_pub.get("current_image_index", 0)
+
+                if current_image_index < len(images_url):
+                    preview_image_media = MediaAttachment(
+                        url=images_url[current_image_index],
+                        type=ContentType.PHOTO
+                    )
+            elif working_pub.get("image_url"):
+                self.logger.info("Загрузка изображения по URL")
+                preview_image_media = MediaAttachment(
+                    url=working_pub["image_url"],
+                    type=ContentType.PHOTO
+                )
+        return preview_image_media
 
     def _is_network_connected(self, social_networks: dict, network_type: str) -> bool:
         if not social_networks:

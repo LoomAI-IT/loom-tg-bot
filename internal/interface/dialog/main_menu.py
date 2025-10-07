@@ -26,17 +26,7 @@ class IMainMenuService(Protocol):
         pass
 
     @abstractmethod
-    async def handle_text_input(
-            self,
-            message: Message,
-            widget: Any,
-            dialog_manager: DialogManager,
-            text: str
-    ) -> None:
-        pass
-
-    @abstractmethod
-    async def handle_voice_input(
+    async def handle_generate_publication_prompt_input(
             self,
             message: Message,
             widget: MessageInput,

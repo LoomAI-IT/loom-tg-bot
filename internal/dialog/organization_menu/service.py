@@ -2,9 +2,8 @@ from typing import Any
 from aiogram.types import CallbackQuery
 from aiogram_dialog import DialogManager, StartMode, ShowMode
 
-from opentelemetry.trace import SpanKind, Status, StatusCode
-
 from internal import interface, model
+from pkg.trace_wrapper import traced_method
 
 
 class OrganizationMenuService(interface.IOrganizationMenuService):
@@ -19,155 +18,113 @@ class OrganizationMenuService(interface.IOrganizationMenuService):
         self.state_repo = state_repo
         self.loom_employee_client = loom_employee_client
 
+    @traced_method()
     async def handle_go_to_employee_settings(
             self,
             callback: CallbackQuery,
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        with self.tracer.start_as_current_span(
-                "OrganizationMenuService.handle_go_to_employee_settings",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                self.logger.info("Начало обработки перехода к настройкам сотрудников")
+        self.logger.info("Начало обработки перехода к настройкам сотрудников")
 
-                state = await self._get_state(dialog_manager)
+        state = await self._get_state(dialog_manager)
 
-                employee = await self.loom_employee_client.get_employee_by_account_id(
-                    state.account_id,
-                )
+        employee = await self.loom_employee_client.get_employee_by_account_id(
+            state.account_id,
+        )
 
-                if not employee.edit_employee_perm_permission:
-                    self.logger.info("Отказано в доступе - нет прав на изменение прав сотрудников")
-                    await callback.answer("Недостаточно прав для управления сотрудниками", show_alert=True)
-                    return
+        if not employee.edit_employee_perm_permission:
+            self.logger.info("Отказано в доступе - нет прав на изменение прав сотрудников")
+            await callback.answer("Недостаточно прав для управления сотрудниками", show_alert=True)
+            return
 
-                await self.state_repo.change_user_state(
-                    state_id=state.id,
-                    can_show_alerts=False
-                )
+        await self.state_repo.change_user_state(
+            state_id=state.id,
+            can_show_alerts=False
+        )
 
-                await dialog_manager.start(
-                    model.ChangeEmployeeStates.employee_list,
-                    mode=StartMode.RESET_STACK
-                )
+        await dialog_manager.start(
+            model.ChangeEmployeeStates.employee_list,
+            mode=StartMode.RESET_STACK
+        )
 
-                self.logger.info("Завершение обработки перехода к настройкам сотрудников")
-                span.set_status(Status(StatusCode.OK))
-            except Exception as err:
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                await callback.answer("Не удалось перейти к настройкам", show_alert=True)
-                raise
+        self.logger.info("Завершение обработки перехода к настройкам сотрудников")
 
+    @traced_method()
     async def handle_go_to_add_employee(
             self,
             callback: CallbackQuery,
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        with self.tracer.start_as_current_span(
-                "OrganizationMenuService.handle_go_to_add_employee",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                self.logger.info("Начало обработки перехода к добавлению сотрудника")
+        self.logger.info("Начало обработки перехода к добавлению сотрудника")
 
-                state = await self._get_state(dialog_manager)
+        state = await self._get_state(dialog_manager)
 
-                employee = await self.loom_employee_client.get_employee_by_account_id(
-                    state.account_id,
-                )
+        employee = await self.loom_employee_client.get_employee_by_account_id(
+            state.account_id,
+        )
 
-                if not employee.add_employee_permission:
-                    self.logger.info("Отказано в доступе - нет прав на добавление сотрудников")
-                    await callback.answer("Недостаточно прав для добавления сотрудников", show_alert=True)
-                    return
+        if not employee.add_employee_permission:
+            self.logger.info("Отказано в доступе - нет прав на добавление сотрудников")
+            await callback.answer("Недостаточно прав для добавления сотрудников", show_alert=True)
+            return
 
-                await self.state_repo.change_user_state(
-                    state_id=state.id,
-                    can_show_alerts=False
-                )
+        await self.state_repo.change_user_state(
+            state_id=state.id,
+            can_show_alerts=False
+        )
 
-                await dialog_manager.start(
-                    model.AddEmployeeStates.enter_account_id,
-                    mode=StartMode.RESET_STACK
-                )
+        await dialog_manager.start(
+            model.AddEmployeeStates.enter_account_id,
+            mode=StartMode.RESET_STACK
+        )
 
-                self.logger.info("Завершение обработки перехода к добавлению сотрудника")
-                span.set_status(Status(StatusCode.OK))
-            except Exception as err:
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                await callback.answer("Не удалось перейти к добавлению сотрудника", show_alert=True)
-                raise
+        self.logger.info("Завершение обработки перехода к добавлению сотрудника")
 
+    @traced_method()
     async def handle_go_to_top_up_balance(
             self,
             callback: CallbackQuery,
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        with self.tracer.start_as_current_span(
-                "OrganizationMenuService.handle_go_to_top_up_balance",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                self.logger.info("Начало обработки перехода к пополнению баланса")
+        self.logger.info("Начало обработки перехода к пополнению баланса")
 
-                await callback.answer("Функция в разработке", show_alert=True)
+        await callback.answer("Функция в разработке", show_alert=True)
 
-                self.logger.info("Завершение обработки перехода к пополнению баланса")
-                span.set_status(Status(StatusCode.OK))
-            except Exception as err:
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                raise
+        self.logger.info("Завершение обработки перехода к пополнению баланса")
 
+    @traced_method()
     async def handle_go_to_social_networks(
             self,
             callback: CallbackQuery,
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        with self.tracer.start_as_current_span(
-                "OrganizationMenuService.handle_go_to_social_networks",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                self.logger.info("Начало обработки перехода к социальным сетям")
+        self.logger.info("Начало обработки перехода к социальным сетям")
 
-                dialog_manager.show_mode = ShowMode.EDIT
+        dialog_manager.show_mode = ShowMode.EDIT
 
-                await dialog_manager.start(model.AddSocialNetworkStates.select_network)
+        await dialog_manager.start(model.AddSocialNetworkStates.select_network)
 
-                self.logger.info("Завершение обработки перехода к социальным сетям")
-                span.set_status(Status(StatusCode.OK))
-            except Exception as err:
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                raise
+        self.logger.info("Завершение обработки перехода к социальным сетям")
 
+    @traced_method()
     async def handle_go_to_main_menu(
             self,
             callback: CallbackQuery,
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        with self.tracer.start_as_current_span(
-                "OrganizationMenuService.handle_go_to_main_menu",
-                kind=SpanKind.INTERNAL
-        ) as span:
-            try:
-                self.logger.info("Начало обработки перехода в главное меню")
+        self.logger.info("Начало обработки перехода в главное меню")
 
-                await dialog_manager.start(
-                    model.MainMenuStates.main_menu,
-                    mode=StartMode.RESET_STACK
-                )
+        await dialog_manager.start(
+            model.MainMenuStates.main_menu,
+            mode=StartMode.RESET_STACK
+        )
 
-                self.logger.info("Завершение обработки перехода в главное меню")
-                span.set_status(Status(StatusCode.OK))
-            except Exception as err:
-                span.set_status(Status(StatusCode.ERROR, str(err)))
-                raise
+        self.logger.info("Завершение обработки перехода в главное меню")
 
     async def _get_state(self, dialog_manager: DialogManager) -> model.UserState:
         if hasattr(dialog_manager.event, 'message') and dialog_manager.event.message:
