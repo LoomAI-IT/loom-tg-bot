@@ -270,9 +270,9 @@ class PublicationDraftService(interface.IPublicationDraftService):
     ) -> None:
         """Удаление изображения из черновика"""
         try:
-                publication_id = int(dialog_manager.dialog_data.get("selected_publication_id"))
-                
-                await self.loom_content_client.delete_publication_image(publication_id)
+            publication_id = int(dialog_manager.dialog_data.get("selected_publication_id"))
+            
+            await self.loom_content_client.delete_publication_image(publication_id)
             
             # Обновляем флаг
             dialog_manager.dialog_data["has_image"] = False
