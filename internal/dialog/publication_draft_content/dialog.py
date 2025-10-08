@@ -176,6 +176,15 @@ class PublicationDraftDialog(interface.IPublicationDraftDialog):
 
             Row(
                 Button(
+                    Const("💾 Сохранить изменения"),
+                    id="save_changes",
+                    on_click=self.publication_draft_service.handle_save_changes,
+                    when="has_changes",
+                ),
+            ),
+
+            Row(
+                Button(
                     Const("🗑 Удалить"),
                     id="delete",
                     on_click=self.publication_draft_service.handle_delete_publication,

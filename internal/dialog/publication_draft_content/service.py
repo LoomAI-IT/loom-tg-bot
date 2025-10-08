@@ -135,13 +135,17 @@ class PublicationDraftService(interface.IPublicationDraftService):
                 kind=SpanKind.INTERNAL
         ) as span:
             try:
-                publication_id = int(dialog_manager.dialog_data.get("selected_publication_id"))
+                working_pub = dialog_manager.dialog_data["working_publication"]
+                publication_id = working_pub["id"]
                 
-                text = dialog_manager.dialog_data.get("publication_content")
+                # Сохраняем изменения в API
                 await self.loom_content_client.change_publication(
                     publication_id=publication_id,
-                    text=text,
+                    text=working_pub["text"],
                 )
+                
+                # Обновляем original_publication после успешного сохранения
+                dialog_manager.dialog_data["original_publication"] = dict(working_pub)
                 
                 self.logger.info("Изменения в черновике сохранены")
                 
@@ -171,13 +175,11 @@ class PublicationDraftService(interface.IPublicationDraftService):
                 return
 
             dialog_manager.dialog_data.pop("has_void_title", None)
-            dialog_manager.dialog_data["publication_title"] = new_title
-            publication_id = int(dialog_manager.dialog_data.get("selected_publication_id"))
-            current_text = dialog_manager.dialog_data.get("publication_content", "")
-            await self.loom_content_client.change_publication(
-                publication_id=publication_id,
-                text=f"{new_title}\n\n{current_text}" if current_text else new_title
-            )
+            
+            # Обновляем working_publication
+            working_pub = dialog_manager.dialog_data["working_publication"]
+            current_text = working_pub.get("text", "").split("\n\n", 1)[-1] if "\n\n" in working_pub.get("text", "") else working_pub.get("text", "")
+            working_pub["text"] = f"{new_title}\n\n{current_text}" if current_text else new_title
 
             self.logger.info("Название черновика изменено")
             await dialog_manager.switch_to(model.PublicationDraftStates.edit_preview)
@@ -197,7 +199,9 @@ class PublicationDraftService(interface.IPublicationDraftService):
             await message.delete()
             new_description = text.strip()
             
-            dialog_manager.dialog_data["publication_description"] = new_description
+            # Обновляем working_publication
+            dialog_manager.dialog_data["working_publication"]["description"] = new_description
+            
             self.logger.info("Описание черновика изменено")
             await dialog_manager.switch_to(model.PublicationDraftStates.edit_preview)
         except Exception as err:
@@ -222,14 +226,9 @@ class PublicationDraftService(interface.IPublicationDraftService):
                 return
 
             dialog_manager.dialog_data.pop("has_void_content", None)
-            dialog_manager.dialog_data["publication_content"] = new_content
-
-            publication_id = int(dialog_manager.dialog_data.get("selected_publication_id"))
-            current_title = dialog_manager.dialog_data.get("publication_title", "")
-            await self.loom_content_client.change_publication(
-                publication_id=publication_id,
-                text=f"{current_title}\n\n{new_content}"
-            )
+            
+            # Обновляем working_publication
+            dialog_manager.dialog_data["working_publication"]["text"] = new_content
 
             self.logger.info("Содержимое черновика изменено")
             await dialog_manager.switch_to(model.PublicationDraftStates.edit_preview)
@@ -398,15 +397,9 @@ class PublicationDraftService(interface.IPublicationDraftService):
                 prompt=None,
             )
 
-            dialog_manager.dialog_data["publication_content"] = regenerated_data["text"]
+            # Обновляем working_publication
+            dialog_manager.dialog_data["working_publication"]["text"] = regenerated_data["text"]
             dialog_manager.dialog_data["is_regenerating_text"] = False
-            
-            # Сохраняем в API
-            current_title = dialog_manager.dialog_data.get("publication_title", "")
-            await self.loom_content_client.change_publication(
-                publication_id=publication_id,
-                text=f"{current_title}\n\n{regenerated_data['text']}"
-            )
             
             await dialog_manager.switch_to(model.PublicationDraftStates.edit_preview)
         except Exception as err:
@@ -461,18 +454,10 @@ class PublicationDraftService(interface.IPublicationDraftService):
                 prompt=prompt,
             )
 
-            # Обновляем данные
-            dialog_manager.dialog_data["publication_content"] = regenerated_data["text"]
+            # Обновляем working_publication
+            dialog_manager.dialog_data["working_publication"]["text"] = regenerated_data["text"]
             dialog_manager.dialog_data["is_regenerating_text"] = False
             dialog_manager.dialog_data["has_regenerate_prompt"] = False
-            
-            # Сохраняем в API
-            publication_id = int(dialog_manager.dialog_data.get("selected_publication_id"))
-            current_title = dialog_manager.dialog_data.get("publication_title", "")
-            await self.loom_content_client.change_publication(
-                publication_id=publication_id,
-                text=f"{current_title}\n\n{regenerated_data['text']}"
-            )
             
             await dialog_manager.switch_to(model.PublicationDraftStates.edit_preview)
         except Exception as err:
