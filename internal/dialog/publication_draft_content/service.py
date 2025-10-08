@@ -7,6 +7,9 @@ from aiogram_dialog import DialogManager, StartMode
 from opentelemetry.trace import SpanKind, Status, StatusCode
 
 from internal import interface, model
+from pkg.log_wrapper import auto_log
+from pkg.trace_wrapper import traced_method
+from pkg.typing_context import typing_action
 
 
 class PublicationDraftService(interface.IPublicationDraftService):
@@ -23,6 +26,8 @@ class PublicationDraftService(interface.IPublicationDraftService):
         self.state_repo = state_repo
         self.loom_content_client = loom_content_client
 
+    @auto_log()
+    @traced_method()
     async def handle_select_publication(
             self,
             callback: CallbackQuery,
@@ -53,6 +58,8 @@ class PublicationDraftService(interface.IPublicationDraftService):
                 await callback.answer("❌ Ошибка при выборе публикации", show_alert=True)
                 raise
 
+    @auto_log()
+    @traced_method()
     async def handle_navigate_publication(
             self,
             callback: CallbackQuery,
@@ -94,6 +101,8 @@ class PublicationDraftService(interface.IPublicationDraftService):
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
+    @auto_log()
+    @traced_method()
     async def handle_delete_publication(
             self,
             callback: CallbackQuery,
@@ -123,6 +132,8 @@ class PublicationDraftService(interface.IPublicationDraftService):
                 await callback.answer("❌ Ошибка при удалении", show_alert=True)
                 raise
 
+    @auto_log()
+    @traced_method()
     async def handle_save_changes(
             self,
             callback: CallbackQuery,
@@ -157,6 +168,8 @@ class PublicationDraftService(interface.IPublicationDraftService):
                 await callback.answer("❌ Ошибка сохранения", show_alert=True)
                 raise
     
+    @auto_log()
+    @traced_method()
     async def handle_edit_title_save(
             self,
             message: Message,
@@ -187,6 +200,8 @@ class PublicationDraftService(interface.IPublicationDraftService):
             await message.answer("❌ Ошибка при сохранении названия")
             raise
 
+    @auto_log()
+    @traced_method()
     async def handle_edit_description_save(
             self,
             message: Message,
@@ -208,6 +223,8 @@ class PublicationDraftService(interface.IPublicationDraftService):
             await message.answer("❌ Ошибка при сохранении описания")
             raise
 
+    @auto_log()
+    @traced_method()
     async def handle_edit_content_save(
             self,
             message: Message,
@@ -236,6 +253,8 @@ class PublicationDraftService(interface.IPublicationDraftService):
             await message.answer("❌ Ошибка при сохранении текста")
             raise
 
+    @auto_log()
+    @traced_method()
     async def handle_edit_tags_save(
             self,
             message: Message,
@@ -261,6 +280,8 @@ class PublicationDraftService(interface.IPublicationDraftService):
             await message.answer("❌ Ошибка при сохранении тегов")
             raise
 
+    @auto_log()
+    @traced_method()
     async def handle_remove_image(
             self,
             callback: CallbackQuery,
@@ -282,6 +303,8 @@ class PublicationDraftService(interface.IPublicationDraftService):
             await callback.answer("❌ Ошибка удаления изображения", show_alert=True)
             raise
 
+    @auto_log()
+    @traced_method()
     async def handle_image_upload(
             self,
             message: Message,
@@ -319,6 +342,8 @@ class PublicationDraftService(interface.IPublicationDraftService):
             await message.answer("❌ Ошибка загрузки изображения")
             raise
 
+    @auto_log()
+    @traced_method()
     async def handle_edit_image_menu_save(
             self,
             message: Message,
@@ -372,6 +397,8 @@ class PublicationDraftService(interface.IPublicationDraftService):
             await message.answer("❌ Ошибка обработки изображения")
             raise
     
+    @auto_log()
+    @traced_method()
     async def handle_start_regenerate_text(
             self,
             callback: CallbackQuery,
@@ -388,15 +415,16 @@ class PublicationDraftService(interface.IPublicationDraftService):
             # Переключаемся на окно с индикатором
             await dialog_manager.switch_to(model.PublicationDraftStates.regenerate_text)
             
-            # Запускаем регенерацию
+            # Запускаем регенерацию с индикатором "печатает..."
             category_id = dialog_manager.dialog_data.get("publication_category_id")
             publication_text = dialog_manager.dialog_data.get("publication_content", "")
 
-            regenerated_data = await self.loom_content_client.regenerate_publication_text(
-                category_id=category_id,
-                publication_text=publication_text,
-                prompt=None,
-            )
+            async with typing_action(self.bot, callback.message.chat.id):
+                regenerated_data = await self.loom_content_client.regenerate_publication_text(
+                    category_id=category_id,
+                    publication_text=publication_text,
+                    prompt=None,
+                )
 
             # Обновляем working_publication
             dialog_manager.dialog_data["working_publication"]["text"] = regenerated_data["text"]
@@ -408,6 +436,8 @@ class PublicationDraftService(interface.IPublicationDraftService):
             await callback.answer("❌ Ошибка регенерации", show_alert=True)
             raise
     
+    @auto_log()
+    @traced_method()
     async def handle_regenerate_text(
             self,
             callback: CallbackQuery,
@@ -417,6 +447,8 @@ class PublicationDraftService(interface.IPublicationDraftService):
         """Полная регенерация текста черновика (устаревший метод, оставлен для совместимости)"""
         await self.handle_start_regenerate_text(callback, button, dialog_manager)
 
+    @auto_log()
+    @traced_method()
     async def handle_regenerate_text_with_prompt(
             self,
             message: Message,
@@ -454,15 +486,17 @@ class PublicationDraftService(interface.IPublicationDraftService):
             dialog_manager.dialog_data["regenerate_prompt"] = prompt
             dialog_manager.dialog_data["has_regenerate_prompt"] = True
             await dialog_manager.show()
-                
+            
+            chat_id = message.chat.id
             category_id = dialog_manager.dialog_data.get("publication_category_id")
             publication_text = dialog_manager.dialog_data.get("publication_content", "")
 
-            regenerated_data = await self.loom_content_client.regenerate_publication_text(
-                category_id=category_id,
-                publication_text=publication_text,
-                prompt=prompt,
-            )
+            async with typing_action(self.bot, chat_id):
+                regenerated_data = await self.loom_content_client.regenerate_publication_text(
+                    category_id=category_id,
+                    publication_text=publication_text,
+                    prompt=prompt,
+                )
 
             # Обновляем working_publication
             dialog_manager.dialog_data["working_publication"]["text"] = regenerated_data["text"]
@@ -476,6 +510,8 @@ class PublicationDraftService(interface.IPublicationDraftService):
             await message.answer("❌ Ошибка регенерации")
             raise
     
+    @auto_log()
+    @traced_method()
     async def handle_toggle_social_network(
             self,
             callback: CallbackQuery,
@@ -496,6 +532,8 @@ class PublicationDraftService(interface.IPublicationDraftService):
             await callback.answer("❌ Ошибка", show_alert=True)
             raise
     
+    @auto_log()
+    @traced_method()
     async def handle_send_to_moderation_with_networks_publication(
             self,
             callback: CallbackQuery,
@@ -514,6 +552,8 @@ class PublicationDraftService(interface.IPublicationDraftService):
             await callback.answer("❌ Ошибка отправки", show_alert=True)
             raise
 
+    @auto_log()
+    @traced_method()
     async def handle_publish_with_selected_networks_publication(
             self,
             callback: CallbackQuery,
@@ -585,6 +625,8 @@ class PublicationDraftService(interface.IPublicationDraftService):
                 await callback.answer("❌ Ошибка при публикации", show_alert=True)
                 raise
     
+    @auto_log()
+    @traced_method()
     async def handle_back_to_publication_list(
             self,
             callback: CallbackQuery,
@@ -598,6 +640,8 @@ class PublicationDraftService(interface.IPublicationDraftService):
             await callback.answer("❌ Ошибка навигации", show_alert=True)
             raise
 
+    @auto_log()
+    @traced_method()
     async def handle_back_to_content_menu(
             self,
             callback: CallbackQuery,
@@ -614,6 +658,8 @@ class PublicationDraftService(interface.IPublicationDraftService):
             await callback.answer("❌ Ошибка навигации", show_alert=True)
             raise
 
+    @auto_log()
+    @traced_method()
     async def handle_prev_image(
             self,
             callback: CallbackQuery,
@@ -643,6 +689,8 @@ class PublicationDraftService(interface.IPublicationDraftService):
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
 
+    @auto_log()
+    @traced_method()
     async def handle_next_image(
             self,
             callback: CallbackQuery,
