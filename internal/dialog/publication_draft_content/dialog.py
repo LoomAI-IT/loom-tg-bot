@@ -25,6 +25,7 @@ class PublicationDraftDialog(interface.IPublicationDraftDialog):
         return Dialog(
             self.get_publication_list_window(),
             self.get_edit_preview_window(),
+            self.get_edit_text_menu_window(),
             self.get_regenerate_text_window(),
             self.get_edit_title_window(),
             self.get_edit_description_window(),
@@ -164,7 +165,7 @@ class PublicationDraftDialog(interface.IPublicationDraftDialog):
                 Button(
                     Const("✏️ Текст"),
                     id="edit_text",
-                    on_click=lambda c, b, d: d.switch_to(model.PublicationDraftStates.regenerate_text, ShowMode.EDIT),
+                    on_click=lambda c, b, d: d.switch_to(model.PublicationDraftStates.edit_text_menu, ShowMode.EDIT),
                 ),
                 Button(
                     Const("🎨 Изображение"),
