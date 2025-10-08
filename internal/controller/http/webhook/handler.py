@@ -124,7 +124,7 @@ class TelegramWebhookController(interface.ITelegramWebhookController):
                 chat_id=user_state.tg_chat_id,
             )
             await dialog_manager.start(
-                model.GenerateVideoCutStates.video_generated_alert,
+                model.AlertsStates.video_generated_alert,
                 mode=StartMode.RESET_STACK,
                 show_mode=ShowMode.EDIT
             )

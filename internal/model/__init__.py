@@ -15,6 +15,7 @@ from internal.model.dialog_states.publication_draft_content import *
 from internal.model.dialog_states.video_cut_draft_content import *
 from internal.model.dialog_states.moderation_publication import *
 from internal.model.dialog_states.moderation_video_cut import *
+from internal.model.dialog_states.alerts import *
 
 from internal.model.client.loom_account import *
 from internal.model.client.loom_authorization import *

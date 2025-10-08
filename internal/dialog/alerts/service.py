@@ -10,7 +10,7 @@ from pkg.log_wrapper import auto_log
 from pkg.trace_wrapper import traced_method
 
 
-class GenerateVideoCutService(interface.IGenerateVideoCutService):
+class AlertsService(interface.IAlertsService):
     def __init__(
             self,
             tel: interface.ITelemetry,
@@ -71,6 +71,52 @@ class GenerateVideoCutService(interface.IGenerateVideoCutService):
         await dialog_manager.start(
             model.ContentMenuStates.content_menu,
             mode=StartMode.RESET_STACK,
+        )
+
+        await callback.answer()
+
+    @auto_log()
+    @traced_method()
+    async def handle_go_to_video_drafts(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        dialog_manager.show_mode = ShowMode.EDIT
+
+        state = await self._get_state(dialog_manager)
+
+        await self.state_repo.delete_vizard_video_cut_alert(
+            state.id
+        )
+
+        await dialog_manager.start(
+            model.VideoCutsDraftStates.video_cut_list,
+            mode=StartMode.RESET_STACK
+        )
+
+        await callback.answer()
+
+    @auto_log()
+    @traced_method()
+    async def handle_go_to_main_menu(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        dialog_manager.show_mode = ShowMode.EDIT
+
+        state = await self._get_state(dialog_manager)
+
+        await self.state_repo.delete_vizard_video_cut_alert(
+            state.id
+        )
+
+        await dialog_manager.start(
+            model.MainMenuStates.main_menu,
+            mode=StartMode.RESET_STACK
         )
 
         await callback.answer()

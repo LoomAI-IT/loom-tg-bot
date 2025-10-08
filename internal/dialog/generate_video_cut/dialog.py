@@ -22,7 +22,6 @@ class GenerateVideoCutDialog(interface.IGenerateVideoCutDialog):
     def get_dialog(self) -> Dialog:
         return Dialog(
             self.get_youtube_link_input_window(),
-            self.get_video_generated_alert_window(),
         )
 
     def get_youtube_link_input_window(self) -> Window:
@@ -74,47 +73,5 @@ class GenerateVideoCutDialog(interface.IGenerateVideoCutDialog):
 
             state=model.GenerateVideoCutStates.input_youtube_link,
             getter=self.generate_video_cut_getter.get_youtube_input_data,
-            parse_mode=SULGUK_PARSE_MODE,
-        )
-
-    def get_video_generated_alert_window(self) -> Window:
-        """Окно со списком готовых видео"""
-        return Window(
-            Multi(
-                Case(
-                    {
-                        True: Multi(
-                            Const("🎉 <b>Ваши видео готовы!</b><br><br>"),
-                            Format("📊 У вас готово <b>{alerts_count}</b> {alerts_word}:<br><br>"),
-                            # Список всех алертов
-                            Format("📋 <b>Список готовых видео:</b><br>{alerts_text}"),
-                        ),
-                        False: Multi(
-                            Const("🎉 <b>Ваше видео готово!</b><br><br>"),
-                            Format("✅ Успешно сгенерировано <b>{video_count}</b> {video_word} из видео:<br>"),
-                            Format("🎬 <a href='{youtube_video_reference}'>📺 Исходное видео</a><br><br>"),
-                        ),
-                    },
-                    selector="has_multiple_alerts"
-                ),
-                Const("👉 <u>Перейдите в черновики</u>, чтобы посмотреть результат! 🎯"),
-                sep="",
-            ),
-
-            Column(
-                Button(
-                    Const("📝 Черновики нарезок"),
-                    id="to_video_drafts_from_alert",
-                    on_click=self.generate_video_cut_service.handle_go_to_video_drafts,
-                ),
-                Button(
-                    Const("🏠 Главное меню"),
-                    id="to_main_menu_from_alert",
-                    on_click=self.generate_video_cut_service.handle_go_to_main_menu,
-                ),
-            ),
-
-            state=model.GenerateVideoCutStates.video_generated_alert,
-            getter=self.generate_video_cut_getter.get_video_alert_data,
             parse_mode=SULGUK_PARSE_MODE,
         )

@@ -330,7 +330,7 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
         )
         if vizard_alerts:
             await dialog_manager.start(
-                model.GenerateVideoCutStates.video_generated_alert,
+                model.AlertsStates.video_generated_alert,
                 mode=StartMode.RESET_STACK
             )
             return True
