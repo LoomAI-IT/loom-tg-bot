@@ -146,24 +146,27 @@ class PublicationDraftGetter(interface.IPublicationDraftGetter):
                     )
            
                 # Подготавливаем данные как в модерации
-                working_pub = dialog_manager.dialog_data.get("working_publication", {})
-                original_pub = dialog_manager.dialog_data.get("original_publication", {})
-                
-                # Инициализируем рабочую версию если ее нет
-                if not working_pub:
-                    dialog_manager.dialog_data["working_publication"] = {
+                if "working_publication" not in dialog_manager.dialog_data:
+                    # Инициализируем original_publication
+                    dialog_manager.dialog_data["original_publication"] = {
                         "id": publication.id,
                         "creator_id": publication.creator_id,
                         "category_id": publication.category_id,
                         "text": publication.text,
                         "image_url": f"https://{self.loom_domain}/api/content/publication/{publication.id}/image/download" if has_image else None,
                         "has_image": has_image,
+                        "created_at": publication.created_at,
+                    }
+                    # Инициализируем working_publication как копию original
+                    dialog_manager.dialog_data["working_publication"] = dict(dialog_manager.dialog_data["original_publication"])
+                    dialog_manager.dialog_data["working_publication"].update({
                         "current_image_index": 0,
                         "user_image_file_id": None,
                         "generated_images_url": [],
-                        "created_at": publication.created_at,
-                    }
-                    working_pub = dialog_manager.dialog_data["working_publication"]
+                    })
+                
+                working_pub = dialog_manager.dialog_data["working_publication"]
+                original_pub = dialog_manager.dialog_data["original_publication"]
                 
                 # Получаем данные об авторе
                 creator = await self.loom_employee_client.get_employee_by_account_id(publication.creator_id)
@@ -186,17 +189,6 @@ class PublicationDraftGetter(interface.IPublicationDraftGetter):
                     "has_prev": current_index > 1,
                     "has_next": current_index < len(all_publication_ids),
                     "has_multiple_drafts": len(all_publication_ids) > 1,
-                    
-                    # Сохраняем исходные данные для сравнения с рабочей версией
-                    "original_publication": {
-                        "id": publication.id,
-                        "creator_id": publication.creator_id,
-                        "text": publication.text,
-                        "category_id": publication.category_id,
-                        "image_url": f"https://{self.loom_domain}/api/content/publication/{publication.id}/image/download" if has_image else None,
-                        "has_image": has_image,
-                        "created_at": publication.created_at,
-                    },
                 }
                 
                 span.set_status(Status(StatusCode.OK))
