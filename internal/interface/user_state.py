@@ -43,13 +43,8 @@ class IStateService(Protocol):
     ) -> int: pass
 
     @abstractmethod
-    async def get_vizard_video_cut_alert_by_state_id(
-        self,
-        state_id: int
-    ) -> list[model.VizardVideoCutAlert]: pass
+    async def create_publication_approved_alert(self, state_id: int, publication_id: int) -> int: pass
 
-    @abstractmethod
-    async def delete_vizard_video_cut_alert(self, state_id: int) -> None: pass
 
 
 class IStateRepo(Protocol):
@@ -101,3 +96,12 @@ class IStateRepo(Protocol):
 
     @abstractmethod
     async def delete_vizard_video_cut_alert(self, state_id: int) -> None: pass
+
+    @abstractmethod
+    async def create_publication_approved_alert(self, state_id: int, publication_id: int) -> int: pass
+
+    @abstractmethod
+    async def get_publication_approved_alert_by_state_id(self, state_id: int) -> list[model.PublicationApprovedAlert]: pass
+
+    @abstractmethod
+    async def delete_publication_approved_alert(self, state_id: int) -> None: pass
