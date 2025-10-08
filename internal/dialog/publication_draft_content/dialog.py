@@ -230,7 +230,7 @@ class PublicationDraftDialog(interface.IPublicationDraftDialog):
                 Button(
                     Const("🔄 Перегенерировать весь текст"),
                     id="regenerate_all",
-                    on_click=self.publication_draft_service.handle_regenerate_text,
+                    on_click=self.publication_draft_service.handle_start_regenerate_text,
                 ),
                 Button(
                     Const("🔄 Перегенерировать с промптом"),

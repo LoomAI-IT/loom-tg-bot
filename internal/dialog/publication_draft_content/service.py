@@ -372,22 +372,23 @@ class PublicationDraftService(interface.IPublicationDraftService):
             await message.answer("❌ Ошибка обработки изображения")
             raise
     
-    async def handle_regenerate_text(
+    async def handle_start_regenerate_text(
             self,
             callback: CallbackQuery,
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        """Полная регенерация текста черновика"""
+        """Запуск полной регенерации текста черновика"""
         try:
             await callback.answer()
             
             dialog_manager.dialog_data["is_regenerating_text"] = True
             dialog_manager.dialog_data["regenerate_prompt"] = ""
-            await dialog_manager.show()
             
-            publication_id = int(dialog_manager.dialog_data.get("selected_publication_id"))
+            # Переключаемся на окно с индикатором
+            await dialog_manager.switch_to(model.PublicationDraftStates.regenerate_text)
             
+            # Запускаем регенерацию
             category_id = dialog_manager.dialog_data.get("publication_category_id")
             publication_text = dialog_manager.dialog_data.get("publication_content", "")
 
@@ -406,6 +407,15 @@ class PublicationDraftService(interface.IPublicationDraftService):
             dialog_manager.dialog_data["is_regenerating_text"] = False
             await callback.answer("❌ Ошибка регенерации", show_alert=True)
             raise
+    
+    async def handle_regenerate_text(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        """Полная регенерация текста черновика (устаревший метод, оставлен для совместимости)"""
+        await self.handle_start_regenerate_text(callback, button, dialog_manager)
 
     async def handle_regenerate_text_with_prompt(
             self,
