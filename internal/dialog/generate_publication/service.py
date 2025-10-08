@@ -500,8 +500,12 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        await callback.answer("Черновики публикации в разработке", show_alert=True)
-        return
+        dialog_manager.show_mode = ShowMode.EDIT
+        
+        await dialog_manager.start(
+            model.PublicationDraftStates.publication_list,
+            mode=StartMode.RESET_STACK
+        )
         # dialog_manager.show_mode = ShowMode.EDIT
         #
         # state = await self._get_state(dialog_manager)
