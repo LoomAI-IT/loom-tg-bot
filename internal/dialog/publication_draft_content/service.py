@@ -381,11 +381,12 @@ class PublicationDraftService(interface.IPublicationDraftService):
     ) -> None:
         """Полная регенерация текста черновика"""
         try:
-            await callback.answer()
-            
             dialog_manager.dialog_data["is_regenerating_text"] = True
             dialog_manager.dialog_data["regenerate_prompt"] = ""
-            await dialog_manager.show()
+            
+            # Переходим к окну с индикатором загрузки
+            await dialog_manager.switch_to(model.PublicationDraftStates.regenerate_text)
+            await callback.answer("⏳ Генерирую текст, подождите...", show_alert=True)
             
             publication_id = int(dialog_manager.dialog_data.get("selected_publication_id"))
             
@@ -408,8 +409,10 @@ class PublicationDraftService(interface.IPublicationDraftService):
                 text=f"{current_title}\n\n{regenerated_data['text']}"
             )
             
+            await callback.answer("✅ Текст перегенерирован!", show_alert=True)
             await dialog_manager.switch_to(model.PublicationDraftStates.edit_preview)
         except Exception as err:
+            dialog_manager.dialog_data["is_regenerating_text"] = False
             await callback.answer("❌ Ошибка регенерации", show_alert=True)
             raise
 
@@ -449,6 +452,8 @@ class PublicationDraftService(interface.IPublicationDraftService):
             dialog_manager.dialog_data["is_regenerating_text"] = True
             dialog_manager.dialog_data["regenerate_prompt"] = prompt
             await dialog_manager.show()
+            
+            await message.answer("⏳ Генерирую текст с вашими указаниями, подождите...")
                 
             category_id = dialog_manager.dialog_data.get("publication_category_id")
             publication_text = dialog_manager.dialog_data.get("publication_content", "")
@@ -471,8 +476,10 @@ class PublicationDraftService(interface.IPublicationDraftService):
                 text=f"{current_title}\n\n{regenerated_data['text']}"
             )
             
+            await message.answer("✅ Текст перегенерирован с вашими указаниями!")
             await dialog_manager.switch_to(model.PublicationDraftStates.edit_preview)
         except Exception as err:
+            dialog_manager.dialog_data["is_regenerating_text"] = False
             await message.answer("❌ Ошибка регенерации")
             raise
     
