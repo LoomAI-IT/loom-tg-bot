@@ -1,7 +1,6 @@
 import asyncio
 from contextlib import asynccontextmanager
 from aiogram import Bot
-from aiogram.types import ChatAction
 
 
 @asynccontextmanager
@@ -9,7 +8,7 @@ async def typing_action(bot: Bot, chat_id: int):
     """
     Context manager для показа индикатора 'печатает...' в чате.
     
-    Автоматически отправляет ChatAction.TYPING каждые 4 секунды
+    Автоматически отправляет action='typing' каждые 4 секунды
     пока выполняется код внутри блока with.
     
     Пример использования:
@@ -22,7 +21,7 @@ async def typing_action(bot: Bot, chat_id: int):
     async def _keep_typing():
         while not stop_event.is_set():
             try:
-                await bot.send_chat_action(chat_id=chat_id, action=ChatAction.TYPING)
+                await bot.send_chat_action(chat_id=chat_id, action="typing")
                 await asyncio.sleep(4)
             except Exception:
                 break
