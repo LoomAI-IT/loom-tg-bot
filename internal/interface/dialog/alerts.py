@@ -12,6 +12,10 @@ class IAlertsDialog(Protocol):
     def get_video_generated_alert_window(self) -> Window:
         pass
 
+    @abstractmethod
+    def get_publication_approved_alert_window(self) -> Window:
+        pass
+
 
 class IAlertsService(Protocol):
 

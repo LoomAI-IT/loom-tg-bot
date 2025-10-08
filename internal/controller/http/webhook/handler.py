@@ -123,6 +123,10 @@ class TelegramWebhookController(interface.ITelegramWebhookController):
                 user_id=user_state.tg_chat_id,
                 chat_id=user_state.tg_chat_id,
             )
+            await self.state_service.change_user_state(
+                user_state.id,
+                can_show_alerts=False,
+            )
             await dialog_manager.start(
                 model.AlertsStates.video_generated_alert,
                 mode=StartMode.RESET_STACK,
@@ -161,6 +165,10 @@ class TelegramWebhookController(interface.ITelegramWebhookController):
                 bot=self.bot,
                 user_id=user_state.tg_chat_id,
                 chat_id=user_state.tg_chat_id,
+            )
+            await self.state_service.change_user_state(
+                user_state.id,
+                can_show_alerts=False,
             )
             await dialog_manager.start(
                 model.AlertsStates.publication_approved_alert,

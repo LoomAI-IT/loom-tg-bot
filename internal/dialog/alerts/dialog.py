@@ -1,7 +1,6 @@
 from aiogram_dialog import Window, Dialog
 from aiogram_dialog.widgets.text import Const, Format, Multi, Case
 from aiogram_dialog.widgets.kbd import Button, Column
-from aiogram_dialog.widgets.input import MessageInput
 from sulguk import SULGUK_PARSE_MODE
 
 from internal import interface, model
@@ -22,6 +21,7 @@ class AlertsDialog(interface.IAlertsDialog):
     def get_dialog(self) -> Dialog:
         return Dialog(
             self.get_video_generated_alert_window(),
+            self.get_publication_approved_alert_window()
         )
 
     def get_video_generated_alert_window(self) -> Window:
@@ -56,12 +56,42 @@ class AlertsDialog(interface.IAlertsDialog):
                 ),
                 Button(
                     Const("🏠 Главное меню"),
-                    id="to_main_menu_from_alert",
+                    id="to_main_menu_from_video_cut_alert",
                     on_click=self.alerts_service.handle_go_to_main_menu,
                 ),
             ),
 
             state=model.AlertsStates.video_generated_alert,
             getter=self.alerts_getter.get_video_alert_data,
+            parse_mode=SULGUK_PARSE_MODE,
+        )
+
+    def get_publication_approved_alert_window(self) -> Window:
+        return Window(
+            Multi(
+                Case(
+                    {
+                        True: Multi(
+                            Const("🎉 <b>Ваши публикации одобрены!</b><br><br>"),
+                        ),
+                        False: Multi(
+                            Const("🎉 <b>Ваша публикация опубликована!</b><br><br>"),
+                        ),
+                    },
+                    selector="has_multiple_alerts"
+                ),
+                sep="",
+            ),
+
+            Column(
+                Button(
+                    Const("🏠 Главное меню"),
+                    id="to_main_menu_from_publication_approved_alert",
+                    on_click=self.alerts_service.handle_go_to_main_menu,
+                ),
+            ),
+
+            state=model.AlertsStates.publication_approved_alert,
+            getter=self.alerts_getter.get_publication_approved_alert_data,
             parse_mode=SULGUK_PARSE_MODE,
         )
