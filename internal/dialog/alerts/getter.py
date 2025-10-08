@@ -66,6 +66,15 @@ class AlertsGetter(interface.IAlertsGetter):
 
         return data
 
+    @auto_log()
+    @traced_method()
+    async def get_publication_approved_alert_data(
+            self,
+            dialog_manager: DialogManager,
+            **kwargs
+    ) -> dict:
+        pass
+
     async def _get_user_state(self, dialog_manager: DialogManager) -> model.UserState:
         if hasattr(dialog_manager.event, 'message') and dialog_manager.event.message:
             chat_id = dialog_manager.event.message.chat.id
