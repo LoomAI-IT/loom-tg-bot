@@ -538,10 +538,6 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             )
             return
 
-        if self._has_changes(dialog_manager):
-            self.logger.info("Сохранение изменений перед публикацией")
-            await self._save_publication_changes(dialog_manager)
-
         original_pub = dialog_manager.dialog_data["original_publication"]
         publication_id = original_pub["id"]
         state = await self._get_state(dialog_manager)
