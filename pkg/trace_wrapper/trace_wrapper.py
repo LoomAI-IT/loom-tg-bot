@@ -101,11 +101,11 @@ def _serialize_value(value: Any) -> str:
     """Сериализует значение для атрибутов OpenTelemetry."""
     if value is None:
         return "None"
-    # if isinstance(value, (str, int, float, bool)):
-    #     return str(value)
-    # if isinstance(value, (list, tuple)):
-    #     return f"[{len(value)} items]"
-    # if isinstance(value, dict):
-    #     return f"{{dict with {len(value)} keys}}"
-    # Для объектов возвращаем имя класса
+    if isinstance(value, (str, int, float, bool)):
+        return str(value)
+    if isinstance(value, (list, tuple, dict)):
+        return f"[{len(value)} items]"
+    if isinstance(value, dict):
+        return f"{{dict with {len(value)} keys}}"
+
     return f"<{value.__class__.__name__}>"
