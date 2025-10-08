@@ -162,6 +162,19 @@ class PublicationDraftDialog(interface.IPublicationDraftDialog):
 
             Row(
                 Button(
+                    Const("✏️ Текст"),
+                    id="edit_text",
+                    on_click=lambda c, b, d: d.switch_to(model.PublicationDraftStates.regenerate_text, ShowMode.EDIT),
+                ),
+                Button(
+                    Const("🎨 Изображение"),
+                    id="edit_image",
+                    on_click=lambda c, b, d: d.switch_to(model.PublicationDraftStates.edit_image_menu, ShowMode.EDIT),
+                ),
+            ),
+
+            Row(
+                Button(
                     Const("🗑 Удалить"),
                     id="delete",
                     on_click=self.publication_draft_service.handle_delete_publication,
