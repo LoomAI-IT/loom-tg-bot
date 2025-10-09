@@ -29,7 +29,7 @@ create_publication_approved_alerts_table = """
 CREATE TABLE IF NOT EXISTS publication_approved_alerts (
     id SERIAL PRIMARY KEY,
     state_id INTEGER NOT NULL,
-    publication_id TEXT NOT NULL,
+    publication_id INTEGER NOT NULL,
     
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
