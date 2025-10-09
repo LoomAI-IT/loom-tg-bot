@@ -1,3 +1,4 @@
+import re
 from aiogram_dialog import DialogManager
 
 from internal import interface, model
@@ -162,11 +163,11 @@ class AlertsGetter(interface.IAlertsGetter):
                 publications.append(publication)
 
             publications_text_parts = []
-            for pub in publications:
+            for i, pub in enumerate(publications, 1):
                 text_preview = self._extract_first_line(pub.text)
-                publications_text_parts.append(f"<li>{text_preview}</li>")
+                publications_text_parts.append(f"{i}. {text_preview}")
 
-            publications_text = f"<ol>{''.join(publications_text_parts)}</ol>"
+            publications_text = "<br>".join(publications_text_parts)
             publications_word = self._get_publication_word(alerts_count)
             was_word = self._get_was_word(alerts_count)
 
@@ -241,8 +242,26 @@ class AlertsGetter(interface.IAlertsGetter):
             return "были"
 
     def _extract_first_line(self, text: str) -> str:
-        max_length = 50
-        if len(text) > max_length:
-            text = text[:max_length] + "..."
+        """Извлекает первую строку текста до <br> и очищает от HTML тегов"""
+        if not text:
+            return ""
 
-        return text
+        # Находим первую строку до <br> или <br/>
+        br_match = re.search(r'<br\s*/?>', text, re.IGNORECASE)
+        if br_match:
+            first_line = text[:br_match.start()]
+        else:
+            first_line = text
+
+        # Удаляем все HTML теги
+        first_line = re.sub(r'<[^>]+>', '', first_line)
+
+        # Убираем лишние пробелы
+        first_line = first_line.strip()
+
+        # Ограничиваем длину
+        max_length = 50
+        if len(first_line) > max_length:
+            first_line = first_line[:max_length] + "..."
+
+        return first_line
