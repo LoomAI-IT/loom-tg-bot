@@ -40,7 +40,17 @@ CREATE TABLE IF NOT EXISTS publication_approved_alerts (
     id SERIAL PRIMARY KEY,
     state_id INTEGER NOT NULL,
     publication_id INTEGER NOT NULL,
-    
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+"""
+
+create_publication_rejected_alerts_table = """
+CREATE TABLE IF NOT EXISTS publication_rejected_alerts (
+    id SERIAL PRIMARY KEY,
+    state_id INTEGER NOT NULL,
+    publication_id INTEGER NOT NULL,
+
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 """
@@ -61,16 +71,22 @@ drop_publication_approved_alerts_table = """
 DROP TABLE IF EXISTS publication_approved_alerts;
 """
 
+drop_publication_rejected_alerts_table = """
+DROP TABLE IF EXISTS publication_rejected_alerts;
+"""
+
 
 create_queries = [
     create_state_table,
     create_cache_files_table,
     create_vizard_video_cut_alerts_table,
-    create_publication_approved_alerts_table
+    create_publication_approved_alerts_table,
+    create_publication_rejected_alerts_table
 ]
 drop_queries = [
     drop_state_table,
     drop_cache_files_table,
     drop_vizard_video_cut_alerts_table,
-    drop_publication_approved_alerts_table
+    drop_publication_approved_alerts_table,
+    drop_publication_rejected_alerts_table
 ]

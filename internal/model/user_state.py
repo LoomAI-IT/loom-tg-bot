@@ -97,3 +97,22 @@ class PublicationApprovedAlert:
             for row in rows
         ]
 
+@dataclass
+class PublicationRejectedAlert:
+    id: int
+    state_id: int
+    publication_id: int
+    created_at: datetime
+
+    @classmethod
+    def serialize(cls, rows) -> list:
+        return [
+            cls(
+                id=row.id,
+                state_id=row.state_id,
+                publication_id=row.publication_id,
+                created_at=row.created_at,
+            )
+            for row in rows
+        ]
+
