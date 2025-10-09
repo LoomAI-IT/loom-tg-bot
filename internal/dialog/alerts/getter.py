@@ -246,4 +246,4 @@ class AlertsGetter(interface.IAlertsGetter):
         if len(text) > max_length:
             text = text[:max_length] + "..."
 
-        return text
+        return text.replace("<>")
