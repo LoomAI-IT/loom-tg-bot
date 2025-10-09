@@ -35,6 +35,15 @@ CREATE TABLE IF NOT EXISTS vizard_video_cut_alerts (
 );
 """
 
+create_publication_approved_alerts_table = """
+CREATE TABLE IF NOT EXISTS publication_approved_alerts (
+    id SERIAL PRIMARY KEY,
+    state_id INTEGER NOT NULL,
+    publication_id INTEGER NOT NULL,
+    
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+"""
 
 drop_state_table = """
 DROP TABLE IF EXISTS user_states;
@@ -48,14 +57,20 @@ drop_vizard_video_cut_alerts_table = """
 DROP TABLE IF EXISTS vizard_video_cut_alerts;
 """
 
+drop_publication_approved_alerts_table = """
+DROP TABLE IF EXISTS publication_approved_alerts;
+"""
+
 
 create_queries = [
     create_state_table,
     create_cache_files_table,
     create_vizard_video_cut_alerts_table,
+    create_publication_approved_alerts_table
 ]
 drop_queries = [
     drop_state_table,
     drop_cache_files_table,
-    drop_vizard_video_cut_alerts_table
+    drop_vizard_video_cut_alerts_table,
+    drop_publication_approved_alerts_table
 ]

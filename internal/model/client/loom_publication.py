@@ -12,6 +12,9 @@ class Publication:
     vk_source: bool | None
     tg_source: bool | None
 
+    vk_link: str | None
+    tg_link: str | None
+
     text_reference: str
     text: str
     image_fid: str | None
@@ -34,6 +37,8 @@ class Publication:
             "moderator_id": self.moderator_id,
             "vk_source": self.vk_source,
             "tg_source": self.tg_source,
+            "vk_link": self.vk_link,
+            "tg_link": self.tg_link,
             "text_reference": self.text_reference,
             "text": self.text,
             "image_fid": self.image_fid,

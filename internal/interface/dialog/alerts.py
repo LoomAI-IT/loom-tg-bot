@@ -4,30 +4,32 @@ from aiogram.types import Message, CallbackQuery
 from aiogram_dialog import DialogManager, Dialog, Window
 
 
-class IGenerateVideoCutDialog(Protocol):
+class IAlertsDialog(Protocol):
+    @abstractmethod
+    def get_dialog(self) -> Dialog: pass
 
     @abstractmethod
-    def get_dialog(self) -> Dialog:
+    def get_video_generated_alert_window(self) -> Window:
         pass
 
     @abstractmethod
-    def get_youtube_link_input_window(self) -> Window:
+    def get_publication_approved_alert_window(self) -> Window:
         pass
 
 
-class IGenerateVideoCutService(Protocol):
+class IAlertsService(Protocol):
 
     @abstractmethod
-    async def handle_youtube_link_input(
+    async def handle_go_to_video_drafts(
             self,
-            message: Message,
-            message_input: Any,
+            callback: CallbackQuery,
+            button: Any,
             dialog_manager: DialogManager
     ) -> None:
         pass
 
     @abstractmethod
-    async def handle_go_to_content_menu(
+    async def handle_go_to_main_menu(
             self,
             callback: CallbackQuery,
             button: Any,
@@ -36,10 +38,17 @@ class IGenerateVideoCutService(Protocol):
         pass
 
 
-class IGenerateVideoCutGetter(Protocol):
+class IAlertsGetter(Protocol):
 
     @abstractmethod
-    async def get_youtube_input_data(
+    async def get_video_alert_data(
+            self,
+            dialog_manager: DialogManager,
+    ) -> dict:
+        pass
+
+    @abstractmethod
+    async def get_publication_approved_alert_data(
             self,
             dialog_manager: DialogManager,
     ) -> dict:

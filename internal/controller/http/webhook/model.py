@@ -19,6 +19,11 @@ class NotifyVizardVideoCutGenerated(BaseModel):
     video_count: int
     interserver_secret_key: str
 
+class NotifyPublicationApprovedBody(BaseModel):
+    account_id: int
+    publication_id: int
+    interserver_secret_key: str
+
 
 class SendMessageWebhookBody(BaseModel):
     tg_chat_id: int

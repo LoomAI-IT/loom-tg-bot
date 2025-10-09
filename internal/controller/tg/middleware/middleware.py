@@ -46,14 +46,14 @@ class TgMiddleware(interface.ITelegramMiddleware):
         except Exception as e:
             self.logger.error("Ошибка!!!", {"traceback": traceback.format_exc()})
             raise e
-
-        context_token = self.log_context.set({
-            common.TELEGRAM_USER_USERNAME_KEY: tg_username,
-            common.TELEGRAM_CHAT_ID_KEY: str(tg_chat_id),
-            common.TELEGRAM_EVENT_TYPE_KEY: event_type,
-            common.ORGANIZATION_ID_KEY: str(user_state.organization_id),
-            common.ACCOUNT_ID_KEY: str(user_state.account_id),
-        })
+        if tg_chat_id != 0:
+            context_token = self.log_context.set({
+                common.TELEGRAM_USER_USERNAME_KEY: tg_username,
+                common.TELEGRAM_CHAT_ID_KEY: str(tg_chat_id),
+                common.TELEGRAM_EVENT_TYPE_KEY: event_type,
+                common.ORGANIZATION_ID_KEY: str(user_state.organization_id),
+                common.ACCOUNT_ID_KEY: str(user_state.account_id),
+            })
 
         try:
             await handler(event, data)
@@ -107,6 +107,12 @@ class TgMiddleware(interface.ITelegramMiddleware):
         return True
 
     def __extract_metadata(self, event: Update):
+        if event is None:
+            return "", "", "", "", 0, 0
+
+        if event.message is None and event.callback_query is None:
+            return "", "", "", "", 0, 0
+
         message = event.message if event.message is not None else event.callback_query.message
         event_type = "message" if event.message is not None else "callback_query"
 

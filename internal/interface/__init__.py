@@ -15,6 +15,7 @@ from internal.interface.dialog.publication_draft_content import *
 from internal.interface.dialog.video_cut_draft_content import *
 from internal.interface.dialog.moderation_publication import *
 from internal.interface.dialog.moderation_video_cut import *
+from internal.interface.dialog.alerts import *
 
 from internal.interface.client.loom_account import *
 from internal.interface.client.loom_authorization import *

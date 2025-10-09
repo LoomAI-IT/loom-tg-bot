@@ -62,10 +62,9 @@ class StateService(interface.IStateService):
         return alert_id
 
     @traced_method()
-    async def get_vizard_video_cut_alert_by_state_id(self, state_id: int) -> list[model.VizardVideoCutAlert]:
-        alert = await self.state_repo.get_vizard_video_cut_alert_by_state_id(state_id)
-        return alert
-
-    @traced_method()
-    async def delete_vizard_video_cut_alert(self, state_id: int) -> None:
-        await self.state_repo.delete_vizard_video_cut_alert(state_id)
+    async def create_publication_approved_alert(self, state_id: int, publication_id: int) -> int:
+        alert_id = await self.state_repo.create_publication_approved_alert(
+            state_id,
+            publication_id
+        )
+        return alert_id

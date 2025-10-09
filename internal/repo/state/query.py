@@ -45,3 +45,19 @@ delete_vizard_video_cut_alert = """
 DELETE FROM vizard_video_cut_alerts
 WHERE state_id = :state_id;
 """
+
+create_publication_approved_alert = """
+INSERT INTO publication_approved_alerts (state_id, publication_id)
+VALUES (:state_id, :publication_id)
+RETURNING id;
+"""
+
+get_publication_approved_alert_by_state_id = """
+SELECT * FROM publication_approved_alerts
+WHERE state_id = :state_id;
+"""
+
+delete_publication_approved_alert = """
+DELETE FROM publication_approved_alerts
+WHERE state_id = :state_id;
+"""

@@ -132,3 +132,29 @@ class StateRepo(interface.IStateRepo):
             'state_id': state_id
         }
         await self.db.delete(delete_vizard_video_cut_alert, args)
+
+    @traced_method()
+    async def create_publication_approved_alert(self, state_id: int, publication_id: int) -> int:
+        args = {
+            'state_id': state_id,
+            'publication_id': publication_id,
+        }
+        alert_id = await self.db.insert(create_publication_approved_alert, args)
+
+        return alert_id
+
+    @traced_method()
+    async def get_publication_approved_alert_by_state_id(self, state_id: int) -> list[model.PublicationApprovedAlert]:
+        args = {'state_id': state_id}
+        rows = await self.db.select(get_publication_approved_alert_by_state_id, args)
+        if rows:
+            rows = model.PublicationApprovedAlert.serialize(rows)
+
+        return rows
+
+    @traced_method()
+    async def delete_publication_approved_alert(self, state_id: int) -> None:
+        args = {
+            'state_id': state_id
+        }
+        await self.db.delete(delete_publication_approved_alert, args)

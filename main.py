@@ -36,6 +36,7 @@ from internal.dialog.moderation_publication.dialog import ModerationPublicationD
 from internal.dialog.video_cut_draft_content.dialog import VideoCutsDraftDialog
 from internal.dialog.moderation_video_cut.dialog import VideoCutModerationDialog
 from internal.dialog.publication_draft_content.dialog import PublicationDraftDialog
+from internal.dialog.alerts.dialog import AlertsDialog
 
 from internal.service.state.service import StateService
 from internal.dialog.auth.service import AuthService
@@ -52,6 +53,7 @@ from internal.dialog.moderation_publication.service import ModerationPublication
 from internal.dialog.video_cut_draft_content.service import VideoCutsDraftService
 from internal.dialog.moderation_video_cut.service import VideoCutModerationService
 from internal.dialog.publication_draft_content.service import PublicationDraftService
+from internal.dialog.alerts.service import AlertsService
 
 from internal.dialog.auth.getter import AuthGetter
 from internal.dialog.main_menu.getter import MainMenuGetter
@@ -67,6 +69,7 @@ from internal.dialog.generate_video_cut.getter import GenerateVideoCutGetter
 from internal.dialog.video_cut_draft_content.getter import VideoCutsDraftGetter
 from internal.dialog.moderation_video_cut.getter import VideoCutModerationGetter
 from internal.dialog.publication_draft_content.getter import PublicationDraftGetter
+from internal.dialog.alerts.getter import AlertsGetter
 
 from internal.repo.state.repo import StateRepo
 
@@ -125,7 +128,8 @@ loom_account_client = LoomAccountClient(tel, cfg.loom_account_host, cfg.loom_acc
 loom_authorization_client = LoomAuthorizationClient(tel, cfg.loom_authorization_host,
                                                     cfg.loom_authorization_port, log_context)
 loom_employee_client = LoomEmployeeClient(tel, cfg.loom_employee_host, cfg.loom_employee_port, log_context)
-loom_organization_client = LoomOrganizationClient(tel, cfg.loom_organization_host, cfg.loom_organization_port, log_context)
+loom_organization_client = LoomOrganizationClient(tel, cfg.loom_organization_host, cfg.loom_organization_port,
+                                                  log_context)
 loom_content_client = LoomContentClient(tel, cfg.loom_content_host, cfg.loom_content_port, log_context)
 
 state_repo = StateRepo(tel, db)
@@ -227,6 +231,12 @@ add_social_network_getter = AddSocialNetworkGetter(
     loom_content_client,
 )
 
+alerts_getter = AlertsGetter(
+    tel,
+    state_repo,
+    loom_content_client,
+)
+
 # Инициализация сервисов
 state_service = StateService(tel, state_repo)
 auth_service = AuthService(
@@ -314,6 +324,11 @@ add_social_network_service = AddSocialNetworkService(
     loom_content_client,
 )
 
+alerts_service = AlertsService(
+    tel,
+    state_repo,
+)
+
 # Инициализация диалогов
 auth_dialog = AuthDialog(
     tel,
@@ -395,6 +410,12 @@ add_social_network_dialog = AddSocialNetworkDialog(
     add_social_network_getter,
 )
 
+alerts_dialog = AlertsDialog(
+    tel,
+    alerts_service,
+    alerts_getter,
+)
+
 command_controller = CommandController(tel, state_service)
 
 tg_middleware = TgMiddleware(
@@ -421,7 +442,8 @@ dialog_bg_factory = NewTg(
     video_cut_moderation_dialog,
     video_cuts_draft_dialog,
     publication_draft_dialog,
-    add_social_network_dialog
+    add_social_network_dialog,
+    alerts_dialog,
 )
 tg_middleware.dialog_bg_factory = dialog_bg_factory
 
