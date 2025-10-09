@@ -189,6 +189,8 @@ class AlertsGetter(interface.IAlertsGetter):
                 "has_multiple_publication_rejected_alerts": False,
                 "publication_id": publication.id,
                 "text_preview": text_preview,
+                "has_moderation_comment": bool(publication.moderation_comment),
+                "moderation_comment": publication.moderation_comment or "",
             }
 
         return data
@@ -240,21 +242,8 @@ class AlertsGetter(interface.IAlertsGetter):
             return "были"
 
     def _extract_first_line(self, text: str) -> str:
-        """Извлекает первую строку текста до <br> или <br/>"""
-        if not text:
-            return ""
+        max_length = 50
+        if len(text) > max_length:
+            text = text[:max_length] + "..."
 
-        # Ищем первое вхождение <br> или <br/>
-        match = re.search(r'<br\s*/?>', text, re.IGNORECASE)
-
-        if match:
-            first_line = text[:match.start()].strip()
-        else:
-            first_line = text.strip()
-
-        # Ограничиваем длину для читаемости
-        max_length = 100
-        if len(first_line) > max_length:
-            first_line = first_line[:max_length] + "..."
-
-        return first_line
+        return text
