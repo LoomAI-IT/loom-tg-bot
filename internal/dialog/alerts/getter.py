@@ -135,6 +135,60 @@ class AlertsGetter(interface.IAlertsGetter):
 
         return data
 
+    @auto_log()
+    @traced_method()
+    async def get_publication_rejected_alert_data(
+            self,
+            dialog_manager: DialogManager,
+            **kwargs
+    ) -> dict:
+        state = await self._get_user_state(dialog_manager)
+
+        alerts = await self.state_repo.get_publication_rejected_alert_by_state_id(state.id)
+
+        if not alerts:
+            self.logger.info("Алерты об отклоненных публикациях не найдены")
+            return {}
+
+        alerts_count = len(alerts)
+        has_multiple_alerts = alerts_count > 1
+
+        if has_multiple_alerts:
+            self.logger.info(f"Обнаружено {alerts_count} алертов об отклоненных публикациях")
+
+            publications = []
+            for alert in alerts:
+                publication = await self.loom_content_client.get_publication_by_id(alert.publication_id)
+                publications.append(publication)
+
+            publications_text_parts = []
+            for i, pub in enumerate(publications, 1):
+                publications_text_parts.append(f"<b>{i}.</b> Публикация #{pub.id}")
+
+            publications_text = "<br/>".join(publications_text_parts)
+            publications_word = self._get_publication_word(alerts_count)
+            was_word = self._get_was_word(alerts_count)
+
+            data = {
+                "has_multiple_publication_rejected_alerts": True,
+                "alerts_count": alerts_count,
+                "publications_word": publications_word,
+                "was_word": was_word,
+                "publications_text": publications_text,
+            }
+        else:
+            self.logger.info("Обнаружен один алерт об отклоненной публикации")
+            alert = alerts[0]
+
+            publication = await self.loom_content_client.get_publication_by_id(alert.publication_id)
+
+            data = {
+                "has_multiple_publication_rejected_alerts": False,
+                "publication_id": publication.id,
+            }
+
+        return data
+
     async def _get_user_state(self, dialog_manager: DialogManager) -> model.UserState:
         if hasattr(dialog_manager.event, 'message') and dialog_manager.event.message:
             chat_id = dialog_manager.event.message.chat.id
@@ -174,3 +228,9 @@ class AlertsGetter(interface.IAlertsGetter):
             return "публикации"
         else:
             return "публикаций"
+
+    def _get_was_word(self, count: int) -> str:
+        if count % 10 == 1 and count % 100 != 11:
+            return "была"
+        else:
+            return "были"

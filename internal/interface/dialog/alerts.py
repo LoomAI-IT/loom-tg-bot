@@ -16,6 +16,10 @@ class IAlertsDialog(Protocol):
     def get_publication_approved_alert_window(self) -> Window:
         pass
 
+    @abstractmethod
+    def get_publication_rejected_alert_window(self) -> Window:
+        pass
+
 
 class IAlertsService(Protocol):
 
@@ -49,6 +53,13 @@ class IAlertsGetter(Protocol):
 
     @abstractmethod
     async def get_publication_approved_alert_data(
+            self,
+            dialog_manager: DialogManager,
+    ) -> dict:
+        pass
+
+    @abstractmethod
+    async def get_publication_rejected_alert_data(
             self,
             dialog_manager: DialogManager,
     ) -> dict:

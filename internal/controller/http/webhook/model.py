@@ -24,6 +24,11 @@ class NotifyPublicationApprovedBody(BaseModel):
     publication_id: int
     interserver_secret_key: str
 
+class NotifyPublicationRejectedBody(BaseModel):
+    account_id: int
+    publication_id: int
+    interserver_secret_key: str
+
 
 class SendMessageWebhookBody(BaseModel):
     tg_chat_id: int

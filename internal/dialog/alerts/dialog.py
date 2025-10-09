@@ -21,7 +21,8 @@ class AlertsDialog(interface.IAlertsDialog):
     def get_dialog(self) -> Dialog:
         return Dialog(
             self.get_video_generated_alert_window(),
-            self.get_publication_approved_alert_window()
+            self.get_publication_approved_alert_window(),
+            self.get_publication_rejected_alert_window()
         )
 
     def get_video_generated_alert_window(self) -> Window:
@@ -101,5 +102,38 @@ class AlertsDialog(interface.IAlertsDialog):
 
             state=model.AlertsStates.publication_approved_alert,
             getter=self.alerts_getter.get_publication_approved_alert_data,
+            parse_mode=SULGUK_PARSE_MODE,
+        )
+
+    def get_publication_rejected_alert_window(self) -> Window:
+        return Window(
+            Multi(
+                Case(
+                    {
+                        True: Multi(
+                            Const("❌ <b>Ваши публикации отклонены</b><br><br>"),
+                            Format("К сожалению, {alerts_count} {publications_word} {was_word} отклонены модератором.<br><br>"),
+                            Format("{publications_text}"),
+                        ),
+                        False: Multi(
+                            Const("❌ <b>Публикация отклонена</b><br><br>"),
+                            Format("К сожалению, публикация #{publication_id} была отклонена модератором."),
+                        ),
+                    },
+                    selector="has_multiple_publication_rejected_alerts"
+                ),
+                sep="",
+            ),
+
+            Column(
+                Button(
+                    Const("🏠 Главное меню"),
+                    id="to_main_menu_from_publication_rejected_alert",
+                    on_click=self.alerts_service.handle_go_to_main_menu,
+                ),
+            ),
+
+            state=model.AlertsStates.publication_rejected_alert,
+            getter=self.alerts_getter.get_publication_rejected_alert_data,
             parse_mode=SULGUK_PARSE_MODE,
         )
