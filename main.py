@@ -233,7 +233,8 @@ add_social_network_getter = AddSocialNetworkGetter(
 
 alerts_getter = AlertsGetter(
     tel,
-    state_repo
+    state_repo,
+    loom_content_client,
 )
 
 # Инициализация сервисов

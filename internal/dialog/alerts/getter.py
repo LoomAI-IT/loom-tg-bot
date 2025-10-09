@@ -9,11 +9,13 @@ class AlertsGetter(interface.IAlertsGetter):
     def __init__(
             self,
             tel: interface.ITelemetry,
-            state_repo: interface.IStateRepo
+            state_repo: interface.IStateRepo,
+            loom_content_client: interface.ILoomContentClient,
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
         self.state_repo = state_repo
+        self.loom_content_client = loom_content_client
 
     @auto_log()
     @traced_method()
@@ -73,7 +75,68 @@ class AlertsGetter(interface.IAlertsGetter):
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        pass
+        state = await self._get_user_state(dialog_manager)
+
+        alerts = await self.state_repo.get_publication_approved_alert_by_state_id(state.id)
+
+        if not alerts:
+            self.logger.info("Алерты о публикациях не найдены")
+            return {}
+
+        alerts_count = len(alerts)
+        has_multiple_alerts = alerts_count > 1
+
+        if has_multiple_alerts:
+            self.logger.info(f"Обнаружено {alerts_count} алертов о публикациях")
+
+            publications = []
+            for alert in alerts:
+                publication = await self.loom_content_client.get_publication_by_id(alert.publication_id)
+                publications.append(publication)
+
+            publications_text_parts = []
+            for i, pub in enumerate(publications, 1):
+                links = []
+                if pub.tg_link:
+                    links.append(f"📱 <a href='{pub.tg_link}'>Telegram</a>")
+                if pub.vk_link:
+                    links.append(f"🔵 <a href='{pub.vk_link}'>ВКонтакте</a>")
+
+                links_text = " | ".join(links) if links else "Ссылки пока недоступны"
+
+                preview_text = pub.text[:50] + "..." if len(pub.text) > 50 else pub.text
+
+                publications_text_parts.append(
+                    f"📝 <b>{i}.</b> {preview_text}\n"
+                    f"🔗 {links_text}\n"
+                )
+
+            publications_text = "<br/>".join(publications_text_parts)
+            alerts_word = self._get_publication_word(alerts_count)
+
+            data = {
+                "has_multiple_alerts": True,
+                "alerts_count": alerts_count,
+                "alerts_word": alerts_word,
+                "publications_text": publications_text,
+            }
+        else:
+            self.logger.info("Обнаружен один алерт о публикации")
+            alert = alerts[0]
+
+            publication = await self.loom_content_client.get_publication_by_id(alert.publication_id)
+
+            data = {
+                "has_multiple_alerts": False,
+                "publication_text": publication.text,
+                "has_telegram_link": bool(publication.tg_link),
+                "telegram_link": publication.tg_link or "",
+                "has_vkontakte_link": bool(publication.vk_link),
+                "vkontakte_link": publication.vk_link or "",
+                "has_post_links": bool(publication.tg_link or publication.vk_link),
+            }
+
+        return data
 
     async def _get_user_state(self, dialog_manager: DialogManager) -> model.UserState:
         if hasattr(dialog_manager.event, 'message') and dialog_manager.event.message:
@@ -106,3 +169,11 @@ class AlertsGetter(interface.IAlertsGetter):
             return "видео"
         else:
             return "видео"
+
+    def _get_publication_word(self, count: int) -> str:
+        if count % 10 == 1 and count % 100 != 11:
+            return "публикация"
+        elif 2 <= count % 10 <= 4 and (count % 100 < 10 or count % 100 >= 20):
+            return "публикации"
+        else:
+            return "публикаций"
