@@ -118,6 +118,7 @@ class TelegramWebhookController(interface.ITelegramWebhookController):
         )
 
         if user_state.can_show_alerts:
+            self.logger.info("Показываю алерт о завершении генерации")
             dialog_manager = self.dialog_bg_factory.bg(
                 bot=self.bot,
                 user_id=user_state.tg_chat_id,
@@ -161,6 +162,7 @@ class TelegramWebhookController(interface.ITelegramWebhookController):
         )
 
         if user_state.can_show_alerts:
+            self.logger.info("Показываю алерт о подтверждении публикации")
             dialog_manager = self.dialog_bg_factory.bg(
                 bot=self.bot,
                 user_id=user_state.tg_chat_id,
@@ -173,7 +175,7 @@ class TelegramWebhookController(interface.ITelegramWebhookController):
             await dialog_manager.start(
                 model.AlertsStates.publication_approved_alert,
                 mode=StartMode.RESET_STACK,
-                show_mode=ShowMode.SEND
+                show_mode=ShowMode.DELETE_AND_SEND
             )
 
         return JSONResponse(
