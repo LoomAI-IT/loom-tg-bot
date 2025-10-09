@@ -55,71 +55,42 @@ class AlertsService(interface.IAlertsService):
 
         state = await self._get_state(dialog_manager)
 
-        current_state = dialog_manager.current_context().state
+        await self._delete_current_alert(dialog_manager.current_context().state, state.id)
+        next_alert_state = await self._get_next_alert_by_priority(state.id)
 
-        if current_state == model.AlertsStates.publication_approved_alert:
-            await self.state_repo.delete_publication_approved_alert(state.id)
-
-            publication_rejected_alerts = await self.state_repo.get_publication_rejected_alert_by_state_id(state.id)
-            if publication_rejected_alerts:
-                await dialog_manager.start(
-                    model.AlertsStates.publication_rejected_alert,
-                    mode=StartMode.RESET_STACK
-                )
-                await callback.answer()
-                return
-
-            vizard_alerts = await self.state_repo.get_vizard_video_cut_alert_by_state_id(state.id)
-            if vizard_alerts:
-                await dialog_manager.start(
-                    model.AlertsStates.video_generated_alert,
-                    mode=StartMode.RESET_STACK
-                )
-                await callback.answer()
-                return
-        elif current_state == model.AlertsStates.publication_rejected_alert:
-            await self.state_repo.delete_publication_rejected_alert(state.id)
-
-            vizard_alerts = await self.state_repo.get_vizard_video_cut_alert_by_state_id(state.id)
-            if vizard_alerts:
-                await dialog_manager.start(
-                    model.AlertsStates.video_generated_alert,
-                    mode=StartMode.RESET_STACK
-                )
-                await callback.answer()
-                return
-        elif current_state == model.AlertsStates.video_generated_alert:
-            await self.state_repo.delete_vizard_video_cut_alert(state.id)
-
-            publication_alerts = await self.state_repo.get_publication_approved_alert_by_state_id(state.id)
-            if publication_alerts:
-                await dialog_manager.start(
-                    model.AlertsStates.publication_approved_alert,
-                    mode=StartMode.RESET_STACK
-                )
-                await callback.answer()
-                return
-
-            publication_rejected_alerts = await self.state_repo.get_publication_rejected_alert_by_state_id(state.id)
-            if publication_rejected_alerts:
-                await dialog_manager.start(
-                    model.AlertsStates.publication_rejected_alert,
-                    mode=StartMode.RESET_STACK
-                )
-                await callback.answer()
-                return
-
-        await self.state_repo.change_user_state(
-            state_id=state.id,
-            can_show_alerts=True
-        )
-
-        await dialog_manager.start(
-            model.MainMenuStates.main_menu,
-            mode=StartMode.RESET_STACK
-        )
+        if next_alert_state:
+            await dialog_manager.start(next_alert_state, mode=StartMode.RESET_STACK)
+        else:
+            await self.state_repo.change_user_state(
+                state_id=state.id,
+                can_show_alerts=True
+            )
+            await dialog_manager.start(
+                model.MainMenuStates.main_menu,
+                mode=StartMode.RESET_STACK
+            )
 
         await callback.answer()
+
+    async def _delete_current_alert(self, current_state: Any, state_id: int) -> None:
+        if current_state == model.AlertsStates.publication_approved_alert:
+            await self.state_repo.delete_publication_approved_alert(state_id)
+        elif current_state == model.AlertsStates.publication_rejected_alert:
+            await self.state_repo.delete_publication_rejected_alert(state_id)
+        elif current_state == model.AlertsStates.video_generated_alert:
+            await self.state_repo.delete_vizard_video_cut_alert(state_id)
+
+    async def _get_next_alert_by_priority(self, state_id: int) -> Any | None:
+        if await self.state_repo.get_publication_approved_alert_by_state_id(state_id):
+            return model.AlertsStates.publication_approved_alert
+
+        if await self.state_repo.get_publication_rejected_alert_by_state_id(state_id):
+            return model.AlertsStates.publication_rejected_alert
+
+        if await self.state_repo.get_vizard_video_cut_alert_by_state_id(state_id):
+            return model.AlertsStates.video_generated_alert
+
+        return None
 
     async def _get_state(self, dialog_manager: DialogManager) -> model.UserState:
         if hasattr(dialog_manager.event, 'message') and dialog_manager.event.message:
