@@ -80,6 +80,11 @@ class AlertsService(interface.IAlertsService):
                 await callback.answer()
                 return
 
+        await self.state_repo.change_user_state(
+            state_id=state.id,
+            can_show_alerts=True
+        )
+
         await dialog_manager.start(
             model.MainMenuStates.main_menu,
             mode=StartMode.RESET_STACK
@@ -110,10 +115,7 @@ class AlertsService(interface.IAlertsService):
             )
             return True
 
-        await self.state_repo.change_user_state(
-            state_id=state.id,
-            can_show_alerts=True
-        )
+
 
         return False
 
