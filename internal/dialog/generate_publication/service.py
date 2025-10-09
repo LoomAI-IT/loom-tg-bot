@@ -680,6 +680,11 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         dialog_manager.dialog_data["post_links"] = post_links
 
         await callback.answer("Публикация успешно опубликована", show_alert=True)
+
+        if await self._check_alerts(dialog_manager):
+            self.logger.info("Переход к алертам")
+            return
+
         await dialog_manager.switch_to(model.GeneratePublicationStates.publication_success)
 
     @auto_log()

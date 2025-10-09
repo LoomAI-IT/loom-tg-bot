@@ -188,6 +188,10 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
         dialog_manager.dialog_data.pop("original_state", None)
         dialog_manager.dialog_data.pop("working_state", None)
 
+        if await self._check_alerts(dialog_manager):
+            self.logger.info("Переход к алертам")
+            return
+
         await dialog_manager.switch_to(model.AddSocialNetworkStates.telegram_main, ShowMode.EDIT)
 
     @auto_log()

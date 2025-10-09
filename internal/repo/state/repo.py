@@ -148,7 +148,7 @@ class StateRepo(interface.IStateRepo):
         args = {'state_id': state_id}
         rows = await self.db.select(get_publication_approved_alert_by_state_id, args)
         if rows:
-            rows = model.VizardVideoCutAlert.serialize(rows)
+            rows = model.PublicationApprovedAlert.serialize(rows)
 
         return rows
 

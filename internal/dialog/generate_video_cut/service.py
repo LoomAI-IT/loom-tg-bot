@@ -53,6 +53,10 @@ class GenerateVideoCutService(interface.IGenerateVideoCutService):
             state.account_id,
             youtube_url,
         )
+        if await self._check_alerts(dialog_manager):
+            self.logger.info("Найдены алерты, переход к их отображению")
+            return
+
 
     @auto_log()
     @traced_method()
