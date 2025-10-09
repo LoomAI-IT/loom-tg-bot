@@ -72,35 +72,15 @@ class AlertsDialog(interface.IAlertsDialog):
                 Case(
                     {
                         True: Multi(
-                            Const("🎉 <b>Ваши публикации приняты модератором!</b><br><br>"),
-                            Format("📊 Опубликовано <b>{alerts_count}</b> {alerts_word}:<br><br>"),
-                            Format("📋 <b>Список публикаций:</b><br>{publications_text}"),
+                            Const("🎉 <b>Ваши публикации одобрены!</b><br><br>"),
+                            Format("{publications_text}"),
                         ),
                         False: Multi(
-                            Const("🎉 <b>Публикация одобрена модератором!</b><br>"),
-                            Format("{publication_text}<br>"),
+                            Const("🎉 <b>Публикация одобрена!</b><br><br>"),
                             Case(
                                 {
-                                    True: Multi(
-                                        Const("<br>🔗 <b>Ссылки на ваши посты:</b><br>"),
-                                        Case(
-                                            {
-                                                True: Format(
-                                                    "📱 <b>Telegram:</b> <a href='{telegram_link}'>Перейти к посту</a><br>"),
-                                                False: Const(""),
-                                            },
-                                            selector="has_telegram_link"
-                                        ),
-                                        Case(
-                                            {
-                                                True: Format(
-                                                    "🔵 <b>ВКонтакте:</b> <a href='{vkontakte_link}'>Перейти к посту</a><br>"),
-                                                False: Const(""),
-                                            },
-                                            selector="has_vkontakte_link"
-                                        ),
-                                    ),
-                                    False: Const("<br>📝 <i>Публикация размещена, но ссылки пока недоступны</i>"),
+                                    True: Format("{links_text}"),
+                                    False: Const("📝 <i>Ссылки пока недоступны</i>"),
                                 },
                                 selector="has_post_links"
                             ),

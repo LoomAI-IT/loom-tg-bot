@@ -98,26 +98,19 @@ class AlertsGetter(interface.IAlertsGetter):
             for i, pub in enumerate(publications, 1):
                 links = []
                 if pub.tg_link:
-                    links.append(f"📱 <a href='{pub.tg_link}'>Telegram</a>")
+                    links.append(f"<a href='{pub.tg_link}'>📱 Telegram</a>")
                 if pub.vk_link:
-                    links.append(f"🔵 <a href='{pub.vk_link}'>ВКонтакте</a>")
+                    links.append(f"<a href='{pub.vk_link}'>🔵 ВКонтакте</a>")
 
-                links_text = " | ".join(links) if links else "Ссылки пока недоступны"
+                links_text = "  •  ".join(links) if links else "Ссылки пока недоступны"
 
-                preview_text = pub.text[:50] + "..." if len(pub.text) > 50 else pub.text
-
-                publications_text_parts.append(
-                    f"📝 <b>{i}.</b> {preview_text}\n"
-                    f"🔗 {links_text}\n"
-                )
+                publications_text_parts.append(f"<b>{i}.</b>  {links_text}")
 
             publications_text = "<br/>".join(publications_text_parts)
-            alerts_word = self._get_publication_word(alerts_count)
 
             data = {
                 "has_multiple_alerts": True,
                 "alerts_count": alerts_count,
-                "alerts_word": alerts_word,
                 "publications_text": publications_text,
             }
         else:
@@ -126,13 +119,17 @@ class AlertsGetter(interface.IAlertsGetter):
 
             publication = await self.loom_content_client.get_publication_by_id(alert.publication_id)
 
+            links = []
+            if publication.tg_link:
+                links.append(f"<a href='{publication.tg_link}'>📱 Telegram</a>")
+            if publication.vk_link:
+                links.append(f"<a href='{publication.vk_link}'>🔵 ВКонтакте</a>")
+
+            links_text = "  •  ".join(links) if links else ""
+
             data = {
                 "has_multiple_alerts": False,
-                "publication_text": publication.text,
-                "has_telegram_link": bool(publication.tg_link),
-                "telegram_link": publication.tg_link or "",
-                "has_vkontakte_link": bool(publication.vk_link),
-                "vkontakte_link": publication.vk_link or "",
+                "links_text": links_text,
                 "has_post_links": bool(publication.tg_link or publication.vk_link),
             }
 
