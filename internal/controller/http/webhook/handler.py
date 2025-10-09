@@ -173,7 +173,7 @@ class TelegramWebhookController(interface.ITelegramWebhookController):
             await dialog_manager.start(
                 model.AlertsStates.publication_approved_alert,
                 mode=StartMode.RESET_STACK,
-                show_mode=ShowMode.DELETE_AND_SEND
+                show_mode=ShowMode.SEND
             )
 
         return JSONResponse(
