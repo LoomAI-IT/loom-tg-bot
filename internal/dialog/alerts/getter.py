@@ -109,7 +109,7 @@ class AlertsGetter(interface.IAlertsGetter):
             publications_text = "<br/>".join(publications_text_parts)
 
             data = {
-                "has_multiple_alerts": True,
+                "has_multiple_publication_approved_alerts": True,
                 "alerts_count": alerts_count,
                 "publications_text": publications_text,
             }
@@ -128,7 +128,7 @@ class AlertsGetter(interface.IAlertsGetter):
             links_text = "  •  ".join(links) if links else ""
 
             data = {
-                "has_multiple_alerts": False,
+                "has_multiple_publication_approved_alerts": False,
                 "links_text": links_text,
                 "has_post_links": bool(publication.tg_link or publication.vk_link),
             }

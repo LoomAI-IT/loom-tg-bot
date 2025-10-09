@@ -86,7 +86,7 @@ class AlertsDialog(interface.IAlertsDialog):
                             ),
                         ),
                     },
-                    selector="has_multiple_alerts"
+                    selector="has_multiple_publication_approved_alerts"
                 ),
                 sep="",
             ),
