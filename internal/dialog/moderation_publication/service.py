@@ -555,16 +555,10 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         )
 
         # Одобряем публикацию
-        await self.loom_content_client.moderate_publication(
+        post_links = await self.loom_content_client.moderate_publication(
             publication_id=publication_id,
             moderator_id=state.account_id,
             moderation_status="approved",
-        )
-
-        post_links = await self.loom_content_client.moderate_publication(
-            publication_id,
-            state.account_id,
-            "approved"
         )
 
         dialog_manager.dialog_data["post_links"] = post_links
