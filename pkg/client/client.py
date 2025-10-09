@@ -256,7 +256,6 @@ class AsyncHTTPClient:
                     return response
 
                 except Exception as err:
-                    # Логировать retry
                     if self.logger and attempt_num < self.retry_attempts:
                         self.logger.warning(
                             f"Request {method} {url} failed (attempt {attempt_num}/{self.retry_attempts}): "
@@ -266,27 +265,21 @@ class AsyncHTTPClient:
         return None
 
     async def get(self, url: str, **kwargs) -> httpx.Response:
-        """HTTP GET запрос"""
         return await self._request_with_retry("GET", url, **kwargs)
 
     async def post(self, url: str, **kwargs) -> httpx.Response:
-        """HTTP POST запрос"""
         return await self._request_with_retry("POST", url, **kwargs)
 
     async def put(self, url: str, **kwargs) -> httpx.Response:
-        """HTTP PUT запрос"""
         return await self._request_with_retry("PUT", url, **kwargs)
 
     async def delete(self, url: str, **kwargs) -> httpx.Response:
-        """HTTP DELETE запрос"""
         return await self._request_with_retry("DELETE", url, **kwargs)
 
     def reset_circuit_breaker(self):
-        """Сбросить Circuit Breaker"""
         if self.circuit_breaker:
             self.circuit_breaker.reset()
 
     @property
     def circuit_breaker_state(self) -> Optional[str]:
-        """Получить состояние Circuit Breaker"""
         return self.circuit_breaker.state if self.circuit_breaker else None
