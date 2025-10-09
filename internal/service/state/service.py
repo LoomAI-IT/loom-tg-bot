@@ -68,3 +68,11 @@ class StateService(interface.IStateService):
             publication_id
         )
         return alert_id
+
+    @traced_method()
+    async def create_publication_rejected_alert(self, state_id: int, publication_id: int) -> int:
+        alert_id = await self.state_repo.create_publication_rejected_alert(
+            state_id,
+            publication_id
+        )
+        return alert_id

@@ -60,6 +60,12 @@ class ITelegramWebhookController(Protocol):
     ) -> JSONResponse: pass
 
     @abstractmethod
+    async def notify_publication_rejected_alert(
+            self,
+            body: NotifyPublicationRejectedBody,
+    ) -> JSONResponse: pass
+
+    @abstractmethod
     async def set_cache_file(
             self,
             body: SetCacheFileBody,

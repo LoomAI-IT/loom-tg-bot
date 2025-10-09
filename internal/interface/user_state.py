@@ -45,6 +45,9 @@ class IStateService(Protocol):
     @abstractmethod
     async def create_publication_approved_alert(self, state_id: int, publication_id: int) -> int: pass
 
+    @abstractmethod
+    async def create_publication_rejected_alert(self, state_id: int, publication_id: int) -> int: pass
+
 
 
 class IStateRepo(Protocol):
@@ -105,3 +108,12 @@ class IStateRepo(Protocol):
 
     @abstractmethod
     async def delete_publication_approved_alert(self, state_id: int) -> None: pass
+
+    @abstractmethod
+    async def create_publication_rejected_alert(self, state_id: int, publication_id: int) -> int: pass
+
+    @abstractmethod
+    async def get_publication_rejected_alert_by_state_id(self, state_id: int) -> list[model.PublicationRejectedAlert]: pass
+
+    @abstractmethod
+    async def delete_publication_rejected_alert(self, state_id: int) -> None: pass

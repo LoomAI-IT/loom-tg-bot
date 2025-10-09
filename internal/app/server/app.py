@@ -65,6 +65,12 @@ def include_tg_webhook(
     )
 
     app.add_api_route(
+        prefix + "/notify/publication/rejected",
+        tg_webhook_controller.notify_publication_rejected_alert,
+        methods=["POST"]
+    )
+
+    app.add_api_route(
         prefix + "/file/cache",
         tg_webhook_controller.set_cache_file,
         methods=["POST"]

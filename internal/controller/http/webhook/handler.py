@@ -185,6 +185,50 @@ class TelegramWebhookController(interface.ITelegramWebhookController):
 
     @auto_log()
     @traced_method()
+    async def notify_publication_rejected_alert(
+            self,
+            body: NotifyPublicationRejectedBody,
+    ) -> JSONResponse:
+        if body.interserver_secret_key != self.interserver_secret_key:
+            self.logger.warning("Не верный межсервисный ключ")
+            return JSONResponse(
+                content={"status": "error", "message": "Wrong secret token !"},
+                status_code=401
+            )
+
+        user_state = (await self.state_service.state_by_account_id(
+            body.account_id
+        ))[0]
+
+        await self.state_service.create_publication_rejected_alert(
+            state_id=user_state.id,
+            publication_id=body.publication_id,
+        )
+
+        if user_state.can_show_alerts:
+            self.logger.info("Показываю алерт об отклонении публикации")
+            dialog_manager = self.dialog_bg_factory.bg(
+                bot=self.bot,
+                user_id=user_state.tg_chat_id,
+                chat_id=user_state.tg_chat_id,
+            )
+            await self.state_service.change_user_state(
+                user_state.id,
+                can_show_alerts=False,
+            )
+            await dialog_manager.start(
+                model.AlertsStates.publication_rejected_alert,
+                mode=StartMode.RESET_STACK,
+                show_mode=ShowMode.DELETE_AND_SEND
+            )
+
+        return JSONResponse(
+            content={"status": "ok"},
+            status_code=200
+        )
+
+    @auto_log()
+    @traced_method()
     async def set_cache_file(
             self,
             body: SetCacheFileBody,
