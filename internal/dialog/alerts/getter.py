@@ -1,4 +1,3 @@
-import re
 from aiogram_dialog import DialogManager
 
 from internal import interface, model
@@ -163,11 +162,11 @@ class AlertsGetter(interface.IAlertsGetter):
                 publications.append(publication)
 
             publications_text_parts = []
-            for i, pub in enumerate(publications, 1):
+            for pub in publications:
                 text_preview = self._extract_first_line(pub.text)
-                publications_text_parts.append(f"<b>{i}.</b> {text_preview}")
+                publications_text_parts.append(f"<li>{text_preview}</li>")
 
-            publications_text = "<br/>".join(publications_text_parts)
+            publications_text = f"<ol>{''.join(publications_text_parts)}</ol>"
             publications_word = self._get_publication_word(alerts_count)
             was_word = self._get_was_word(alerts_count)
 
