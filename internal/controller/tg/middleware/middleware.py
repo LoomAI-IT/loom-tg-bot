@@ -107,6 +107,9 @@ class TgMiddleware(interface.ITelegramMiddleware):
         return True
 
     def __extract_metadata(self, event: Update):
+        if event is None:
+            return "", "", "", "", 0, 0
+
         message = event.message if event.message is not None else event.callback_query.message
         event_type = "message" if event.message is not None else "callback_query"
 
