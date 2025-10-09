@@ -146,7 +146,7 @@ class StateRepo(interface.IStateRepo):
     @traced_method()
     async def get_publication_approved_alert_by_state_id(self, state_id: int) -> list[model.PublicationApprovedAlert]:
         args = {'state_id': state_id}
-        rows = await self.db.select(get_vizard_video_cut_alert_by_state_id, args)
+        rows = await self.db.select(get_publication_approved_alert_by_state_id, args)
         if rows:
             rows = model.VizardVideoCutAlert.serialize(rows)
 
