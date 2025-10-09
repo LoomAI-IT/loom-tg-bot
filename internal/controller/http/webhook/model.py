@@ -22,6 +22,7 @@ class NotifyVizardVideoCutGenerated(BaseModel):
 class NotifyPublicationApprovedBody(BaseModel):
     account_id: int
     publication_id: int
+    interserver_secret_key: str
 
 
 class SendMessageWebhookBody(BaseModel):
