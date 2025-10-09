@@ -1,3 +1,4 @@
+import re
 from aiogram_dialog import DialogManager
 
 from internal import interface, model
@@ -163,7 +164,8 @@ class AlertsGetter(interface.IAlertsGetter):
 
             publications_text_parts = []
             for i, pub in enumerate(publications, 1):
-                publications_text_parts.append(f"<b>{i}.</b> Публикация #{pub.id}")
+                text_preview = self._extract_first_line(pub.text)
+                publications_text_parts.append(f"<b>{i}.</b> {text_preview}")
 
             publications_text = "<br/>".join(publications_text_parts)
             publications_word = self._get_publication_word(alerts_count)
@@ -181,10 +183,12 @@ class AlertsGetter(interface.IAlertsGetter):
             alert = alerts[0]
 
             publication = await self.loom_content_client.get_publication_by_id(alert.publication_id)
+            text_preview = self._extract_first_line(publication.text)
 
             data = {
                 "has_multiple_publication_rejected_alerts": False,
                 "publication_id": publication.id,
+                "text_preview": text_preview,
             }
 
         return data
@@ -234,3 +238,23 @@ class AlertsGetter(interface.IAlertsGetter):
             return "была"
         else:
             return "были"
+
+    def _extract_first_line(self, text: str) -> str:
+        """Извлекает первую строку текста до <br> или <br/>"""
+        if not text:
+            return ""
+
+        # Ищем первое вхождение <br> или <br/>
+        match = re.search(r'<br\s*/?>', text, re.IGNORECASE)
+
+        if match:
+            first_line = text[:match.start()].strip()
+        else:
+            first_line = text.strip()
+
+        # Ограничиваем длину для читаемости
+        max_length = 100
+        if len(first_line) > max_length:
+            first_line = first_line[:max_length] + "..."
+
+        return first_line

@@ -117,7 +117,8 @@ class AlertsDialog(interface.IAlertsDialog):
                         ),
                         False: Multi(
                             Const("❌ <b>Публикация отклонена</b><br><br>"),
-                            Format("К сожалению, публикация #{publication_id} была отклонена модератором."),
+                            Format("К сожалению, ваша публикация была отклонена модератором:<br><br>"),
+                            Format("📝 {text_preview}"),
                         ),
                     },
                     selector="has_multiple_publication_rejected_alerts"
