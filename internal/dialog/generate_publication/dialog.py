@@ -351,7 +351,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
     def get_edit_text_window(self) -> Window:
         return Window(
             Multi(
-                Const("✍️ <b>Написать свой текст</b><br><br>"),
+                Const("✍️ <b>Написать свой текст</b><br>"),
                 Format("<blockquote>{publication_text}</blockquote><br>"),
                 Const("✏️ <b>НАПИШИТЕ НОВЫЙ ТЕКСТ:</b><br>"),
                 Const("<i>Отправьте готовый текст публикации, который заменит текущий</i><br><br>"),
