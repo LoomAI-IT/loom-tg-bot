@@ -93,6 +93,12 @@ class PublicationDraftGetter(interface.IPublicationDraftGetter):
                     "created_at": current_draft.created_at,
                 }
                 
+                # Устанавливаем selected_publication_id для совместимости с edit_preview
+                dialog_manager.dialog_data["selected_publication_id"] = current_draft.id
+                
+                # Инициализируем working_publication как копию original_publication
+                dialog_manager.dialog_data["working_publication"] = dict(dialog_manager.dialog_data["original_publication"])
+                
                 data = {
                     "has_publications": True,
                     "creator_name": creator.name,
