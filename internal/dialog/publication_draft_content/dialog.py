@@ -26,15 +26,11 @@ class PublicationDraftDialog(interface.IPublicationDraftDialog):
             self.get_publication_list_window(),
             self.get_edit_preview_window(),
             self.get_edit_text_menu_window(),
-            self.get_regenerate_text_window(),
-            self.get_edit_title_window(),
-            self.get_edit_description_window(),
-            self.get_edit_content_window(),
+            self.get_edit_text_window(),
             self.get_edit_image_menu_window(),
-            self.get_generate_image_window(),
             self.get_upload_image_window(),
-            self.get_edit_tags_window(),
             self.get_social_network_select_window(),
+            self.get_publication_success_window(),
         )
 
     def get_publication_list_window(self) -> Window:
@@ -221,95 +217,49 @@ class PublicationDraftDialog(interface.IPublicationDraftDialog):
         """Меню редактирования текста."""
         return Window(
             Multi(
-                Const("✏️ <b>Редактирование черновика</b>\n\n"),
-                Const("📌 <b>Выберите, что изменить:</b>"),
+                Case(
+                    {
+                        False: Multi(
+                            Const("📝 <b>Редактирование текста</b><br><br>"),
+                            Const("🤖 <i>Опишите, что нужно изменить в тексте — я отредактирую его!</i><br><br>"),
+                            Const("💡 <b>Примеры:</b><br>"),
+                            Const("• «Сделай текст короче и добавь призыв к действию»<br>"),
+                            Const("• «Убери сложные термины, пиши проще»<br>"),
+                            Const("• «Добавь больше эмоций и хештеги»"),
+                        ),
+                        True: Case(
+                            {
+                                True: Multi(
+                                    Format("📋 <b>Ваши указания:</b><br>💭 <i>«{regenerate_prompt}»</i><br><br>"),
+                                    Const("⏳ <b>Перегенерирую текст...</b><br>"),
+                                    Const("🕐 <i>Это может занять время. Пожалуйста, подождите</i>"),
+                                ),
+                                False: Multi(
+                                    Const("⏳ <b>Перегенерирую текст...</b><br>"),
+                                    Const("🕐 <i>Это может занять время. Пожалуйста, подождите</i>"),
+                                ),
+                            },
+                            selector="has_regenerate_prompt"
+                        )
+                    },
+                    selector="is_regenerating_text"
+                ),
                 sep="",
             ),
 
             Column(
                 Button(
-                    Const("🔄 Перегенерировать весь текст"),
+                    Const("🔄 Перегенерировать текст"),
                     id="regenerate_all",
-                    on_click=self.publication_draft_service.handle_start_regenerate_text,
+                    on_click=self.publication_draft_service.handle_regenerate_text,
+                    when=~F["is_regenerating_text"]
                 ),
                 Button(
-                    Const("🔄 Перегенерировать с промптом"),
-                    id="regenerate_with_prompt",
-                    on_click=lambda c, b, d: d.switch_to(model.PublicationDraftStates.regenerate_text),
-                ),
-                Button(
-                    Const("📝 Изменить название"),
-                    id="edit_title",
-                    on_click=lambda c, b, d: d.switch_to(model.PublicationDraftStates.edit_title),
-                ),
-                Button(
-                    Const("📄 Изменить текст"),
+                    Const("✍️ Написать свой текст"),
                     id="edit_content",
-                    on_click=lambda c, b, d: d.switch_to(model.PublicationDraftStates.edit_content),
+                    on_click=lambda c, b, d: d.switch_to(model.PublicationDraftStates.edit_text, ShowMode.EDIT),
+                    when=~F["is_regenerating_text"]
                 ),
-                Button(
-                    Const("🏷 Изменить теги"),
-                    id="edit_tags",
-                    on_click=lambda c, b, d: d.switch_to(model.PublicationDraftStates.edit_tags),
-                ),
-                Button(
-                    Const("🖼 Управление изображением"),
-                    id="edit_image_menu",
-                    on_click=lambda c, b, d: d.switch_to(model.PublicationDraftStates.edit_image_menu),
-                ),
-            ),
-
-            Button(
-                Const("◀️ Назад к превью"),
-                id="back_to_preview",
-                on_click=lambda c, b, d: d.switch_to(model.PublicationDraftStates.edit_preview),
-            ),
-
-            state=model.PublicationDraftStates.edit_text_menu,
-            getter=self.publication_draft_getter.get_edit_text_menu_data,
-            parse_mode=SULGUK_PARSE_MODE,
-        )
-
-    def get_regenerate_text_window(self) -> Window:
-        """Перегенерация текста с промптом."""
-        return Window(
-            Multi(
-                Const("🔄 <b>Перегенерация с дополнительными указаниями</b>\n\n"),
-                Case(
-                    {
-                        True: Multi(
-                            Case(
-                                {
-                                    True: Format("📌 <b>Ваши указания:</b>\n<i>{regenerate_prompt}</i>\n\n"),
-                                    False: Const(""),
-                                },
-                                selector="has_regenerate_prompt"
-                            ),
-                            Const("⏳ <b>Перегенерирую текст...</b>\n"),
-                            Const("Это может занять время. Пожалуйста, ожидайте."),
-                        ),
-                        False: Multi(
-                            Case(
-                                {
-                                    True: Const("⚠️ <b>Ошибка:</b> Укажите дополнительные пожелания\n\n"),
-                                    False: Const(""),
-                                },
-                                selector="has_void_regenerate_prompt"
-                            ),
-                            Const("💡 <b>Введите дополнительные пожелания:</b>\n"),
-                            Const("<i>Например: сделай текст короче, добавь больше эмоций и т.д.</i>\n\n"),
-                            Case(
-                                {
-                                    True: Format("📌 <b>Ваши указания:</b>\n<i>{regenerate_prompt}</i>"),
-                                    False: Const("💬 Ожидание ввода..."),
-                                },
-                                selector="has_regenerate_prompt"
-                            ),
-                        ),
-                    },
-                    selector="is_regenerating_text"
-                ),
-                sep="",
             ),
 
             TextInput(
@@ -319,105 +269,61 @@ class PublicationDraftDialog(interface.IPublicationDraftDialog):
 
             Button(
                 Const("◀️ Назад"),
-                id="back_to_edit_menu",
-                on_click=lambda c, b, d: d.switch_to(model.PublicationDraftStates.edit_text_menu),
-                when="~is_regenerating_text",
+                id="preview",
+                on_click=lambda c, b, d: d.switch_to(model.PublicationDraftStates.edit_preview, ShowMode.EDIT),
+                when=~F["is_regenerating_text"]
             ),
 
-            state=model.PublicationDraftStates.regenerate_text,
-            getter=self.publication_draft_getter.get_regenerate_text_data,
+            state=model.PublicationDraftStates.edit_text_menu,
+            getter=self.publication_draft_getter.get_edit_text_data,
             parse_mode=SULGUK_PARSE_MODE,
         )
 
-    def get_edit_title_window(self) -> Window:
-        """Редактирование названия."""
-        return Window(
-            Multi(
-                Const("📝 <b>Изменение названия</b>\n\n"),
-                Format("Текущее: <b>{publication_title}</b>\n\n"),
-                Case(
-                    {
-                        True: Const("⚠️ <b>Ошибка:</b> Название не может быть пустым\n\n"),
-                        False: Const(""),
-                    },
-                    selector="has_void_title"
-                ),
-                Const("✍️ <b>Введите новое название:</b>"),
-                sep="",
-            ),
-
-            TextInput(
-                id="title_input",
-                on_success=self.publication_draft_service.handle_edit_title_save,
-            ),
-
-            Button(
-                Const("◀️ Назад"),
-                id="back_to_edit_menu",
-                on_click=lambda c, b, d: d.switch_to(model.PublicationDraftStates.edit_text_menu),
-            ),
-
-            state=model.PublicationDraftStates.edit_title,
-            getter=self.publication_draft_getter.get_edit_title_data,
-            parse_mode=SULGUK_PARSE_MODE,
-        )
-
-    def get_edit_description_window(self) -> Window:
-        """Редактирование описания."""
-        return Window(
-            Multi(
-                Const("📝 <b>Изменение описания</b>\n\n"),
-                Format("Текущее: <i>{publication_description}</i>\n\n"),
-                Const("✍️ <b>Введите новое описание:</b>"),
-                sep="",
-            ),
-
-            TextInput(
-                id="description_input",
-                on_success=self.publication_draft_service.handle_edit_description_save,
-            ),
-
-            Button(
-                Const("◀️ Назад"),
-                id="back_to_edit_menu",
-                on_click=lambda c, b, d: d.switch_to(model.PublicationDraftStates.edit_text_menu),
-            ),
-
-            state=model.PublicationDraftStates.edit_description,
-            getter=self.publication_draft_getter.get_edit_description_data,
-            parse_mode=SULGUK_PARSE_MODE,
-        )
-
-    def get_edit_content_window(self) -> Window:
+    def get_edit_text_window(self) -> Window:
         """Редактирование основного текста."""
         return Window(
             Multi(
-                Const("📄 <b>Изменение текста публикации</b>\n\n"),
+                Const("✍️ <b>Редактирование текста</b><br><br>"),
+                Const("<b>Ваш текст:</b><br>"),
+                Format("{publication_text}<br><br>"),
+                Const("📝 <i>Напишите итоговый текст публикации</i>"),
                 Case(
                     {
-                        True: Const("⚠️ <b>Ошибка:</b> Текст не может быть пустым\n\n"),
+                        True: Const("<br><br>❌ <b>Ошибка:</b> Текст не может быть пустым"),
                         False: Const(""),
                     },
-                    selector="has_void_content"
+                    selector="has_void_text"
                 ),
-                Const("✍️ <b>Введите новый текст:</b>\n"),
-                Const("<i>Текущий текст показан в предыдущем окне</i>"),
+                Case(
+                    {
+                        True: Const("<br><br>📏 <b>Слишком короткий текст</b><br>💡 <i>Минимум 50 символов</i>"),
+                        False: Const(""),
+                    },
+                    selector="has_small_text"
+                ),
+                Case(
+                    {
+                        True: Const("<br><br>📏 <b>Слишком длинный текст</b><br>⚠️ <i>Максимум 4000 символов</i>"),
+                        False: Const(""),
+                    },
+                    selector="has_big_text"
+                ),
                 sep="",
             ),
 
             TextInput(
-                id="content_input",
-                on_success=self.publication_draft_service.handle_edit_content_save,
+                id="text_input",
+                on_success=self.publication_draft_service.handle_edit_text,
             ),
 
             Button(
                 Const("◀️ Назад"),
-                id="back_to_edit_menu",
-                on_click=lambda c, b, d: d.switch_to(model.PublicationDraftStates.edit_text_menu),
+                id="edit_text_menu",
+                on_click=lambda c, b, d: d.switch_to(model.PublicationDraftStates.edit_text_menu, ShowMode.EDIT),
             ),
 
-            state=model.PublicationDraftStates.edit_content,
-            getter=self.publication_draft_getter.get_edit_content_data,
+            state=model.PublicationDraftStates.edit_text,
+            getter=self.publication_draft_getter.get_edit_text_data,
             parse_mode=SULGUK_PARSE_MODE,
         )
 
@@ -439,11 +345,6 @@ class PublicationDraftDialog(interface.IPublicationDraftDialog):
 
             Column(
                 Button(
-                    Const("🎨 Сгенерировать с промптом"),
-                    id="generate_image_prompt",
-                    on_click=lambda c, b, d: d.switch_to(model.PublicationDraftStates.generate_image),
-                ),
-                Button(
                     Const("📤 Загрузить своё"),
                     id="upload_image",
                     on_click=lambda c, b, d: d.switch_to(model.PublicationDraftStates.upload_image),
@@ -458,45 +359,12 @@ class PublicationDraftDialog(interface.IPublicationDraftDialog):
 
             Button(
                 Const("◀️ Назад"),
-                id="back_to_edit_menu",
-                on_click=lambda c, b, d: d.switch_to(model.PublicationDraftStates.edit_text_menu),
+                id="back_to_preview",
+                on_click=lambda c, b, d: d.switch_to(model.PublicationDraftStates.edit_preview),
             ),
 
             state=model.PublicationDraftStates.edit_image_menu,
-            getter=self.publication_draft_getter.get_edit_image_menu_data,
-            parse_mode=SULGUK_PARSE_MODE,
-        )
-
-    def get_generate_image_window(self) -> Window:
-        """Генерация изображения с промптом."""
-        return Window(
-            Multi(
-                Const("🎨 <b>Генерация изображения</b>\n\n"),
-                Const("💡 <b>Опишите желаемое изображение:</b>\n"),
-                Const("<i>Например: минималистичная иллюстрация в синих тонах</i>\n\n"),
-                Case(
-                    {
-                        True: Format("📌 <b>Ваше описание:</b>\n<i>{image_prompt}</i>"),
-                        False: Const("💬 Ожидание ввода..."),
-                    },
-                    selector="has_image_prompt"
-                ),
-                sep="",
-            ),
-
-            TextInput(
-                id="image_prompt_input",
-                on_success=self.publication_draft_service.handle_edit_image_menu_save,
-            ),
-
-            Button(
-                Const("◀️ Назад"),
-                id="back_to_image_menu",
-                on_click=lambda c, b, d: d.switch_to(model.PublicationDraftStates.edit_image_menu),
-            ),
-
-            state=model.PublicationDraftStates.generate_image,
-            getter=self.publication_draft_getter.get_generate_image_data,
+            getter=self.publication_draft_getter.get_image_menu_data,
             parse_mode=SULGUK_PARSE_MODE,
         )
 
@@ -523,33 +391,6 @@ class PublicationDraftDialog(interface.IPublicationDraftDialog):
 
             state=model.PublicationDraftStates.upload_image,
             getter=self.publication_draft_getter.get_upload_image_data,
-            parse_mode=SULGUK_PARSE_MODE,
-        )
-
-    def get_edit_tags_window(self) -> Window:
-        """Редактирование тегов."""
-        return Window(
-            Multi(
-                Const("🏷 <b>Изменение тегов</b>\n\n"),
-                Format("Текущие теги: <b>{publication_tags}</b>\n\n"),
-                Const("✍️ <b>Введите теги через запятую:</b>\n"),
-                Const("<i>Например: маркетинг, продажи, SMM</i>"),
-                sep="",
-            ),
-
-            TextInput(
-                id="tags_input",
-                on_success=self.publication_draft_service.handle_edit_tags_save,
-            ),
-
-            Button(
-                Const("◀️ Назад"),
-                id="back_to_edit_menu",
-                on_click=lambda c, b, d: d.switch_to(model.PublicationDraftStates.edit_text_menu),
-            ),
-
-            state=model.PublicationDraftStates.edit_tags,
-            getter=self.publication_draft_getter.get_edit_tags_data,
             parse_mode=SULGUK_PARSE_MODE,
         )
 
@@ -597,5 +438,50 @@ class PublicationDraftDialog(interface.IPublicationDraftDialog):
 
             state=model.PublicationDraftStates.social_network_select,
             getter=self.publication_draft_getter.get_social_network_select_data,
+            parse_mode=SULGUK_PARSE_MODE,
+        )
+
+    def get_publication_success_window(self) -> Window:
+        """Окно успешной публикации."""
+        return Window(
+            Multi(
+                Const("🎉 <b>Публикация успешно размещена!</b><br>"),
+                Case(
+                    {
+                        True: Multi(
+                            Const("🔗 <b>Ссылки на ваши посты:</b><br>"),
+                            Case(
+                                {
+                                    True: Format(
+                                        "📱 <b>Telegram:</b> <a href='{telegram_link}'>Перейти к посту</a><br>"),
+                                    False: Const(""),
+                                },
+                                selector="has_telegram_link"
+                            ),
+                            Case(
+                                {
+                                    True: Format(
+                                        "🔵 <b>ВКонтакте:</b> <a href='{vkontakte_link}'>Перейти к посту</a><br>"),
+                                    False: Const(""),
+                                },
+                                selector="has_vkontakte_link"
+                            ),
+                            Const("<br>💡 <i>Ссылки сохранены и доступны в разделе \"Мои публикации\"</i>"),
+                        ),
+                        False: Const("📝 <i>Публикация размещена, но ссылки пока недоступны</i>"),
+                    },
+                    selector="has_post_links"
+                ),
+                sep="",
+            ),
+
+            Button(
+                Const("📋 К списку черновиков"),
+                id="go_to_draft_list",
+                on_click=self.publication_draft_service.handle_back_to_publication_list,
+            ),
+
+            state=model.PublicationDraftStates.publication_success,
+            getter=self.publication_draft_getter.get_publication_success_data,
             parse_mode=SULGUK_PARSE_MODE,
         )

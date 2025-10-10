@@ -198,77 +198,27 @@ class PublicationDraftGetter(interface.IPublicationDraftGetter):
                 span.set_status(Status(StatusCode.ERROR, str(err)))
                 raise
     
-    async def get_edit_text_menu_data(
+    async def get_edit_text_data(
             self,
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        """Данные для меню редактирования."""
-        return {
-            "current_title": dialog_manager.dialog_data.get("publication_title", ""),
-            "current_content": dialog_manager.dialog_data.get("publication_content", ""),
-        }
-
-    async def get_regenerate_text_data(
-            self,
-            dialog_manager: DialogManager,
-            **kwargs
-    ) -> dict:
-        """Данные для регенерации."""
+        """Данные для редактирования текста."""
+        working_pub = dialog_manager.dialog_data.get("working_publication", {})
         regenerate_prompt = dialog_manager.dialog_data.get("regenerate_prompt", "")
+        
         return {
+            "publication_text": working_pub.get("text", ""),
             "regenerate_prompt": regenerate_prompt,
             "has_regenerate_prompt": bool(regenerate_prompt and regenerate_prompt.strip()),
             "has_void_regenerate_prompt": dialog_manager.dialog_data.get("has_void_regenerate_prompt", False),
             "is_regenerating_text": dialog_manager.dialog_data.get("is_regenerating_text", False),
+            "has_void_text": dialog_manager.dialog_data.get("has_void_text", False),
+            "has_small_text": dialog_manager.dialog_data.get("has_small_text", False),
+            "has_big_text": dialog_manager.dialog_data.get("has_big_text", False),
         }
 
-    async def get_edit_title_data(
-            self,
-            dialog_manager: DialogManager,
-            **kwargs  
-    ) -> dict:
-        """Данные для редактирования названия."""
-        return {
-            "publication_title": dialog_manager.dialog_data.get("publication_title", ""),
-            "has_void_title": dialog_manager.dialog_data.get("has_void_title", False),
-        }
-
-    async def get_edit_description_data(
-            self,
-            dialog_manager: DialogManager,
-            **kwargs
-    ) -> dict:
-        """Данные для редактирования описания."""
-        return {
-            "publication_description": dialog_manager.dialog_data.get("publication_description", ""),
-        }
-
-    async def get_edit_content_data(
-            self,
-            dialog_manager: DialogManager,
-            **kwargs
-    ) -> dict:
-        """Данные для редактирования контента."""
-        return {
-            "publication_content": dialog_manager.dialog_data.get("publication_content", ""),
-            "has_void_content": dialog_manager.dialog_data.get("has_void_content", False),
-        }
-
-    async def get_edit_tags_data(
-            self,
-            dialog_manager: DialogManager,
-            **kwargs
-    ) -> dict:
-        """Данные для редактирования тегов."""
-        tags = dialog_manager.dialog_data.get("publication_tags", [])
-        tags_str = ", ".join(tags) if isinstance(tags, list) else str(tags)
-        
-        return {
-            "publication_tags": tags_str,
-        }
-
-    async def get_edit_image_menu_data(
+    async def get_image_menu_data(
             self,
             dialog_manager: DialogManager,
             **kwargs
@@ -276,17 +226,6 @@ class PublicationDraftGetter(interface.IPublicationDraftGetter):
         """Данные для управления изображениями."""
         return {
             "has_image": dialog_manager.dialog_data.get("has_image", False),
-        }
-
-    async def get_generate_image_data(
-            self,
-            dialog_manager: DialogManager,
-            **kwargs
-    ) -> dict:
-        """Данные для генерации изображения."""
-        return {
-            "image_prompt": dialog_manager.dialog_data.get("image_prompt", ""),
-            "has_image_prompt": "image_prompt" in dialog_manager.dialog_data,
         }
 
     async def get_upload_image_data(
@@ -307,6 +246,25 @@ class PublicationDraftGetter(interface.IPublicationDraftGetter):
             "telegram_connected": True,
             "vkontakte_connected": True,
             "has_available_networks": True,
+        }
+    
+    async def get_publication_success_data(
+            self,
+            dialog_manager: DialogManager,
+            **kwargs
+    ) -> dict:
+        """Данные для окна успешной публикации."""
+        post_links = dialog_manager.dialog_data.get("post_links", {})
+
+        telegram_link = post_links.get("telegram")
+        vkontakte_link = post_links.get("vkontakte")
+
+        return {
+            "has_post_links": bool(post_links),
+            "has_telegram_link": bool(telegram_link),
+            "has_vkontakte_link": bool(vkontakte_link),
+            "telegram_link": telegram_link or "",
+            "vkontakte_link": vkontakte_link or "",
         }
     
     async def _get_state(self, dialog_manager: DialogManager) -> model.UserState:
@@ -358,10 +316,8 @@ class PublicationDraftGetter(interface.IPublicationDraftGetter):
             return False
 
         # Сравниваем текстовые поля
-        fields_to_compare = ["text"]
-        for field in fields_to_compare:
-            if original.get(field) != working.get(field):
-                return True
+        if original.get("text") != working.get("text"):
+            return True
 
         # Проверяем изменения изображения
         if original.get("has_image", False) != working.get("has_image", False):
