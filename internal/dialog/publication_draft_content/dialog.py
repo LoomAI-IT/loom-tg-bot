@@ -278,7 +278,13 @@ class PublicationDraftDialog(interface.IPublicationDraftDialog):
                 Case(
                     {
                         True: Multi(
-                            Format("📌 <b>Ваши указания:</b>\n<i>{regenerate_prompt}</i>\n\n"),
+                            Case(
+                                {
+                                    True: Format("📌 <b>Ваши указания:</b>\n<i>{regenerate_prompt}</i>\n\n"),
+                                    False: Const(""),
+                                },
+                                selector="has_regenerate_prompt"
+                            ),
                             Const("⏳ <b>Перегенерирую текст...</b>\n"),
                             Const("Это может занять время. Пожалуйста, ожидайте."),
                         ),
