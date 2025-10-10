@@ -49,55 +49,65 @@ class PublicationDraftGetter(interface.IPublicationDraftGetter):
                 )
                 drafts = [p for p in publications if getattr(p, "moderation_status", None) == "draft"]
                 
-                # Форматируем для отображения
-                publications_data = []
-                for draft in drafts:
-                    # Форматируем дату
-                    created_date = "неизвестно"
-                    if hasattr(draft, 'created_at') and draft.created_at:
-                        try:
-                            if isinstance(draft.created_at, str):
-                                dt = datetime.fromisoformat(draft.created_at)
-                            else:
-                                dt = draft.created_at
-                            created_date = dt.strftime("%d.%m.%Y")
-                        except Exception as e:
-                            self.logger.warning(f"Ошибка парсинга даты: {str(e)}")
-                            created_date = "неизвестно"
-                    
-                    publications_data.append({
-                        "id": draft.id,
-                        "title": draft.text_reference or "Без названия",
-                        "created_date": created_date,
-                        "preview": draft.text[:50] + "..." if len(draft.text) > 50 else draft.text,
-                    })
-                
-                # Сохраняем ID для навигации
-                dialog_manager.dialog_data["all_publication_ids"] = [p["id"] for p in publications_data]
-                
-                # Инициализируем working_publication для первого черновика (как в модерации)
-                if publications_data and "working_publication" not in dialog_manager.dialog_data:
-                    first_draft = drafts[0]
-                    dialog_manager.dialog_data["original_publication"] = {
-                        "id": first_draft.id,
-                        "creator_id": first_draft.creator_id,
-                        "category_id": first_draft.category_id,
-                        "text": first_draft.text,
-                        "image_url": f"https://{self.loom_domain}/api/content/publication/{first_draft.id}/image/download" if getattr(first_draft, "image_fid", None) else None,
-                        "has_image": bool(getattr(first_draft, "image_fid", None)),
-                        "created_at": first_draft.created_at,
+                if not drafts:
+                    self.logger.info("Нет черновиков публикаций")
+                    return {
+                        "has_publications": False,
+                        "publications_count": 0,
                     }
-                    # Копируем в рабочую версию
-                    dialog_manager.dialog_data["working_publication"] = dict(dialog_manager.dialog_data["original_publication"])
                 
-                data = {
-                    "publications": publications_data,
-                    "publications_count": len(publications_data),
-                    "has_publications": len(publications_data) > 0,
-                    "show_pager": len(publications_data) > 6,
+                # Сохраняем список черновиков
+                dialog_manager.dialog_data["draft_list"] = [pub.to_dict() for pub in drafts]
+                
+                # Инициализируем current_index если его нет
+                if "current_index" not in dialog_manager.dialog_data:
+                    dialog_manager.dialog_data["current_index"] = 0
+                
+                current_index = dialog_manager.dialog_data["current_index"]
+                current_draft = drafts[current_index]
+                
+                # Получаем данные об авторе и категории
+                creator = await self.loom_employee_client.get_employee_by_account_id(current_draft.creator_id)
+                category = await self.loom_content_client.get_category_by_id(current_draft.category_id)
+                
+                # Готовим превью изображения
+                preview_image_media = None
+                image_url = None
+                has_image = bool(getattr(current_draft, "image_fid", None))
+                if has_image:
+                    cache_buster = int(time.time())
+                    image_url = f"https://{self.loom_domain}/api/content/publication/{current_draft.id}/image/download?v={cache_buster}"
+                    preview_image_media = MediaAttachment(
+                        url=image_url,
+                        type=ContentType.PHOTO
+                    )
+                
+                # Инициализируем original_publication для текущего черновика
+                dialog_manager.dialog_data["original_publication"] = {
+                    "id": current_draft.id,
+                    "creator_id": current_draft.creator_id,
+                    "category_id": current_draft.category_id,
+                    "text": current_draft.text,
+                    "image_url": image_url,
+                    "has_image": has_image,
+                    "created_at": current_draft.created_at,
                 }
                 
-                self.logger.info(f"Список черновиков загружен: {len(publications_data)} шт.")
+                data = {
+                    "has_publications": True,
+                    "creator_name": creator.name,
+                    "category_name": category.name,
+                    "created_at": self._format_datetime(current_draft.created_at),
+                    "publication_text": current_draft.text,
+                    "has_image": has_image,
+                    "preview_image_media": preview_image_media,
+                    "current_index": current_index + 1,
+                    "total_count": len(drafts),
+                    "has_prev": current_index > 0,
+                    "has_next": current_index < len(drafts) - 1,
+                }
+                
+                self.logger.info(f"Отображаем черновик {current_index + 1} из {len(drafts)}")
                 
                 span.set_status(Status(StatusCode.OK))
                 return data
