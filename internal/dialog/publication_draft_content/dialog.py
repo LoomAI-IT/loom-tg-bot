@@ -92,7 +92,7 @@ class PublicationDraftDialog(interface.IPublicationDraftDialog):
                     Button(
                         Const("✏️ Редактировать"),
                         id="edit",
-                        on_click=self.publication_draft_service.handle_back_to_edit_preview_from_text_menu,
+                        on_click=lambda c, b, d: d.switch_to(model.PublicationDraftStates.edit_preview),
                     ),
                     Button(
                         Const("🌐 Выбрать платформы"),
