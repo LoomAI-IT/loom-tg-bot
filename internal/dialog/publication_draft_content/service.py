@@ -226,6 +226,8 @@ class PublicationDraftService(interface.IPublicationDraftService):
             dialog_manager: DialogManager
     ) -> None:
         """Удаление изображения из черновика"""
+        dialog_manager.show_mode = ShowMode.EDIT
+        
         try:
             publication_id = int(dialog_manager.dialog_data.get("selected_publication_id"))
             
@@ -233,9 +235,11 @@ class PublicationDraftService(interface.IPublicationDraftService):
             
             # Обновляем флаг в working_publication
             dialog_manager.dialog_data["working_publication"]["has_image"] = False
+            dialog_manager.dialog_data["working_publication"].pop("image_url", None)
             
             await callback.answer("✅ Изображение удалено!", show_alert=True)
-            await dialog_manager.switch_to(model.PublicationDraftStates.edit_image_menu)
+            
+            await dialog_manager.switch_to(model.PublicationDraftStates.edit_preview)
         except Exception as err:
             await callback.answer("❌ Ошибка удаления изображения", show_alert=True)
             raise
@@ -249,6 +253,8 @@ class PublicationDraftService(interface.IPublicationDraftService):
             dialog_manager: DialogManager
     ) -> None:
         """Загрузка изображения в черновик"""
+        dialog_manager.show_mode = ShowMode.EDIT
+        
         try:
             if not message.photo:
                 await message.answer("❌ Отправьте изображение")
@@ -278,8 +284,8 @@ class PublicationDraftService(interface.IPublicationDraftService):
             dialog_manager.dialog_data["working_publication"]["has_image"] = True
             dialog_manager.dialog_data["working_publication"]["image_url"] = new_image_url
             
-            await message.answer("✅ Изображение загружено!")
-            await dialog_manager.switch_to(model.PublicationDraftStates.edit_image_menu)
+            await dialog_manager.switch_to(model.PublicationDraftStates.edit_preview)
+            self.logger.info("Изображение загружено")
         except Exception as err:
             await message.answer("❌ Ошибка загрузки изображения")
             raise
