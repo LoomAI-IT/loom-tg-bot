@@ -299,6 +299,7 @@ publication_draft_service = PublicationDraftService(
     bot,
     state_repo,
     loom_content_client,
+    loom_domain,
 )
 
 video_cut_moderation_service = VideoCutModerationService(
