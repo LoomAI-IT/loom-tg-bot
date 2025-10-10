@@ -415,6 +415,9 @@ class PublicationDraftService(interface.IPublicationDraftService):
             # Переключаемся на окно с индикатором
             await dialog_manager.switch_to(model.PublicationDraftStates.regenerate_text)
             
+            # ВАЖНО: Принудительно обновляем UI, чтобы показать сообщение о регенерации
+            await dialog_manager.show()
+            
             # Запускаем регенерацию с индикатором "печатает..."
             category_id = dialog_manager.dialog_data.get("publication_category_id")
             publication_text = dialog_manager.dialog_data.get("publication_content", "")
@@ -427,7 +430,18 @@ class PublicationDraftService(interface.IPublicationDraftService):
                 )
 
             # Обновляем working_publication
-            dialog_manager.dialog_data["working_publication"]["text"] = regenerated_data["text"]
+            new_text = regenerated_data["text"]
+            dialog_manager.dialog_data["working_publication"]["text"] = new_text
+            
+            # Обновляем также publication_title и publication_content для корректного отображения
+            if "\n\n" in new_text:
+                title, content = new_text.split("\n\n", 1)
+                dialog_manager.dialog_data["publication_title"] = title.strip()
+                dialog_manager.dialog_data["publication_content"] = content.strip()
+            else:
+                dialog_manager.dialog_data["publication_title"] = new_text
+                dialog_manager.dialog_data["publication_content"] = new_text
+            
             dialog_manager.dialog_data["is_regenerating_text"] = False
             
             await dialog_manager.switch_to(model.PublicationDraftStates.edit_preview)
@@ -499,7 +513,18 @@ class PublicationDraftService(interface.IPublicationDraftService):
                 )
 
             # Обновляем working_publication
-            dialog_manager.dialog_data["working_publication"]["text"] = regenerated_data["text"]
+            new_text = regenerated_data["text"]
+            dialog_manager.dialog_data["working_publication"]["text"] = new_text
+            
+            # Обновляем также publication_title и publication_content для корректного отображения
+            if "\n\n" in new_text:
+                title, content = new_text.split("\n\n", 1)
+                dialog_manager.dialog_data["publication_title"] = title.strip()
+                dialog_manager.dialog_data["publication_content"] = content.strip()
+            else:
+                dialog_manager.dialog_data["publication_title"] = new_text
+                dialog_manager.dialog_data["publication_content"] = new_text
+            
             dialog_manager.dialog_data["is_regenerating_text"] = False
             dialog_manager.dialog_data["has_regenerate_prompt"] = False
             
