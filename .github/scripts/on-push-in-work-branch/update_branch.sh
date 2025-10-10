@@ -437,8 +437,8 @@ wait_for_health() {
     log INFO "Проверка работоспособности сервиса"
     echo "─────────────────────────────────────────"
 
-    log INFO "Ожидание инициализации (5 сек)"
-    sleep 5
+    log INFO "Ожидание инициализации (15 сек)"
+    sleep 15
 
     local max_attempts=2
     local attempt=1

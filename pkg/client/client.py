@@ -1,15 +1,14 @@
 from contextvars import ContextVar
+from datetime import datetime, timedelta
+from typing import Optional, Callable
 
 import httpx
-import asyncio
-import random
-import weakref
-from pathlib import Path
-from collections import deque
-from datetime import datetime, timedelta
-from typing import Optional, Any, AsyncIterator, Callable
-from tenacity import stop_after_attempt, AsyncRetrying, RetryCallState
-
+from tenacity import (
+    stop_after_attempt,
+    AsyncRetrying,
+    RetryCallState,
+    wait_exponential,
+)
 from opentelemetry import propagate
 
 from internal import interface
@@ -17,126 +16,85 @@ from internal import interface
 
 class CircuitBreaker:
     def __init__(
-            self,
-            failure_threshold: int = 5,
-            recovery_timeout: int = 60,
-            expected_exceptions: tuple[type[Exception], ...] = (httpx.HTTPError,),
-            logger: interface.IOtelLogger = None,
+        self,
+        failure_threshold: int = 5,
+        recovery_timeout: int = 60,
+        logger: Optional[interface.IOtelLogger] = None,
     ):
         self.failure_threshold = failure_threshold
         self.recovery_timeout = recovery_timeout
-        self.expected_exceptions = expected_exceptions
-        self._failures: deque[datetime] = deque(maxlen=failure_threshold)
+        self.logger = logger
+
+        self._failure_count = 0
         self._last_failure_time: Optional[datetime] = None
         self._state = "closed"  # closed, open, half-open
-        self._lock = asyncio.Lock()
-        self.logger = logger
 
     @property
     def state(self) -> str:
         return self._state
 
-    def _log_state_change(self, old_state: str, new_state: str, context: str = ""):
-        self.logger.warning(
-            f"Circuit Breaker изменил состояние: {old_state} -> {new_state}. "
-            f"количество ошибок: {len(self._failures)}/{self.failure_threshold}. "
-            f"Подробности: {context}"
-        )
+    async def call(self, func: Callable, *args, **kwargs):
+        if self._state == "open":
+            time_since_failure = (
+                datetime.now() - self._last_failure_time
+                if self._last_failure_time
+                else timedelta(0)
+            )
 
-    async def call(self, func: Callable, *args, **kwargs) -> Any:
-        async with self._lock:
-            current_state = self._state
-
-            if self._state == "open":
-                time_since_failure = (datetime.now() - self._last_failure_time
-                                      if self._last_failure_time else timedelta(0))
-
-                if (self._last_failure_time and
-                        time_since_failure > timedelta(seconds=self.recovery_timeout)):
-                    old_state = self._state
-                    self._state = "half-open"
-                    if self.logger is not None:
-                        self._log_state_change(
-                            old_state,
-                            self._state,
-                            f"Восстановление после {time_since_failure.total_seconds()} секунд"
-                        )
-                else:
-                    remaining_time = self.recovery_timeout - time_since_failure.total_seconds()
-                    if self.logger is not None:
-                        self.logger.warning(
-                            f"Circuit breaker включен. Ошибок: {len(self._failures)}/{self.failure_threshold}. "
-                            f"Восстановление через {remaining_time:.1f} секунд"
-                        )
-                    raise Exception(f"Circuit breaker is OPEN (failures: {len(self._failures)})")
-
-        try:
-            if current_state == "half-open":
-                if self.logger is not None:
-                    self.logger.debug("Circuit breaker в HALF-OPEN состоянии. Проверка состояния")
-
-            result = await func(*args, **kwargs)
-
-            async with self._lock:
-                if self._state == "half-open":
-                    old_state = self._state
-                    self._state = "closed"
-                    self._failures.clear()
-                    if self.logger is not None:
-                        self._log_state_change(
-                            old_state, self._state,
-                            "Восстановились. Circuit breaker выключен"
-                        )
-
-            return result
-
-        except self.expected_exceptions as err:
-            await self._record_failure()
-            raise
-
-    async def _record_failure(self):
-        async with self._lock:
-            self._failures.append(datetime.now())
-            self._last_failure_time = datetime.now()
-            old_state = self._state
-            if self.logger is not None:
-                self.logger.warning(
-                    f"Circuit breaker обнаружил проблему. Количество ошибок: {len(self._failures)}/{self.failure_threshold}"
+            if time_since_failure > timedelta(seconds=self.recovery_timeout):
+                self._state = "half-open"
+                if self.logger:
+                    self.logger.debug("Circuit breaker: open -> half-open")
+            else:
+                if self.logger:
+                    remaining = self.recovery_timeout - time_since_failure.total_seconds()
+                    self.logger.warning(
+                        f"Circuit breaker OPEN. Recovery in {remaining:.1f}s"
+                    )
+                raise Exception(
+                    f"Circuit breaker is OPEN (failures: {self._failure_count})"
                 )
 
-            if len(self._failures) >= self.failure_threshold:
-                self._state = "open"
-                if self.logger is not None:
-                    self._log_state_change(old_state, self._state)
+        try:
+            result = await func(*args, **kwargs)
+
+            # Успех - сбрасываем счетчики
+            if self._state == "half-open":
+                self._state = "closed"
+                if self.logger:
+                    self.logger.info("Circuit breaker: half-open -> closed")
+
+            self._failure_count = 0
+            return result
+
+        except Exception as err:
+            self._record_failure()
+            raise
+
+    def _record_failure(self):
+        self._failure_count += 1
+        self._last_failure_time = datetime.now()
+
+        if self._failure_count >= self.failure_threshold and self._state != "open":
+            old_state = self._state
+            self._state = "open"
+            if self.logger:
+                self.logger.warning(
+                    f"Circuit breaker: {old_state} -> open "
+                    f"(failures: {self._failure_count}/{self.failure_threshold})"
+                )
 
     def reset(self):
-        old_state = self._state
-        self._failures.clear()
+        self._failure_count = 0
         self._last_failure_time = None
-        self._state = "closed"
-
-        if old_state != "closed":
-            if self.logger is not None:
-                self._log_state_change(old_state, self._state, "Ручное выключение")
-
-
-class ExponentialBackoffWithJitter:
-    def __init__(self, base_delay: float = 0.1, max_delay: float = 10.0, jitter: float = 0.1):
-        self.base_delay = base_delay
-        self.max_delay = max_delay
-        self.jitter = jitter
-
-    def __call__(self, retry_state) -> float:
-        delay = min(
-            self.base_delay * (2 ** (retry_state.attempt_number - 1)),
-            self.max_delay
-        )
-
-        jitter_value = delay * self.jitter * random.random()
-        return delay + jitter_value
+        if self._state != "closed":
+            old_state = self._state
+            self._state = "closed"
+            if self.logger:
+                self.logger.info(f"Circuit breaker: {old_state} -> closed (manual reset)")
 
 
-def should_retry_exception(retry_state: RetryCallState) -> bool:
+def should_retry(retry_state: RetryCallState) -> bool:
     if not retry_state.outcome.failed:
         return False
 
@@ -158,323 +116,170 @@ def should_retry_exception(retry_state: RetryCallState) -> bool:
     if isinstance(exception, retryable_exceptions):
         return True
 
-    if isinstance(exception, httpx.HTTPStatusError):
-        return exception.response.status_code in {502, 503, 504}
-
     return False
 
+
 class AsyncHTTPClient:
-    _instances: weakref.WeakValueDictionary = weakref.WeakValueDictionary()
-    _lock = asyncio.Lock()
-
-    def __new__(
-            cls,
-            host: str,
-            port: int,
-            prefix: str = "",
-            headers: dict = None,
-            cookies: dict = None,
-            use_tracing: bool = False,
-            use_http2: bool = True,
-            use_https: bool = False,
-            timeout: float = 300,
-            max_connections: int = 100,
-            max_keepalive_connections: int = 20,
-            retry_count: int = 0,
-            retry_wait_multiplier: float = 0.3,
-            retry_wait_min: float = 0.1,
-            retry_wait_max: float = 10,
-            circuit_breaker_enabled: bool = True,
-            circuit_breaker_failure_threshold: int = 5,
-            circuit_breaker_recovery_timeout: int = 60,
-            logger: interface.IOtelLogger = None,
-            log_context: ContextVar[dict] = None,
-    ):
-        protocol = "https" if use_https else "http"
-        base_url = f"{protocol}://{host}:{port}{prefix}"
-
-        if base_url in cls._instances:
-            return cls._instances[base_url]
-
-        instance = super().__new__(cls)
-        cls._instances[base_url] = instance
-        return instance
-
     def __init__(
-            self,
-            host: str,
-            port: int,
-            prefix: str = "",
-            headers: dict = None,
-            cookies: dict = None,
-            use_tracing: bool = False,
-            use_http2: bool = False,
-            use_https: bool = False,
-            timeout: float = 300,
-            max_connections: int = 100,
-            max_keepalive_connections: int = 20,
-            retry_count: int = 0,
-            retry_wait_multiplier: float = 0.3,
-            retry_wait_min: float = 0.1,
-            retry_wait_max: float = 10,
-            circuit_breaker_enabled: bool = True,
-            circuit_breaker_failure_threshold: int = 5,
-            circuit_breaker_recovery_timeout: int = 60,
-            logger: interface.IOtelLogger = None,
-            log_context: ContextVar[dict] = None,
+        self,
+        host: str,
+        port: int,
+        prefix: str = "",
+        headers: Optional[dict] = None,
+        cookies: Optional[dict] = None,
+        use_tracing: bool = False,
+        use_https: bool = False,
+        use_http2: bool = False,
+        timeout: float = 300.0,
+        max_connections: int = 100,
+        max_keepalive_connections: int = 20,
+        retry_attempts: int = 3,
+        retry_min_wait: float = 0.1,
+        retry_max_wait: float = 10.0,
+        circuit_breaker_enabled: bool = False,
+        circuit_breaker_threshold: int = 5,
+        circuit_breaker_timeout: int = 60,
+        logger: Optional[interface.IOtelLogger] = None,
+        log_context: Optional[ContextVar[dict]] = None,
     ):
-        if hasattr(self, "_initialized"):
-            return
-
-        self._initialized = True
-
         protocol = "https" if use_https else "http"
         self.base_url = f"{protocol}://{host}:{port}{prefix}"
 
         self.default_headers = headers or {}
         self.default_cookies = cookies or {}
-
-        self.logger = logger
         self.use_tracing = use_tracing
-
-        self.session: Optional[httpx.AsyncClient] = None
-        self.session_lock = asyncio.Lock()
-
-        self.circuit_breaker: Optional[CircuitBreaker] = None
-        if circuit_breaker_enabled:
-            self._circuit_breaker = CircuitBreaker(
-                failure_threshold=circuit_breaker_failure_threshold,
-                recovery_timeout=circuit_breaker_recovery_timeout
-            )
-
-        self.timeout = timeout
-        self.max_connections = max_connections
-        self.max_keepalive_connections = max_keepalive_connections
-        self.retry_count = retry_count
-        self.retry_wait_multiplier = retry_wait_multiplier
-        self.retry_wait_min = retry_wait_min
-        self.retry_wait_max = retry_wait_max
-        self.use_http2 = use_http2
-        self.backoff = ExponentialBackoffWithJitter(
-            base_delay=self.retry_wait_min,
-            max_delay=self.retry_wait_max
-        )
+        self.logger = logger
         self.log_context = log_context
 
-    async def _get_session(self) -> httpx.AsyncClient:
-        if self.session is None or self.session.is_closed:
-            async with self.session_lock:
-                if self.session is None or self.session.is_closed:
-                    self.session = self._create_session()
-        return self.session
+        # Retry параметры
+        self.retry_attempts = retry_attempts
+        self.retry_min_wait = retry_min_wait
+        self.retry_max_wait = retry_max_wait
 
-    def _create_session(self) -> httpx.AsyncClient:
-        return httpx.AsyncClient(
+        # Circuit Breaker
+        self.circuit_breaker: Optional[CircuitBreaker] = None
+        if circuit_breaker_enabled:
+            self.circuit_breaker = CircuitBreaker(
+                failure_threshold=circuit_breaker_threshold,
+                recovery_timeout=circuit_breaker_timeout,
+                logger=logger,
+            )
+
+        self.session = httpx.AsyncClient(
             base_url=self.base_url,
             headers=self.default_headers,
             cookies=self.default_cookies,
-            timeout=self.timeout,
-            http2=self.use_http2,
+            timeout=timeout,
+            http2=use_http2,
             limits=httpx.Limits(
-                max_connections=self.max_connections,
-                max_keepalive_connections=self.max_keepalive_connections
+                max_connections=max_connections,
+                max_keepalive_connections=max_keepalive_connections,
             ),
-            follow_redirects=True
+            follow_redirects=True,
         )
 
     async def close(self):
         if self.session and not self.session.is_closed:
             await self.session.aclose()
-            self.session = None
-            self.logger.info("session_closed")
+            if self.logger:
+                self.logger.debug("HTTP client closed")
 
-    async def __aenter__(self) -> 'AsyncHTTPClient':
-        await self._get_session()
+    async def __aenter__(self) -> "AsyncHTTPClient":
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         await self.close()
 
-    @classmethod
-    async def cleanup_all(cls):
-        for instance in list(cls._instances.values()):
-            await instance.close()
+    def _prepare_headers(self, extra_headers: Optional[dict] = None) -> dict:
+        headers = {**self.default_headers, **(extra_headers or {})}
 
-    def _create_retry_strategy(self) -> AsyncRetrying:
-        return AsyncRetrying(
-            stop=stop_after_attempt(self.retry_count),
-            wait=self.backoff,
-            retry=should_retry_exception,
-            reraise=True
-        )
+        if self.log_context:
+            try:
+                headers.update(self.log_context.get())
+            except LookupError:
+                pass
+
+        # Добавить tracing headers
+        if self.use_tracing:
+            propagate.inject(headers)
+
+        return headers
 
     async def _execute_request(
-            self,
-            method: str,
-            url: str,
-            **kwargs
+        self, method: str, url: str, **kwargs
     ) -> httpx.Response:
-        try:
-            session = await self._get_session()
+        headers = self._prepare_headers(kwargs.pop("headers", None))
+        cookies = {**self.default_cookies, **kwargs.pop("cookies", {})}
 
-            headers = {**self.default_headers, **kwargs.pop('headers', {})}
-            if self.log_context:
-                headers.update(self.log_context.get())
-
-            cookies = {**self.default_cookies, **kwargs.pop('cookies', {})}
-
-            if self.use_tracing:
-                propagate.inject(headers)
-
-            if self._circuit_breaker:
-                response = await self._circuit_breaker.call(
-                    session.request,
-                    method,
-                    url,
-                    headers=headers,
-                    cookies=cookies,
-                    **kwargs
-                )
-            else:
-                response = await session.request(
-                    method,
-                    url,
-                    headers=headers,
-                    cookies=cookies,
-                    **kwargs
-                )
-
+        async def _make_request():
+            response = await self.session.request(
+                method, url, headers=headers, cookies=cookies, **kwargs
+            )
             response.raise_for_status()
             return response
 
-        except Exception as err:
-            raise
+        if self.circuit_breaker:
+            return await self.circuit_breaker.call(_make_request)
+        else:
+            return await _make_request()
 
     async def _request_with_retry(
-            self,
-            method: str,
-            url: str,
-            **kwargs
+        self, method: str, url: str, **kwargs
     ) -> httpx.Response | None:
-        start_time = datetime.now()
+        if self.retry_attempts <= 1:
+            return await self._execute_request(method, url, **kwargs)
 
-        last_exception = None
-        retry_count = 0
+        retry_strategy = AsyncRetrying(
+            stop=stop_after_attempt(self.retry_attempts),
+            wait=wait_exponential(
+                multiplier=1,
+                min=self.retry_min_wait,
+                max=self.retry_max_wait,
+            ),
+            retry=should_retry,
+            reraise=True,
+        )
 
-        async for attempt in self._create_retry_strategy():
+        attempt_num = 0
+        async for attempt in retry_strategy:
             with attempt:
-                retry_count = attempt.retry_state.attempt_number - 1
-
-                if retry_count > 0:
-                    if isinstance(last_exception, httpx.HTTPStatusError):
-                        if last_exception.response.status_code == 500:
-                            return None
-
-                    wait_time = self.backoff(attempt.retry_state)
-                    self.logger.warning(
-                        f"Попытка #{retry_count} для {method} {url}"
-                        f"после {wait_time:.2f}с ожидания. "
-                        f"Последняя ошибка: {last_exception.__class__.__name__}: {str(last_exception)}"
-                    )
-
+                attempt_num = attempt.retry_state.attempt_number
                 try:
                     response = await self._execute_request(method, url, **kwargs)
 
-                    elapsed = (datetime.now() - start_time).total_seconds()
-                    if retry_count > 0:
+                    # Логировать если была не первая попытка
+                    if attempt_num > 1 and self.logger:
                         self.logger.info(
-                            f"Запрос {method} {url} выполнен успешно "
-                            f"после {retry_count} попыток в течение {elapsed:.2f}с "
-                            f"(status: {response.status_code})"
+                            f"Request {method} {url} succeeded after {attempt_num} attempts"
                         )
 
                     return response
 
                 except Exception as err:
-                    last_exception = err
-                    elapsed = (datetime.now() - start_time).total_seconds()
-
-                    if retry_count < self.retry_count - 1:  # Есть еще попытки
-                        next_delay = self.backoff(attempt.retry_state)
+                    if self.logger and attempt_num < self.retry_attempts:
                         self.logger.warning(
-                            f"Запрос {method} {url} неуспешен "
-                            f"(попытка {retry_count + 1}/{self.retry_count}) "
-                            f"за {elapsed:.2f}с. Следующая попытка через {next_delay:.2f}с. "
-                            f"Ошибка: {err.__class__.__name__}: {str(err)}"
+                            f"Request {method} {url} failed (attempt {attempt_num}/{self.retry_attempts}): "
+                            f"{err.__class__.__name__}: {str(err)}"
                         )
-                    else:
-                        raise err
-
                     raise
         return None
 
     async def get(self, url: str, **kwargs) -> httpx.Response:
-        return await self._request_with_retry('GET', url, **kwargs)
+        return await self._request_with_retry("GET", url, **kwargs)
 
     async def post(self, url: str, **kwargs) -> httpx.Response:
-        return await self._request_with_retry('POST', url, **kwargs)
+        return await self._request_with_retry("POST", url, **kwargs)
 
     async def put(self, url: str, **kwargs) -> httpx.Response:
-        return await self._request_with_retry('PUT', url, **kwargs)
-
-    async def patch(self, url: str, **kwargs) -> httpx.Response:
-        return await self._request_with_retry('PATCH', url, **kwargs)
+        return await self._request_with_retry("PUT", url, **kwargs)
 
     async def delete(self, url: str, **kwargs) -> httpx.Response:
-        return await self._request_with_retry('DELETE', url, **kwargs)
-
-    async def stream_get(
-            self,
-            url: str,
-            chunk_size: int = 8192,
-            **kwargs
-    ) -> AsyncIterator[bytes]:
-        session = await self._get_session()
-
-        try:
-            async with session.stream('GET', url, **kwargs) as response:
-                response.raise_for_status()
-                async for chunk in response.aiter_bytes(chunk_size):
-                    yield chunk
-        except Exception as err:
-            raise
-
-    async def download_file(
-            self,
-            url: str,
-            file_path: Path,
-            chunk_size: int = 8192,
-            progress_callback: Optional[Callable[[int, int], None]] = None
-    ) -> None:
-        import aiofiles
-
-        session = await self._get_session()
-        file_path = Path(file_path)
-        file_path.parent.mkdir(parents=True, exist_ok=True)
-
-        try:
-            async with session.stream('GET', url) as response:
-                response.raise_for_status()
-                total = int(response.headers.get('content-length', 0))
-
-                async with aiofiles.open(file_path, 'wb') as file:
-                    downloaded = 0
-                    async for chunk in response.aiter_bytes(chunk_size):
-                        await file.write(chunk)
-                        downloaded += len(chunk)
-
-                        if progress_callback:
-                            progress_callback(downloaded, total)
-
-        except Exception as err:
-            if file_path.exists():
-                file_path.unlink()
-            raise
+        return await self._request_with_retry("DELETE", url, **kwargs)
 
     def reset_circuit_breaker(self):
-        if self._circuit_breaker:
-            self._circuit_breaker.reset()
+        if self.circuit_breaker:
+            self.circuit_breaker.reset()
 
     @property
-    def circuit_breaker_state(self) -> str | None:
-        return self._circuit_breaker.state if self._circuit_breaker else None
+    def circuit_breaker_state(self) -> Optional[str]:
+        return self.circuit_breaker.state if self.circuit_breaker else None

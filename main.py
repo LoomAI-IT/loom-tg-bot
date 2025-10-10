@@ -464,11 +464,24 @@ tg_webhook_controller = TelegramWebhookController(
     cfg.interserver_secret_key
 )
 
+app = NewServer(
+    db,
+    http_middleware,
+    tg_webhook_controller,
+    cfg.prefix,
+)
+
 if __name__ == "__main__":
-    app = NewServer(
-        db,
-        http_middleware,
-        tg_webhook_controller,
-        cfg.prefix,
+    if cfg.environment == "prod":
+        workers = 4
+    else:
+        workers = 1
+
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",
+        port=int(cfg.http_port),
+        workers=workers,
+        loop="uvloop",
+        access_log=False,
     )
-    uvicorn.run(app, host="0.0.0.0", port=int(cfg.http_port), access_log=False)
