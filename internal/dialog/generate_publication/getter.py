@@ -256,10 +256,12 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
             "image_prompt": dialog_manager.dialog_data.get("image_prompt", ""),
             "is_generating_image": dialog_manager.dialog_data.get("is_generating_image", False),
             "preview_image_media": preview_image_media,
+            "voice_transcribe": dialog_manager.dialog_data.get("voice_transcribe", False),
             # Error flags
             "has_void_image_prompt": dialog_manager.dialog_data.get("has_void_image_prompt", False),
             "has_small_image_prompt": dialog_manager.dialog_data.get("has_small_image_prompt", False),
             "has_big_image_prompt": dialog_manager.dialog_data.get("has_big_image_prompt", False),
+            "has_invalid_content_type": dialog_manager.dialog_data.get("has_invalid_content_type", False),
         }
 
     @auto_log()

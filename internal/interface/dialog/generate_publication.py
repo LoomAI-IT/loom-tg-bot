@@ -98,16 +98,6 @@ class IGeneratePublicationService(Protocol):
     ) -> None: pass
 
     @abstractmethod
-    async def handle_regenerate_text_with_prompt(
-            self,
-            message: Message,
-            widget: Any,
-            dialog_manager: DialogManager,
-            prompt: str
-    ) -> None: pass
-
-
-    @abstractmethod
     async def handle_edit_text(
             self,
             message: Message,
@@ -125,12 +115,11 @@ class IGeneratePublicationService(Protocol):
     ) -> None: pass
 
     @abstractmethod
-    async def handle_generate_image_with_prompt(
+    async def handle_generate_image_prompt_input(
             self,
             message: Message,
-            widget: Any,
-            dialog_manager: DialogManager,
-            prompt: str
+            widget: MessageInput,
+            dialog_manager: DialogManager
     ) -> None: pass
 
     @abstractmethod

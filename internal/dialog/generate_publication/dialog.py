@@ -404,54 +404,98 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
 
     def get_image_menu_window(self) -> Window:
         return Window(
-            Case(
-                {
-                    False: Multi(
-                        Const("🎨 <b>Настройка изображения</b><br>"),
-                        Case(
-                            {
-                                True: Multi(
-                                    Const(
-                                        "✏️ <i>Опишите, как изменить картинку. Я внесу ваши правки в текущее изображение.</i><br><br>")
-                                ),
-                                False: Const("🖼️ <i>Опишите, какую картинку создать.</i><br><br>"),
-                            },
-                            selector="has_image"
+            Multi(
+                Case(
+                    {
+                        False: Multi(
+                            Const("🎨 <b>Настройка изображения</b><br><br>"),
+                            Case(
+                                {
+                                    True: Const("🖼️ <b>ТЕКУЩЕЕ ИЗОБРАЖЕНИЕ:</b><br>"),
+                                    False: Const(""),
+                                },
+                                selector="has_image"
+                            ),
                         ),
-                        Const("📋 <b>Что указать в описании:</b><br>"),
-                        Const("• 👥 <b>Объекты и персонажи</b> — кто или что на картинке<br>"),
-                        Const("• 🎭 <b>Стиль и настроение</b> — реалистично, мультяшно, минимализм, цветовая гамма<br>"),
-                        Const("• 🌍 <b>Фон и окружение</b> — улица, природа, офис и т.д.<br>"),
-                        Const("• ✨ <b>Детали</b> — освещение, поза, аксессуары"),
-                    ),
-                    True: Multi(
-                        Const("🪄 <b>Создаю изображение...</b><br>"),
-                        Const("⏳ <i>Это займет около минуты</i>"),
-                    ),
-                },
-                selector="is_generating_image"
+                        True: Multi(
+                            Const("🪄 <b>Создаю изображение...</b><br>"),
+                            Const("⏳ <i>Это займет около минуты. Пожалуйста, подождите.</i>"),
+                        ),
+                    },
+                    selector="is_generating_image"
+                ),
+                sep="",
             ),
-            Case(
-                {
-                    True: Const("<br>❌ <b>Ошибка:</b> Описание изображения не может быть пустым"),
-                    False: Const(""),
-                },
-                selector="has_void_image_prompt"
+
+            DynamicMedia(
+                selector="preview_image_media",
+                when="has_image",
             ),
-            Case(
-                {
-                    True: Const("<br>📏 <b>Слишком короткое описание</b><br><i>Минимум 5 символов</i>"),
-                    False: Const(""),
-                },
-                selector="has_small_image_prompt"
+
+            Multi(
+                Case(
+                    {
+                        False: Multi(
+                            Case(
+                                {
+                                    True: Const("<br>"),
+                                    False: Const(""),
+                                },
+                                selector="has_image"
+                            ),
+                            Const("🎯 <b>КАК ИЗМЕНИТЬ ИЗОБРАЖЕНИЕ:</b><br><br>"),
+                            Const("💬 <b>Напишите сообщение</b><br>"),
+                            Case(
+                                {
+                                    True: Const("<i>Опишите, что изменить в текущей картинке</i><br>"),
+                                    False: Const("<i>Опишите, какую картинку создать</i><br>"),
+                                },
+                                selector="has_image"
+                            ),
+                            Const("<code>Пример: Добавь больше света</code><br><br>"),
+                            Const("🎤 <b>Запишите голосовое</b><br>"),
+                            Const("<i>Опишите изменения голосом</i><br><br>"),
+                            Const("📝 <b>Подсказки для описания:</b><br>"),
+                            Const("• 👥 Объекты и персонажи<br>"),
+                            Const("• 🎭 Стиль и настроение<br>"),
+                            Const("• 🌍 Фон и окружение<br>"),
+                            Const("• ✨ Детали и освещение<br><br>"),
+                            Const("🔘 <b>Или используйте кнопки ниже</b>"),
+                        ),
+                        True: Const(""),
+                    },
+                    selector="is_generating_image"
+                ),
+                # Голосовое распознавание
+                Case(
+                    {
+                        True: Const("<br><br>🔄 <b>Распознаю голосовое сообщение...</b>"),
+                        False: Const(""),
+                    },
+                    selector="voice_transcribe"
+                ),
+                # Ошибки
+                Case(
+                    {
+                        True: Const("<br><br>❌ <b>Ошибка:</b> Описание не может быть пустым"),
+                        False: Const(""),
+                    },
+                    selector="has_void_image_prompt"
+                ),
+                Case(
+                    {
+                        True: Const("<br><br>🎤 <b>Неверный формат</b><br><i>Отправьте текст, голосовое сообщение или аудиофайл</i>"),
+                        False: Const(""),
+                    },
+                    selector="has_invalid_content_type"
+                ),
+                sep="",
             ),
-            Case(
-                {
-                    True: Const("<br>📏 <b>Слишком длинное описание</b><br><i>Максимум 500 символов</i>"),
-                    False: Const(""),
-                },
-                selector="has_big_image_prompt"
+
+            MessageInput(
+                func=self.generate_publication_service.handle_generate_image_prompt_input,
             ),
+
             Column(
                 Button(
                     Const("🎨 Сгенерировать картинку"),
@@ -472,15 +516,6 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                 when=~F["is_generating_image"]
             ),
 
-            DynamicMedia(
-                selector="preview_image_media",
-                when="has_image",
-            ),
-
-            TextInput(
-                id="image_prompt_input",
-                on_success=self.generate_publication_service.handle_generate_image_with_prompt,
-            ),
             Button(
                 Const("◀️ Назад"),
                 id="preview",

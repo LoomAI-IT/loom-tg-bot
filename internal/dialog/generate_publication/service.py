@@ -254,7 +254,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             widget: MessageInput,
             dialog_manager: DialogManager
     ) -> None:
-        """Обработчик текстового и голосового ввода для регенерации текста"""
         dialog_manager.show_mode = ShowMode.EDIT
 
         await message.delete()
@@ -265,69 +264,18 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         state = await self._get_state(dialog_manager)
 
-        # Проверяем тип контента
         if message.content_type not in [ContentType.VOICE, ContentType.AUDIO, ContentType.TEXT]:
             self.logger.info("Неверный тип контента для регенерации")
             dialog_manager.dialog_data["has_invalid_content_type"] = True
             return
 
-        # Получаем текст из сообщения или голосового
         if message.content_type == ContentType.TEXT:
             prompt = message.html_text.replace('\n', '<br/>')
         else:
             prompt = await self._speech_to_text(message, dialog_manager, state.organization_id)
 
-        # Проверяем, что промпт не пустой
         if not prompt:
             self.logger.info("Пустой промпт для регенерации")
-            dialog_manager.dialog_data["has_void_regenerate_prompt"] = True
-            return
-
-        # Сохраняем промпт и запускаем регенерацию
-        dialog_manager.dialog_data["regenerate_prompt"] = prompt
-        dialog_manager.dialog_data["has_regenerate_prompt"] = True
-        dialog_manager.dialog_data["is_regenerating_text"] = True
-
-        await dialog_manager.show()
-
-        category_id = dialog_manager.dialog_data["category_id"]
-        current_text = dialog_manager.dialog_data["publication_text"]
-
-        regenerated_data = await self.loom_content_client.regenerate_publication_text(
-            category_id=category_id,
-            publication_text=current_text,
-            prompt=prompt
-        )
-
-        dialog_manager.dialog_data["publication_text"] = regenerated_data["text"]
-
-        dialog_manager.dialog_data["is_regenerating_text"] = False
-        dialog_manager.dialog_data["has_regenerate_prompt"] = False
-
-        await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
-
-    @auto_log()
-    @traced_method()
-    async def handle_regenerate_text_with_prompt(
-            self,
-            message: Message,
-            widget: Any,
-            dialog_manager: DialogManager,
-            prompt: str
-    ) -> None:
-        """Старый обработчик для TextInput (оставлен для совместимости)"""
-        dialog_manager.show_mode = ShowMode.EDIT
-
-        await message.delete()
-        prompt = message.html_text.replace('\n', '<br/>')
-
-        dialog_manager.dialog_data.pop("has_void_regenerate_prompt", None)
-        dialog_manager.dialog_data.pop("has_small_regenerate_prompt", None)
-        dialog_manager.dialog_data.pop("has_big_regenerate_prompt", None)
-        dialog_manager.dialog_data.pop("has_regenerate_api_error", None)
-
-        if not prompt:
-            self.logger.info("Пустой промпт")
             dialog_manager.dialog_data["has_void_regenerate_prompt"] = True
             return
 
@@ -433,23 +381,33 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
     @auto_log()
     @traced_method()
-    async def handle_generate_image_with_prompt(
+    async def handle_generate_image_prompt_input(
             self,
             message: Message,
-            widget: Any,
-            dialog_manager: DialogManager,
-            prompt: str
+            widget: MessageInput,
+            dialog_manager: DialogManager
     ) -> None:
         dialog_manager.show_mode = ShowMode.EDIT
 
         await message.delete()
 
+        # Очистка флагов ошибок
         dialog_manager.dialog_data.pop("has_void_image_prompt", None)
-        dialog_manager.dialog_data.pop("has_small_image_prompt", None)
-        dialog_manager.dialog_data.pop("has_big_image_prompt", None)
-        dialog_manager.dialog_data.pop("has_image_generation_error", None)
+        dialog_manager.dialog_data.pop("has_invalid_content_type", None)
+        dialog_manager.dialog_data.pop("has_empty_voice_text", None)
 
-        prompt = message.html_text.replace('\n', '<br/>')
+        state = await self._get_state(dialog_manager)
+
+        if message.content_type not in [ContentType.VOICE, ContentType.AUDIO, ContentType.TEXT]:
+            self.logger.info("Неверный тип контента для генерации изображения")
+            dialog_manager.dialog_data["has_invalid_content_type"] = True
+            return
+
+        if message.content_type == ContentType.TEXT:
+            prompt = message.html_text.replace('\n', '<br/>')
+        else:
+            prompt = await self._speech_to_text(message, dialog_manager, state.organization_id)
+
         if not prompt:
             self.logger.info("Пустой промпт для изображения")
             dialog_manager.dialog_data["has_void_image_prompt"] = True
