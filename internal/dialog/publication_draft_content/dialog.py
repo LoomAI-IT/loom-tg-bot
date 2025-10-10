@@ -37,48 +37,90 @@ class PublicationDraftDialog(interface.IPublicationDraftDialog):
     def get_publication_list_window(self) -> Window:
         """
         Список черновиков публикаций.
-        Отображает все сохраненные черновики в виде скролльного списка.
+        Показывает превью текущего черновика с навигацией как в модерации.
         """
         return Window(
             Multi(
-                Const("📄 <b>Черновики публикаций</b>\n\n"),
+                Const("📄 <b>Черновики публикаций</b><br><br>"),
                 Case(
                     {
                         True: Multi(
-                            Format("📊 Всего черновиков: <b>{publications_count}</b>\n\n"),
-                            Const("📋 <i>Выберите публикацию для редактирования:</i>"),
+                            Format("{publication_text}<br><br>"),
+                            Format("👤 <b>Автор:</b> {creator_name}<br>"),
+                            Format("🏷️ <b>Рубрика:</b> {category_name}<br>"),
+                            Format("📅 <b>Создано:</b> <code>{created_at}</code><br>"),
                         ),
-                        False: Const("📝 <i>У вас пока нет черновиков публикаций</i>"),
+                        False: Multi(
+                            Const("✅ <b>Нет черновиков публикаций</b><br><br>"),
+                            Const("💫 <i>Создайте первый черновик в генерации публикаций</i>"),
+                        ),
                     },
                     selector="has_publications"
                 ),
                 sep="",
             ),
 
-            ScrollingGroup(
-                Select(
-                    Format("📄 {item[title]}\n🗓 {item[created_date]}"),
-                    id="publication_select",
-                    items="publications",
-                    item_id_getter=lambda item: str(item["id"]),
-                    on_click=self.publication_draft_service.handle_select_publication,
+            DynamicMedia(
+                selector="preview_image_media",
+                when="has_image",
+            ),
+
+            Row(
+                Button(
+                    Const("⬅️ Пред"),
+                    id="prev_publication",
+                    on_click=self.publication_draft_service.handle_navigate_publication,
+                    when="has_prev",
                 ),
-                id="publication_scroll",
-                width=1,
-                height=6,
-                hide_on_single_page=True,
+                Button(
+                    Format("📊 {current_index}/{total_count}"),
+                    id="counter",
+                    on_click=lambda c, b, d: c.answer("📈 Навигация по черновикам"),
+                    when="has_publications",
+                ),
+                Button(
+                    Const("➡️ След"),
+                    id="next_publication",
+                    on_click=self.publication_draft_service.handle_navigate_publication,
+                    when="has_next",
+                ),
                 when="has_publications",
             ),
 
-            NumberedPager(
-                scroll="publication_scroll",
-                when="show_pager",
+            Column(
+                Row(
+                    Button(
+                        Const("✏️ Редактировать"),
+                        id="edit",
+                        on_click=self.publication_draft_service.handle_back_to_edit_preview_from_text_menu,
+                    ),
+                    Button(
+                        Const("🌐 Выбрать платформы"),
+                        id="select_social_network",
+                        on_click=self.publication_draft_service.handle_go_to_social_network_select,
+                    ),
+                ),
+                Row(
+                    Button(
+                        Const("📤 Отправить на модерацию"),
+                        id="send_to_moderation",
+                        on_click=self.publication_draft_service.handle_send_to_moderation_with_networks_publication,
+                    ),
+                    Button(
+                        Const("🚀 Опубликовать сейчас"),
+                        id="publish_now",
+                        on_click=self.publication_draft_service.handle_publish_with_selected_networks_publication,
+                    ),
+                ),
+                when="has_publications",
             ),
 
-            Button(
-                Const("⬅️ Вернуться в меню контента"),
-                id="back_to_content_menu",
-                on_click=self.publication_draft_service.handle_back_to_content_menu,
+            Row(
+                Button(
+                    Const("◀️ Меню контента"),
+                    id="back_to_content_menu",
+                    on_click=self.publication_draft_service.handle_back_to_content_menu,
+                ),
             ),
 
             state=model.PublicationDraftStates.publication_list,

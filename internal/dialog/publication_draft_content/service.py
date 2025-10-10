@@ -30,6 +30,42 @@ class PublicationDraftService(interface.IPublicationDraftService):
 
     @auto_log()
     @traced_method()
+    async def handle_navigate_publication(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        """Навигация между черновиками (как в модерации)"""
+        dialog_manager.show_mode = ShowMode.EDIT
+
+        current_index = dialog_manager.dialog_data.get("current_index", 0)
+        draft_list = dialog_manager.dialog_data.get("draft_list", [])
+
+        # Определяем направление навигации
+        if button.widget_id == "prev_publication":
+            self.logger.info("Переход к предыдущему черновику")
+            new_index = max(0, current_index - 1)
+        else:
+            self.logger.info("Переход к следующему черновику")
+            new_index = min(len(draft_list) - 1, current_index + 1)
+
+        if new_index == current_index:
+            self.logger.info("Достигнут край списка")
+            await callback.answer("Это крайний черновик в списке")
+            return
+
+        # Обновляем индекс
+        dialog_manager.dialog_data["current_index"] = new_index
+
+        # Сбрасываем рабочие данные для нового черновика
+        dialog_manager.dialog_data.pop("working_publication", None)
+        dialog_manager.dialog_data.pop("original_publication", None)
+
+        await callback.answer()
+
+    @auto_log()
+    @traced_method()
     async def handle_select_publication(
             self,
             callback: CallbackQuery,
