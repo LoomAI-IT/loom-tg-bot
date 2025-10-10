@@ -260,6 +260,8 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         # Очистка флагов ошибок
         dialog_manager.dialog_data.pop("has_void_regenerate_prompt", None)
+        dialog_manager.dialog_data.pop("has_small_regenerate_prompt", None)
+        dialog_manager.dialog_data.pop("has_big_regenerate_prompt", None)
         dialog_manager.dialog_data.pop("has_invalid_content_type", None)
 
         state = await self._get_state(dialog_manager)
@@ -277,6 +279,16 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         if not prompt:
             self.logger.info("Пустой промпт для регенерации")
             dialog_manager.dialog_data["has_void_regenerate_prompt"] = True
+            return
+
+        if len(prompt) < 10:
+            self.logger.info("Слишком короткий промпт для регенерации")
+            dialog_manager.dialog_data["has_small_regenerate_prompt"] = True
+            return
+
+        if len(prompt) > 1000:
+            self.logger.info("Слишком длинный промпт для регенерации")
+            dialog_manager.dialog_data["has_big_regenerate_prompt"] = True
             return
 
         dialog_manager.dialog_data["regenerate_prompt"] = prompt
@@ -393,6 +405,8 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         # Очистка флагов ошибок
         dialog_manager.dialog_data.pop("has_void_image_prompt", None)
+        dialog_manager.dialog_data.pop("has_small_image_prompt", None)
+        dialog_manager.dialog_data.pop("has_big_image_prompt", None)
         dialog_manager.dialog_data.pop("has_invalid_content_type", None)
         dialog_manager.dialog_data.pop("has_empty_voice_text", None)
 
@@ -411,6 +425,16 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         if not prompt:
             self.logger.info("Пустой промпт для изображения")
             dialog_manager.dialog_data["has_void_image_prompt"] = True
+            return
+
+        if len(prompt) < 10:
+            self.logger.info("Слишком короткий промпт для изображения")
+            dialog_manager.dialog_data["has_small_image_prompt"] = True
+            return
+
+        if len(prompt) > 1000:
+            self.logger.info("Слишком длинный промпт для изображения")
+            dialog_manager.dialog_data["has_big_image_prompt"] = True
             return
 
         dialog_manager.dialog_data["image_prompt"] = prompt

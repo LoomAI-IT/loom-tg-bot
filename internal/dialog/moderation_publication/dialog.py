@@ -255,23 +255,25 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
                 Case(
                     {
                         False: Multi(
-                            Const("📝 <b>Редактирование текста</b><br><br>"),
-                            Const("🤖 <i>Опишите, что нужно изменить в тексте — я отредактирую его!</i><br><br>"),
-                            Const("💡 <b>Примеры:</b><br>"),
-                            Const("• «Сделай текст короче и добавь призыв к действию»<br>"),
-                            Const("• «Убери сложные термины, пиши проще»<br>"),
-                            Const("• «Добавь больше эмоций и хештеги»"),
+                            Const("✏️ <b>Редактирование текста</b><br>"),
+                            Format("<blockquote>{publication_text}</blockquote><br>"),
+                            Const("🎯 <b>КАК ИЗМЕНИТЬ ТЕКСТ:</b><br><br>"),
+                            Const("💬 <b>Напишите сообщение</b><br>"),
+                            Const("<i>Укажите, что нужно изменить</i><br>"),
+                            Const("🎤 <b>Запишите голосовое</b><br>"),
+                            Const("<i>Опишите нужные правки голосом</i><br><br>"),
+                            Const("🔘 <b>Или используйте кнопки ниже</b>"),
                         ),
                         True: Case(
                             {
                                 True: Multi(
-                                    Format("📋 <b>Ваши указания:</b><br>💭 <i>«{regenerate_prompt}»</i><br><br>"),
+                                    Format("📝 <b>Ваши указания:</b><br><code>{regenerate_prompt}</code><br>"),
                                     Const("⏳ <b>Перегенерирую текст...</b><br>"),
-                                    Const("🕐 <i>Это может занять время. Пожалуйста, подождите</i>"),
+                                    Const("🕐 <i>Это может занять время. Пожалуйста, подождите.</i>"),
                                 ),
                                 False: Multi(
                                     Const("⏳ <b>Перегенерирую текст...</b><br>"),
-                                    Const("🕐 <i>Это может занять время. Пожалуйста, подождите</i>"),
+                                    Const("🕐 <i>Это может занять время. Пожалуйста, подождите.</i>"),
                                 ),
                             },
                             selector="has_regenerate_prompt"
@@ -279,7 +281,48 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
                     },
                     selector="is_regenerating_text"
                 ),
+                # Голосовое распознавание
+                Case(
+                    {
+                        True: Const("<br>🔄 <b>Распознаю голосовое сообщение...</b>"),
+                        False: Const(""),
+                    },
+                    selector="voice_transcribe"
+                ),
+                # Ошибки ввода текста
+                Case(
+                    {
+                        True: Const("<br>❌ <b>Ошибка:</b> Указания не могут быть пустыми"),
+                        False: Const(""),
+                    },
+                    selector="has_void_regenerate_prompt"
+                ),
+                Case(
+                    {
+                        True: Const("<br>📏 <b>Слишком короткие указания</b><br><i>Минимум 10 символов</i>"),
+                        False: Const(""),
+                    },
+                    selector="has_small_regenerate_prompt"
+                ),
+                Case(
+                    {
+                        True: Const("<br>📏 <b>Слишком длинные указания</b><br><i>Максимум 1000 символов</i>"),
+                        False: Const(""),
+                    },
+                    selector="has_big_regenerate_prompt"
+                ),
+                Case(
+                    {
+                        True: Const("<br>🎤 <b>Неверный формат</b><br><i>Отправьте текст, голосовое сообщение или аудиофайл</i>"),
+                        False: Const(""),
+                    },
+                    selector="has_invalid_content_type"
+                ),
                 sep="",
+            ),
+
+            MessageInput(
+                func=self.moderation_publication_service.handle_regenerate_text_prompt_input,
             ),
 
             Column(
@@ -296,12 +339,6 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
                     when=~F["is_regenerating_text"]
                 ),
             ),
-
-            TextInput(
-                id="regenerate_prompt_input",
-                on_success=self.moderation_publication_service.handle_regenerate_text_with_prompt,
-            ),
-
             Button(
                 Const("◀️ Назад"),
                 id="preview",
@@ -317,10 +354,11 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
     def get_edit_text_window(self) -> Window:
         return Window(
             Multi(
-                Const("✍️ <b>Редактирование текста</b><br><br>"),
-                Const("<b>Ваш текст:</b><br>"),
-                Format("{publication_text}<br><br>"),
-                Const("📝 <i>Напишите итоговый текст публикации</i>"),
+                Const("✍️ <b>Написать свой текст</b><br>"),
+                Format("<blockquote>{publication_text}</blockquote><br>"),
+                Const("✏️ <b>НАПИШИТЕ НОВЫЙ ТЕКСТ:</b><br>"),
+                Const("<i>Отправьте готовый текст публикации, который заменит текущий</i><br><br>"),
+                # Error messages
                 Case(
                     {
                         True: Const("<br><br>❌ <b>Ошибка:</b> Текст не может быть пустым"),
@@ -330,14 +368,14 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
                 ),
                 Case(
                     {
-                        True: Const("<br><br>📏 <b>Слишком короткий текст</b><br>💡 <i>Минимум 50 символов</i>"),
+                        True: Const("<br><br>📏 <b>Слишком короткий текст</b><br><i>Минимум 50 символов</i>"),
                         False: Const(""),
                     },
                     selector="has_small_text"
                 ),
                 Case(
                     {
-                        True: Const("<br><br>📏 <b>Слишком длинный текст</b><br>⚠️ <i>Максимум 4000 символов</i>"),
+                        True: Const("<br><br>📏 <b>Слишком длинный текст</b><br><i>Максимум 4000 символов</i>"),
                         False: Const(""),
                     },
                     selector="has_big_text"
@@ -363,56 +401,96 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
 
     def get_edit_image_menu_window(self) -> Window:
         return Window(
-            Case(
-                {
-                    False: Multi(
-                        Const("🎨 <b>Настройка изображения</b><br><br>"),
-                        Case(
-                            {
-                                True: Const(
-                                    "✏️ <i>Опишите, как изменить картинку. Я внесу ваши правки в текущее изображение</i><br><br>"),
-                                False: Const("🖼️ <i>Опишите, какую картинку создать</i><br><br>"),
-                            },
-                            selector="has_image"
+            Multi(
+                Case(
+                    {
+                        False: Const(""),
+                        True: Multi(
+                            Const("⏳ <b>Генерирую изображение...</b><br>"),
+                            Const("🕐 <i>Это может занять время. Пожалуйста, подождите.</i>"),
                         ),
-                        Const("📋 <b>Что указать в описании:</b><br>"),
-                        Const("• 👥 <b>Объекты и персонажи</b> — кто или что на картинке<br>"),
-                        Const("• 🎭 <b>Стиль и настроение</b> — реалистично, мультяшно, минимализм<br>"),
-                        Const("• 🌍 <b>Фон и окружение</b> — улица, природа, офис и т.д.<br>"),
-                        Const("• ✨ <b>Детали</b> — освещение, поза, аксессуары"),
-                    ),
-                    True: Multi(
-                        Const("🪄 <b>Создаю изображение...</b><br><br>"),
-                        Const("⏳ <i>Это займет около минуты</i>"),
-                    ),
-                },
-                selector="is_generating_image"
-            ),
-            Case(
-                {
-                    True: Const("<br><br>❌ <b>Ошибка:</b> Описание изображения не может быть пустым"),
-                    False: Const(""),
-                },
-                selector="has_void_image_prompt"
-            ),
-            Case(
-                {
-                    True: Const("<br><br>📏 <b>Слишком короткое описание</b><br>💡 <i>Минимум 5 символов</i>"),
-                    False: Const(""),
-                },
-                selector="has_small_image_prompt"
-            ),
-            Case(
-                {
-                    True: Const("<br><br>📏 <b>Слишком длинное описание</b><br>⚠️ <i>Максимум 500 символов</i>"),
-                    False: Const(""),
-                },
-                selector="has_big_image_prompt"
+                    },
+                    selector="is_generating_image"
+                ),
+                sep="",
             ),
 
             DynamicMedia(
                 selector="preview_image_media",
                 when="has_image",
+            ),
+
+            Multi(
+                Case(
+                    {
+                        True: Multi(
+                            Const("🎯 <b>ЧТО МОЖНО СДЕЛАТЬ:</b><br><br>"),
+                            Const("💬 <b>Написать текст или 🎤 записать голосовое</b><br>"),
+                            Const("<i>Картинка изменится с учётом ваших указаний</i><br>"),
+                            Const("🔘 <b>Нажать кнопку \"🎨 Сгенерировать картинку\"</b><br>"),
+                            Const("<i>ИИ создаст новый вариант на основе текста публикации</i><br><br>"),
+                            Const("📝 <b>Что можно указать в описании:</b><br>"),
+                            Const("• Изменения цветов и освещения<br>"),
+                            Const("• Добавление или удаление объектов<br>"),
+                            Const("• Изменение стиля или настроения<br>"),
+                            Const("• Правки композиции и фона"),
+                        ),
+                        False: Multi(
+                            Const("🎯 <b>ЧТО МОЖНО СДЕЛАТЬ:</b><br><br>"),
+                            Const("🔘 <b>Нажать кнопку \"🎨 Сгенерировать картинку\"</b><br>"),
+                            Const("<i>ИИ создаст картинку на основе текста публикации</i><br><br>"),
+                            Const("💬 <b>Написать текст или 🎤 записать голосовое</b><br>"),
+                            Const("<i>Картинка создастся с учётом вашего описания</i><br>"),
+                            Const("📝 <b>Что можно указать в описании:</b><br>"),
+                            Const("• 👥 Объекты и персонажи<br>"),
+                            Const("• 🎭 Стиль и настроение<br>"),
+                            Const("• 🌍 Фон и окружение<br>"),
+                            Const("• ✨ Детали и освещение"),
+                        ),
+                    },
+                    selector="has_image"
+                ),
+                Case(
+                    {
+                        True: Const("<br><br>🔄 <b>Распознаю голосовое сообщение...</b>"),
+                        False: Const(""),
+                    },
+                    selector="voice_transcribe"
+                ),
+                Case(
+                    {
+                        True: Const("<br><br>❌ <b>Ошибка:</b> Описание не может быть пустым"),
+                        False: Const(""),
+                    },
+                    selector="has_void_image_prompt"
+                ),
+                Case(
+                    {
+                        True: Const("<br><br>📏 <b>Слишком короткое описание</b><br><i>Минимум 10 символов</i>"),
+                        False: Const(""),
+                    },
+                    selector="has_small_image_prompt"
+                ),
+                Case(
+                    {
+                        True: Const("<br><br>📏 <b>Слишком длинное описание</b><br><i>Максимум 1000 символов</i>"),
+                        False: Const(""),
+                    },
+                    selector="has_big_image_prompt"
+                ),
+                Case(
+                    {
+                        True: Const("<br><br>🎤 <b>Неверный формат</b><br><i>Отправьте текст, голосовое сообщение или аудиофайл</i>"),
+                        False: Const(""),
+                    },
+                    selector="has_invalid_content_type"
+                ),
+                when=~F["is_generating_image"],
+                sep="",
+            ),
+
+            MessageInput(
+                func=self.moderation_publication_service.handle_generate_image_prompt_input,
             ),
 
             Column(
@@ -422,7 +500,7 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
                     on_click=self.moderation_publication_service.handle_generate_new_image,
                 ),
                 Button(
-                    Const("📷 Загрузить своё фото"),
+                    Const("📷 Использовать своё фото"),
                     id="upload_image",
                     on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.upload_image, ShowMode.EDIT),
                 ),
@@ -433,11 +511,6 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
                     when="has_image",
                 ),
                 when=~F["is_generating_image"]
-            ),
-
-            TextInput(
-                id="image_prompt_input",
-                on_success=self.moderation_publication_service.handle_generate_image_with_prompt,
             ),
 
             Button(
