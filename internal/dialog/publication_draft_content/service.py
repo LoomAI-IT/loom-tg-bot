@@ -227,11 +227,11 @@ class PublicationDraftService(interface.IPublicationDraftService):
             
             await self.loom_content_client.delete_publication_image(publication_id)
             
-            # Обновляем флаг
-            dialog_manager.dialog_data["has_image"] = False
+            # Обновляем флаг в working_publication
+            dialog_manager.dialog_data["working_publication"]["has_image"] = False
             
             await callback.answer("✅ Изображение удалено!", show_alert=True)
-            await dialog_manager.switch_to(model.PublicationDraftStates.edit_preview)
+            await dialog_manager.switch_to(model.PublicationDraftStates.edit_image_menu)
         except Exception as err:
             await callback.answer("❌ Ошибка удаления изображения", show_alert=True)
             raise
@@ -266,11 +266,11 @@ class PublicationDraftService(interface.IPublicationDraftService):
                 image_filename=image_filename
             )
             
-            # Обновляем флаг
-            dialog_manager.dialog_data["has_image"] = True
+            # Обновляем флаг в working_publication
+            dialog_manager.dialog_data["working_publication"]["has_image"] = True
             
             await message.answer("✅ Изображение загружено!")
-            await dialog_manager.switch_to(model.PublicationDraftStates.edit_preview)
+            await dialog_manager.switch_to(model.PublicationDraftStates.edit_image_menu)
         except Exception as err:
             await message.answer("❌ Ошибка загрузки изображения")
             raise
