@@ -74,6 +74,21 @@ class PublicationDraftGetter(interface.IPublicationDraftGetter):
                 # Сохраняем ID для навигации
                 dialog_manager.dialog_data["all_publication_ids"] = [p["id"] for p in publications_data]
                 
+                # Инициализируем working_publication для первого черновика (как в модерации)
+                if publications_data and "working_publication" not in dialog_manager.dialog_data:
+                    first_draft = drafts[0]
+                    dialog_manager.dialog_data["original_publication"] = {
+                        "id": first_draft.id,
+                        "creator_id": first_draft.creator_id,
+                        "category_id": first_draft.category_id,
+                        "text": first_draft.text,
+                        "image_url": f"https://{self.loom_domain}/api/content/publication/{first_draft.id}/image/download" if getattr(first_draft, "image_fid", None) else None,
+                        "has_image": bool(getattr(first_draft, "image_fid", None)),
+                        "created_at": first_draft.created_at,
+                    }
+                    # Копируем в рабочую версию
+                    dialog_manager.dialog_data["working_publication"] = dict(dialog_manager.dialog_data["original_publication"])
+                
                 data = {
                     "publications": publications_data,
                     "publications_count": len(publications_data),
@@ -224,8 +239,9 @@ class PublicationDraftGetter(interface.IPublicationDraftGetter):
             **kwargs
     ) -> dict:
         """Данные для управления изображениями."""
+        working_pub = dialog_manager.dialog_data.get("working_publication", {})
         return {
-            "has_image": dialog_manager.dialog_data.get("has_image", False),
+            "has_image": working_pub.get("has_image", False),
         }
 
     async def get_upload_image_data(
