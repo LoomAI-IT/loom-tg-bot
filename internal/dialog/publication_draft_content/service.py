@@ -515,6 +515,95 @@ class PublicationDraftService(interface.IPublicationDraftService):
 
     @auto_log()
     @traced_method()
+    async def handle_go_to_edit_text(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        """Переход к окну 'Написать свой текст'"""
+        dialog_manager.show_mode = ShowMode.EDIT
+        await callback.answer()
+        await dialog_manager.switch_to(model.PublicationDraftStates.edit_text)
+
+    @auto_log()
+    @traced_method()
+    async def handle_back_to_edit_preview_from_text_menu(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        """Возврат к превью из меню редактирования текста"""
+        dialog_manager.show_mode = ShowMode.EDIT
+        await callback.answer()
+        await dialog_manager.switch_to(model.PublicationDraftStates.edit_preview)
+
+    @auto_log()
+    @traced_method()
+    async def handle_back_to_edit_text_menu(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        """Возврат к меню редактирования текста"""
+        dialog_manager.show_mode = ShowMode.EDIT
+        await callback.answer()
+        await dialog_manager.switch_to(model.PublicationDraftStates.edit_text_menu)
+
+    @auto_log()
+    @traced_method()
+    async def handle_go_to_edit_image_menu(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        """Переход к меню редактирования изображения"""
+        dialog_manager.show_mode = ShowMode.EDIT
+        await callback.answer()
+        await dialog_manager.switch_to(model.PublicationDraftStates.edit_image_menu)
+
+    @auto_log()
+    @traced_method()
+    async def handle_go_to_social_network_select(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        """Переход к выбору соцсетей"""
+        dialog_manager.show_mode = ShowMode.EDIT
+        await callback.answer()
+        await dialog_manager.switch_to(model.PublicationDraftStates.social_network_select)
+
+    @auto_log()
+    @traced_method()
+    async def handle_go_to_upload_image(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        """Переход к загрузке изображения"""
+        await callback.answer()
+        await dialog_manager.switch_to(model.PublicationDraftStates.upload_image)
+
+    @auto_log()
+    @traced_method()
+    async def handle_back_to_edit_preview(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        """Возврат к превью"""
+        await callback.answer()
+        await dialog_manager.switch_to(model.PublicationDraftStates.edit_preview)
+
+    @auto_log()
+    @traced_method()
     async def handle_prev_image(
             self,
             callback: CallbackQuery,

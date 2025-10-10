@@ -162,12 +162,12 @@ class PublicationDraftDialog(interface.IPublicationDraftDialog):
                 Button(
                     Const("✏️ Текст"),
                     id="edit_text",
-                    on_click=lambda c, b, d: d.switch_to(model.PublicationDraftStates.edit_text_menu, ShowMode.EDIT),
+                    on_click=self.publication_draft_service.handle_back_to_edit_text_menu,
                 ),
                 Button(
                     Const("🎨 Изображение"),
                     id="edit_image",
-                    on_click=lambda c, b, d: d.switch_to(model.PublicationDraftStates.edit_image_menu, ShowMode.EDIT),
+                    on_click=self.publication_draft_service.handle_go_to_edit_image_menu,
                 ),
             ),
 
@@ -192,7 +192,7 @@ class PublicationDraftDialog(interface.IPublicationDraftDialog):
                 Button(
                     Const("🌐 Выбрать платформы"),
                     id="select_social_network",
-                    on_click=lambda c, b, d: d.switch_to(model.PublicationDraftStates.social_network_select, ShowMode.EDIT),
+                    on_click=self.publication_draft_service.handle_go_to_social_network_select,
                 ),
                 Button(
                     Const("🚀 Опубликовать сейчас"),
@@ -258,7 +258,7 @@ class PublicationDraftDialog(interface.IPublicationDraftDialog):
                 Button(
                     Const("✍️ Написать свой текст"),
                     id="edit_content",
-                    on_click=lambda c, b, d: d.switch_to(model.PublicationDraftStates.edit_text, ShowMode.EDIT),
+                    on_click=self.publication_draft_service.handle_go_to_edit_text,
                     when=~F["is_regenerating_text"]
                 ),
             ),
@@ -271,7 +271,7 @@ class PublicationDraftDialog(interface.IPublicationDraftDialog):
             Button(
                 Const("◀️ Назад"),
                 id="preview",
-                on_click=lambda c, b, d: d.switch_to(model.PublicationDraftStates.edit_preview, ShowMode.EDIT),
+                on_click=self.publication_draft_service.handle_back_to_edit_preview_from_text_menu,
                 when=~F["is_regenerating_text"]
             ),
 
@@ -320,7 +320,7 @@ class PublicationDraftDialog(interface.IPublicationDraftDialog):
             Button(
                 Const("◀️ Назад"),
                 id="edit_text_menu",
-                on_click=lambda c, b, d: d.switch_to(model.PublicationDraftStates.edit_text_menu, ShowMode.EDIT),
+                on_click=self.publication_draft_service.handle_back_to_edit_text_menu,
             ),
 
             state=model.PublicationDraftStates.edit_text,
@@ -348,7 +348,7 @@ class PublicationDraftDialog(interface.IPublicationDraftDialog):
                 Button(
                     Const("📤 Загрузить своё"),
                     id="upload_image",
-                    on_click=lambda c, b, d: d.switch_to(model.PublicationDraftStates.upload_image),
+                    on_click=self.publication_draft_service.handle_go_to_upload_image,
                 ),
                 Button(
                     Const("🗑 Удалить изображение"),
@@ -361,7 +361,7 @@ class PublicationDraftDialog(interface.IPublicationDraftDialog):
             Button(
                 Const("◀️ Назад"),
                 id="back_to_preview",
-                on_click=lambda c, b, d: d.switch_to(model.PublicationDraftStates.edit_preview),
+                on_click=self.publication_draft_service.handle_back_to_edit_preview,
             ),
 
             state=model.PublicationDraftStates.edit_image_menu,
@@ -387,7 +387,7 @@ class PublicationDraftDialog(interface.IPublicationDraftDialog):
             Button(
                 Const("◀️ Назад"),
                 id="back_to_image_menu",
-                on_click=lambda c, b, d: d.switch_to(model.PublicationDraftStates.edit_image_menu),
+                on_click=self.publication_draft_service.handle_go_to_edit_image_menu,
             ),
 
             state=model.PublicationDraftStates.upload_image,
@@ -433,7 +433,7 @@ class PublicationDraftDialog(interface.IPublicationDraftDialog):
                 Button(
                     Const("◀️ Назад"),
                     id="back_to_preview",
-                    on_click=lambda c, b, d: d.switch_to(model.PublicationDraftStates.edit_preview),
+                    on_click=self.publication_draft_service.handle_back_to_edit_preview,
                 ),
             ),
 
