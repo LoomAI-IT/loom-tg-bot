@@ -472,11 +472,16 @@ app = NewServer(
 )
 
 if __name__ == "__main__":
+    if cfg.environment == "prod":
+        workers = 4
+    else:
+        workers = 1
+
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
         port=int(cfg.http_port),
-        workers=4,
+        workers=workers,
         loop="uvloop",
         access_log=False,
     )
