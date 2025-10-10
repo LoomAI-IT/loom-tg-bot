@@ -267,10 +267,8 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                     {
                         False: Multi(
                             Const("✏️ <b>Редактирование текста</b><br><br>"),
-                            Const("━━━━━━━━━━━━━━━━━━━━<br>"),
                             Const("📄 <b>ТЕКУЩИЙ ТЕКСТ:</b><br>"),
                             Format("<blockquote>{publication_text}</blockquote><br>"),
-                            Const("━━━━━━━━━━━━━━━━━━━━<br><br>"),
                             Const("🎯 <b>КАК ИЗМЕНИТЬ ТЕКСТ:</b><br><br>"),
                             Const("💬 <b>Напишите сообщение</b><br>"),
                             Const("<i>Укажите, что нужно изменить</i><br>"),
