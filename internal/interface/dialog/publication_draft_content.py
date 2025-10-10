@@ -19,31 +19,19 @@ class IPublicationDraftDialog(Protocol):
     def get_edit_text_menu_window(self) -> Window: pass
 
     @abstractmethod
-    def get_regenerate_text_window(self) -> Window: pass
-
-    @abstractmethod
-    def get_edit_title_window(self) -> Window: pass
-
-    @abstractmethod
-    def get_edit_description_window(self) -> Window: pass
-
-    @abstractmethod
-    def get_edit_content_window(self) -> Window: pass
+    def get_edit_text_window(self) -> Window: pass
 
     @abstractmethod
     def get_edit_image_menu_window(self) -> Window: pass
 
     @abstractmethod
-    def get_generate_image_window(self) -> Window: pass
-
-    @abstractmethod
     def get_upload_image_window(self) -> Window: pass
 
     @abstractmethod
-    def get_edit_tags_window(self) -> Window: pass
-
-    @abstractmethod
     def get_social_network_select_window(self) -> Window: pass
+    
+    @abstractmethod
+    def get_publication_success_window(self) -> Window: pass
 
 
 class IPublicationDraftService(Protocol):  # ❌ Ты забыл переименовать!
@@ -82,47 +70,12 @@ class IPublicationDraftService(Protocol):  # ❌ Ты забыл переиме�
 
     # Обработчики редактирования полей
     @abstractmethod
-    async def handle_edit_title_save(
+    async def handle_edit_text(
             self,
             message: Message,
             widget: Any,
             dialog_manager: DialogManager,
             text: str
-    ) -> None: pass
-
-    @abstractmethod
-    async def handle_edit_description_save(
-            self,
-            message: Message,
-            widget: Any,
-            dialog_manager: DialogManager,
-            text: str
-    ) -> None: pass
-
-    @abstractmethod
-    async def handle_edit_content_save(
-            self,
-            message: Message,
-            widget: Any,
-            dialog_manager: DialogManager,
-            text: str
-    ) -> None: pass
-
-    @abstractmethod
-    async def handle_edit_tags_save(
-            self,
-            message: Message,
-            widget: Any,
-            dialog_manager: DialogManager,
-            text: str
-    ) -> None: pass
-
-    @abstractmethod
-    async def handle_start_regenerate_text(
-            self,
-            callback: CallbackQuery,
-            button: Any,
-            dialog_manager: DialogManager
     ) -> None: pass
 
     @abstractmethod
@@ -197,49 +150,13 @@ class IPublicationDraftGetter(Protocol):
     ) -> dict: pass
 
     @abstractmethod
-    async def get_edit_text_menu_data(
+    async def get_edit_text_data(
             self,
             dialog_manager: DialogManager,
     ) -> dict: pass
 
     @abstractmethod
-    async def get_regenerate_text_data(
-            self,
-            dialog_manager: DialogManager,
-    ) -> dict: pass
-
-    @abstractmethod
-    async def get_edit_title_data(
-            self,
-            dialog_manager: DialogManager,
-    ) -> dict: pass
-
-    @abstractmethod
-    async def get_edit_description_data(
-            self,
-            dialog_manager: DialogManager,
-    ) -> dict: pass
-
-    @abstractmethod
-    async def get_edit_content_data(
-            self,
-            dialog_manager: DialogManager,
-    ) -> dict: pass
-
-    @abstractmethod
-    async def get_edit_tags_data(
-            self,
-            dialog_manager: DialogManager,
-    ) -> dict: pass
-
-    @abstractmethod
-    async def get_edit_image_menu_data(
-            self,
-            dialog_manager: DialogManager,
-    ) -> dict: pass
-
-    @abstractmethod
-    async def get_generate_image_data(
+    async def get_image_menu_data(
             self,
             dialog_manager: DialogManager,
     ) -> dict: pass
@@ -252,6 +169,12 @@ class IPublicationDraftGetter(Protocol):
 
     @abstractmethod
     async def get_social_network_select_data(
+            self,
+            dialog_manager: DialogManager,
+    ) -> dict: pass
+    
+    @abstractmethod
+    async def get_publication_success_data(
             self,
             dialog_manager: DialogManager,
     ) -> dict: pass

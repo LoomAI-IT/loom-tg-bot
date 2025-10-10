@@ -170,62 +170,7 @@ class PublicationDraftService(interface.IPublicationDraftService):
     
     @auto_log()
     @traced_method()
-    async def handle_edit_title_save(
-            self,
-            message: Message,
-            widget: Any,
-            dialog_manager: DialogManager,
-            text: str
-    ) -> None:
-        """Сохранение нового названия"""
-        try:
-            await message.delete()
-            new_title = text.strip()
-
-            if not new_title:
-                dialog_manager.dialog_data["has_void_title"] = True
-                await dialog_manager.switch_to(model.PublicationDraftStates.edit_title)
-                return
-
-            dialog_manager.dialog_data.pop("has_void_title", None)
-            
-            # Обновляем working_publication
-            working_pub = dialog_manager.dialog_data["working_publication"]
-            current_text = working_pub.get("text", "").split("\n\n", 1)[-1] if "\n\n" in working_pub.get("text", "") else working_pub.get("text", "")
-            working_pub["text"] = f"{new_title}\n\n{current_text}" if current_text else new_title
-
-            self.logger.info("Название черновика изменено")
-            await dialog_manager.switch_to(model.PublicationDraftStates.edit_preview)
-        except Exception as err:
-            await message.answer("❌ Ошибка при сохранении названия")
-            raise
-
-    @auto_log()
-    @traced_method()
-    async def handle_edit_description_save(
-            self,
-            message: Message,
-            widget: Any,
-            dialog_manager: DialogManager,
-            text: str
-    ) -> None:
-        """Сохранение описания."""
-        try:
-            await message.delete()
-            new_description = text.strip()
-            
-            # Обновляем working_publication
-            dialog_manager.dialog_data["working_publication"]["description"] = new_description
-            
-            self.logger.info("Описание черновика изменено")
-            await dialog_manager.switch_to(model.PublicationDraftStates.edit_preview)
-        except Exception as err:
-            await message.answer("❌ Ошибка при сохранении описания")
-            raise
-
-    @auto_log()
-    @traced_method()
-    async def handle_edit_content_save(
+    async def handle_edit_text(
             self,
             message: Message,
             widget: Any,
@@ -233,51 +178,39 @@ class PublicationDraftService(interface.IPublicationDraftService):
             text: str
     ) -> None:
         """Сохранение основного текста"""
+        dialog_manager.show_mode = ShowMode.EDIT
+        
         try:
             await message.delete()
-            new_content = text.strip()
-
-            if not new_content:
-                dialog_manager.dialog_data["has_void_content"] = True
-                await dialog_manager.switch_to(model.PublicationDraftStates.edit_content)
+            
+            dialog_manager.dialog_data.pop("has_void_text", None)
+            dialog_manager.dialog_data.pop("has_small_text", None)
+            dialog_manager.dialog_data.pop("has_big_text", None)
+            
+            new_text = message.html_text.replace('\n', '<br/>')
+            
+            if not new_text:
+                self.logger.info("Пустой текст")
+                dialog_manager.dialog_data["has_void_text"] = True
                 return
-
-            dialog_manager.dialog_data.pop("has_void_content", None)
+            
+            if len(new_text) < 50:
+                self.logger.info("Слишком короткий текст")
+                dialog_manager.dialog_data["has_small_text"] = True
+                return
+            
+            if len(new_text) > 4000:
+                self.logger.info("Слишком длинный текст")
+                dialog_manager.dialog_data["has_big_text"] = True
+                return
             
             # Обновляем working_publication
-            dialog_manager.dialog_data["working_publication"]["text"] = new_content
+            dialog_manager.dialog_data["working_publication"]["text"] = new_text
 
             self.logger.info("Содержимое черновика изменено")
             await dialog_manager.switch_to(model.PublicationDraftStates.edit_preview)
         except Exception as err:
             await message.answer("❌ Ошибка при сохранении текста")
-            raise
-
-    @auto_log()
-    @traced_method()
-    async def handle_edit_tags_save(
-            self,
-            message: Message,
-            widget: Any,
-            dialog_manager: DialogManager,
-            text: str
-    ) -> None:
-        """Сохранение тегов"""
-        try:
-            await message.delete()
-            tags_raw = text.strip()
-            
-            if tags_raw:
-                tags = [tag.strip() for tag in tags_raw.split(",")]
-                tags = [tag for tag in tags if tag]
-            else:
-                tags = []
-            
-            dialog_manager.dialog_data["publication_tags"] = tags
-            self.logger.info(f"Теги черновика изменены: {tags}")
-            await dialog_manager.switch_to(model.PublicationDraftStates.edit_preview)
-        except Exception as err:
-            await message.answer("❌ Ошибка при сохранении тегов")
             raise
 
     @auto_log()
@@ -344,104 +277,34 @@ class PublicationDraftService(interface.IPublicationDraftService):
 
     @auto_log()
     @traced_method()
-    async def handle_edit_image_menu_save(
-            self,
-            message: Message,
-            widget: Any,
-            dialog_manager: DialogManager,
-            text: str
-    ) -> None:
-        """Генерация изображения по промпту"""
-        try:
-            await message.delete()
-            prompt = text.strip() if isinstance(text, str) else ""
-            dialog_manager.dialog_data.pop("has_void_image_prompt", None)
-            dialog_manager.dialog_data.pop("has_small_image_prompt", None)
-            dialog_manager.dialog_data.pop("has_big_image_prompt", None)
-
-            if not prompt:
-                dialog_manager.dialog_data["has_void_image_prompt"] = True
-                return
-            if len(prompt) < 5:
-                dialog_manager.dialog_data["has_small_image_prompt"] = True
-                return
-            if len(prompt) > 500:
-                dialog_manager.dialog_data["has_big_image_prompt"] = True
-                return
-
-            dialog_manager.dialog_data["image_prompt"] = prompt
-
-            # Берём контекст публикации
-            publication_id = int(dialog_manager.dialog_data.get("selected_publication_id"))
-            category_id = dialog_manager.dialog_data.get("publication_category_id")
-            publication_text = dialog_manager.dialog_data.get("publication_content", "")
-
-            # Текущее изображение как подсказка (если есть)
-            current_image_content = None
-            current_image_filename = None
-
-            # Генерация изображения через API
-            images_url = await self.loom_content_client.generate_publication_image(
-                category_id=category_id,
-                publication_text=publication_text,
-                text_reference=dialog_manager.dialog_data.get("publication_title", ""),
-                prompt=prompt,
-                image_content=current_image_content,
-                image_filename=current_image_filename,
-            )
-
-            # Обновляем флаги/превью
-            dialog_manager.dialog_data["has_image"] = bool(images_url)
-            await message.answer("✅ Изображение сгенерировано")
-        except Exception as err:
-            await message.answer("❌ Ошибка обработки изображения")
-            raise
-    
-    @auto_log()
-    @traced_method()
-    async def handle_start_regenerate_text(
+    async def handle_regenerate_text(
             self,
             callback: CallbackQuery,
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        """Запуск полной регенерации текста черновика"""
+        """Полная регенерация текста черновика"""
+        dialog_manager.show_mode = ShowMode.EDIT
+        
         try:
             await callback.answer()
             
             dialog_manager.dialog_data["is_regenerating_text"] = True
             dialog_manager.dialog_data["regenerate_prompt"] = ""
-            
-            # Переключаемся на окно с индикатором
-            await dialog_manager.switch_to(model.PublicationDraftStates.regenerate_text)
-            
-            # ВАЖНО: Принудительно обновляем UI, чтобы показать сообщение о регенерации
             await dialog_manager.show()
             
             # Запускаем регенерацию с индикатором "печатает..."
-            category_id = dialog_manager.dialog_data.get("publication_category_id")
-            publication_text = dialog_manager.dialog_data.get("publication_content", "")
+            working_pub = dialog_manager.dialog_data["working_publication"]
 
             async with typing_action(self.bot, callback.message.chat.id):
                 regenerated_data = await self.loom_content_client.regenerate_publication_text(
-                    category_id=category_id,
-                    publication_text=publication_text,
+                    category_id=working_pub["category_id"],
+                    publication_text=working_pub["text"],
                     prompt=None,
                 )
 
-            # Обновляем working_publication
-            new_text = regenerated_data["text"]
-            dialog_manager.dialog_data["working_publication"]["text"] = new_text
-            
-            # Обновляем также publication_title и publication_content для корректного отображения
-            if "\n\n" in new_text:
-                title, content = new_text.split("\n\n", 1)
-                dialog_manager.dialog_data["publication_title"] = title.strip()
-                dialog_manager.dialog_data["publication_content"] = content.strip()
-            else:
-                dialog_manager.dialog_data["publication_title"] = new_text
-                dialog_manager.dialog_data["publication_content"] = new_text
-            
+            # Обновляем данные
+            dialog_manager.dialog_data["working_publication"]["text"] = regenerated_data["text"]
             dialog_manager.dialog_data["is_regenerating_text"] = False
             
             await dialog_manager.switch_to(model.PublicationDraftStates.edit_preview)
@@ -449,17 +312,6 @@ class PublicationDraftService(interface.IPublicationDraftService):
             dialog_manager.dialog_data["is_regenerating_text"] = False
             await callback.answer("❌ Ошибка регенерации", show_alert=True)
             raise
-    
-    @auto_log()
-    @traced_method()
-    async def handle_regenerate_text(
-            self,
-            callback: CallbackQuery,
-            button: Any,
-            dialog_manager: DialogManager
-    ) -> None:
-        """Полная регенерация текста черновика (устаревший метод, оставлен для совместимости)"""
-        await self.handle_start_regenerate_text(callback, button, dialog_manager)
 
     @auto_log()
     @traced_method()
@@ -471,60 +323,35 @@ class PublicationDraftService(interface.IPublicationDraftService):
             prompt: str
     ) -> None:
         """Регенерация с промптом."""
+        dialog_manager.show_mode = ShowMode.EDIT
+        
         try:
             await message.delete()
             
             dialog_manager.dialog_data.pop("has_void_regenerate_prompt", None)
-            dialog_manager.dialog_data.pop("has_small_regenerate_prompt", None)
-            dialog_manager.dialog_data.pop("has_big_regenerate_prompt", None)
             
-            prompt = prompt.strip()
-            
-            # Валидация промпта
+            prompt = message.html_text.replace('\n', '<br/>')
             if not prompt:
+                self.logger.info("Пустой промпт для перегенерации")
                 dialog_manager.dialog_data["has_void_regenerate_prompt"] = True
-                await dialog_manager.switch_to(model.PublicationDraftStates.regenerate_text)
-                return
-                
-            if len(prompt) < 5:
-                dialog_manager.dialog_data["has_small_regenerate_prompt"] = True
-                await dialog_manager.switch_to(model.PublicationDraftStates.regenerate_text)
-                return
-                
-            if len(prompt) > 500:
-                dialog_manager.dialog_data["has_big_regenerate_prompt"] = True
-                await dialog_manager.switch_to(model.PublicationDraftStates.regenerate_text)
                 return
                 
             dialog_manager.dialog_data["is_regenerating_text"] = True
-            dialog_manager.dialog_data["regenerate_prompt"] = prompt
             dialog_manager.dialog_data["has_regenerate_prompt"] = True
             await dialog_manager.show()
             
-            chat_id = message.chat.id
-            category_id = dialog_manager.dialog_data.get("publication_category_id")
-            publication_text = dialog_manager.dialog_data.get("publication_content", "")
+            working_pub = dialog_manager.dialog_data["working_publication"]
 
-            async with typing_action(self.bot, chat_id):
+            async with typing_action(self.bot, message.chat.id):
                 regenerated_data = await self.loom_content_client.regenerate_publication_text(
-                    category_id=category_id,
-                    publication_text=publication_text,
+                    category_id=working_pub["category_id"],
+                    publication_text=working_pub["text"],
                     prompt=prompt,
                 )
 
-            # Обновляем working_publication
-            new_text = regenerated_data["text"]
-            dialog_manager.dialog_data["working_publication"]["text"] = new_text
-            
-            # Обновляем также publication_title и publication_content для корректного отображения
-            if "\n\n" in new_text:
-                title, content = new_text.split("\n\n", 1)
-                dialog_manager.dialog_data["publication_title"] = title.strip()
-                dialog_manager.dialog_data["publication_content"] = content.strip()
-            else:
-                dialog_manager.dialog_data["publication_title"] = new_text
-                dialog_manager.dialog_data["publication_content"] = new_text
-            
+            # Обновляем данные
+            dialog_manager.dialog_data["working_publication"]["text"] = regenerated_data["text"]
+            dialog_manager.dialog_data["regenerate_prompt"] = prompt
             dialog_manager.dialog_data["is_regenerating_text"] = False
             dialog_manager.dialog_data["has_regenerate_prompt"] = False
             
