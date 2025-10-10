@@ -2,7 +2,7 @@ from typing import Any
 
 from aiogram import Bot
 from aiogram.types import CallbackQuery, Message
-from aiogram_dialog import DialogManager, StartMode
+from aiogram_dialog import DialogManager, StartMode, ShowMode
 
 from opentelemetry.trace import SpanKind, Status, StatusCode
 
@@ -522,7 +522,6 @@ class PublicationDraftService(interface.IPublicationDraftService):
             dialog_manager: DialogManager
     ) -> None:
         """Переход к окну 'Написать свой текст'"""
-        dialog_manager.show_mode = ShowMode.EDIT
         await dialog_manager.switch_to(model.PublicationDraftStates.edit_text)
         await callback.answer()
 
@@ -535,7 +534,6 @@ class PublicationDraftService(interface.IPublicationDraftService):
             dialog_manager: DialogManager
     ) -> None:
         """Возврат к превью из меню редактирования текста"""
-        dialog_manager.show_mode = ShowMode.EDIT
         await dialog_manager.switch_to(model.PublicationDraftStates.edit_preview)
         await callback.answer()
 
@@ -548,7 +546,6 @@ class PublicationDraftService(interface.IPublicationDraftService):
             dialog_manager: DialogManager
     ) -> None:
         """Возврат к меню редактирования текста"""
-        dialog_manager.show_mode = ShowMode.EDIT
         await dialog_manager.switch_to(model.PublicationDraftStates.edit_text_menu)
         await callback.answer()
 
@@ -561,7 +558,6 @@ class PublicationDraftService(interface.IPublicationDraftService):
             dialog_manager: DialogManager
     ) -> None:
         """Переход к меню редактирования изображения"""
-        dialog_manager.show_mode = ShowMode.EDIT
         await dialog_manager.switch_to(model.PublicationDraftStates.edit_image_menu)
         await callback.answer()
 
@@ -574,7 +570,6 @@ class PublicationDraftService(interface.IPublicationDraftService):
             dialog_manager: DialogManager
     ) -> None:
         """Переход к выбору соцсетей"""
-        dialog_manager.show_mode = ShowMode.EDIT
         await dialog_manager.switch_to(model.PublicationDraftStates.social_network_select)
         await callback.answer()
 
