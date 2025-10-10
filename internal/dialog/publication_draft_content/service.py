@@ -523,8 +523,8 @@ class PublicationDraftService(interface.IPublicationDraftService):
     ) -> None:
         """Переход к окну 'Написать свой текст'"""
         dialog_manager.show_mode = ShowMode.EDIT
-        await callback.answer()
         await dialog_manager.switch_to(model.PublicationDraftStates.edit_text)
+        await callback.answer()
 
     @auto_log()
     @traced_method()
@@ -536,8 +536,8 @@ class PublicationDraftService(interface.IPublicationDraftService):
     ) -> None:
         """Возврат к превью из меню редактирования текста"""
         dialog_manager.show_mode = ShowMode.EDIT
-        await callback.answer()
         await dialog_manager.switch_to(model.PublicationDraftStates.edit_preview)
+        await callback.answer()
 
     @auto_log()
     @traced_method()
@@ -549,8 +549,8 @@ class PublicationDraftService(interface.IPublicationDraftService):
     ) -> None:
         """Возврат к меню редактирования текста"""
         dialog_manager.show_mode = ShowMode.EDIT
-        await callback.answer()
         await dialog_manager.switch_to(model.PublicationDraftStates.edit_text_menu)
+        await callback.answer()
 
     @auto_log()
     @traced_method()
@@ -562,8 +562,8 @@ class PublicationDraftService(interface.IPublicationDraftService):
     ) -> None:
         """Переход к меню редактирования изображения"""
         dialog_manager.show_mode = ShowMode.EDIT
-        await callback.answer()
         await dialog_manager.switch_to(model.PublicationDraftStates.edit_image_menu)
+        await callback.answer()
 
     @auto_log()
     @traced_method()
@@ -575,8 +575,8 @@ class PublicationDraftService(interface.IPublicationDraftService):
     ) -> None:
         """Переход к выбору соцсетей"""
         dialog_manager.show_mode = ShowMode.EDIT
-        await callback.answer()
         await dialog_manager.switch_to(model.PublicationDraftStates.social_network_select)
+        await callback.answer()
 
     @auto_log()
     @traced_method()
@@ -587,8 +587,8 @@ class PublicationDraftService(interface.IPublicationDraftService):
             dialog_manager: DialogManager
     ) -> None:
         """Переход к загрузке изображения"""
-        await callback.answer()
         await dialog_manager.switch_to(model.PublicationDraftStates.upload_image)
+        await callback.answer()
 
     @auto_log()
     @traced_method()
@@ -599,8 +599,8 @@ class PublicationDraftService(interface.IPublicationDraftService):
             dialog_manager: DialogManager
     ) -> None:
         """Возврат к превью"""
-        await callback.answer()
         await dialog_manager.switch_to(model.PublicationDraftStates.edit_preview)
+        await callback.answer()
 
     @auto_log()
     @traced_method()
