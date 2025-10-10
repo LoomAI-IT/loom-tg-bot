@@ -217,6 +217,8 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
             "has_big_text": dialog_manager.dialog_data.get("has_big_text", False),
             # Error flags for regenerate prompt
             "has_void_regenerate_prompt": dialog_manager.dialog_data.get("has_void_regenerate_prompt", False),
+            "has_small_regenerate_prompt": dialog_manager.dialog_data.get("has_small_regenerate_prompt", False),
+            "has_big_regenerate_prompt": dialog_manager.dialog_data.get("has_big_regenerate_prompt", False),
             "has_invalid_content_type": dialog_manager.dialog_data.get("has_invalid_content_type", False),
         }
 

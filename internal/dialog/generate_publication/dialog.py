@@ -310,6 +310,20 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                 ),
                 Case(
                     {
+                        True: Const("<br>📏 <b>Слишком короткие указания</b><br><i>Минимум 10 символов</i>"),
+                        False: Const(""),
+                    },
+                    selector="has_small_regenerate_prompt"
+                ),
+                Case(
+                    {
+                        True: Const("<br>📏 <b>Слишком длинные указания</b><br><i>Максимум 1000 символов</i>"),
+                        False: Const(""),
+                    },
+                    selector="has_big_regenerate_prompt"
+                ),
+                Case(
+                    {
                         True: Const("<br>🎤 <b>Неверный формат</b><br><i>Отправьте текст, голосовое сообщение или аудиофайл</i>"),
                         False: Const(""),
                     },
@@ -460,6 +474,20 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                         False: Const(""),
                     },
                     selector="has_void_image_prompt"
+                ),
+                Case(
+                    {
+                        True: Const("<br><br>📏 <b>Слишком короткое описание</b><br><i>Минимум 10 символов</i>"),
+                        False: Const(""),
+                    },
+                    selector="has_small_image_prompt"
+                ),
+                Case(
+                    {
+                        True: Const("<br><br>📏 <b>Слишком длинное описание</b><br><i>Максимум 1000 символов</i>"),
+                        False: Const(""),
+                    },
+                    selector="has_big_image_prompt"
                 ),
                 Case(
                     {

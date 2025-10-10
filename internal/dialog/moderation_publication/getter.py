@@ -262,6 +262,12 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
             "is_regenerating_text": dialog_manager.dialog_data.get("is_regenerating_text", False),
             "regenerate_prompt": dialog_manager.dialog_data.get("regenerate_prompt", ""),
             "has_regenerate_prompt": bool(dialog_manager.dialog_data.get("regenerate_prompt", "")),
+            # Voice input support
+            "voice_transcribe": dialog_manager.dialog_data.get("voice_transcribe", False),
+            "has_invalid_content_type": dialog_manager.dialog_data.get("has_invalid_content_type", False),
+            "has_void_regenerate_prompt": dialog_manager.dialog_data.get("has_void_regenerate_prompt", False),
+            "has_small_regenerate_prompt": dialog_manager.dialog_data.get("has_small_regenerate_prompt", False),
+            "has_big_regenerate_prompt": dialog_manager.dialog_data.get("has_big_regenerate_prompt", False),
         }
 
     @auto_log()
@@ -282,6 +288,11 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
             "is_generating_image": dialog_manager.dialog_data.get("is_generating_image", False),
             "has_image": working_pub.get("has_image", False),
             "is_custom_image": working_pub.get("is_custom_image", False),
+            "image_prompt": dialog_manager.dialog_data.get("image_prompt", ""),
+            "has_image_prompt": dialog_manager.dialog_data.get("image_prompt", "") != "",
+            # Voice input support
+            "voice_transcribe": dialog_manager.dialog_data.get("voice_transcribe", False),
+            "has_invalid_content_type": dialog_manager.dialog_data.get("has_invalid_content_type", False),
         }
 
     @auto_log()

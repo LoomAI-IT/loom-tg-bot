@@ -108,12 +108,11 @@ class IModerationPublicationService(Protocol):
     ) -> None: pass
 
     @abstractmethod
-    async def handle_regenerate_text_with_prompt(
+    async def handle_regenerate_text_prompt_input(
             self,
             message: Message,
             widget: Any,
             dialog_manager: DialogManager,
-            prompt: str
     ) -> None: pass
 
     @abstractmethod
@@ -134,12 +133,11 @@ class IModerationPublicationService(Protocol):
     ) -> None: pass
 
     @abstractmethod
-    async def handle_generate_image_with_prompt(
+    async def handle_generate_image_prompt_input(
             self,
             message: Message,
             widget: Any,
             dialog_manager: DialogManager,
-            prompt: str
     ) -> None: pass
 
     @abstractmethod
