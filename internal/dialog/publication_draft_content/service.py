@@ -273,6 +273,8 @@ class PublicationDraftService(interface.IPublicationDraftService):
             dialog_manager.dialog_data["working_publication"]["has_image"] = False
             dialog_manager.dialog_data["working_publication"].pop("image_url", None)
             
+            self.logger.info(f"Изображение удалено из working_publication: has_image={dialog_manager.dialog_data['working_publication']['has_image']}")
+            
             await callback.answer("✅ Изображение удалено!", show_alert=True)
             
             await dialog_manager.switch_to(model.PublicationDraftStates.edit_preview)
@@ -319,6 +321,9 @@ class PublicationDraftService(interface.IPublicationDraftService):
             
             dialog_manager.dialog_data["working_publication"]["has_image"] = True
             dialog_manager.dialog_data["working_publication"]["image_url"] = new_image_url
+            
+            self.logger.info(f"Изображение загружено. URL: {new_image_url}")
+            self.logger.info(f"working_publication обновлен: has_image={dialog_manager.dialog_data['working_publication']['has_image']}")
             
             await dialog_manager.switch_to(model.PublicationDraftStates.edit_preview)
             self.logger.info("Изображение загружено")
