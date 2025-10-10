@@ -1,3 +1,4 @@
+import time
 from datetime import datetime
 
 from aiogram import Bot
@@ -150,17 +151,8 @@ class PublicationDraftGetter(interface.IPublicationDraftGetter):
                 state = await self._get_state(dialog_manager)
                 employee = await self.loom_employee_client.get_employee_by_account_id(state.account_id)
                 
-                # Готовим превью изображения, если есть
-                preview_image_media = None
-                has_image = bool(getattr(publication, "image_fid", None))
-                if has_image:
-                    image_url = f"https://{self.loom_domain}/api/content/publication/{publication.id}/image/download"
-                    preview_image_media = MediaAttachment(
-                        url=image_url,
-                        type=ContentType.PHOTO
-                    )
-           
                 # Подготавливаем данные как в модерации
+                has_image = bool(getattr(publication, "image_fid", None))
                 if "working_publication" not in dialog_manager.dialog_data:
                     # Инициализируем original_publication
                     dialog_manager.dialog_data["original_publication"] = {
@@ -181,6 +173,20 @@ class PublicationDraftGetter(interface.IPublicationDraftGetter):
                     })
                 
                 working_pub = dialog_manager.dialog_data["working_publication"]
+                
+                # Готовим превью изображения из working_publication
+                preview_image_media = None
+                if working_pub.get("has_image") and working_pub.get("image_url"):
+                    # Добавляем cache buster если его нет
+                    image_url = working_pub["image_url"]
+                    if "?v=" not in image_url:
+                        cache_buster = int(time.time())
+                        image_url = f"{image_url}?v={cache_buster}"
+                    
+                    preview_image_media = MediaAttachment(
+                        url=image_url,
+                        type=ContentType.PHOTO
+                    )
                 original_pub = dialog_manager.dialog_data["original_publication"]
                 
                 # Получаем данные об авторе
