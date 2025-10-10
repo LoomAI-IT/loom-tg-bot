@@ -19,12 +19,14 @@ class PublicationDraftService(interface.IPublicationDraftService):
             bot: Bot,
             state_repo: interface.IStateRepo,
             loom_content_client: interface.ILoomContentClient,
+            loom_domain: str,
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
         self.bot = bot
         self.state_repo = state_repo
         self.loom_content_client = loom_content_client
+        self.loom_domain = loom_domain
 
     @auto_log()
     @traced_method()
@@ -268,8 +270,13 @@ class PublicationDraftService(interface.IPublicationDraftService):
                 image_filename=image_filename
             )
             
-            # Обновляем флаг в working_publication
+            # Обновляем working_publication с новым URL и cache buster
+            import time
+            cache_buster = int(time.time())
+            new_image_url = f"https://{self.loom_domain}/api/content/publication/{publication_id}/image/download?v={cache_buster}"
+            
             dialog_manager.dialog_data["working_publication"]["has_image"] = True
+            dialog_manager.dialog_data["working_publication"]["image_url"] = new_image_url
             
             await message.answer("✅ Изображение загружено!")
             await dialog_manager.switch_to(model.PublicationDraftStates.edit_image_menu)
