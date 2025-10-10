@@ -215,9 +215,10 @@ class PublicationDraftGetter(interface.IPublicationDraftGetter):
             **kwargs
     ) -> dict:
         """Данные для регенерации."""
+        regenerate_prompt = dialog_manager.dialog_data.get("regenerate_prompt", "")
         return {
-            "regenerate_prompt": dialog_manager.dialog_data.get("regenerate_prompt", ""),
-            "has_regenerate_prompt": "regenerate_prompt" in dialog_manager.dialog_data,
+            "regenerate_prompt": regenerate_prompt,
+            "has_regenerate_prompt": bool(regenerate_prompt and regenerate_prompt.strip()),
             "has_void_regenerate_prompt": dialog_manager.dialog_data.get("has_void_regenerate_prompt", False),
             "is_regenerating_text": dialog_manager.dialog_data.get("is_regenerating_text", False),
         }
