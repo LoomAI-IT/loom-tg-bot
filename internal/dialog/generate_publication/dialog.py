@@ -121,14 +121,6 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                             },
                             selector="has_invalid_content_type"
                         ),
-                        Case(
-                            {
-                                True: Const(
-                                    "<br>🔍 <b>Не удалось распознать речь</b><br><i>Попробуйте записать заново или введите текст</i>"),
-                                False: Const(""),
-                            },
-                            selector="has_empty_voice_text"
-                        ),
                         sep="",
                     ),
                     True: Const("🔄 Распознавание речи...")
@@ -274,8 +266,14 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                 Case(
                     {
                         False: Multi(
-                            Const("✏️ <b>Редактирование текста</b><br>"),
-                            Const("💭 <i>Напишите, что нужно изменить в тексте — я отредактирую его!</i>"),
+                            Const("✏️ <b>Редактирование текста</b><br><br>"),
+                            Const("📄 <b>Текущий текст публикации:</b><br>"),
+                            Format("{publication_text}<br><br>"),
+                            Const("💬 <b>Что вы можете сделать:</b><br>"),
+                            Const("• ✍️ <b>Написать текст</b> — отправьте текстовое сообщение с указаниями, что изменить<br>"),
+                            Const("• 🎤 <b>Записать голосовое</b> — отправьте голосовое с описанием правок<br>"),
+                            Const("• 🔘 <b>Использовать кнопки</b> — выберите одну из кнопок ниже<br><br>"),
+                            Const("💡 <i>Например: \"Сделай текст короче\" или \"Добавь больше эмодзи\"</i>"),
                         ),
                         True: Case(
                             {
@@ -294,7 +292,34 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                     },
                     selector="is_regenerating_text"
                 ),
+                # Голосовое распознавание
+                Case(
+                    {
+                        True: Const("<br>🔄 <b>Распознаю голосовое сообщение...</b>"),
+                        False: Const(""),
+                    },
+                    selector="voice_transcribe"
+                ),
+                # Ошибки ввода текста
+                Case(
+                    {
+                        True: Const("<br>❌ <b>Ошибка:</b> Указания не могут быть пустыми"),
+                        False: Const(""),
+                    },
+                    selector="has_void_regenerate_prompt"
+                ),
+                Case(
+                    {
+                        True: Const("<br>🎤 <b>Неверный формат</b><br><i>Отправьте текст, голосовое сообщение или аудиофайл</i>"),
+                        False: Const(""),
+                    },
+                    selector="has_invalid_content_type"
+                ),
                 sep="",
+            ),
+
+            MessageInput(
+                func=self.generate_publication_service.handle_regenerate_text_prompt_input,
             ),
 
             Column(
@@ -316,11 +341,6 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                 id="preview",
                 on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.preview, ShowMode.EDIT),
                 when=~F["is_regenerating_text"]
-            ),
-
-            TextInput(
-                id="regenerate_prompt_input",
-                on_success=self.generate_publication_service.handle_regenerate_text_with_prompt,
             ),
 
             state=model.GeneratePublicationStates.edit_text_menu,

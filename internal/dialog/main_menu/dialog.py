@@ -80,14 +80,6 @@ class MainMenuDialog(interface.IMainMenuDialog):
                         ),
                         Case(
                             {
-                                True: Const(
-                                    "<br><br>🔍 <b>Не удалось распознать речь</b>\n<i>Попробуйте записать заново или введите текст</i>"),
-                                False: Const(""),
-                            },
-                            selector="has_empty_voice_text"
-                        ),
-                        Case(
-                            {
                                 True: Const("<br><br>❌ <b>Ошибка:</b> <i>Неверная ссылка на YouTube</i>"),
                                 False: Const(""),
                             },

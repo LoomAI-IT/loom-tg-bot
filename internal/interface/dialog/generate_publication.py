@@ -90,6 +90,14 @@ class IGeneratePublicationService(Protocol):
     ) -> None: pass
 
     @abstractmethod
+    async def handle_regenerate_text_prompt_input(
+            self,
+            message: Message,
+            widget: MessageInput,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
+    @abstractmethod
     async def handle_regenerate_text_with_prompt(
             self,
             message: Message,
