@@ -165,7 +165,6 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
             # Voice input error flags
             "has_invalid_content_type": dialog_manager.dialog_data.get("has_invalid_content_type", False),
             "has_long_voice_duration": dialog_manager.dialog_data.get("has_long_voice_duration", False),
-            "has_empty_voice_text": dialog_manager.dialog_data.get("has_empty_voice_text", False),
         }
 
     @auto_log()
@@ -211,10 +210,14 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
             "regenerate_prompt": dialog_manager.dialog_data.get("regenerate_prompt", ""),
             "has_regenerate_prompt": bool(dialog_manager.dialog_data.get("regenerate_prompt", "")),
             "is_regenerating_text": dialog_manager.dialog_data.get("is_regenerating_text", False),
-            # Error flags
+            "voice_transcribe": dialog_manager.dialog_data.get("voice_transcribe", False),
+            # Error flags for text editing
             "has_void_text": dialog_manager.dialog_data.get("has_void_text", False),
             "has_small_text": dialog_manager.dialog_data.get("has_small_text", False),
             "has_big_text": dialog_manager.dialog_data.get("has_big_text", False),
+            # Error flags for regenerate prompt
+            "has_void_regenerate_prompt": dialog_manager.dialog_data.get("has_void_regenerate_prompt", False),
+            "has_invalid_content_type": dialog_manager.dialog_data.get("has_invalid_content_type", False),
         }
 
     @auto_log()
@@ -253,10 +256,12 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
             "image_prompt": dialog_manager.dialog_data.get("image_prompt", ""),
             "is_generating_image": dialog_manager.dialog_data.get("is_generating_image", False),
             "preview_image_media": preview_image_media,
+            "voice_transcribe": dialog_manager.dialog_data.get("voice_transcribe", False),
             # Error flags
             "has_void_image_prompt": dialog_manager.dialog_data.get("has_void_image_prompt", False),
             "has_small_image_prompt": dialog_manager.dialog_data.get("has_small_image_prompt", False),
             "has_big_image_prompt": dialog_manager.dialog_data.get("has_big_image_prompt", False),
+            "has_invalid_content_type": dialog_manager.dialog_data.get("has_invalid_content_type", False),
         }
 
     @auto_log()

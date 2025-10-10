@@ -43,7 +43,6 @@ class MainMenuService(interface.IMainMenuService):
         dialog_manager.dialog_data.pop("has_small_input_text", None)
         dialog_manager.dialog_data.pop("has_big_input_text", None)
         dialog_manager.dialog_data.pop("has_invalid_content_type", None)
-        dialog_manager.dialog_data.pop("has_empty_voice_text", None)
         dialog_manager.dialog_data.pop("has_small_input_text", None)
         dialog_manager.dialog_data.pop("has_big_input_text", None)
 

@@ -43,7 +43,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         dialog_manager.dialog_data.pop("has_small_input_text", None)
         dialog_manager.dialog_data.pop("has_big_input_text", None)
         dialog_manager.dialog_data.pop("has_invalid_content_type", None)
-        dialog_manager.dialog_data.pop("has_empty_voice_text", None)
         dialog_manager.dialog_data.pop("has_small_input_text", None)
         dialog_manager.dialog_data.pop("has_big_input_text", None)
 
@@ -249,25 +248,34 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
     @auto_log()
     @traced_method()
-    async def handle_regenerate_text_with_prompt(
+    async def handle_regenerate_text_prompt_input(
             self,
             message: Message,
-            widget: Any,
-            dialog_manager: DialogManager,
-            prompt: str
+            widget: MessageInput,
+            dialog_manager: DialogManager
     ) -> None:
         dialog_manager.show_mode = ShowMode.EDIT
 
         await message.delete()
-        prompt = message.html_text.replace('\n', '<br/>')
 
+        # Очистка флагов ошибок
         dialog_manager.dialog_data.pop("has_void_regenerate_prompt", None)
-        dialog_manager.dialog_data.pop("has_small_regenerate_prompt", None)
-        dialog_manager.dialog_data.pop("has_big_regenerate_prompt", None)
-        dialog_manager.dialog_data.pop("has_regenerate_api_error", None)
+        dialog_manager.dialog_data.pop("has_invalid_content_type", None)
+
+        state = await self._get_state(dialog_manager)
+
+        if message.content_type not in [ContentType.VOICE, ContentType.AUDIO, ContentType.TEXT]:
+            self.logger.info("Неверный тип контента для регенерации")
+            dialog_manager.dialog_data["has_invalid_content_type"] = True
+            return
+
+        if message.content_type == ContentType.TEXT:
+            prompt = message.html_text.replace('\n', '<br/>')
+        else:
+            prompt = await self._speech_to_text(message, dialog_manager, state.organization_id)
 
         if not prompt:
-            self.logger.info("Пустой промпт")
+            self.logger.info("Пустой промпт для регенерации")
             dialog_manager.dialog_data["has_void_regenerate_prompt"] = True
             return
 
@@ -373,23 +381,33 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
     @auto_log()
     @traced_method()
-    async def handle_generate_image_with_prompt(
+    async def handle_generate_image_prompt_input(
             self,
             message: Message,
-            widget: Any,
-            dialog_manager: DialogManager,
-            prompt: str
+            widget: MessageInput,
+            dialog_manager: DialogManager
     ) -> None:
         dialog_manager.show_mode = ShowMode.EDIT
 
         await message.delete()
 
+        # Очистка флагов ошибок
         dialog_manager.dialog_data.pop("has_void_image_prompt", None)
-        dialog_manager.dialog_data.pop("has_small_image_prompt", None)
-        dialog_manager.dialog_data.pop("has_big_image_prompt", None)
-        dialog_manager.dialog_data.pop("has_image_generation_error", None)
+        dialog_manager.dialog_data.pop("has_invalid_content_type", None)
+        dialog_manager.dialog_data.pop("has_empty_voice_text", None)
 
-        prompt = message.html_text.replace('\n', '<br/>')
+        state = await self._get_state(dialog_manager)
+
+        if message.content_type not in [ContentType.VOICE, ContentType.AUDIO, ContentType.TEXT]:
+            self.logger.info("Неверный тип контента для генерации изображения")
+            dialog_manager.dialog_data["has_invalid_content_type"] = True
+            return
+
+        if message.content_type == ContentType.TEXT:
+            prompt = message.html_text.replace('\n', '<br/>')
+        else:
+            prompt = await self._speech_to_text(message, dialog_manager, state.organization_id)
+
         if not prompt:
             self.logger.info("Пустой промпт для изображения")
             dialog_manager.dialog_data["has_void_image_prompt"] = True
