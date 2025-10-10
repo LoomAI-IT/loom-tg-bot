@@ -344,12 +344,11 @@ class PublicationDraftService(interface.IPublicationDraftService):
             
             working_pub = dialog_manager.dialog_data["working_publication"]
 
-            async with typing_action(self.bot, message.chat.id):
-                regenerated_data = await self.loom_content_client.regenerate_publication_text(
-                    category_id=working_pub["category_id"],
-                    publication_text=working_pub["text"],
-                    prompt=prompt,
-                )
+            regenerated_data = await self.loom_content_client.regenerate_publication_text(
+                category_id=working_pub["category_id"],
+                publication_text=working_pub["text"],
+                prompt=prompt,
+            )
 
             # Обновляем данные
             dialog_manager.dialog_data["working_publication"]["text"] = regenerated_data["text"]
