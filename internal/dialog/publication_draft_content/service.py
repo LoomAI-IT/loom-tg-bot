@@ -50,6 +50,7 @@ class PublicationDraftService(interface.IPublicationDraftService):
 
                 # Переходим к превью выбранной публикации
                 await dialog_manager.switch_to(model.PublicationDraftStates.edit_preview)
+                await callback.answer()
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
@@ -95,6 +96,7 @@ class PublicationDraftService(interface.IPublicationDraftService):
                 dialog_manager.dialog_data["selected_publication_id"] = new_publication_id
 
                 await dialog_manager.update(dialog_manager.dialog_data)
+                await callback.answer()
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
                 
@@ -488,6 +490,7 @@ class PublicationDraftService(interface.IPublicationDraftService):
         """Возврат к списку черновиков."""
         try:
             await dialog_manager.switch_to(model.PublicationDraftStates.publication_list)
+            await callback.answer()
         except Exception as err:
             await callback.answer("❌ Ошибка навигации", show_alert=True)
             raise
@@ -506,6 +509,7 @@ class PublicationDraftService(interface.IPublicationDraftService):
                 model.ContentMenuStates.content_menu,
                 mode=StartMode.RESET_STACK
             )
+            await callback.answer()
         except Exception as err:
             await callback.answer("❌ Ошибка навигации", show_alert=True)
             raise
