@@ -55,43 +55,39 @@ class Publication:
 class Category:
     id: int
     organization_id: int
-
     name: str
-    prompt_for_image_style: str
 
     goal: str
+    tone_of_voice: list[str]
+    brand_rules: list[str]
+    brand_vocabulary: list[dict]
+    tone_variations: list[dict]
 
-    # Структура контента
-    structure_skeleton: list[str]
-    structure_flex_level_min: int
-    structure_flex_level_max: int
-    structure_flex_level_comment: str
+    structure_variations: list[dict]
+    creativity_level: int
+    experimentation_zones: list[str]
+    surprise_factors: list[dict]
+    humor_policy: dict
+    audience_segments: list[dict]
+    emotional_palette: list[dict]
 
-    # Требования к контенту
-    must_have: list[str]
-    must_avoid: list[str]
+    must_have: list[dict]
+    must_avoid: list[dict]
 
-    # Правила для соцсетей
-    social_networks_rules: str
-
-    # Ограничения по длине
     len_min: int
     len_max: int
 
-    # Ограничения по хештегам
     n_hashtags_min: int
     n_hashtags_max: int
 
-    # Стиль и тон
     cta_type: str
-    tone_of_voice: list[str]
+    cta_strategy: dict
 
-    # Бренд и примеры
-    brand_rules: list[str]
     good_samples: list[dict]
+    bad_samples: list[dict]
+    additional_info: list[dict]
 
-    # Дополнительная информация
-    additional_info: list[str]
+    prompt_for_image_style: str
 
     created_at: str
 
