@@ -236,13 +236,12 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         await dialog_manager.show()
 
         category_id = dialog_manager.dialog_data["category_id"]
-        current_text = dialog_manager.dialog_data["publication_text"]
+        input_text = dialog_manager.dialog_data["input_text"]
 
         async with tg_action(self.bot, callback.message.chat.id):
-            regenerated_data = await self.loom_content_client.regenerate_publication_text(
+            regenerated_data = await self.loom_content_client.generate_publication_text(
                 category_id=category_id,
-                publication_text=current_text,
-                prompt=None
+                text_reference=input_text,
             )
 
         dialog_manager.dialog_data["is_regenerating_text"] = False
