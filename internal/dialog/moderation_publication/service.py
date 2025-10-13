@@ -9,6 +9,7 @@ from aiogram_dialog.widgets.kbd import ManagedCheckbox
 
 from internal import interface, model
 from pkg.log_wrapper import auto_log
+from pkg.tg_action_wrapper import tg_action
 from pkg.trace_wrapper import traced_method
 
 
@@ -139,11 +140,12 @@ class ModerationPublicationService(interface.IModerationPublicationService):
 
         working_pub = dialog_manager.dialog_data["working_publication"]
 
-        regenerated_data = await self.loom_content_client.regenerate_publication_text(
-            category_id=working_pub["category_id"],
-            publication_text=working_pub["text"],
-            prompt=None
-        )
+        async with tg_action(self.bot, callback.message.chat.id):
+            regenerated_data = await self.loom_content_client.regenerate_publication_text(
+                category_id=working_pub["category_id"],
+                publication_text=working_pub["text"],
+                prompt=None
+            )
 
         # Обновляем данные
         dialog_manager.dialog_data["working_publication"]["text"] = regenerated_data["text"]
@@ -206,11 +208,12 @@ class ModerationPublicationService(interface.IModerationPublicationService):
 
         working_pub = dialog_manager.dialog_data["working_publication"]
 
-        regenerated_data = await self.loom_content_client.regenerate_publication_text(
-            category_id=working_pub["category_id"],
-            publication_text=working_pub["text"],
-            prompt=prompt
-        )
+        async with tg_action(self.bot, message.chat.id):
+            regenerated_data = await self.loom_content_client.regenerate_publication_text(
+                category_id=working_pub["category_id"],
+                publication_text=working_pub["text"],
+                prompt=prompt
+            )
 
         dialog_manager.dialog_data["working_publication"]["text"] = regenerated_data["text"]
         dialog_manager.dialog_data["is_regenerating_text"] = False
@@ -283,14 +286,14 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             current_image_content, current_image_filename = await self._get_current_image_data_for_moderation(
                 dialog_manager)
 
-        # Генерация через API - возвращает массив из 3 URL
-        images_url = await self.loom_content_client.generate_publication_image(
-            category_id=category_id,
-            publication_text=publication_text,
-            text_reference=publication_text[:200],
-            image_content=current_image_content,
-            image_filename=current_image_filename,
-        )
+        async with tg_action(self.bot, callback.message.chat.id, "upload_photo"):
+            images_url = await self.loom_content_client.generate_publication_image(
+                category_id=category_id,
+                publication_text=publication_text,
+                text_reference=publication_text[:200],
+                image_content=current_image_content,
+                image_filename=current_image_filename,
+            )
 
         # Обновляем рабочую версию с множественными изображениями
         dialog_manager.dialog_data["working_publication"]["generated_images_url"] = images_url
@@ -370,15 +373,15 @@ class ModerationPublicationService(interface.IModerationPublicationService):
                 dialog_manager
             )
 
-        # Генерация с промптом - возвращает массив из 3 URL
-        images_url = await self.loom_content_client.generate_publication_image(
-            category_id=category_id,
-            publication_text=publication_text,
-            text_reference=publication_text[:200],
-            prompt=prompt,
-            image_content=current_image_content,
-            image_filename=current_image_filename,
-        )
+        async with tg_action(self.bot, message.chat.id, "upload_photo"):
+            images_url = await self.loom_content_client.generate_publication_image(
+                category_id=category_id,
+                publication_text=publication_text,
+                text_reference=publication_text[:200],
+                prompt=prompt,
+                image_content=current_image_content,
+                image_filename=current_image_filename,
+            )
 
         # Обновляем рабочую версию с множественными изображениями
         dialog_manager.dialog_data["working_publication"]["generated_images_url"] = images_url

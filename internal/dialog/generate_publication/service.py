@@ -10,6 +10,7 @@ from aiogram_dialog.widgets.kbd import ManagedCheckbox
 
 from internal import interface, model
 from pkg.log_wrapper import auto_log
+from pkg.tg_action_wrapper import tg_action
 from pkg.trace_wrapper import traced_method
 
 
@@ -126,10 +127,11 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         category_id = dialog_manager.dialog_data["category_id"]
         input_text = dialog_manager.dialog_data["input_text"]
 
-        publication_data = await self.loom_content_client.generate_publication_text(
-            category_id=category_id,
-            text_reference=input_text,
-        )
+        async with tg_action(self.bot, callback.message.chat.id):
+            publication_data = await self.loom_content_client.generate_publication_text(
+                category_id=category_id,
+                text_reference=input_text,
+            )
 
         dialog_manager.dialog_data["publication_text"] = publication_data["text"]
 
@@ -153,18 +155,20 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         category_id = dialog_manager.dialog_data["category_id"]
         input_text = dialog_manager.dialog_data["input_text"]
 
-        publication_data = await self.loom_content_client.generate_publication_text(
-            category_id=category_id,
-            text_reference=input_text,
-        )
+        async with tg_action(self.bot, callback.message.chat.id):
+            publication_data = await self.loom_content_client.generate_publication_text(
+                category_id=category_id,
+                text_reference=input_text,
+            )
 
         dialog_manager.dialog_data["publication_text"] = publication_data["text"]
 
-        images_url = await self.loom_content_client.generate_publication_image(
-            category_id,
-            publication_data["text"],
-            input_text,
-        )
+        async with tg_action(self.bot, callback.message.chat.id, "upload_photo"):
+            images_url = await self.loom_content_client.generate_publication_image(
+                category_id,
+                publication_data["text"],
+                input_text,
+            )
 
         dialog_manager.dialog_data["publication_images_url"] = images_url
         dialog_manager.dialog_data["has_image"] = True
@@ -234,11 +238,12 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         category_id = dialog_manager.dialog_data["category_id"]
         current_text = dialog_manager.dialog_data["publication_text"]
 
-        regenerated_data = await self.loom_content_client.regenerate_publication_text(
-            category_id=category_id,
-            publication_text=current_text,
-            prompt=None
-        )
+        async with tg_action(self.bot, callback.message.chat.id):
+            regenerated_data = await self.loom_content_client.regenerate_publication_text(
+                category_id=category_id,
+                publication_text=current_text,
+                prompt=None
+            )
 
         dialog_manager.dialog_data["is_regenerating_text"] = False
 
@@ -300,11 +305,12 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         category_id = dialog_manager.dialog_data["category_id"]
         current_text = dialog_manager.dialog_data["publication_text"]
 
-        regenerated_data = await self.loom_content_client.regenerate_publication_text(
-            category_id=category_id,
-            publication_text=current_text,
-            prompt=prompt
-        )
+        async with tg_action(self.bot, message.chat.id):
+            regenerated_data = await self.loom_content_client.regenerate_publication_text(
+                category_id=category_id,
+                publication_text=current_text,
+                prompt=prompt
+            )
 
         dialog_manager.dialog_data["publication_text"] = regenerated_data["text"]
 
@@ -374,13 +380,14 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         if await self._get_current_image_data(dialog_manager):
             current_image_content, current_image_filename = await self._get_current_image_data(dialog_manager)
 
-        images_url = await self.loom_content_client.generate_publication_image(
-            category_id=category_id,
-            publication_text=publication_text,
-            text_reference=text_reference,
-            image_content=current_image_content,
-            image_filename=current_image_filename,
-        )
+        async with tg_action(self.bot, callback.message.chat.id, "upload_photo"):
+            images_url = await self.loom_content_client.generate_publication_image(
+                category_id=category_id,
+                publication_text=publication_text,
+                text_reference=text_reference,
+                image_content=current_image_content,
+                image_filename=current_image_filename,
+            )
 
         dialog_manager.dialog_data["is_generating_image"] = False
         dialog_manager.dialog_data["publication_images_url"] = images_url
@@ -454,14 +461,15 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 dialog_manager
             )
 
-        images_url = await self.loom_content_client.generate_publication_image(
-            category_id=category_id,
-            publication_text=publication_text,
-            text_reference=text_reference,
-            prompt=prompt,
-            image_content=current_image_content,
-            image_filename=current_image_filename,
-        )
+        async with tg_action(self.bot, message.chat.id, "upload_photo"):
+            images_url = await self.loom_content_client.generate_publication_image(
+                category_id=category_id,
+                publication_text=publication_text,
+                text_reference=text_reference,
+                prompt=prompt,
+                image_content=current_image_content,
+                image_filename=current_image_filename,
+            )
 
         dialog_manager.dialog_data["publication_images_url"] = images_url
         dialog_manager.dialog_data["has_image"] = True

@@ -1,0 +1,1 @@
+from pkg.tg_action_wrapper.tg_action_wrapper import tg_action
