@@ -175,12 +175,9 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
             **kwargs
     ) -> dict:
         state = await self._get_state(dialog_manager)
-        employee = await self.loom_employee_client.get_employee_by_account_id(
-            state.account_id
-        )
 
         categories = await self.loom_content_client.get_categories_by_organization(
-            employee.organization_id
+            state.organization_id
         )
 
         categories_data = []
