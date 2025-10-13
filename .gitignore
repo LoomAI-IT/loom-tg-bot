@@ -1,1 +1,7 @@
 .idea
+.cursor
+.env
+
+env/.env.app
+env/.env.db
+env/.env.monitoring
