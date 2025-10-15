@@ -22,7 +22,8 @@ class LoomContentClient(interface.ILoomContentClient):
             port,
             prefix="/api/content",
             use_tracing=True,
-            log_context=log_context
+            log_context=log_context,
+            timeout=900
         )
         self.tracer = tel.tracer()
 
