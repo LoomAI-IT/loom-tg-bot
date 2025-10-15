@@ -9,8 +9,8 @@ from aiogram.types import ContentType
 from opentelemetry.trace import SpanKind, Status, StatusCode
 
 from internal import interface, model
-
-
+  
+ 
 class PublicationDraftGetter(interface.IPublicationDraftGetter):
     def __init__(
             self,
