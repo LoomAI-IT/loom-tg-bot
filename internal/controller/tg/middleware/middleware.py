@@ -46,14 +46,14 @@ class TgMiddleware(interface.ITelegramMiddleware):
         except Exception as e:
             self.logger.error("Ошибка!!!", {"traceback": traceback.format_exc()})
             raise e
-        if tg_chat_id != 0:
-            context_token = self.log_context.set({
-                common.TELEGRAM_USER_USERNAME_KEY: tg_username,
-                common.TELEGRAM_CHAT_ID_KEY: str(tg_chat_id),
-                common.TELEGRAM_EVENT_TYPE_KEY: event_type,
-                common.ORGANIZATION_ID_KEY: str(user_state.organization_id),
-                common.ACCOUNT_ID_KEY: str(user_state.account_id),
-            })
+
+        context_token = self.log_context.set({
+            common.TELEGRAM_USER_USERNAME_KEY: tg_username,
+            common.TELEGRAM_CHAT_ID_KEY: str(tg_chat_id),
+            common.TELEGRAM_EVENT_TYPE_KEY: event_type,
+            common.ORGANIZATION_ID_KEY: str(user_state.organization_id),
+            common.ACCOUNT_ID_KEY: str(user_state.account_id),
+        })
 
         try:
             await handler(event, data)
