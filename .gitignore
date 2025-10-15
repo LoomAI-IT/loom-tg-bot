@@ -2,9 +2,21 @@
 .cursor
 .env
 
+
 env/.env.app
 env/.env.db
-env/.env.monitoringenv/dev/.env.app
+env/.env.monitoring
+env/dev/.env.app
 env/dev/.env.db
 env/dev/.env.monitoring
-.env
+
+
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+
+
+venv/
