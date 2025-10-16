@@ -6,12 +6,11 @@ class Organization:
     id: int
     name: str
     rub_balance: str
-
     tone_of_voice: list[str]
-    brand_rules: list[str]
     compliance_rules: list[dict]
     additional_info: list[dict]
 
     products: list[dict]
     locale: dict
+
     created_at: str
