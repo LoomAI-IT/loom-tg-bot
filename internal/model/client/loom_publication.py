@@ -60,19 +60,10 @@ class Category:
     goal: str
     tone_of_voice: list[str]
     brand_rules: list[str]
-    brand_vocabulary: list[dict]
-    tone_variations: list[dict]
 
-    structure_variations: list[dict]
+    structure_variations: dict
     creativity_level: int
-    experimentation_zones: list[str]
-    surprise_factors: list[dict]
-    humor_policy: dict
     audience_segments: list[dict]
-    emotional_palette: list[dict]
-
-    must_have: list[dict]
-    must_avoid: list[dict]
 
     len_min: int
     len_max: int
