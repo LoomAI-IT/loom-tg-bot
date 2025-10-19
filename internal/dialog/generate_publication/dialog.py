@@ -81,7 +81,8 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             Case(
                 {
                     False: Multi(
-                        Const("📝 <b>Создание контента</b><br>"),
+                        Const("📝 <b>Создание контента</b><br><br>"),
+                        Format("{category_hint}<br><br>")
                         Const("💬 <i>Отправьте текст или голосовое сообщение — я превращу их в готовый контент</i>"),
                         Case(
                             {

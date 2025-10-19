@@ -155,6 +155,7 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
     ) -> dict:
         return {
             "category_name": dialog_manager.dialog_data.get("category_name", ""),
+            "category_hint": dialog_manager.dialog_data.get("category_hint", ""),
             "input_text": dialog_manager.dialog_data.get("input_text", ""),
             "has_input_text": dialog_manager.dialog_data.get("has_input_text", False),
             "voice_transcribe": dialog_manager.dialog_data.get("voice_transcribe", False),

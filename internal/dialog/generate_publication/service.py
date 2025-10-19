@@ -94,6 +94,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         dialog_manager.dialog_data["category_id"] = category.id
         dialog_manager.dialog_data["category_name"] = category.name
+        dialog_manager.dialog_data["category_hint"] = category.hint
 
         if dialog_manager.start_data:
             if dialog_manager.start_data.get("has_input_text"):

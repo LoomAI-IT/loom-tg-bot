@@ -56,14 +56,14 @@ class Category:
     id: int
     organization_id: int
     name: str
+    hint: str
 
     goal: str
     tone_of_voice: list[str]
     brand_rules: list[str]
 
-    structure_variations: dict
     creativity_level: int
-    audience_segments: list[dict]
+    audience_segments: str
 
     len_min: int
     len_max: int
