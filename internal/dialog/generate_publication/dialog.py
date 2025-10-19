@@ -1,8 +1,7 @@
 from aiogram import F
-from aiogram.enums import ContentType
 from aiogram_dialog import Window, Dialog, ShowMode
 from aiogram_dialog.widgets.text import Const, Format, Multi, Case
-from aiogram_dialog.widgets.kbd import Button, Column, Row, Back, Select, Checkbox, Next
+from aiogram_dialog.widgets.kbd import Button, Column, Row, Back, Select, Checkbox
 from aiogram_dialog.widgets.input import TextInput, MessageInput
 from aiogram_dialog.widgets.media import DynamicMedia
 from sulguk import SULGUK_PARSE_MODE
@@ -82,7 +81,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                 {
                     False: Multi(
                         Const("📝 <b>Создание контента</b><br><br>"),
-                        Format("{category_hint}<br><br>")
+                        Format("{category_hint}<br><br>"),
                         Const("💬 <i>Отправьте текст или голосовое сообщение — я превращу их в готовый контент</i>"),
                         Case(
                             {
