@@ -63,7 +63,7 @@ class Category:
     brand_rules: list[str]
 
     creativity_level: int
-    audience_segments: str
+    audience_segment: str
 
     len_min: int
     len_max: int
