@@ -92,27 +92,25 @@ class OrganizationMenuService(interface.IOrganizationMenuService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        await callback.answer("В разработке", show_alert=True)
-        return
-        # dialog_manager.show_mode = ShowMode.EDIT
-        #
-        # state = await self._get_state(dialog_manager)
-        #
-        # employee = await self.loom_employee_client.get_employee_by_account_id(
-        #     state.account_id
-        # )
-        #
-        # if not employee.setting_category_permission:
-        #     self.logger.info("Отказано в доступе")
-        #     await callback.answer("У вас нет прав обновлять рубрики", show_alert=True)
-        #     return
-        #
-        # await callback.answer()
-        #
-        # await dialog_manager.start(
-        #     model.UpdateCategoryStates.select_category,
-        #     mode=StartMode.RESET_STACK
-        # )
+        dialog_manager.show_mode = ShowMode.EDIT
+
+        state = await self._get_state(dialog_manager)
+
+        employee = await self.loom_employee_client.get_employee_by_account_id(
+            state.account_id
+        )
+
+        if not employee.setting_category_permission:
+            self.logger.info("Отказано в доступе")
+            await callback.answer("У вас нет прав обновлять рубрики", show_alert=True)
+            return
+
+        await callback.answer()
+
+        await dialog_manager.start(
+            model.UpdateCategoryStates.select_category,
+            mode=StartMode.RESET_STACK
+        )
 
     @auto_log()
     @traced_method()
