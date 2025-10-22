@@ -53,6 +53,12 @@ def include_tg_webhook(
     )
 
     app.add_api_route(
+        prefix + "/employee/notify/deleted",
+        tg_webhook_controller.notify_employee_deleted,
+        methods=["POST"]
+    )
+
+    app.add_api_route(
         prefix + "/video-cut/vizard/notify/generated",
         tg_webhook_controller.notify_vizard_video_cut_generated,
         methods=["POST"]

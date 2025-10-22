@@ -15,6 +15,8 @@ from pkg.client.internal.loom_authorization.client import LoomAuthorizationClien
 from pkg.client.internal.loom_employee.client import LoomEmployeeClient
 from pkg.client.internal.loom_organization.client import LoomOrganizationClient
 from pkg.client.internal.loom_content.client import LoomContentClient
+from pkg.client.external.claude.client import AnthropicClient
+from pkg.client.external.telegram.client import LTelegramClient
 
 from internal.controller.http.middlerware.middleware import HttpMiddleware
 from internal.controller.tg.middleware.middleware import TgMiddleware
@@ -37,6 +39,10 @@ from internal.dialog.video_cut_draft_content.dialog import VideoCutsDraftDialog
 from internal.dialog.moderation_video_cut.dialog import VideoCutModerationDialog
 from internal.dialog.publication_draft_content.dialog import PublicationDraftDialog
 from internal.dialog.alerts.dialog import AlertsDialog
+from internal.dialog.create_category.dialog import CreateCategoryDialog
+from internal.dialog.create_organization.dialog import CreateOrganizationDialog
+from internal.dialog.update_category.dialog import UpdateCategoryDialog
+from internal.dialog.update_organization.dialog import UpdateOrganizationDialog
 
 from internal.service.state.service import StateService
 from internal.dialog.intro.service import IntroService
@@ -54,6 +60,10 @@ from internal.dialog.video_cut_draft_content.service import VideoCutsDraftServic
 from internal.dialog.moderation_video_cut.service import VideoCutModerationService
 from internal.dialog.publication_draft_content.service import PublicationDraftService
 from internal.dialog.alerts.service import AlertsService
+from internal.dialog.create_category.service import CreateCategoryService
+from internal.dialog.create_organization.service import CreateOrganizationService
+from internal.dialog.update_category.service import UpdateCategoryService
+from internal.dialog.update_organization.service import UpdateOrganizationService
 
 from internal.dialog.intro.getter import IntroGetter
 from internal.dialog.main_menu.getter import MainMenuGetter
@@ -70,8 +80,18 @@ from internal.dialog.video_cut_draft_content.getter import VideoCutsDraftGetter
 from internal.dialog.moderation_video_cut.getter import VideoCutModerationGetter
 from internal.dialog.publication_draft_content.getter import PublicationDraftGetter
 from internal.dialog.alerts.getter import AlertsGetter
+from internal.dialog.create_category.getter import CreateCategoryGetter
+from internal.dialog.create_organization.getter import CreateOrganizationGetter
+from internal.dialog.update_category.getter import UpdateCategoryGetter
+from internal.dialog.update_organization.getter import UpdateOrganizationGetter
+
+from internal.dialog.create_category.prompt import CreateCategoryPromptGenerator
+from internal.dialog.create_organization.prompt import CreateOrganizationPromptGenerator
+from internal.dialog.update_category.prompt import UpdateCategoryPromptGenerator
+from internal.dialog.update_organization.prompt import UpdateOrganizationPromptGenerator
 
 from internal.repo.state.repo import StateRepo
+from internal.repo.llm_chat.repo import LLMChatRepo
 
 from internal.app.tg.app import NewTg
 from internal.app.server.app import NewServer
@@ -131,8 +151,16 @@ loom_employee_client = LoomEmployeeClient(tel, cfg.loom_employee_host, cfg.loom_
 loom_organization_client = LoomOrganizationClient(tel, cfg.loom_organization_host, cfg.loom_organization_port,
                                                   log_context)
 loom_content_client = LoomContentClient(tel, cfg.loom_content_host, cfg.loom_content_port, log_context)
+anthropic_client = AnthropicClient(tel, cfg.anthropic_api_key)
+telegram_client = LTelegramClient(
+    cfg.tg_bot_token,
+    cfg.tg_session_string,
+    cfg.tg_api_id,
+    cfg.tg_api_hash
+)
 
 state_repo = StateRepo(tel, db)
+llm_chat_repo = LLMChatRepo(tel, db)
 
 # Инициализация геттеров
 intro_getter = IntroGetter(
@@ -237,6 +265,52 @@ alerts_getter = AlertsGetter(
     loom_content_client,
 )
 
+# Инициализация промпт генераторов
+create_category_prompt_generator = CreateCategoryPromptGenerator()
+create_organization_prompt_generator = CreateOrganizationPromptGenerator()
+update_category_prompt_generator = UpdateCategoryPromptGenerator()
+update_organization_prompt_generator = UpdateOrganizationPromptGenerator()
+
+create_category_getter = CreateCategoryGetter(
+    tel,
+    bot,
+    anthropic_client,
+    create_category_prompt_generator,
+    llm_chat_repo,
+    state_repo,
+    loom_organization_client
+)
+
+create_organization_getter = CreateOrganizationGetter(
+    tel,
+    bot,
+    anthropic_client,
+    create_organization_prompt_generator,
+    llm_chat_repo,
+    state_repo
+)
+
+update_category_getter = UpdateCategoryGetter(
+    tel,
+    bot,
+    anthropic_client,
+    update_category_prompt_generator,
+    llm_chat_repo,
+    state_repo,
+    loom_organization_client,
+    loom_content_client,
+)
+
+update_organization_getter = UpdateOrganizationGetter(
+    tel,
+    bot,
+    anthropic_client,
+    update_organization_prompt_generator,
+    llm_chat_repo,
+    state_repo,
+    loom_organization_client,
+)
+
 # Инициализация сервисов
 state_service = StateService(tel, state_repo)
 intro_service = IntroService(
@@ -275,6 +349,7 @@ add_employee_service = AddEmployeeService(
 content_menu_service = ContentMenuService(
     tel,
     state_repo,
+    llm_chat_repo,
     loom_employee_client,
 )
 
@@ -282,6 +357,7 @@ generate_publication_service = GeneratePublicationService(
     tel,
     bot,
     state_repo,
+    llm_chat_repo,
     loom_content_client,
 )
 
@@ -327,6 +403,51 @@ add_social_network_service = AddSocialNetworkService(
 alerts_service = AlertsService(
     tel,
     state_repo,
+)
+
+create_category_service = CreateCategoryService(
+    tel,
+    bot,
+    anthropic_client,
+    telegram_client,
+    create_category_prompt_generator,
+    llm_chat_repo,
+    state_repo,
+    loom_organization_client,
+    loom_content_client
+)
+
+create_organization_service = CreateOrganizationService(
+    tel,
+    bot,
+    anthropic_client,
+    create_organization_prompt_generator,
+    loom_organization_client,
+    loom_content_client,
+    llm_chat_repo,
+    state_repo
+)
+
+update_category_service = UpdateCategoryService(
+    tel,
+    bot,
+    anthropic_client,
+    update_category_prompt_generator,
+    loom_organization_client,
+    loom_content_client,
+    llm_chat_repo,
+    state_repo
+)
+
+update_organization_service = UpdateOrganizationService(
+    tel,
+    bot,
+    anthropic_client,
+    update_organization_prompt_generator,
+    loom_organization_client,
+    loom_content_client,
+    llm_chat_repo,
+    state_repo
 )
 
 # Инициализация диалогов
@@ -416,6 +537,30 @@ alerts_dialog = AlertsDialog(
     alerts_getter,
 )
 
+create_category_dialog = CreateCategoryDialog(
+    tel,
+    create_category_service,
+    create_category_getter,
+)
+
+create_organization_dialog = CreateOrganizationDialog(
+    tel,
+    create_organization_service,
+    create_organization_getter,
+)
+
+update_category_dialog = UpdateCategoryDialog(
+    tel,
+    update_category_service,
+    update_category_getter,
+)
+
+update_organization_dialog = UpdateOrganizationDialog(
+    tel,
+    update_organization_service,
+    update_organization_getter,
+)
+
 command_controller = CommandController(tel, state_service)
 
 tg_middleware = TgMiddleware(
@@ -444,6 +589,10 @@ dialog_bg_factory = NewTg(
     publication_draft_dialog,
     add_social_network_dialog,
     alerts_dialog,
+    create_category_dialog,
+    create_organization_dialog,
+    update_category_dialog,
+    update_organization_dialog,
 )
 tg_middleware.dialog_bg_factory = dialog_bg_factory
 

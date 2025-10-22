@@ -1,11 +1,15 @@
 from pydantic import BaseModel
 
 
-class EmployeeNotificationBody(BaseModel):
+class EmployeeAddedNotificationBody(BaseModel):
     account_id: int
     organization_id: int
     employee_name: str
     role: str
+    interserver_secret_key: str
+
+class EmployeeDeletedNotificationBody(BaseModel):
+    account_id: int
     interserver_secret_key: str
 
 class SetCacheFileBody(BaseModel):

@@ -24,6 +24,10 @@ def NewTg(
         publication_draft_dialog: interface.IPublicationDraftDialog,
         add_social_network_dialog: interface.IAddSocialNetworkDialog,
         alerts_dialog: interface.IAlertsDialog,
+        create_category_dialog: interface.ICreateCategoryDialog,
+        create_organization_dialog: interface.ICreateOrganizationDialog,
+        update_category_dialog: interface.IUpdateCategoryDialog,
+        update_organization_dialog: interface.IUpdateOrganizationDialog,
 ) -> BgManagerFactory:
     include_command_handlers(
         dp,
@@ -49,7 +53,11 @@ def NewTg(
         video_cuts_draft_dialog,
         publication_draft_dialog,
         add_social_network_dialog,
-        alerts_dialog
+        alerts_dialog,
+        create_category_dialog,
+        create_organization_dialog,
+        update_category_dialog,
+        update_organization_dialog,
     )
 
     return dialog_bg_factory
@@ -89,6 +97,10 @@ def include_dialogs(
         publication_draft_dialog: interface.IPublicationDraftDialog,
         add_social_network_dialog: interface.IAddSocialNetworkDialog,
         alerts_dialog: interface.IAlertsDialog,
+        create_category_dialog: interface.ICreateCategoryDialog,
+        create_organization_dialog: interface.ICreateOrganizationDialog,
+        update_category_dialog: interface.IUpdateCategoryDialog,
+        update_organization_dialog: interface.IUpdateOrganizationDialog,
 ) -> BgManagerFactory:
     dialog_router = Router()
     dialog_router.include_routers(
@@ -107,6 +119,10 @@ def include_dialogs(
         publication_draft_dialog.get_dialog(),
         add_social_network_dialog.get_dialog(),
         alerts_dialog.get_dialog(),
+        create_category_dialog.get_dialog(),
+        create_organization_dialog.get_dialog(),
+        update_category_dialog.get_dialog(),
+        update_organization_dialog.get_dialog(),
     )
 
     dp.include_routers(dialog_router)
