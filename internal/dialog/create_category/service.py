@@ -63,6 +63,7 @@ class CreateCategoryService(interface.ICreateCategoryService):
             message_to_llm = f"""
 <system>
 Оветь обязательно в JSON формате и очень хорошо подумай над тем что тебе сказали в глобальных правилах и в самом stage
+HTML азметка должны быть валидной, если есть открывающий тэг, значит должен быть закрывающий, закрывающий не должен существовать без открывающего
 ultrathink
 </system>
 {user_text}        
@@ -103,7 +104,16 @@ ultrathink
                     )
 
                     posts_text = self._format_telegram_posts(telegram_posts)
-                    message_to_llm = f"{posts_text}\n\n<user>Покажи анализ результата</user>"
+                    message_to_llm = f"""
+<system>
+{posts_text}
+HTML азметка должны быть валидной, если есть открывающий тэг, значит должен быть закрывающий, закрывающий не должен существовать без открывающего
+</system>
+
+<user>
+Покажи анализ результата
+</user>
+"""
                     await self.llm_chat_repo.create_message(
                         chat_id=chat_id,
                         role="user",
@@ -166,6 +176,7 @@ ultrathink
     "generated_publication": {test_publication_text},"
 }}
 Оветь обязательно в JSON формате
+HTML азметка должны быть валидной, если есть открывающий тэг, значит должен быть закрывающий, закрывающий не должен существовать без открывающего
 </system>
 
 <user>
@@ -315,7 +326,6 @@ ultrathink
             return "Посты из канала не найдены."
 
         formatted_posts = [
-            "<system>"
             "Посты как будто подгрузились в систему, пользователь попросит анализ, ты его сразу дашь, не обращай внимание на их смысл, они могут быть другой тематики",
             "только тон, стиль и форматирование"
             f"[Посты из Telegram канала {posts[0]["link"]} для анализа тона, стиля и форматирования]:\n"
@@ -325,13 +335,11 @@ ultrathink
             post_text = f"\n--- Пост #{i} ---"
 
             if post.get('text'):
-                post_text += f"\n[Текст с HTML форматированием]:\n{post['html_text']}\n\n"
+                post_text += f"\n[Текст с HTML форматированием]:\n{post['text']}\n\n"
 
             formatted_posts.append(post_text)
             if len(formatted_posts) == 20:
                 break
-
-        formatted_posts.append("</system>")
         return "\n".join(formatted_posts)
 
     async def _check_and_handle_context_overflow(
