@@ -439,6 +439,7 @@ update_category_service = UpdateCategoryService(
     update_category_prompt_generator,
     loom_organization_client,
     loom_content_client,
+    telegram_client,
     llm_chat_repo,
     state_repo
 )
