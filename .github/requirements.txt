@@ -9,6 +9,7 @@ openai>=2.2.0,<3.0.0
 aiogram>=3.22.0,<4.0.0
 aiogram-dialog>=2.4.0,<3.0.0
 sulguk>=0.10.1,<2.0.0
+segno>=1.6.6,<2.0.0
 anthropic
 telethon
 
