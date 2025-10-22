@@ -14,6 +14,28 @@ CREATE TABLE IF NOT EXISTS user_states (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 """
+
+create_llm_chats_table = """
+CREATE TABLE IF NOT EXISTS llm_chats (
+    id SERIAL PRIMARY KEY,
+    state_id INTEGER NOT NULL,
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+"""
+
+create_llm_messages_table = """
+CREATE TABLE IF NOT EXISTS llm_messages (
+    id SERIAL PRIMARY KEY,
+    chat_id INTEGER NOT NULL,
+    
+    role TEXT NOT NULL,
+    text TEXT NOT NULL,
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+"""
+
 create_cache_files_table = """
 CREATE TABLE IF NOT EXISTS cache_files (
     id SERIAL PRIMARY KEY,
@@ -75,9 +97,19 @@ drop_publication_rejected_alerts_table = """
 DROP TABLE IF EXISTS publication_rejected_alerts;
 """
 
+drop_llm_chats_table = """
+DROP TABLE IF EXISTS llm_chats;
+"""
+
+drop_llm_messages_table = """
+DROP TABLE IF EXISTS llm_messages;
+"""
+
 
 create_queries = [
     create_state_table,
+    create_llm_chats_table,
+    create_llm_messages_table,
     create_cache_files_table,
     create_vizard_video_cut_alerts_table,
     create_publication_approved_alerts_table,
@@ -88,5 +120,7 @@ drop_queries = [
     drop_cache_files_table,
     drop_vizard_video_cut_alerts_table,
     drop_publication_approved_alerts_table,
-    drop_publication_rejected_alerts_table
+    drop_publication_rejected_alerts_table,
+    drop_llm_chats_table,
+    drop_llm_messages_table
 ]
