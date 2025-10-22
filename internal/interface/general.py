@@ -44,7 +44,7 @@ class ITelegramWebhookController(Protocol):
     @abstractmethod
     async def notify_employee_added(
             self,
-            body: EmployeeNotificationBody,
+            body: EmployeeAddedNotificationBody,
     ) -> JSONResponse: pass
 
     async def notify_employee_deleted(
