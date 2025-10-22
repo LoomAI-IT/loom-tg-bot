@@ -35,6 +35,12 @@ class IGeneratePublicationDialog(Protocol):
     def get_social_network_select_window(self) -> Window: pass
 
     @abstractmethod
+    def get_edit_text_window(self) -> Window: pass
+
+    @abstractmethod
+    def get_text_too_long_alert_window(self) -> Window: pass
+
+    @abstractmethod
     def get_publication_success_window(self) -> Window: pass
 
 
@@ -197,6 +203,22 @@ class IGeneratePublicationService(Protocol):
             dialog_manager: DialogManager
     ) -> None: pass
 
+    @abstractmethod
+    async def handle_compress_text(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
+    @abstractmethod
+    async def handle_remove_photo_from_long_text(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
 
 class IGeneratePublicationGetter(Protocol):
 
@@ -239,6 +261,12 @@ class IGeneratePublicationGetter(Protocol):
 
     @abstractmethod
     async def get_upload_image_data(
+            self,
+            dialog_manager: DialogManager,
+    ) -> dict: pass
+
+    @abstractmethod
+    async def get_text_too_long_alert_data(
             self,
             dialog_manager: DialogManager,
     ) -> dict: pass

@@ -661,12 +661,6 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
                 ),
             ),
 
-            Button(
-                Const("◀️ Назад к редактированию"),
-                id="back_to_edit_preview",
-                on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.edit_preview, ShowMode.EDIT),
-            ),
-
             state=model.ModerationPublicationStates.text_too_long_alert,
             getter=self.moderation_publication_getter.get_text_too_long_alert_data,
             parse_mode=SULGUK_PARSE_MODE,

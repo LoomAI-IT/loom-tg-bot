@@ -37,6 +37,9 @@ class IModerationPublicationDialog(Protocol):
     def get_social_network_select_window(self) -> Window: pass
 
     @abstractmethod
+    def get_text_too_long_alert_window(self) -> Window: pass
+
+    @abstractmethod
     def get_publication_success_window(self) -> Window: pass
 
 
@@ -172,6 +175,30 @@ class IModerationPublicationService(Protocol):
             dialog_manager: DialogManager
     ) -> None: pass
 
+    @abstractmethod
+    async def handle_compress_text(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
+    @abstractmethod
+    async def handle_remove_photo_from_long_text(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
+    @abstractmethod
+    async def handle_restore_previous_text(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
     # Навигация
     @abstractmethod
     async def handle_back_to_content_menu(
@@ -222,6 +249,12 @@ class IModerationPublicationGetter(Protocol):
 
     @abstractmethod
     async def get_upload_image_data(
+            self,
+            dialog_manager: DialogManager,
+    ) -> dict: pass
+
+    @abstractmethod
+    async def get_text_too_long_alert_data(
             self,
             dialog_manager: DialogManager,
     ) -> dict: pass
