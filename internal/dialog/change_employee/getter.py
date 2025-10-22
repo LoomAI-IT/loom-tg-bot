@@ -133,6 +133,10 @@ class ChangeEmployeeGetter(interface.IChangeEmployeeGetter):
             permissions_list.append("✅ Пополнение баланса")
         if employee.sign_up_social_net_permission:
             permissions_list.append("✅ Подключение соцсетей")
+        if employee.setting_category_permission:
+            permissions_list.append("✅ Настройка рубрик")
+        if employee.setting_organization_permission:
+            permissions_list.append("✅ Настройка организации")
 
         if not permissions_list:
             permissions_list.append("❌ Нет специальных разрешений")
@@ -203,6 +207,8 @@ class ChangeEmployeeGetter(interface.IChangeEmployeeGetter):
                 "edit_permissions": employee.edit_employee_perm_permission,
                 "top_up_balance": employee.top_up_balance_permission,
                 "social_networks": employee.sign_up_social_net_permission,
+                "setting_category": employee.setting_category_permission,
+                "setting_organization": employee.setting_organization_permission,
             }
             dialog_manager.dialog_data["original_permissions"] = dialog_manager.dialog_data[
                 "temp_permissions"].copy()
@@ -222,6 +228,8 @@ class ChangeEmployeeGetter(interface.IChangeEmployeeGetter):
             "edit_permissions_icon": "✅" if permissions["edit_permissions"] else "❌",
             "top_up_balance_icon": "✅" if permissions["top_up_balance"] else "❌",
             "social_networks_icon": "✅" if permissions["social_networks"] else "❌",
+            "setting_category_icon": "✅" if permissions["setting_category"] else "❌",
+            "setting_organization_icon": "✅" if permissions["setting_organization"] else "❌",
             "has_changes": has_changes,
         }
 

@@ -227,6 +227,16 @@ class AddEmployeeDialog(interface.IAddEmployeeDialog):
                     id="toggle_sign_up_social_networks",
                     on_click=self.add_employee_service.handle_toggle_permission,
                 ),
+                Button(
+                    Format("{setting_category_icon} Настройка рубрик"),
+                    id="toggle_setting_category",
+                    on_click=self.add_employee_service.handle_toggle_permission,
+                ),
+                Button(
+                    Format("{setting_organization_icon} Настройка организации"),
+                    id="toggle_setting_organization",
+                    on_click=self.add_employee_service.handle_toggle_permission,
+                ),
             ),
 
             Row(

@@ -190,6 +190,8 @@ class AddEmployeeService(interface.IAddEmployeeService):
             edit_employee_perm_permission=employee_data.permissions.edit_permissions,
             top_up_balance_permission=employee_data.permissions.top_up_balance,
             sign_up_social_net_permission=employee_data.permissions.sign_up_social_networks,
+            setting_category_permission=employee_data.permissions.setting_category,
+            setting_organization_permission=employee_data.permissions.setting_organization,
         )
 
         dialog_manager.dialog_data["is_creating_employee"] = False

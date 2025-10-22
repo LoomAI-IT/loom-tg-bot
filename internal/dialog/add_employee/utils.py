@@ -12,6 +12,8 @@ class Permissions:
     edit_permissions: bool = False
     top_up_balance: bool = False
     sign_up_social_networks: bool = False
+    setting_category: bool = False
+    setting_organization: bool = False
 
     def to_dict(self) -> dict[str, bool]:
         return {
@@ -21,6 +23,8 @@ class Permissions:
             "edit_permissions": self.edit_permissions,
             "top_up_balance": self.top_up_balance,
             "sign_up_social_networks": self.sign_up_social_networks,
+            "setting_category": self.setting_category,
+            "setting_organization": self.setting_organization,
         }
 
     @classmethod
@@ -32,6 +36,8 @@ class Permissions:
             edit_permissions=data.get("edit_permissions", False),
             top_up_balance=data.get("top_up_balance", False),
             sign_up_social_networks=data.get("sign_up_social_networks", False),
+            setting_category=data.get("setting_category", False),
+            setting_organization=data.get("setting_organization", False),
         )
 
 
@@ -72,6 +78,8 @@ class PermissionManager:
         "toggle_edit_permissions": "edit_permissions",
         "toggle_top_up_balance": "top_up_balance",
         "toggle_sign_up_social_networks": "sign_up_social_networks",
+        "toggle_setting_category": "setting_category",
+        "toggle_setting_organization": "setting_organization",
     }
 
     PERMISSION_NAMES = {
@@ -81,6 +89,8 @@ class PermissionManager:
         "edit_permissions": "Изменение разрешений",
         "top_up_balance": "Пополнение баланса",
         "sign_up_social_networks": "Подключение соцсетей",
+        "setting_category": "Настройка рубрик",
+        "setting_organization": "Настройка организации",
     }
 
     @staticmethod
@@ -93,6 +103,8 @@ class PermissionManager:
                 edit_permissions=True,
                 top_up_balance=True,
                 sign_up_social_networks=True,
+                setting_category=True,
+                setting_organization=True,
             )
         elif role == common.Role.MODERATOR:
             return Permissions(
@@ -102,6 +114,8 @@ class PermissionManager:
                 edit_permissions=False,
                 top_up_balance=False,
                 sign_up_social_networks=True,
+                setting_category=True,
+                setting_organization=True,
             )
         else:  # EMPLOYEE
             return Permissions()

@@ -88,6 +88,8 @@ class AddEmployeeGetter(interface.IAddEmployeeGetter):
             "edit_permissions_icon": "✅" if permissions.edit_permissions else "❌",
             "top_up_balance_icon": "✅" if permissions.top_up_balance else "❌",
             "sign_up_social_networks_icon": "✅" if permissions.sign_up_social_networks else "❌",
+            "setting_category_icon": "✅" if permissions.setting_category else "❌",
+            "setting_organization_icon": "✅" if permissions.setting_organization else "❌",
         }
 
     @auto_log()
@@ -120,6 +122,8 @@ class AddEmployeeGetter(interface.IAddEmployeeGetter):
             (permissions.edit_permissions, "Изменение разрешений"),
             (permissions.top_up_balance, "Пополнение баланса"),
             (permissions.sign_up_social_networks, "Подключение соцсетей"),
+            (permissions.setting_category, "Настройка рубрик"),
+            (permissions.setting_organization, "Настройка организации"),
         ]
 
         for has_permission, permission_name in permission_checks:

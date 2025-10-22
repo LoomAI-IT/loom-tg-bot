@@ -151,6 +151,8 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
             "toggle_edit_permissions": "edit_permissions",
             "toggle_top_up_balance": "top_up_balance",
             "toggle_social_networks": "social_networks",
+            "toggle_setting_category": "setting_category",
+            "toggle_setting_organization": "setting_organization",
         }
 
         permission_key = permission_map.get(button.widget_id)
@@ -186,6 +188,8 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
             edit_employee_perm_permission=permissions.get("edit_permissions", False),
             top_up_balance_permission=permissions.get("top_up_balance", False),
             sign_up_social_net_permission=permissions.get("social_networks", False),
+            setting_category_permission=permissions.get("setting_category", False),
+            setting_organization_permission=permissions.get("setting_organization", False),
         )
         # TODO сделать вебхук для алерта об изменении прав
 
