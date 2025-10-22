@@ -316,6 +316,7 @@ state_service = StateService(tel, state_repo)
 intro_service = IntroService(
     tel,
     state_repo,
+    llm_chat_repo,
     loom_account_client,
     loom_employee_client,
 )
@@ -328,6 +329,7 @@ main_menu_service = MainMenuService(
 organization_menu_service = OrganizationMenuService(
     tel,
     state_repo,
+    llm_chat_repo,
     loom_employee_client
 )
 personal_profile_service = PersonalProfileService(
