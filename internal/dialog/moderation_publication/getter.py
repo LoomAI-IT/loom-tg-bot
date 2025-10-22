@@ -313,6 +313,25 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
 
     @auto_log()
     @traced_method()
+    async def get_text_too_long_alert_data(
+            self,
+            dialog_manager: DialogManager,
+            **kwargs
+    ) -> dict:
+        working_pub = dialog_manager.dialog_data.get("working_publication", {})
+        publication_text = working_pub.get("text", "")
+        current_text_length = len(publication_text)
+        max_length_with_image = 1024
+
+        return {
+            "current_text_length": current_text_length,
+            "max_length_with_image": max_length_with_image,
+            "publication_text": publication_text,
+            "has_previous_text": bool(dialog_manager.dialog_data.get("previous_text")),
+        }
+
+    @auto_log()
+    @traced_method()
     async def get_publication_success_data(
             self,
             dialog_manager: DialogManager,

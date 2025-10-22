@@ -335,7 +335,7 @@ HTML азметка должны быть валидной, если есть о
             post_text = f"\n--- Пост #{i} ---"
 
             if post.get('text'):
-                post_text += f"\n[Текст с HTML форматированием]:\n{post['text']}\n\n"
+                post_text += f"\n[Текст с HTML форматированием]:\n{post['html_text']}\n\n"
 
             formatted_posts.append(post_text)
             if len(formatted_posts) == 20:

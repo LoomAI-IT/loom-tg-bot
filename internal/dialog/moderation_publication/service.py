@@ -1,3 +1,4 @@
+import re
 from typing import Any
 
 from aiogram_dialog.widgets.input import MessageInput
@@ -147,9 +148,16 @@ class ModerationPublicationService(interface.IModerationPublicationService):
                 prompt=None
             )
 
+        # Сохраняем предыдущий текст на случай превышения лимита
+        dialog_manager.dialog_data["previous_text"] = working_pub["text"]
+
         # Обновляем данные
         dialog_manager.dialog_data["working_publication"]["text"] = regenerated_data["text"]
         dialog_manager.dialog_data["is_regenerating_text"] = False
+
+        # Проверяем длину текста с изображением
+        if await self._check_text_length_with_image(dialog_manager):
+            return
 
         await dialog_manager.switch_to(model.ModerationPublicationStates.edit_preview)
 
@@ -208,6 +216,9 @@ class ModerationPublicationService(interface.IModerationPublicationService):
 
         working_pub = dialog_manager.dialog_data["working_publication"]
 
+        # Сохраняем предыдущий текст на случай превышения лимита
+        dialog_manager.dialog_data["previous_text"] = working_pub["text"]
+
         async with tg_action(self.bot, message.chat.id):
             regenerated_data = await self.loom_content_client.regenerate_publication_text(
                 category_id=working_pub["category_id"],
@@ -218,6 +229,10 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         dialog_manager.dialog_data["working_publication"]["text"] = regenerated_data["text"]
         dialog_manager.dialog_data["is_regenerating_text"] = False
         dialog_manager.dialog_data["has_regenerate_prompt"] = False
+
+        # Проверяем длину текста с изображением
+        if await self._check_text_length_with_image(dialog_manager):
+            return
 
         await dialog_manager.switch_to(model.ModerationPublicationStates.edit_preview)
 
@@ -254,8 +269,16 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             dialog_manager.dialog_data["has_small_text"] = True
             return
 
+        # Сохраняем предыдущий текст на случай превышения лимита
+        working_pub = dialog_manager.dialog_data["working_publication"]
+        dialog_manager.dialog_data["previous_text"] = working_pub["text"]
+
         # Обновляем рабочую версию
         dialog_manager.dialog_data["working_publication"]["text"] = new_text
+
+        # Проверяем длину текста с изображением
+        if await self._check_text_length_with_image(dialog_manager):
+            return
 
         await dialog_manager.switch_to(model.ModerationPublicationStates.edit_preview)
 
@@ -286,6 +309,10 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             current_image_content, current_image_filename = await self._get_current_image_data_for_moderation(
                 dialog_manager)
 
+        # Сохраняем предыдущее состояние на случай превышения лимита
+        dialog_manager.dialog_data["previous_text"] = working_pub["text"]
+        dialog_manager.dialog_data["previous_has_image"] = working_pub.get("has_image", False)
+
         async with tg_action(self.bot, callback.message.chat.id, "upload_photo"):
             images_url = await self.loom_content_client.generate_publication_image(
                 category_id=category_id,
@@ -304,6 +331,10 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         dialog_manager.dialog_data["working_publication"].pop("is_custom_image", None)
         dialog_manager.dialog_data["working_publication"].pop("image_url", None)
         dialog_manager.dialog_data["is_generating_image"] = False
+
+        # Проверяем длину текста с изображением
+        if await self._check_text_length_with_image(dialog_manager):
+            return
 
         await dialog_manager.switch_to(model.ModerationPublicationStates.edit_preview)
 
@@ -373,6 +404,10 @@ class ModerationPublicationService(interface.IModerationPublicationService):
                 dialog_manager
             )
 
+        # Сохраняем предыдущее состояние на случай превышения лимита
+        dialog_manager.dialog_data["previous_text"] = working_pub["text"]
+        dialog_manager.dialog_data["previous_has_image"] = working_pub.get("has_image", False)
+
         async with tg_action(self.bot, message.chat.id, "upload_photo"):
             images_url = await self.loom_content_client.generate_publication_image(
                 category_id=category_id,
@@ -392,6 +427,10 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         dialog_manager.dialog_data["working_publication"].pop("is_custom_image", None)
         dialog_manager.dialog_data["working_publication"].pop("image_url", None)
         dialog_manager.dialog_data["is_generating_image"] = False
+
+        # Проверяем длину текста с изображением
+        if await self._check_text_length_with_image(dialog_manager):
+            return
 
         await dialog_manager.switch_to(model.ModerationPublicationStates.edit_preview)
 
@@ -423,6 +462,11 @@ class ModerationPublicationService(interface.IModerationPublicationService):
                     dialog_manager.dialog_data["has_big_image_size"] = True
                     return
 
+            # Сохраняем предыдущее состояние на случай превышения лимита
+            working_pub = dialog_manager.dialog_data["working_publication"]
+            dialog_manager.dialog_data["previous_text"] = working_pub["text"]
+            dialog_manager.dialog_data["previous_has_image"] = working_pub.get("has_image", False)
+
             # Обновляем рабочую версию
             dialog_manager.dialog_data["working_publication"]["custom_image_file_id"] = photo.file_id
             dialog_manager.dialog_data["working_publication"]["has_image"] = True
@@ -430,8 +474,13 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             # Удаляем URL если был
             dialog_manager.dialog_data["working_publication"].pop("image_url", None)
 
-            await dialog_manager.switch_to(model.ModerationPublicationStates.edit_preview)
             self.logger.info("Изображение загружено")
+
+            # Проверяем длину текста с изображением
+            if await self._check_text_length_with_image(dialog_manager):
+                return
+
+            await dialog_manager.switch_to(model.ModerationPublicationStates.edit_preview)
         else:
             self.logger.info("Ошибка обработки изображения")
             dialog_manager.dialog_data["has_image_processing_error"] = True
@@ -618,6 +667,99 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         await callback.answer("Опубликовано!", show_alert=True)
 
         await dialog_manager.switch_to(model.ModerationPublicationStates.publication_success)
+
+    @auto_log()
+    @traced_method()
+    async def handle_remove_photo_from_long_text(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        dialog_manager.show_mode = ShowMode.EDIT
+
+        # Удаляем изображение из рабочей версии
+        dialog_manager.dialog_data["working_publication"]["has_image"] = False
+        dialog_manager.dialog_data["working_publication"].pop("image_url", None)
+        dialog_manager.dialog_data["working_publication"].pop("custom_image_file_id", None)
+        dialog_manager.dialog_data["working_publication"].pop("is_custom_image", None)
+        dialog_manager.dialog_data["working_publication"].pop("generated_images_url", None)
+        dialog_manager.dialog_data["working_publication"].pop("current_image_index", None)
+
+        self.logger.info("Изображение удалено из-за длинного текста")
+        await callback.answer("Изображение удалено", show_alert=True)
+        await dialog_manager.switch_to(model.ModerationPublicationStates.edit_preview)
+
+    @auto_log()
+    @traced_method()
+    async def handle_compress_text(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        dialog_manager.show_mode = ShowMode.EDIT
+
+        await callback.answer()
+        await callback.message.edit_text(
+            "Сжимаю текст, это может занять время... Не совершайте никаких действий",
+            reply_markup=None
+        )
+
+        working_pub = dialog_manager.dialog_data["working_publication"]
+        category_id = working_pub["category_id"]
+        current_text = working_pub["text"]
+        expected_length = dialog_manager.dialog_data.get("expected_length", 900)
+
+        compress_prompt = f"Сожми текст до {expected_length} символов, сохраняя основной смысл и ключевые идеи"
+
+        async with tg_action(self.bot, callback.message.chat.id):
+            compressed_data = await self.loom_content_client.regenerate_publication_text(
+                category_id=category_id,
+                publication_text=current_text,
+                prompt=compress_prompt
+            )
+
+        dialog_manager.dialog_data["working_publication"]["text"] = compressed_data["text"]
+
+        await dialog_manager.switch_to(model.ModerationPublicationStates.edit_preview)
+
+    @auto_log()
+    @traced_method()
+    async def handle_restore_previous_text(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        dialog_manager.show_mode = ShowMode.EDIT
+
+        # Восстанавливаем предыдущий текст
+        previous_text = dialog_manager.dialog_data.get("previous_text")
+        if previous_text:
+            dialog_manager.dialog_data["working_publication"]["text"] = previous_text
+            self.logger.info("Текст восстановлен из предыдущего состояния")
+
+        # Восстанавливаем состояние изображения если оно было изменено
+        if "previous_has_image" in dialog_manager.dialog_data:
+            prev_has_image = dialog_manager.dialog_data["previous_has_image"]
+            current_has_image = dialog_manager.dialog_data["working_publication"].get("has_image", False)
+
+            # Если изображение было добавлено (и его не было раньше), удаляем его
+            if not prev_has_image and current_has_image:
+                self.logger.info("Удаление добавленного изображения")
+                dialog_manager.dialog_data["working_publication"]["has_image"] = False
+                dialog_manager.dialog_data["working_publication"].pop("generated_images_url", None)
+                dialog_manager.dialog_data["working_publication"].pop("custom_image_file_id", None)
+                dialog_manager.dialog_data["working_publication"].pop("is_custom_image", None)
+                dialog_manager.dialog_data["working_publication"].pop("current_image_index", None)
+
+        # Очищаем сохраненные данные
+        dialog_manager.dialog_data.pop("previous_text", None)
+        dialog_manager.dialog_data.pop("previous_has_image", None)
+
+        await callback.answer("Изменения отменены", show_alert=True)
+        await dialog_manager.switch_to(model.ModerationPublicationStates.edit_preview)
 
     # Вспомогательные методы
     def _has_changes(self, dialog_manager: DialogManager) -> bool:
@@ -845,6 +987,28 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         )
         dialog_manager.dialog_data["voice_transcribe"] = False
         return text
+
+    async def _check_text_length_with_image(self, dialog_manager: DialogManager) -> bool:
+        working_pub = dialog_manager.dialog_data.get("working_publication", {})
+        publication_text = working_pub.get("text", "")
+
+        text_without_tags = re.sub(r'<[^>]+>', '', publication_text)
+        text_length = len(text_without_tags)
+        has_image = working_pub.get("has_image", False)
+
+        if has_image and text_length > 1024:
+            self.logger.info(f"Текст слишком длинный для публикации с изображением: {text_length} символов")
+            dialog_manager.dialog_data["expected_length"] = 900
+            await dialog_manager.switch_to(model.ModerationPublicationStates.text_too_long_alert)
+            return True
+
+        if not has_image and text_length > 4096:
+            self.logger.info(f"Текст слишком длинный: {text_length} символов")
+            dialog_manager.dialog_data["expected_length"] = 3600
+            await dialog_manager.switch_to(model.ModerationPublicationStates.text_too_long_alert)
+            return True
+
+        return False
 
     async def _get_state(self, dialog_manager: DialogManager) -> model.UserState:
         if hasattr(dialog_manager.event, 'message') and dialog_manager.event.message:
