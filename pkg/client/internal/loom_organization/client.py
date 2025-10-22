@@ -81,26 +81,6 @@ class LoomOrganizationClient(interface.ILoomOrganizationClient):
 
         return [model.Organization(**org) for org in json_response["organizations"]]
 
-    @traced_method(SpanKind.CLIENT)
-    async def update_organization(
-            self,
-            organization_id: int,
-            name: str = None,
-            autoposting_moderation: bool = None,
-            video_cut_description_end_sample: str = None,
-            publication_text_end_sample: str = None,
-    ) -> None:
-        body = {}
-        if name is not None:
-            body["name"] = name
-        if autoposting_moderation is not None:
-            body["autoposting_moderation"] = autoposting_moderation
-        if video_cut_description_end_sample is not None:
-            body["video_cut_description_end_sample"] = video_cut_description_end_sample
-        if publication_text_end_sample is not None:
-            body["publication_text_end_sample"] = publication_text_end_sample
-
-        await self.client.put(f"/{organization_id}", json=body)
 
     @traced_method(SpanKind.CLIENT)
     async def top_up_balance(self, organization_id: int, amount_rub: int) -> None:
