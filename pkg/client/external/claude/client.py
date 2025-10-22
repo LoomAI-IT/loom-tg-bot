@@ -25,7 +25,7 @@ class AnthropicClient(interface.IAnthropicClient):
 
         self.client = AsyncAnthropic(
             api_key=api_key,
-            http_client=httpx.AsyncClient(proxy="http://32uLYMeQ:jLaDv4WK@193.160.72.227:62940")
+            http_client=httpx.AsyncClient(proxy="http://user331580:52876b@163.5.189.163:2667")
         )
 
     @traced_method(SpanKind.CLIENT)
