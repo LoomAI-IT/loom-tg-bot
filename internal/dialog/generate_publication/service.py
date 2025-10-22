@@ -6,7 +6,7 @@ from aiogram_dialog.widgets.input import MessageInput
 from aiogram import Bot
 from aiogram.types import CallbackQuery, Message, ContentType
 from aiogram_dialog import DialogManager, StartMode, ShowMode
-from aiogram_dialog.widgets.kbd import ManagedCheckbox
+from aiogram_dialog.widgets.kbd import ManagedCheckbox, Button
 
 from internal import interface, model
 from pkg.log_wrapper import auto_log
@@ -20,12 +20,14 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             tel: interface.ITelemetry,
             bot: Bot,
             state_repo: interface.IStateRepo,
+            llm_chat_repo: interface.ILLMChatRepo,
             loom_content_client: interface.ILoomContentClient,
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
         self.bot = bot
         self.state_repo = state_repo
+        self.llm_chat_repo = llm_chat_repo
         self.loom_content_client = loom_content_client
 
     @auto_log()
@@ -108,6 +110,29 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         else:
             self.logger.info("Нет стартовых данных")
             await dialog_manager.switch_to(model.GeneratePublicationStates.input_text)
+
+    @auto_log()
+    @traced_method()
+    async def go_to_create_category(
+            self,
+            callback: CallbackQuery,
+            button: Button,
+            dialog_manager: DialogManager
+    ) -> None:
+        dialog_manager.show_mode = ShowMode.EDIT
+
+        await callback.answer()
+
+        state = await self._get_state(dialog_manager)
+
+        chat = await self.llm_chat_repo.get_chat_by_state_id(state.id)
+        if chat:
+            await self.llm_chat_repo.delete_chat(chat[0].id)
+
+        await dialog_manager.start(
+            model.CreateCategoryStates.create_category,
+            mode=StartMode.RESET_STACK
+        )
 
     @auto_log()
     @traced_method()

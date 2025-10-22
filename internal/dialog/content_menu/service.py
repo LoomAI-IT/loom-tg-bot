@@ -2,6 +2,7 @@ from typing import Any
 
 from aiogram.types import CallbackQuery
 from aiogram_dialog import DialogManager, StartMode, ShowMode
+from aiogram_dialog.widgets.kbd import Button
 
 from opentelemetry.trace import SpanKind, Status, StatusCode
 
@@ -15,11 +16,13 @@ class ContentMenuService(interface.IContentMenuService):
             self,
             tel: interface.ITelemetry,
             state_repo: interface.IStateRepo,
+            lm_chat_repo: interface.ILLMChatRepo,
             loom_employee_client: interface.ILoomEmployeeClient,
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
         self.state_repo = state_repo
+        self.lm_chat_repo = lm_chat_repo
         self.loom_employee_client = loom_employee_client
 
     @auto_log()
@@ -179,6 +182,29 @@ class ContentMenuService(interface.IContentMenuService):
 
         await dialog_manager.start(
             model.MainMenuStates.main_menu,
+            mode=StartMode.RESET_STACK
+        )
+
+    @auto_log()
+    @traced_method()
+    async def go_to_create_category(
+            self,
+            callback: CallbackQuery,
+            button: Button,
+            dialog_manager: DialogManager
+    ) -> None:
+        dialog_manager.show_mode = ShowMode.EDIT
+
+        await callback.answer()
+
+        state = await self._get_state(dialog_manager)
+
+        chat = await self.llm_chat_repo.get_chat_by_state_id(state.id)
+        if chat:
+            await self.llm_chat_repo.delete_chat(chat[0].id)
+
+        await dialog_manager.start(
+            model.CreateCategoryStates.create_category,
             mode=StartMode.RESET_STACK
         )
 

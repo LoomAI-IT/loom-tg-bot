@@ -24,6 +24,24 @@ class IOrganizationMenuService(Protocol):
         pass
 
     @abstractmethod
+    async def handle_go_to_update_organization(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        pass
+
+    @abstractmethod
+    async def handle_go_to_update_category(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        pass
+
+    @abstractmethod
     async def handle_go_to_add_employee(
             self,
             callback: CallbackQuery,

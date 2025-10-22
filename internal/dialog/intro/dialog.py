@@ -1,4 +1,4 @@
-from aiogram_dialog import Window, Dialog
+from aiogram_dialog import Window, Dialog, ShowMode
 from aiogram_dialog.widgets.text import Const, Format
 from aiogram_dialog.widgets.kbd import Button, Url, Back
 from sulguk import SULGUK_PARSE_MODE
@@ -6,25 +6,26 @@ from sulguk import SULGUK_PARSE_MODE
 from internal import interface, model
 
 
-class AuthDialog(interface.IAuthDialog):
+class IntroDialog(interface.IIntroDialog):
 
     def __init__(
             self,
             tel: interface.ITelemetry,
-            auth_service: interface.IAuthService,
-            auth_getter: interface.IAuthGetter,
+            intro_service: interface.IIntroService,
+            intro_getter: interface.IIntroGetter,
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
-        self.auth_service = auth_service
-        self.auth_getter = auth_getter
+        self.intro_service = intro_service
+        self.intro_getter = intro_getter
 
     def get_dialog(self) -> Dialog:
         return Dialog(
             self.get_user_agreement_window(),
             self.get_privacy_policy_window(),
             self.get_data_processing_window(),
-            self.get_access_denied_window(),
+            self.get_intro_window(),
+            self.get_join_to_organization_window(),
         )
 
     def get_user_agreement_window(self) -> Window:
@@ -38,10 +39,10 @@ class AuthDialog(interface.IAuthDialog):
             Button(
                 Const("✅ Принять"),
                 id="accept_user_agreement",
-                on_click=self.auth_service.accept_user_agreement,
+                on_click=self.intro_service.accept_user_agreement,
             ),
-            state=model.AuthStates.user_agreement,
-            getter=self.auth_getter.get_agreement_data,
+            state=model.IntroStates.user_agreement,
+            getter=self.intro_getter.get_agreement_data,
             parse_mode=SULGUK_PARSE_MODE,
         )
 
@@ -56,11 +57,11 @@ class AuthDialog(interface.IAuthDialog):
             Button(
                 Const("✅ Принять"),
                 id="accept_privacy_policy",
-                on_click=self.auth_service.accept_privacy_policy,
+                on_click=self.intro_service.accept_privacy_policy,
             ),
             Back(Const("◀️ Назад")),
-            state=model.AuthStates.privacy_policy,
-            getter=self.auth_getter.get_agreement_data,
+            state=model.IntroStates.privacy_policy,
+            getter=self.intro_getter.get_agreement_data,
             parse_mode=SULGUK_PARSE_MODE,
         )
 
@@ -75,29 +76,42 @@ class AuthDialog(interface.IAuthDialog):
             Button(
                 Const("✅ Принять"),
                 id="accept_data_processing",
-                on_click=self.auth_service.accept_data_processing,
+                on_click=self.intro_service.accept_data_processing,
             ),
             Back(Const("◀️ Назад")),
-            state=model.AuthStates.data_processing,
-            getter=self.auth_getter.get_agreement_data,
+            state=model.IntroStates.data_processing,
+            getter=self.intro_getter.get_agreement_data,
             parse_mode=SULGUK_PARSE_MODE,
         )
 
-    def get_access_denied_window(self) -> Window:
+    def get_intro_window(self) -> Window:
         return Window(
-            Const("🚫 <b>Доступ ограничен</b><br><br>"),
-            Const(
-                "Извините, но у вашего аккаунта недостаточно прав для "
-                "использования этого бота.<br><br>"
-                "<b>Что можно сделать:</b><br>"
-            ),
-            Format("• Обратитесь к своему администратору и сообщите ему ваш ID аккаунта: {account_id}<br>"),
+            Const("Перед переходом к работе с контентом, выбери"),
             Button(
-                Const("📞 Поддержка"),
-                id="contact_support",
-                on_click=self.auth_service.handle_access_denied,
+                Const("Вступить в организацию"),
+                id="join_to_organization",
+                on_click=lambda c, b, d: d.switch_to(model.IntroStates.join_to_organization, ShowMode.EDIT),
             ),
-            state=model.AuthStates.access_denied,
-            getter=self.auth_getter.get_user_status,
+            Button(
+                Const("Создать организацию"),
+                id="create_organization",
+                on_click=self.intro_service.go_to_create_organization
+            ),
+            state=model.IntroStates.intro,
+            getter=self.intro_getter.get_agreement_data,
+            parse_mode=SULGUK_PARSE_MODE,
+        )
+
+    def get_join_to_organization_window(self) -> Window:
+        return Window(
+            Format("Ваш ID: <code>{account_id}</code><br><br>"),
+            Const("Отправьте его тому, кто пригласил вас в Loom"),
+            Button(
+                Const("Назад"),
+                id="contact_support",
+                on_click=lambda c, b, d: d.switch_to(model.IntroStates.join_to_organization, ShowMode.EDIT),
+            ),
+            state=model.IntroStates.join_to_organization,
+            getter=self.intro_getter.get_user_status,
             parse_mode=SULGUK_PARSE_MODE,
         )

@@ -55,6 +55,12 @@ class ContentMenuDialog(interface.IContentMenuDialog):
                     ),
                 ),
                 Button(
+                    Const("Создать рубрику"),
+                    id="go_to_main_menu",
+                    on_click=self.content_menu_service.go_to_create_category,
+                    when=~F["has_categories"],
+                ),
+                Button(
                     Const("🏠 В главное меню"),
                     id="to_main_menu",
                     on_click=self.content_menu_service.handle_go_to_main_menu,

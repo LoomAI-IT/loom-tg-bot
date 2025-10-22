@@ -135,3 +135,61 @@ class IDB(Protocol):
 
     @abstractmethod
     async def multi_query(self, queries: list[str]) -> None: pass
+
+
+class ITelegramClient(Protocol):
+    @abstractmethod
+    async def send_text_message(
+            self,
+            channel_id: str | int,
+            text: str,
+    ) -> str: pass
+
+    @abstractmethod
+    async def send_photo(
+            self,
+            channel_id: str | int,
+            photo: bytes,
+            caption: str = None,
+    ) -> str: pass
+
+    @abstractmethod
+    async def check_permission(
+            self,
+            channel_id: str | int,
+    ) -> bool: pass
+
+    @abstractmethod
+    async def get_channel_posts(
+            self,
+            channel_id: str,
+            limit: int = None
+    ) -> list[dict]: pass
+
+
+class IAnthropicClient(Protocol):
+    @abstractmethod
+    async def generate_str(
+            self,
+            history: list,
+            system_prompt: str,
+            temperature: float = 1.0,
+            llm_model: str = "claude-haiku-4-5",
+            max_tokens: int = 4096,
+            thinking_tokens: int = None,
+            enable_caching: bool = True,
+            cache_ttl: str = "5m",
+    ) -> tuple[str, dict]: pass
+
+    @abstractmethod
+    async def generate_json(
+            self,
+            history: list,
+            system_prompt: str,
+            temperature: float = 1.0,
+            llm_model: str = "claude-haiku-4-5",
+            max_tokens: int = 4096,
+            thinking_tokens: int = None,
+            enable_caching: bool = True,
+            cache_ttl: str = "5m",
+    ) -> tuple[dict, dict]: pass

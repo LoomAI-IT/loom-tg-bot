@@ -12,11 +12,13 @@ class OrganizationMenuService(interface.IOrganizationMenuService):
             self,
             tel: interface.ITelemetry,
             state_repo: interface.IStateRepo,
+            llm_chat_repo: interface.ILLMChatRepo,
             loom_employee_client: interface.ILoomEmployeeClient
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
         self.state_repo = state_repo
+        self.llm_chat_repo = llm_chat_repo
         self.loom_employee_client = loom_employee_client
 
     @auto_log()
@@ -45,6 +47,46 @@ class OrganizationMenuService(interface.IOrganizationMenuService):
 
         await dialog_manager.start(
             model.ChangeEmployeeStates.employee_list,
+            mode=StartMode.RESET_STACK
+        )
+
+    @auto_log()
+    @traced_method()
+    async def handle_go_to_update_organization(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        dialog_manager.show_mode = ShowMode.EDIT
+
+        await callback.answer()
+
+        state = await self._get_state(dialog_manager)
+
+        chat = await self.llm_chat_repo.get_chat_by_state_id(state.id)
+        if chat:
+            await self.llm_chat_repo.delete_chat(chat[0].id)
+
+        await dialog_manager.start(
+            model.UpdateOrganizationStates.update_organization,
+            mode=StartMode.RESET_STACK
+        )
+
+    @auto_log()
+    @traced_method()
+    async def handle_go_to_update_category(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        dialog_manager.show_mode = ShowMode.EDIT
+
+        await callback.answer()
+
+        await dialog_manager.start(
+            model.UpdateCategoryStates.select_category,
             mode=StartMode.RESET_STACK
         )
 

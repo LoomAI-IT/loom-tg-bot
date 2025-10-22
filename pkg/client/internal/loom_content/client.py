@@ -282,6 +282,175 @@ class LoomContentClient(interface.ILoomContentClient):
         return [model.Publication(**pub) for pub in json_response]
 
     @traced_method(SpanKind.CLIENT)
+    async def create_category(
+            self,
+            organization_id: int,
+            name: str,
+            hint: str,
+
+            goal: str,
+            tone_of_voice: list[str],
+            brand_rules: list[str],
+
+            creativity_level: int,
+            audience_segment: str,
+
+            len_min: int,
+            len_max: int,
+
+            n_hashtags_min: int,
+            n_hashtags_max: int,
+
+            cta_type: str,
+            cta_strategy: dict,
+
+            good_samples: list[dict],
+            bad_samples: list[dict],
+            additional_info: list[dict],
+
+            prompt_for_image_style: str,
+    ) -> int:
+        body = {
+            "organization_id": organization_id,
+            "name": name,
+            "hint": hint,
+            "goal": goal,
+            "tone_of_voice": tone_of_voice,
+            "brand_rules": brand_rules,
+            "creativity_level": creativity_level,
+            "audience_segment": audience_segment,
+            "len_min": len_min,
+            "len_max": len_max,
+            "n_hashtags_min": n_hashtags_min,
+            "n_hashtags_max": n_hashtags_max,
+            "cta_type": cta_type,
+            "cta_strategy": cta_strategy,
+            "good_samples": good_samples,
+            "bad_samples": bad_samples,
+            "additional_info": additional_info,
+            "prompt_for_image_style": prompt_for_image_style,
+        }
+        response = await self.client.post(f"/publication/category", json=body)
+        json_response = response.json()
+
+        return json_response["category_id"]
+
+    @traced_method(SpanKind.CLIENT)
+    async def test_generate_publication(
+            self,
+            user_text_reference: str,
+            organization_id: int,
+            name: str,
+            hint: str,
+
+            goal: str,
+            tone_of_voice: list[str],
+            brand_rules: list[str],
+
+            creativity_level: int,
+            audience_segment: str,
+
+            len_min: int,
+            len_max: int,
+
+            n_hashtags_min: int,
+            n_hashtags_max: int,
+
+            cta_type: str,
+            cta_strategy: dict,
+
+            good_samples: list[dict],
+            bad_samples: list[dict],
+            additional_info: list[dict],
+
+            prompt_for_image_style: str,
+    ) -> str:
+        body = {
+            "text_reference": user_text_reference,
+            "organization_id": organization_id,
+            "name": name,
+            "hint": hint,
+            "goal": goal,
+            "tone_of_voice": tone_of_voice,
+            "brand_rules": brand_rules,
+            "creativity_level": creativity_level,
+            "audience_segment": audience_segment,
+            "len_min": len_min,
+            "len_max": len_max,
+            "n_hashtags_min": n_hashtags_min,
+            "n_hashtags_max": n_hashtags_max,
+            "cta_type": cta_type,
+            "cta_strategy": cta_strategy,
+            "good_samples": good_samples,
+            "bad_samples": bad_samples,
+            "additional_info": additional_info,
+            "prompt_for_image_style": prompt_for_image_style,
+        }
+        response = await self.client.post(f"/publication/text/test-generate", json=body)
+        json_response = response.json()
+
+        return json_response["text"]
+
+    @traced_method(SpanKind.CLIENT)
+    async def update_category(
+            self,
+            category_id: int,
+            name: str = None,
+            hint: str = None,
+            goal: str = None,
+            tone_of_voice: list[str] = None,
+            brand_rules: list[str] = None,
+            creativity_level: int = None,
+            audience_segment: str = None,
+            len_min: int = None,
+            len_max: int = None,
+            n_hashtags_min: int = None,
+            n_hashtags_max: int = None,
+            cta_type: str = None,
+            cta_strategy: dict = None,
+            good_samples: list[dict] = None,
+            bad_samples: list[dict] = None,
+            additional_info: list[dict] = None,
+            prompt_for_image_style: str = None
+    ) -> None:
+        body = {}
+
+        if name is not None:
+            body["name"] = name
+        if goal is not None:
+            body["goal"] = goal
+        if tone_of_voice is not None:
+            body["tone_of_voice"] = tone_of_voice
+        if brand_rules is not None:
+            body["brand_rules"] = brand_rules
+        if creativity_level is not None:
+            body["creativity_level"] = creativity_level
+        if audience_segment is not None:
+            body["audience_segment"] = audience_segment
+        if len_min is not None:
+            body["len_min"] = len_min
+        if len_max is not None:
+            body["len_max"] = len_max
+        if n_hashtags_min is not None:
+            body["n_hashtags_min"] = n_hashtags_min
+        if n_hashtags_max is not None:
+            body["n_hashtags_max"] = n_hashtags_max
+        if cta_type is not None:
+            body["cta_type"] = cta_type
+        if cta_strategy is not None:
+            body["cta_strategy"] = cta_strategy
+        if good_samples is not None:
+            body["good_samples"] = good_samples
+        if bad_samples is not None:
+            body["bad_samples"] = bad_samples
+        if additional_info is not None:
+            body["additional_info"] = additional_info
+        if prompt_for_image_style is not None:
+            body["prompt_for_image_style"] = prompt_for_image_style
+
+        await self.client.put(f"/publication/category/{category_id}", json=body)
+
+    @traced_method(SpanKind.CLIENT)
     async def get_category_by_id(self, category_id: int) -> model.Category:
         response = await self.client.get(f"/publication/category/{category_id}")
         json_response = response.json()

@@ -65,6 +65,13 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             ),
 
             Button(
+                Const("Создать рубрику"),
+                id="go_to_main_menu",
+                on_click=self.generate_publication_service.go_to_create_category,
+                when=~F["has_categories"],
+            ),
+
+            Button(
                 Const("◀️ Назад"),
                 id="cancel_to_content_menu",
                 on_click=self.generate_publication_service.handle_go_to_content_menu,
@@ -176,7 +183,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
     def get_preview_window(self) -> Window:
         return Window(
             Multi(
-                Const("👁️ <b>Предварительный просмотр</b><br>"),
+                Const("👁️ <b>Предварительный просмотр</b><br><br>"),
                 Format("{publication_text}"),
                 Case(
                     {

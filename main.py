@@ -22,7 +22,7 @@ from internal.controller.tg.middleware.middleware import TgMiddleware
 from internal.controller.tg.command.handler import CommandController
 from internal.controller.http.webhook.handler import TelegramWebhookController
 
-from internal.dialog.auth.dialog import AuthDialog
+from internal.dialog.intro.dialog import IntroDialog
 from internal.dialog.main_menu.dialog import MainMenuDialog
 from internal.dialog.organization_menu.dialog import OrganizationMenuDialog
 from internal.dialog.personal_profile.dialog import PersonalProfileDialog
@@ -39,7 +39,7 @@ from internal.dialog.publication_draft_content.dialog import PublicationDraftDia
 from internal.dialog.alerts.dialog import AlertsDialog
 
 from internal.service.state.service import StateService
-from internal.dialog.auth.service import AuthService
+from internal.dialog.intro.service import IntroService
 from internal.dialog.main_menu.service import MainMenuService
 from internal.dialog.organization_menu.service import OrganizationMenuService
 from internal.dialog.content_menu.service import ContentMenuService
@@ -55,7 +55,7 @@ from internal.dialog.moderation_video_cut.service import VideoCutModerationServi
 from internal.dialog.publication_draft_content.service import PublicationDraftService
 from internal.dialog.alerts.service import AlertsService
 
-from internal.dialog.auth.getter import AuthGetter
+from internal.dialog.intro.getter import IntroGetter
 from internal.dialog.main_menu.getter import MainMenuGetter
 from internal.dialog.organization_menu.getter import OrganizationMenuGetter
 from internal.dialog.content_menu.getter import ContentMenuGetter
@@ -135,7 +135,7 @@ loom_content_client = LoomContentClient(tel, cfg.loom_content_host, cfg.loom_con
 state_repo = StateRepo(tel, db)
 
 # Инициализация геттеров
-auth_getter = AuthGetter(
+intro_getter = IntroGetter(
     tel,
     state_repo,
     cfg.domain
@@ -239,7 +239,7 @@ alerts_getter = AlertsGetter(
 
 # Инициализация сервисов
 state_service = StateService(tel, state_repo)
-auth_service = AuthService(
+intro_service = IntroService(
     tel,
     state_repo,
     loom_account_client,
@@ -330,10 +330,10 @@ alerts_service = AlertsService(
 )
 
 # Инициализация диалогов
-auth_dialog = AuthDialog(
+auth_dialog = IntroDialog(
     tel,
-    auth_service,
-    auth_getter,
+    intro_service,
+    intro_getter,
 )
 main_menu_dialog = MainMenuDialog(
     tel,

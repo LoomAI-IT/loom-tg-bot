@@ -9,7 +9,7 @@ def NewTg(
         dp: Dispatcher,
         command_controller: interface.ICommandController,
         tg_middleware: interface.ITelegramMiddleware,
-        auth_dialog: interface.IAuthDialog,
+        auth_dialog: interface.IIntroDialog,
         main_menu_dialog: interface.IMainMenuDialog,
         personal_profile_dialog: interface.IPersonalProfileDialog,
         organization_menu_dialog: interface.IOrganizationMenuDialog,
@@ -74,7 +74,7 @@ def include_command_handlers(
 
 def include_dialogs(
         dp: Dispatcher,
-        auth_dialog: interface.IAuthDialog,
+        auth_dialog: interface.IIntroDialog,
         main_menu_dialog: interface.IMainMenuDialog,
         personal_profile_dialog: interface.IPersonalProfileDialog,
         organization_menu_dialog: interface.IOrganizationMenuDialog,

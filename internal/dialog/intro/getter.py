@@ -5,7 +5,7 @@ from pkg.log_wrapper import auto_log
 from pkg.trace_wrapper import traced_method
 
 
-class AuthGetter(interface.IAuthGetter):
+class IntroGetter(interface.IIntroGetter):
     def __init__(
             self,
             tel: interface.ITelemetry,

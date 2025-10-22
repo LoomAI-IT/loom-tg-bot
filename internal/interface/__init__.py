@@ -1,7 +1,12 @@
 from internal.interface.user_state import *
 from internal.interface.general import *
+from internal.interface.llm_chat import *
 
-from internal.interface.dialog.auth import *
+from internal.interface.dialog.intro import *
+from internal.interface.dialog.create_organization import *
+from internal.interface.dialog.create_category import *
+from internal.interface.dialog.update_organization import *
+from internal.interface.dialog.update_category import *
 from internal.interface.dialog.main_menu import *
 from internal.interface.dialog.personal_profile import *
 from internal.interface.dialog.organization_menu import *
@@ -21,5 +26,5 @@ from internal.interface.client.loom_account import *
 from internal.interface.client.loom_authorization import *
 from internal.interface.client.loom_employee import *
 from internal.interface.client.loom_organization import *
-from internal.interface.client.loom_publication import *
+from internal.interface.client.loom_content import *
 from internal.interface.client.loom_payment import *

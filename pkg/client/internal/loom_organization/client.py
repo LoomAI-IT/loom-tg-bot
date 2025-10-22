@@ -27,6 +27,46 @@ class LoomOrganizationClient(interface.ILoomOrganizationClient):
         self.tracer = tel.tracer()
 
     @traced_method(SpanKind.CLIENT)
+    async def create_organization(self, name: str) -> int:
+        body = {
+            "name": name,
+        }
+        response = await self.client.post(f"/create", json=body)
+        json_response = response.json()
+
+        return json_response["organization_id"]
+
+    @traced_method(SpanKind.CLIENT)
+    async def update_organization(
+            self,
+            organization_id: int,
+            name: str = None,
+            tone_of_voice: list[str] = None,
+            compliance_rules: list[dict] = None,
+            products: list[dict] = None,
+            locale: dict = None,
+            additional_info: list[dict] = None
+    ) -> None:
+        body: dict = {
+            "organization_id": organization_id,
+        }
+
+        if name is not None:
+            body["name"] = name
+        if tone_of_voice is not None:
+            body["tone_of_voice"] = tone_of_voice
+        if compliance_rules is not None:
+            body["compliance_rules"] = compliance_rules
+        if products is not None:
+            body["products"] = products
+        if locale is not None:
+            body["locale"] = locale
+        if additional_info is not None:
+            body["additional_info"] = additional_info
+
+        await self.client.put(f"", json=body)
+
+    @traced_method(SpanKind.CLIENT)
     async def get_organization_by_id(self, organization_id: int) -> model.Organization:
 
         response = await self.client.get(f"/{organization_id}")

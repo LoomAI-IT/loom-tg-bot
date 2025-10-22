@@ -34,6 +34,16 @@ class OrganizationMenuDialog(interface.IOrganizationMenuDialog):
 
             Column(
                 Button(
+                    Const("🏢 Обновить параметры организации"),
+                    id="update_organization",
+                    on_click=self.organization_menu_service.handle_go_to_update_organization,
+                ),
+                Button(
+                    Const("Обновить рубрику"),
+                    id="update_category",
+                    on_click=self.organization_menu_service.handle_go_to_update_category,
+                ),
+                Button(
                     Const("⚙️ Настройка пользователей"),
                     id="user_settings",
                     on_click=self.organization_menu_service.handle_go_to_employee_settings,

@@ -3,7 +3,8 @@ from typing import Protocol, Any
 from aiogram_dialog import DialogManager, Dialog, Window
 from aiogram.types import CallbackQuery, Message
 from aiogram_dialog.widgets.input import MessageInput
-from aiogram_dialog.widgets.kbd import ManagedCheckbox
+from aiogram_dialog.widgets.kbd import ManagedCheckbox, Button
+
 
 class IGeneratePublicationDialog(Protocol):
     @abstractmethod
@@ -80,6 +81,15 @@ class IGeneratePublicationService(Protocol):
             button: Any,
             dialog_manager: DialogManager
     ) -> None: pass
+
+    @abstractmethod
+    async def go_to_create_category(
+            self,
+            callback: CallbackQuery,
+            button: Button,
+            dialog_manager: DialogManager
+    ) -> None:
+        pass
 
     @abstractmethod
     async def handle_regenerate_text(

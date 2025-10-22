@@ -4,7 +4,7 @@ from aiogram.types import CallbackQuery
 from aiogram_dialog import DialogManager, Dialog, Window
 
 
-class IAuthDialog(Protocol):
+class IIntroDialog(Protocol):
 
     @abstractmethod
     def get_dialog(self) -> Dialog: pass
@@ -19,10 +19,13 @@ class IAuthDialog(Protocol):
     def get_data_processing_window(self) -> Window: pass
 
     @abstractmethod
-    def get_access_denied_window(self) -> Window: pass
+    def get_intro_window(self) -> Window: pass
+
+    @abstractmethod
+    def get_join_to_organization_window(self) -> Window: pass
 
 
-class IAuthService(Protocol):
+class IIntroService(Protocol):
     @abstractmethod
     async def accept_user_agreement(
             self,
@@ -51,7 +54,7 @@ class IAuthService(Protocol):
         pass
 
     @abstractmethod
-    async def handle_access_denied(
+    async def go_to_create_organization(
             self,
             callback: CallbackQuery,
             button: Any,
@@ -60,7 +63,7 @@ class IAuthService(Protocol):
         pass
 
 
-class IAuthGetter(Protocol):
+class IIntroGetter(Protocol):
 
     @abstractmethod
     async def get_agreement_data(self) -> dict:
