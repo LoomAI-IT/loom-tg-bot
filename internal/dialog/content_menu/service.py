@@ -16,13 +16,13 @@ class ContentMenuService(interface.IContentMenuService):
             self,
             tel: interface.ITelemetry,
             state_repo: interface.IStateRepo,
-            lm_chat_repo: interface.ILLMChatRepo,
+            llm_chat_repo: interface.ILLMChatRepo,
             loom_employee_client: interface.ILoomEmployeeClient,
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
         self.state_repo = state_repo
-        self.lm_chat_repo = lm_chat_repo
+        self.llm_chat_repo = llm_chat_repo
         self.loom_employee_client = loom_employee_client
 
     @auto_log()

@@ -112,6 +112,15 @@ class IContentMenuService(Protocol):
         pass
 
     @abstractmethod
+    async def go_to_create_category(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        pass
+
+    @abstractmethod
     async def handle_go_to_content_menu(
             self,
             callback: CallbackQuery,

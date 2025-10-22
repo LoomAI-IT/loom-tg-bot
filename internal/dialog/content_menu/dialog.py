@@ -1,3 +1,4 @@
+from aiogram import F
 from aiogram_dialog import Window, Dialog
 from aiogram_dialog.widgets.text import Const, Format
 from aiogram_dialog.widgets.kbd import Button, Column, Row
