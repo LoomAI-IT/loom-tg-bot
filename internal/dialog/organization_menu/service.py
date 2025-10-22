@@ -107,6 +107,10 @@ class OrganizationMenuService(interface.IOrganizationMenuService):
 
         await callback.answer()
 
+        chat = await self.llm_chat_repo.get_chat_by_state_id(state.id)
+        if chat:
+            await self.llm_chat_repo.delete_chat(chat[0].id)
+
         await dialog_manager.start(
             model.UpdateCategoryStates.select_category,
             mode=StartMode.RESET_STACK
