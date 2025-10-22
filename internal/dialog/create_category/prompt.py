@@ -73,8 +73,8 @@ class CreateCategoryPromptGenerator(interface.ICreateCategoryPromptGenerator):
 name: str                          # Название рубрики
 goal: str                          # Цель рубрики
 audience_segment: str              # Сегмент аудитории
-tone_of_voice: list[str]           # Тон общения (1-7 описаний)
-brand_rules: list[str]             # Правила обработки сообщений (1-7 правил)
+tone_of_voice: list[str]           # Тон общения 
+brand_rules: list[str]             # Правила обработки сообщений
 cta_type: str                      # Тип призыва к действию
 cta_strategy: dict                 # Стратегия CTA
 len_min: int                       # Минимальная длина поста в символах
