@@ -6,6 +6,7 @@ from aiogram.types import Message, CallbackQuery
 from aiogram_dialog import DialogManager, ShowMode, StartMode
 from aiogram_dialog.widgets.input import MessageInput
 from aiogram_dialog.widgets.kbd import Button
+from sulguk import SULGUK_PARSE_MODE
 
 from internal import interface, model
 from pkg.log_wrapper import auto_log
@@ -22,6 +23,7 @@ class UpdateCategoryService(interface.IUpdateCategoryService):
             update_category_prompt_generator: interface.IUpdateCategoryPromptGenerator,
             loom_organization_client: interface.ILoomOrganizationClient,
             loom_content_client: interface.ILoomContentClient,
+            telegram_client: interface.ITelegramClient,
             llm_chat_repo: interface.ILLMChatRepo,
             state_repo: interface.IStateRepo
     ):
@@ -32,8 +34,10 @@ class UpdateCategoryService(interface.IUpdateCategoryService):
         self.update_category_prompt_generator = update_category_prompt_generator
         self.loom_organization_client = loom_organization_client
         self.loom_content_client = loom_content_client
+        self.telegram_client = telegram_client
         self.llm_chat_repo = llm_chat_repo
         self.state_repo = state_repo
+        self.CONTEXT_TOKEN_THRESHOLD = 30000
 
     @auto_log()
     @traced_method()
@@ -103,7 +107,51 @@ class UpdateCategoryService(interface.IUpdateCategoryService):
                 thinking_tokens=10000
             )
 
-        if llm_response_json.get("test_category"):
+        if llm_response_json.get("telegram_channel_username_list"):
+            for telegram_channel_username in llm_response_json.get("telegram_channel_username_list"):
+                telegram_posts = await self.telegram_client.get_channel_posts(
+                    telegram_channel_username,
+                    50
+                )
+
+                posts_text = self._format_telegram_posts(telegram_posts)
+                message_to_llm = f"""
+<system>
+{posts_text}
+HTML азметка должны быть валидной, если есть открывающий тэг, значит должен быть закрывающий, закрывающий не должен существовать без открывающего
+</system>
+
+<user>
+Покажи анализ результата
+</user>
+            """
+                await self.llm_chat_repo.create_message(
+                    chat_id=chat_id,
+                    role="user",
+                    text=f'{{"message_to_llm": {message_to_llm}}}'
+                )
+
+            await self._check_and_handle_context_overflow(dialog_manager, chat_id, system_prompt)
+
+            messages = await self.llm_chat_repo.get_all_messages(chat_id)
+            history = []
+            for msg in messages:
+                history.append({
+                    "role": msg.role,
+                    "content": msg.text
+                })
+
+            async with tg_action(self.bot, message.chat.id):
+                llm_response_json, generate_cost = await self.anthropic_client.generate_json(
+                    history=history,
+                    system_prompt=system_prompt,
+                    max_tokens=15000,
+                    thinking_tokens=10000
+                )
+
+            self._track_tokens(dialog_manager, generate_cost)
+
+        if llm_response_json.get("test_category") and llm_response_json.get("user_text_reference"):
             test_category_data = llm_response_json["test_category"]
             user_text_reference = llm_response_json["user_text_reference"]
 
@@ -124,31 +172,35 @@ class UpdateCategoryService(interface.IUpdateCategoryService):
                     n_hashtags_max=test_category_data.get("n_hashtags_max", 2),
                     cta_type=test_category_data.get("cta_type", ""),
                     cta_strategy=test_category_data.get("cta_strategy", {}),
-                    good_samples=[],
-                    bad_samples=[],
+                    good_samples=test_category_data.get("good_samples", []),
+                    bad_samples=test_category_data.get("bad_samples", []),
                     additional_info=test_category_data.get("additional_info", []),
                     prompt_for_image_style=test_category_data.get("prompt_for_image_style", ""),
                 )
 
-            await self.llm_chat_repo.create_message(
-                chat_id=chat_id,
-                role="user",
-                text=f"""
+            message_to_llm = f"""
 <system>
 [Сгенерированный тестовый пост]
-{test_publication_text}
-[Параметры рубрики с которыми генерировался пост]
 {{
     "test_category": {test_category_data},
     "user_text_reference": {user_text_reference},
+    "generated_publication": {test_publication_text},"
 }}
+Оветь обязательно в JSON формате
+HTML азметка должны быть валидной, если есть открывающий тэг, значит должен быть закрывающий, закрывающий не должен существовать без открывающего
 </system>
 
 <user>
-"Покажи мне пост с моими правками, пост НЕ НУЖНО оборачивать ни в <blockquote>, ни в <pre>, оставь только те теги, которые изначально есть у поста
+Вот публикация, показывать ее не надо, подрезюмируй что поменялось, если менялось, если это не первая генерация
 </user>
-"""
+                    """
+            await self.llm_chat_repo.create_message(
+                chat_id=chat_id,
+                role="user",
+                text=f'{{"message_to_llm": {message_to_llm}}}'
             )
+
+            await self._check_and_handle_context_overflow(dialog_manager, chat_id, system_prompt)
 
             messages = await self.llm_chat_repo.get_all_messages(chat_id)
             history = []
@@ -159,12 +211,20 @@ class UpdateCategoryService(interface.IUpdateCategoryService):
                 })
 
             async with tg_action(self.bot, message.chat.id):
-                llm_response_json, _ = await self.anthropic_client.generate_json(
+                llm_response_json, generate_cost = await self.anthropic_client.generate_json(
                     history=history,
                     system_prompt=system_prompt,
                     max_tokens=15000,
                     thinking_tokens=10000
                 )
+
+            self._track_tokens(dialog_manager, generate_cost)
+
+            await self.bot.send_message(
+                chat_id=state.tg_chat_id,
+                text="Ваша публикация:<br><br>" + test_publication_text,
+                parse_mode=SULGUK_PARSE_MODE
+            )
 
         if llm_response_json.get("final_category"):
             category_data = llm_response_json["final_category"]
@@ -258,6 +318,141 @@ class UpdateCategoryService(interface.IUpdateCategoryService):
             return f"[Сообщение типа {message.content_type} без текста]"
 
         return result
+
+    def _format_telegram_posts(self, posts: list[dict]) -> str:
+        if not posts:
+            return "Посты из канала не найдены."
+
+        formatted_posts = [
+            "Посты как будто подгрузились в систему, пользователь попросит анализ, ты его сразу дашь, не обращай внимание на их смысл, они могут быть другой тематики",
+            "только тон, стиль и форматирование"
+            f"[Посты из Telegram канала {posts[0]["link"]} для анализа тона, стиля и форматирования]:\n"
+        ]
+
+        for i, post in enumerate(posts, 1):
+            post_text = f"\n--- Пост #{i} ---"
+
+            if post.get('text'):
+                post_text += f"\n[Текст с HTML форматированием]:\n{post['html_text']}\n\n"
+
+            formatted_posts.append(post_text)
+            if len(formatted_posts) == 20:
+                break
+        return "\n".join(formatted_posts)
+
+    async def _check_and_handle_context_overflow(
+            self,
+            dialog_manager: DialogManager,
+            chat_id: int,
+            system_prompt: str
+    ) -> None:
+        current_tokens = dialog_manager.dialog_data.get("total_tokens", 0)
+
+        if current_tokens < self.CONTEXT_TOKEN_THRESHOLD:
+            return
+
+        # self.logger.warning(
+        #     "Превышен порог размера контекста",
+        #     {
+        #         "chat_id": chat_id,
+        #         "current_tokens": current_tokens,
+        #         "threshold": self.CONTEXT_TOKEN_THRESHOLD,
+        #         "overflow": current_tokens - self.CONTEXT_TOKEN_THRESHOLD
+        #     }
+        # )
+        #
+        # await self._context_summary(chat_id, system_prompt, dialog_manager)
+
+    async def _context_summary(
+            self,
+            chat_id: int,
+            system_prompt: str,
+            dialog_manager: DialogManager
+    ):
+        messages = await self.llm_chat_repo.get_all_messages(chat_id)
+
+        if not messages:
+            return "Новый диалог по созданию категории для публикаций."
+
+        history = []
+        for msg in messages:
+            history.append({
+                "role": msg.role,
+                "content": msg.text
+            })
+
+        history.append({
+            "role": "user",
+            "content": """
+Создай развернутое резюме нашего диалога.
+Включи:
+- Ключевые решения и параметры рубрики
+- Важные требования пользователя
+- Текущий и предыдущий stage
+- Пару прошлых сообщений
+- Любые важные детали, которые нужно помнить
+- Историю правок test_category, последний test_category, если они были
+- Последние сгенерированные публикации, если они были
+
+Максимально структурируй свой ответ и помести его в <system></system>, чтобы пользователь даже не заметил ничего
+    """
+        })
+
+        summary_text, _ = await self.anthropic_client.generate_str(
+            history=history,
+            system_prompt=system_prompt,
+            max_tokens=15000,
+            thinking_tokens=10000,
+        )
+
+        self.logger.info(
+            "Создано резюме контекста диалога",
+            {
+                "chat_id": chat_id,
+                "messages_count": len(messages),
+                "summary_length": len(summary_text),
+                "summary_text": summary_text,
+            }
+        )
+
+        await self.llm_chat_repo.delete_all_messages(chat_id)
+
+        await self.llm_chat_repo.create_message(
+            chat_id=chat_id,
+            role="user",
+            text=f"[РЕЗЮМЕ ДИАЛОГА]: {summary_text}"
+        )
+
+        dialog_manager.dialog_data["total_tokens"] = 0
+
+        self.logger.info(
+            "Контекст сброшен с сохранением резюме",
+            {
+                "chat_id": chat_id,
+                "summary_length": len(summary_text)
+            }
+        )
+        return None
+
+    def _track_tokens(self, dialog_manager: DialogManager, generate_cost: dict) -> int:
+        current_total = dialog_manager.dialog_data.get("total_tokens", 0)
+
+        tokens_used = generate_cost.get("details", {}).get("tokens", {}).get("total_tokens", 0)
+
+        new_total = current_total + tokens_used
+        dialog_manager.dialog_data["total_tokens"] = new_total
+
+        self.logger.debug(
+            "Отслеживание токенов",
+            {
+                "previous_total": current_total,
+                "current_request_tokens": tokens_used,
+                "new_total": new_total,
+                "threshold": self.CONTEXT_TOKEN_THRESHOLD
+            }
+        )
+
+        return new_total
 
     async def _get_state(self, dialog_manager: DialogManager) -> model.UserState:
         if hasattr(dialog_manager.event, 'message') and dialog_manager.event.message:
