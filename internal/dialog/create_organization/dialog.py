@@ -37,8 +37,8 @@ class CreateOrganizationDialog(interface.ICreateOrganizationDialog):
 
             Button(
                 Const("Выйти"),
-                id="go_to_main_menu",
-                on_click=lambda c, b, d: d.start(model.IntroStates.intro, StartMode.RESET_STACK),
+                id="go_to_intro",
+                on_click=lambda c, b, d: d.switch_to(model.IntroStates.intro),
             ),
 
             state=model.CreateOrganizationStates.create_organization,
