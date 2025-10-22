@@ -109,7 +109,7 @@ class IntroDialog(interface.IIntroDialog):
             Button(
                 Const("Назад"),
                 id="contact_support",
-                on_click=lambda c, b, d: d.switch_to(model.IntroStates.join_to_organization, ShowMode.EDIT),
+                on_click=lambda c, b, d: d.switch_to(model.IntroStates.intro, ShowMode.EDIT),
             ),
             state=model.IntroStates.join_to_organization,
             getter=self.intro_getter.get_user_status,
