@@ -53,6 +53,7 @@ class CreateOrganizationPromptGenerator(interface.ICreateOrganizationPromptGener
 
 <target_fields>
 name: str                          # Название организации
+description: str                   # Описание организации
 tone_of_voice: list[str]           # Стиль общения бренда (1-10 описаний)
 compliance_rules: list[dict]       # Критичные ограничения (1-10 правил)
 products: list[dict]               # Продукты/услуги (1-10 продуктов)
@@ -569,6 +570,7 @@ additional_info: list[dict]        # Дополнительная информа
 
     "organization_data": {{
         "name": str,
+        "description": str,
         "tone_of_voice": list[str],
         "compliance_rules": [
             {{

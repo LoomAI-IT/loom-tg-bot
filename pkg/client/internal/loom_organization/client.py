@@ -41,6 +41,7 @@ class LoomOrganizationClient(interface.ILoomOrganizationClient):
             self,
             organization_id: int,
             name: str = None,
+            description: str = None,
             tone_of_voice: list[str] = None,
             compliance_rules: list[dict] = None,
             products: list[dict] = None,
@@ -53,6 +54,8 @@ class LoomOrganizationClient(interface.ILoomOrganizationClient):
 
         if name is not None:
             body["name"] = name
+        if description is not None:
+            body["description"] = description
         if tone_of_voice is not None:
             body["tone_of_voice"] = tone_of_voice
         if compliance_rules is not None:

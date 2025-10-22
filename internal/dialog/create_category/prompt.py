@@ -55,6 +55,7 @@ class CreateCategoryPromptGenerator(interface.ICreateCategoryPromptGenerator):
 
 <organization_data>
 <name>{organization.name}</name>
+<description>{organization.description}</description>
 <tone_of_voice>{self._format_list(organization.tone_of_voice)}</tone_of_voice>
 <compliance_rules>{self._format_list(organization.compliance_rules)}</compliance_rules>
 <products>{self._format_list(organization.products)}</products>

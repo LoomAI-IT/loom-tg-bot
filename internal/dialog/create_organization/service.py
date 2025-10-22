@@ -83,6 +83,7 @@ class CreateOrganizationService(interface.ICreateOrganizationService):
             await self.loom_organization_client.update_organization(
                 organization_id,
                 organization_data["name"],
+                organization_data["description"],
                 organization_data["tone_of_voice"],
                 organization_data["compliance_rules"],
                 organization_data["products"],

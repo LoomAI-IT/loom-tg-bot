@@ -5,6 +5,7 @@ from dataclasses import dataclass
 class Organization:
     id: int
     name: str
+    description: str
     rub_balance: str
     tone_of_voice: list[str]
     compliance_rules: list[dict]

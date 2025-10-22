@@ -82,6 +82,7 @@ class UpdateOrganizationService(interface.IUpdateOrganizationService):
             await self.loom_organization_client.update_organization(
                 organization_id=state.organization_id,
                 name=organization_data.get("name"),
+                description=organization_data.get("description"),
                 tone_of_voice=organization_data.get("tone_of_voice"),
                 compliance_rules=organization_data.get("compliance_rules"),
                 products=organization_data.get("products"),
