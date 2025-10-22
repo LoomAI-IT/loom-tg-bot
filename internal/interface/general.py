@@ -184,6 +184,8 @@ class IAnthropicClient(Protocol):
             thinking_tokens: int = None,
             enable_caching: bool = True,
             cache_ttl: str = "5m",
+            enable_web_search: bool = True,
+            max_searches: int = 5,
     ) -> tuple[str, dict]: pass
 
     @abstractmethod
@@ -197,4 +199,6 @@ class IAnthropicClient(Protocol):
             thinking_tokens: int = None,
             enable_caching: bool = True,
             cache_ttl: str = "5m",
+            enable_web_search: bool = True,
+            max_searches: int = 5,
     ) -> tuple[dict, dict]: pass
