@@ -336,6 +336,7 @@ class UpdateOrganizationPromptGenerator(interface.IUpdateOrganizationPromptGener
 
     "organization_data": {{
         "name": str,
+        "description": str,
         "tone_of_voice": list[str],
         "compliance_rules": [
             {{
