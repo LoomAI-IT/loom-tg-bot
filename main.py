@@ -361,6 +361,7 @@ generate_publication_service = GeneratePublicationService(
     state_repo,
     llm_chat_repo,
     loom_content_client,
+    loom_employee_client
 )
 
 generate_video_cut_service = GenerateVideoCutService(

@@ -195,9 +195,19 @@ class ContentMenuService(interface.IContentMenuService):
     ) -> None:
         dialog_manager.show_mode = ShowMode.EDIT
 
-        await callback.answer()
 
         state = await self._get_state(dialog_manager)
+
+        employee = await self.loom_employee_client.get_employee_by_account_id(
+            state.account_id
+        )
+
+        if not employee.setting_category_permission:
+            self.logger.info("Отказано в доступе")
+            await callback.answer("У вас нет прав создавать рубрики", show_alert=True)
+            return
+
+        await callback.answer()
 
         chat = await self.llm_chat_repo.get_chat_by_state_id(state.id)
         if chat:

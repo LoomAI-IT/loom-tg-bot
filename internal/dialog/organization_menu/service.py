@@ -36,7 +36,7 @@ class OrganizationMenuService(interface.IOrganizationMenuService):
         )
 
         if not employee.edit_employee_perm_permission:
-            self.logger.info("Отказано в доступе - нет прав на изменение прав сотрудников")
+            self.logger.info("Отказано в доступе")
             await callback.answer("Недостаточно прав для управления сотрудниками", show_alert=True)
             return
 
@@ -60,9 +60,18 @@ class OrganizationMenuService(interface.IOrganizationMenuService):
     ) -> None:
         dialog_manager.show_mode = ShowMode.EDIT
 
-        await callback.answer()
-
         state = await self._get_state(dialog_manager)
+
+        employee = await self.loom_employee_client.get_employee_by_account_id(
+            state.account_id
+        )
+
+        if not employee.setting_category_permission:
+            self.logger.info("Отказано в доступе")
+            await callback.answer("У вас нет прав обновлять организацию", show_alert=True)
+            return
+
+        await callback.answer()
 
         chat = await self.llm_chat_repo.get_chat_by_state_id(state.id)
         if chat:
@@ -82,6 +91,17 @@ class OrganizationMenuService(interface.IOrganizationMenuService):
             dialog_manager: DialogManager
     ) -> None:
         dialog_manager.show_mode = ShowMode.EDIT
+
+        state = await self._get_state(dialog_manager)
+
+        employee = await self.loom_employee_client.get_employee_by_account_id(
+            state.account_id
+        )
+
+        if not employee.setting_category_permission:
+            self.logger.info("Отказано в доступе")
+            await callback.answer("У вас нет прав обновлять рубрики", show_alert=True)
+            return
 
         await callback.answer()
 
@@ -105,7 +125,7 @@ class OrganizationMenuService(interface.IOrganizationMenuService):
         )
 
         if not employee.add_employee_permission:
-            self.logger.info("Отказано в доступе - нет прав на добавление сотрудников")
+            self.logger.info("Отказано в доступе")
             await callback.answer("Недостаточно прав для добавления сотрудников", show_alert=True)
             return
 

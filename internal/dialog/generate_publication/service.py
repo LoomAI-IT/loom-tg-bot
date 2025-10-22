@@ -22,6 +22,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             state_repo: interface.IStateRepo,
             llm_chat_repo: interface.ILLMChatRepo,
             loom_content_client: interface.ILoomContentClient,
+            loom_employee_client: interface.ILoomEmployeeClient,
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
@@ -29,6 +30,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         self.state_repo = state_repo
         self.llm_chat_repo = llm_chat_repo
         self.loom_content_client = loom_content_client
+        self.loom_employee_client = loom_employee_client
 
     @auto_log()
     @traced_method()
@@ -121,10 +123,18 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
     ) -> None:
         dialog_manager.show_mode = ShowMode.EDIT
 
-        await callback.answer()
-
         state = await self._get_state(dialog_manager)
 
+        employee = await self.loom_employee_client.get_employee_by_account_id(
+            state.account_id
+        )
+
+        if not employee.setting_category_permission:
+            self.logger.info("Отказано в доступе")
+            await callback.answer("У вас нет прав создавать рубрики", show_alert=True)
+            return
+
+        await callback.answer()
         chat = await self.llm_chat_repo.get_chat_by_state_id(state.id)
         if chat:
             await self.llm_chat_repo.delete_chat(chat[0].id)
