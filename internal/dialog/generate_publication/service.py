@@ -1,3 +1,4 @@
+import re
 from typing import Any
 
 import aiohttp
@@ -211,6 +212,10 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         dialog_manager.dialog_data["is_custom_image"] = False
         dialog_manager.dialog_data["current_image_index"] = 0
 
+        # Проверяем длину текста с изображением
+        if await self._check_text_length_with_image(dialog_manager):
+            return
+
         await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
 
     @auto_log()
@@ -284,6 +289,10 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         dialog_manager.dialog_data["publication_text"] = regenerated_data["text"]
 
+        # Проверяем длину текста с изображением
+        if await self._check_text_length_with_image(dialog_manager):
+            return
+
         await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
 
     @auto_log()
@@ -351,6 +360,10 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         dialog_manager.dialog_data["is_regenerating_text"] = False
         dialog_manager.dialog_data["has_regenerate_prompt"] = False
+
+        # Проверяем длину текста с изображением
+        if await self._check_text_length_with_image(dialog_manager):
+            return
 
         await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
 
@@ -430,6 +443,10 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         dialog_manager.dialog_data["is_custom_image"] = False
         dialog_manager.dialog_data["current_image_index"] = 0
         dialog_manager.dialog_data.pop("custom_image_file_id", None)
+
+        # Проверяем длину текста с изображением
+        if await self._check_text_length_with_image(dialog_manager):
+            return
 
         await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
 
@@ -513,6 +530,10 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         dialog_manager.dialog_data.pop("custom_image_file_id", None)
         dialog_manager.dialog_data["is_generating_image"] = False
 
+        # Проверяем длину текста с изображением
+        if await self._check_text_length_with_image(dialog_manager):
+            return
+
         await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
 
     @auto_log()
@@ -550,6 +571,10 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
             dialog_manager.dialog_data.pop("publication_images_url", None)
             dialog_manager.dialog_data.pop("current_image_index", None)
+
+            # Проверяем длину текста с изображением
+            if await self._check_text_length_with_image(dialog_manager):
+                return
 
             await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
 
@@ -774,6 +799,60 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
     @auto_log()
     @traced_method()
+    async def handle_remove_photo_from_long_text(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        dialog_manager.show_mode = ShowMode.EDIT
+
+        # Удаляем изображение
+        dialog_manager.dialog_data["has_image"] = False
+        dialog_manager.dialog_data.pop("publication_images_url", None)
+        dialog_manager.dialog_data.pop("custom_image_file_id", None)
+        dialog_manager.dialog_data.pop("is_custom_image", None)
+        dialog_manager.dialog_data.pop("current_image_index", None)
+
+        self.logger.info("Изображение удалено из-за длинного текста")
+        await callback.answer("Изображение удалено", show_alert=True)
+        await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
+
+    @auto_log()
+    @traced_method()
+    async def handle_compress_text(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        dialog_manager.show_mode = ShowMode.EDIT
+
+        await callback.answer()
+        await callback.message.edit_text(
+            "Сжимаю текст, это может занять время... Не совершайте никаких действий",
+            reply_markup=None
+        )
+
+        category_id = dialog_manager.dialog_data["category_id"]
+        current_text = dialog_manager.dialog_data["publication_text"]
+        expected_length = dialog_manager.dialog_data["expected_length"]
+
+        compress_prompt = f"Сожми текст до {expected_length} символов, сохраняя основной смысл и ключевые идеи"
+
+        async with tg_action(self.bot, callback.message.chat.id):
+            compressed_data = await self.loom_content_client.regenerate_publication_text(
+                category_id=category_id,
+                publication_text=current_text,
+                prompt=compress_prompt
+            )
+
+        dialog_manager.dialog_data["publication_text"] = compressed_data["text"]
+
+        await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
+
+    @auto_log()
+    @traced_method()
     async def handle_go_to_content_menu(
             self,
             callback: CallbackQuery,
@@ -790,6 +869,27 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             model.ContentMenuStates.content_menu,
             mode=StartMode.RESET_STACK
         )
+
+    async def _check_text_length_with_image(self, dialog_manager: DialogManager) -> bool:
+        publication_text = dialog_manager.dialog_data.get("publication_text", "")
+
+        text_without_tags = re.sub(r'<[^>]+>', '', publication_text)
+        text_length = len(text_without_tags)
+        has_image = dialog_manager.dialog_data.get("has_image", False)
+
+        if has_image and text_length > 1024:
+            self.logger.info(f"Текст слишком длинный для публикации с изображением: {text_length} символов")
+            dialog_manager.dialog_data["expected_length"] = 900
+            await dialog_manager.switch_to(model.GeneratePublicationStates.text_too_long_alert)
+            return True
+
+        if not has_image and text_length > 4096:
+            self.logger.info(f"Текст слишком длинный: {text_length} символов")
+            dialog_manager.dialog_data["expected_length"] = 3600
+            await dialog_manager.switch_to(model.GeneratePublicationStates.text_too_long_alert)
+            return True
+
+        return False
 
     async def _check_alerts(self, dialog_manager: DialogManager) -> bool:
         state = await self._get_state(dialog_manager)

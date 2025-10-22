@@ -22,4 +22,7 @@ class GeneratePublicationStates(StatesGroup):
     # Публикация
     social_network_select = State()
 
+    # Алерты
+    text_too_long_alert = State()
+
     publication_success = State()

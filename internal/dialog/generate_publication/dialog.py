@@ -33,6 +33,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             self.get_edit_text_window(),
             self.get_upload_image_window(),
             self.get_social_network_select_window(),
+            self.get_text_too_long_alert_window(),
             self.get_publication_success_window()  # Новое окно
         )
 
@@ -644,6 +645,42 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
 
             state=model.GeneratePublicationStates.social_network_select,
             getter=self.generate_publication_getter.get_social_network_select_data,
+            parse_mode=SULGUK_PARSE_MODE,
+        )
+
+    def get_text_too_long_alert_window(self) -> Window:
+        return Window(
+            Multi(
+                Const("⚠️ <b>Текст слишком длинный</b><br><br>"),
+                Format("📏 <b>Текущая длина:</b> {current_text_length} символов<br>"),
+                Format("📊 <b>Максимум с фото:</b> {max_length_with_image} символов<br><br>"),
+                Const("💡 <b>Что делать?</b><br>"),
+                Const("• <b>Сжать текст</b> — ИИ автоматически сократит до нужной длины<br>"),
+                Const("• <b>Отказаться от фото</b> — публикация будет только с текстом"),
+                sep="",
+            ),
+
+            Column(
+                Button(
+                    Const("📝 Сжать текст"),
+                    id="compress_text",
+                    on_click=self.generate_publication_service.handle_compress_text,
+                ),
+                Button(
+                    Const("🗑️ Отказаться от фото"),
+                    id="remove_photo",
+                    on_click=self.generate_publication_service.handle_remove_photo_from_long_text,
+                ),
+            ),
+
+            Button(
+                Const("📋 К меню контента"),
+                id="go_to_content_menu",
+                on_click=self.generate_publication_service.handle_go_to_content_menu,
+            ),
+
+            state=model.GeneratePublicationStates.text_too_long_alert,
+            getter=self.generate_publication_getter.get_text_too_long_alert_data,
             parse_mode=SULGUK_PARSE_MODE,
         )
 
