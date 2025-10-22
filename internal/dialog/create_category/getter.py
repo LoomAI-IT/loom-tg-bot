@@ -64,6 +64,7 @@ class CreateCategoryGetter(interface.ICreateCategoryGetter):
                 llm_response_json, _ = await self.anthropic_client.generate_json(
                     history=history,
                     system_prompt=system_prompt,
+                    enable_web_search=False,
                     temperature=1,
                 )
 

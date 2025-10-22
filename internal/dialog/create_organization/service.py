@@ -70,7 +70,8 @@ class CreateOrganizationService(interface.ICreateOrganizationService):
                 history=history,
                 system_prompt=system_prompt,
                 max_tokens=15000,
-                thinking_tokens=10000
+                thinking_tokens=10000,
+                enable_web_search=False
             )
 
         if llm_response_json.get("organization_data"):
