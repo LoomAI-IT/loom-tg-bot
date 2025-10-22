@@ -19,6 +19,7 @@ class CreateOrganizationService(interface.ICreateOrganizationService):
             anthropic_client: interface.IAnthropicClient,
             create_organization_prompt_generator: interface.ICreateOrganizationPromptGenerator,
             loom_organization_client: interface.ILoomOrganizationClient,
+            loom_employee_client: interface.ILoomEmployeeClient,
             loom_content_client: interface.ILoomContentClient,
             llm_chat_repo: interface.ILLMChatRepo,
             state_repo: interface.IStateRepo
@@ -29,6 +30,7 @@ class CreateOrganizationService(interface.ICreateOrganizationService):
         self.anthropic_client = anthropic_client
         self.create_organization_prompt_generator = create_organization_prompt_generator
         self.loom_organization_client = loom_organization_client
+        self.loom_employee_client = loom_employee_client
         self.loom_content_client = loom_content_client
         self.llm_chat_repo = llm_chat_repo
         self.state_repo = state_repo
@@ -90,6 +92,14 @@ class CreateOrganizationService(interface.ICreateOrganizationService):
             await self.state_repo.change_user_state(
                 state_id=state.id,
                 organization_id=organization_id,
+            )
+
+            await self.loom_employee_client.create_employee(
+                organization_id=organization_id,
+                invited_from_account_id=0,
+                account_id=state.account_id,
+                name="admin",
+                role="admin"
             )
 
             await dialog_manager.switch_to(model.CreateOrganizationStates.organization_created)

@@ -425,6 +425,7 @@ create_organization_service = CreateOrganizationService(
     anthropic_client,
     create_organization_prompt_generator,
     loom_organization_client,
+    loom_employee_client,
     loom_content_client,
     llm_chat_repo,
     state_repo
