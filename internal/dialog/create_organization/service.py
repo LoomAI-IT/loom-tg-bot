@@ -1,3 +1,5 @@
+import traceback
+
 from aiogram import Bot
 from aiogram.enums import ContentType
 from aiogram.types import CallbackQuery, Message
@@ -43,76 +45,82 @@ class CreateOrganizationService(interface.ICreateOrganizationService):
             widget: MessageInput,
             dialog_manager: DialogManager
     ) -> None:
-        dialog_manager.show_mode = ShowMode.SEND
-
         state = await self._get_state(dialog_manager)
+        try:
+            dialog_manager.show_mode = ShowMode.SEND
 
-        chat_id = dialog_manager.dialog_data.get("chat_id")
-        user_text = await self._extract_text_from_message(message)
+            chat_id = dialog_manager.dialog_data.get("chat_id")
+            user_text = await self._extract_text_from_message(message)
 
-        await self.llm_chat_repo.create_message(
-            chat_id=chat_id,
-            role="user",
-            text=user_text
-        )
-
-        system_prompt = await self.create_organization_prompt_generator.get_create_organization_system_prompt()
-        messages = await self.llm_chat_repo.get_all_messages(chat_id)
-        history = []
-        for msg in messages:
-            history.append({
-                "role": msg.role,
-                "content": msg.text
-            })
-
-        async with tg_action(self.bot, message.chat.id):
-            llm_response_json, _ = await self.anthropic_client.generate_json(
-                history=history,
-                system_prompt=system_prompt,
-                max_tokens=15000,
-                thinking_tokens=10000,
+            await self.llm_chat_repo.create_message(
+                chat_id=chat_id,
+                role="user",
+                text=user_text
             )
 
-        if llm_response_json.get("organization_data"):
-            organization_data = llm_response_json["organization_data"]
-            dialog_manager.dialog_data["organization_data"] = organization_data
+            system_prompt = await self.create_organization_prompt_generator.get_create_organization_system_prompt()
+            messages = await self.llm_chat_repo.get_all_messages(chat_id)
+            history = []
+            for msg in messages:
+                history.append({
+                    "role": msg.role,
+                    "content": msg.text
+                })
 
-            organization_id = await self.loom_organization_client.create_organization(
-                organization_data["name"]
-            )
-            await self.loom_organization_client.update_organization(
-                organization_id,
-                organization_data["name"],
-                organization_data["description"],
-                organization_data["tone_of_voice"],
-                organization_data["compliance_rules"],
-                organization_data["products"],
-                organization_data["locale"],
-                organization_data["additional_info"],
-            )
-            await self.state_repo.change_user_state(
-                state_id=state.id,
-                organization_id=organization_id,
-            )
+            async with tg_action(self.bot, message.chat.id):
+                llm_response_json, _ = await self.anthropic_client.generate_json(
+                    history=history,
+                    system_prompt=system_prompt,
+                    max_tokens=15000,
+                    thinking_tokens=10000,
+                )
 
-            await self.loom_employee_client.create_employee(
-                organization_id=organization_id,
-                invited_from_account_id=0,
-                account_id=state.account_id,
-                name="admin",
-                role="admin"
+            if llm_response_json.get("organization_data"):
+                organization_data = llm_response_json["organization_data"]
+                dialog_manager.dialog_data["organization_data"] = organization_data
+
+                organization_id = await self.loom_organization_client.create_organization(
+                    organization_data["name"]
+                )
+                await self.loom_organization_client.update_organization(
+                    organization_id,
+                    organization_data["name"],
+                    organization_data["description"],
+                    organization_data["tone_of_voice"],
+                    organization_data["compliance_rules"],
+                    organization_data["products"],
+                    organization_data["locale"],
+                    organization_data["additional_info"],
+                )
+                await self.state_repo.change_user_state(
+                    state_id=state.id,
+                    organization_id=organization_id,
+                )
+
+                await self.loom_employee_client.create_employee(
+                    organization_id=organization_id,
+                    invited_from_account_id=0,
+                    account_id=state.account_id,
+                    name="admin",
+                    role="admin"
+                )
+
+                await dialog_manager.switch_to(model.CreateOrganizationStates.organization_created)
+                return
+
+            message_to_user = llm_response_json["message_to_user"]
+            await self.llm_chat_repo.create_message(
+                chat_id=chat_id,
+                role="assistant",
+                text=message_to_user
             )
-
-            await dialog_manager.switch_to(model.CreateOrganizationStates.organization_created)
-            return
-
-        message_to_user = llm_response_json["message_to_user"]
-        await self.llm_chat_repo.create_message(
-            chat_id=chat_id,
-            role="assistant",
-            text=message_to_user
-        )
-        dialog_manager.dialog_data["message_to_user"] = message_to_user
+            dialog_manager.dialog_data["message_to_user"] = message_to_user
+        except Exception as e:
+            await self.bot.send_message(
+                state.tg_chat_id,
+                "Произошла непредвиденная ошибка, попробуйте продолжить диалог"
+            )
+            self.logger.error("Ошибка!!!", {"traceback": traceback.format_exc()})
 
     @auto_log()
     @traced_method()

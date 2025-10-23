@@ -261,7 +261,7 @@ HTML разметка должны быть валидной, если есть 
         except Exception as e:
             await self.bot.send_message(
                 state.tg_chat_id,
-                "Ошибка, дождитесь пока mm даст сигнал"
+                "Произошла непредвиденная ошибка, попробуйте продолжить диалог"
             )
             self.logger.error("Ошибка!!!", {"traceback": traceback.format_exc()})
 
