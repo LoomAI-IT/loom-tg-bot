@@ -424,6 +424,7 @@ create_organization_service = CreateOrganizationService(
     tel,
     bot,
     anthropic_client,
+    telegram_client,
     create_organization_prompt_generator,
     loom_organization_client,
     loom_employee_client,
