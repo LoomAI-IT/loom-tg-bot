@@ -72,7 +72,7 @@ class UpdateCategoryGetter(interface.IUpdateCategoryGetter):
             chat_id = await self.llm_chat_repo.create_chat(state.id)
             dialog_manager.dialog_data["chat_id"] = chat_id
 
-            user_text = "Привет, помоги мне обновить мою рубрику"
+            user_text = "Привет, помоги мне обновить мою рубрику: найти противоречия и улучшить генерацию контента"
             await self.llm_chat_repo.create_message(
                 chat_id=chat_id,
                 role="user",
