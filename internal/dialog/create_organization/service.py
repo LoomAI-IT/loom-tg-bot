@@ -19,6 +19,7 @@ class CreateOrganizationService(interface.ICreateOrganizationService):
             tel: interface.ITelemetry,
             bot: Bot,
             anthropic_client: interface.IAnthropicClient,
+            telegram_client: interface.ITelegramClient,
             create_organization_prompt_generator: interface.ICreateOrganizationPromptGenerator,
             loom_organization_client: interface.ILoomOrganizationClient,
             loom_employee_client: interface.ILoomEmployeeClient,
@@ -30,6 +31,7 @@ class CreateOrganizationService(interface.ICreateOrganizationService):
         self.logger = tel.logger()
         self.bot = bot
         self.anthropic_client = anthropic_client
+        self.telegram_client = telegram_client
         self.create_organization_prompt_generator = create_organization_prompt_generator
         self.loom_organization_client = loom_organization_client
         self.loom_employee_client = loom_employee_client
@@ -75,6 +77,47 @@ class CreateOrganizationService(interface.ICreateOrganizationService):
                     thinking_tokens=10000,
                     max_searches=10
                 )
+
+                if llm_response_json.get("telegram_channel_username"):
+                    for telegram_channel_username in llm_response_json.get("telegram_channel_username"):
+                        telegram_posts = await self.telegram_client.get_channel_posts(
+                            telegram_channel_username,
+                            50
+                        )
+
+                        posts_text = self._format_telegram_posts(telegram_posts)
+                        message_to_llm = f"""
+<system>
+{posts_text}
+HTML разметка должны быть валидной, если есть открывающий тэг, значит должен быть закрывающий, закрывающий не должен существовать без открывающего
+</system>
+
+<user>
+Покажи анализ компани
+</user>
+            """
+                        await self.llm_chat_repo.create_message(
+                            chat_id=chat_id,
+                            role="user",
+                            text=f'{{"message_to_llm": {message_to_llm}}}'
+                        )
+
+                    messages = await self.llm_chat_repo.get_all_messages(chat_id)
+                    history = []
+                    for msg in messages:
+                        history.append({
+                            "role": msg.role,
+                            "content": msg.text
+                        })
+
+                    async with tg_action(self.bot, message.chat.id):
+                        llm_response_json, generate_cost = await self.anthropic_client.generate_json(
+                            history=history,
+                            system_prompt=system_prompt,
+                            max_tokens=15000,
+                            enable_web_search=False,
+                            thinking_tokens=10000
+                        )
 
             if llm_response_json.get("organization_data"):
                 organization_data = llm_response_json["organization_data"]
@@ -204,6 +247,25 @@ class CreateOrganizationService(interface.ICreateOrganizationService):
             return f"[Сообщение типа {message.content_type} без текста]"
 
         return result
+
+    def _format_telegram_posts(self, posts: list[dict]) -> str:
+        if not posts:
+            return "Посты из канала не найдены."
+
+        formatted_posts = [
+            "Посты как будто подгрузились в систему, пользователь попросит анализ, ты его сразу дашь",
+            "Нужно проанализировать, что это за компания и извлечь все необходимые параметры"
+            f"[Посты из Telegram канала {posts[0]["link"]} для анализа]:\n"
+        ]
+
+        for i, post in enumerate(posts, 1):
+            post_text = f"\n--- Пост #{i} ---"
+
+            if post.get('text'):
+                post_text += f"\n[Текст поста]:\n{post['text']}\n\n"
+
+            formatted_posts.append(post_text)
+        return "\n".join(formatted_posts)
 
     async def _get_state(self, dialog_manager: DialogManager) -> model.UserState:
         if hasattr(dialog_manager.event, 'message') and dialog_manager.event.message:
