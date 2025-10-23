@@ -879,10 +879,10 @@ cleanup_context = {{
   "current_stage": "3.5",
   "prev_stage": "{{cleanup_context.came_from}}",
   "next_stage": "3.5.1",
-  "cleanup_report": {
+  "cleanup_report": {{
     "conflicts": [...],
     "duplicates": [...]
-  }
+  }}
 }}
 </json_output>
 
