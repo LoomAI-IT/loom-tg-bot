@@ -104,7 +104,7 @@ ultrathink
                 for telegram_channel_username in llm_response_json.get("telegram_channel_username_list"):
                     telegram_posts = await self.telegram_client.get_channel_posts(
                         telegram_channel_username,
-                        50
+                        20
                     )
 
                     posts_text = self._format_telegram_posts(telegram_posts)
