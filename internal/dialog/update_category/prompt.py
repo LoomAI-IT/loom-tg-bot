@@ -28,6 +28,7 @@ class UpdateCategoryPromptGenerator(interface.IUpdateCategoryPromptGenerator):
 ВСЕГДА проверяй валидность JSON перед отправкой.
 Никогда не используй одиночные кавычки - ЭТО НЕ ВАЛИДНО, только двойные.
 ДАЖЕ если в ответе только message_to_user - оборачивай в JSON.
+У тебя ограничение на 4000 символов, иначе будет ошибка из-за ограничения количества символов для отправки в телеграм
 </output_rule>
 
 <core_principles>
