@@ -309,7 +309,7 @@ class AnthropicClient(interface.IAnthropicClient):
             *history,
             {"role": "assistant", "content": llm_response_str},
             {"role": "user",
-             "content": "Я же просил JSON формат, как в системном промпте, дай ответ в JSON формате или твой JSON не валидный, проверь его на валидность"},
+             "content": "Я же просил JSON формат, как в системном промпте, сохрани всю информацию дай ответ в JSON формате или твой JSON не валидный, проверь его на валидность"},
         ]
 
         retry_messages = self._prepare_messages(retry_history, enable_caching=enable_caching)

@@ -36,7 +36,7 @@ class UpdateOrganizationDialog(interface.IUpdateOrganizationDialog):
             ),
 
             Button(
-                Const("🏠 В главное меню"),
+                Const("❌ Прервать обновление организации"),
                 id="go_to_main_menu",
                 on_click=self.update_organization_service.handle_go_to_main_menu,
             ),

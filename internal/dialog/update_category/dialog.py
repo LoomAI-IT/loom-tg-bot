@@ -77,7 +77,7 @@ class UpdateCategoryDialog(interface.IUpdateCategoryDialog):
             ),
 
             Button(
-                Const("🏠 В главное меню"),
+                Const("❌ Прервать обновление рубрики"),
                 id="go_to_main_menu",
                 on_click=self.update_category_service.handle_go_to_main_menu,
             ),

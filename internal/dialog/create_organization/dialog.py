@@ -36,7 +36,7 @@ class CreateOrganizationDialog(interface.ICreateOrganizationDialog):
             ),
 
             Button(
-                Const("Выйти"),
+                Const("❌ Прервать созание организации"),
                 id="go_to_intro",
                 on_click=lambda c, b, d: d.start(model.IntroStates.intro, mode=StartMode.RESET_STACK),
             ),
