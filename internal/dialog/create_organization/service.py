@@ -79,14 +79,14 @@ class CreateOrganizationService(interface.ICreateOrganizationService):
                 )
 
                 if llm_response_json.get("telegram_channel_username"):
-                    for telegram_channel_username in llm_response_json.get("telegram_channel_username"):
-                        telegram_posts = await self.telegram_client.get_channel_posts(
+                    telegram_channel_username = llm_response_json.get("telegram_channel_username")
+                    telegram_posts = await self.telegram_client.get_channel_posts(
                             telegram_channel_username,
                             50
                         )
 
-                        posts_text = self._format_telegram_posts(telegram_posts)
-                        message_to_llm = f"""
+                    posts_text = self._format_telegram_posts(telegram_posts)
+                    message_to_llm = f"""
 <system>
 {posts_text}
 HTML разметка должны быть валидной, если есть открывающий тэг, значит должен быть закрывающий, закрывающий не должен существовать без открывающего
@@ -96,7 +96,7 @@ HTML разметка должны быть валидной, если есть 
 Покажи анализ компани
 </user>
             """
-                        await self.llm_chat_repo.create_message(
+                    await self.llm_chat_repo.create_message(
                             chat_id=chat_id,
                             role="user",
                             text=f'{{"message_to_llm": {message_to_llm}}}'
