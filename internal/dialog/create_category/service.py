@@ -109,12 +109,7 @@ ultrathink
                 message_to_llm = f"""
 <system>
 {posts_text}
-HTML разметка должны быть валидной, если есть открывающий тэг, значит должен быть закрывающий, закрывающий не должен существовать без открывающего
 </system>
-
-<user>
-Покажи анализ результата
-</user>
 """
                 await self.llm_chat_repo.create_message(
                     chat_id=chat_id,
