@@ -99,7 +99,8 @@ class UpdateCategoryGetter(interface.IUpdateCategoryGetter):
                     history=history,
                     system_prompt=system_prompt,
                     enable_web_search=False,
-                    temperature=1,
+                    max_tokens=15000,
+                    thinking_tokens=10000,
                 )
 
             message_to_user = llm_response_json["message_to_user"]
