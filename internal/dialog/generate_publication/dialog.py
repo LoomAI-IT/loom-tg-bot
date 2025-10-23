@@ -69,7 +69,6 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                 Const("Создать рубрику"),
                 id="go_to_main_menu",
                 on_click=self.generate_publication_service.go_to_create_category,
-                when=~F["has_categories"],
             ),
 
             Button(
