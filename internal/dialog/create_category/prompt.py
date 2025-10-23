@@ -540,7 +540,7 @@ CTA (Call-to-Action) — это короткая фраза в конце пос
 <summary>[X]. [Название рубрики]</summary>
 
 <b>Цель:</b>
-[Краткая цель рубрики — используй guidelines из <audience_segment_guidelines>]]
+[Краткая цель рубрики]]
 
 <b>Для кого:</b>
 [Описание сегмента аудитории — используй guidelines из <audience_segment_guidelines>]
@@ -634,7 +634,6 @@ CTA (Call-to-Action) — это короткая фраза в конце пос
 - Короткая и ясная формулировка
 - Включи интерес компании
 - Используй контекст выбранной рубрики
-- Используй guidelines из <audience_segment_guidelines>
 </details>
 
 </proposal>
