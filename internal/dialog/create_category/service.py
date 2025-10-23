@@ -56,7 +56,6 @@ class CreateCategoryService(interface.ICreateCategoryService):
                 dialog_manager.show_mode = ShowMode.NO_UPDATE
                 return
 
-
             organization = await self.loom_organization_client.get_organization_by_id(state.organization_id)
 
             chat_id = dialog_manager.dialog_data.get("chat_id")
@@ -100,15 +99,15 @@ ultrathink
 
             self._track_tokens(dialog_manager, generate_cost)
 
-            if llm_response_json.get("telegram_channel_username_list"):
-                for telegram_channel_username in llm_response_json.get("telegram_channel_username_list"):
-                    telegram_posts = await self.telegram_client.get_channel_posts(
-                        telegram_channel_username,
-                        10
-                    )
+            if llm_response_json.get("telegram_channel_username"):
+                telegram_channel_username = llm_response_json.get("telegram_channel_username")
+                telegram_posts = await self.telegram_client.get_channel_posts(
+                    telegram_channel_username,
+                    10
+                )
 
-                    posts_text = self._format_telegram_posts(telegram_posts)
-                    message_to_llm = f"""
+                posts_text = self._format_telegram_posts(telegram_posts)
+                message_to_llm = f"""
 <system>
 {posts_text}
 HTML разметка должны быть валидной, если есть открывающий тэг, значит должен быть закрывающий, закрывающий не должен существовать без открывающего
@@ -118,11 +117,11 @@ HTML разметка должны быть валидной, если есть 
 Покажи анализ результата
 </user>
 """
-                    await self.llm_chat_repo.create_message(
-                        chat_id=chat_id,
-                        role="user",
-                        text=f'{{"message_to_llm": {message_to_llm}}}'
-                    )
+                await self.llm_chat_repo.create_message(
+                    chat_id=chat_id,
+                    role="user",
+                    text=f'{{"message_to_llm": {message_to_llm}}}'
+                )
 
                 await self._check_and_handle_context_overflow(dialog_manager, chat_id, system_prompt)
 
