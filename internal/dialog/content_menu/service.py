@@ -187,39 +187,6 @@ class ContentMenuService(interface.IContentMenuService):
 
     @auto_log()
     @traced_method()
-    async def go_to_create_category(
-            self,
-            callback: CallbackQuery,
-            button: Button,
-            dialog_manager: DialogManager
-    ) -> None:
-        dialog_manager.show_mode = ShowMode.EDIT
-
-
-        state = await self._get_state(dialog_manager)
-
-        employee = await self.loom_employee_client.get_employee_by_account_id(
-            state.account_id
-        )
-
-        if not employee.setting_category_permission:
-            self.logger.info("Отказано в доступе")
-            await callback.answer("У вас нет прав создавать рубрики", show_alert=True)
-            return
-
-        await callback.answer()
-
-        chat = await self.llm_chat_repo.get_chat_by_state_id(state.id)
-        if chat:
-            await self.llm_chat_repo.delete_chat(chat[0].id)
-
-        await dialog_manager.start(
-            model.CreateCategoryStates.create_category,
-            mode=StartMode.RESET_STACK
-        )
-
-    @auto_log()
-    @traced_method()
     async def handle_go_to_content_menu(
             self,
             callback: CallbackQuery,

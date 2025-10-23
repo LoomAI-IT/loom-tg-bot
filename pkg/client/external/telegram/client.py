@@ -239,7 +239,6 @@ class LTelegramClient(interface.ITelegramClient):
                     'id': message.id,
                     'date': message.date,
                     'text': message.text or '',
-                    'html_text': unparse(message.text, message.entities) if message.text else '',
                     'views': message.views or 0,
                     'media_type': media_type,
                     'link': post_link,
