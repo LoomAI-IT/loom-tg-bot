@@ -54,7 +54,7 @@ class CreateOrganizationDialog(interface.ICreateOrganizationDialog):
                 "Можно создать первую рубрику сейчас или вернуться к этому позже. Ещё ты можешь делегировать это сотрудникам"),
 
             Button(
-                Const("В главное меню"),
+                Const("🏠 В главное меню"),
                 id="go_to_main_menu",
                 on_click=self.create_organization_service.handle_go_to_main_menu,
             ),

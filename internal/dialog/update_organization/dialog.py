@@ -36,7 +36,7 @@ class UpdateOrganizationDialog(interface.IUpdateOrganizationDialog):
             ),
 
             Button(
-                Const("В главное меню"),
+                Const("🏠 В главное меню"),
                 id="go_to_main_menu",
                 on_click=self.update_organization_service.handle_go_to_main_menu,
             ),
@@ -51,7 +51,7 @@ class UpdateOrganizationDialog(interface.IUpdateOrganizationDialog):
             Const("Ваша организация обновлена"),
 
             Button(
-                Const("В главное меню"),
+                Const("🏠 В главное меню"),
                 id="go_to_main_menu",
                 on_click=self.update_organization_service.handle_go_to_main_menu,
             ),

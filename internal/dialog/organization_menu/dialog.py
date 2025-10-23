@@ -39,7 +39,7 @@ class OrganizationMenuDialog(interface.IOrganizationMenuDialog):
                     on_click=self.organization_menu_service.handle_go_to_update_organization,
                 ),
                 Button(
-                    Const("Обновить рубрику"),
+                    Const("📌 Обновить рубрику"),
                     id="update_category",
                     on_click=self.organization_menu_service.handle_go_to_update_category,
                 ),
@@ -64,7 +64,7 @@ class OrganizationMenuDialog(interface.IOrganizationMenuDialog):
                     on_click=self.organization_menu_service.handle_go_to_social_networks,
                 ),
                 Button(
-                    Const("В главное меню"),
+                    Const("🏠 В главное меню"),
                     id="to_main_menu",
                     on_click=self.organization_menu_service.handle_go_to_main_menu,
                 ),

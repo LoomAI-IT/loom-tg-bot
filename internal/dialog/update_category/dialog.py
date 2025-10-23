@@ -56,8 +56,8 @@ class UpdateCategoryDialog(interface.IUpdateCategoryDialog):
             ),
 
             Button(
-                Const("В главное меню"),
-                id="cancel_to_content_menu",
+                Const("🏠 В главное меню"),
+                id="cancel_to_main_menu",
                 on_click=self.update_category_service.handle_go_to_main_menu,
             ),
 
@@ -77,7 +77,7 @@ class UpdateCategoryDialog(interface.IUpdateCategoryDialog):
             ),
 
             Button(
-                Const("В главное меню"),
+                Const("🏠 В главное меню"),
                 id="go_to_main_menu",
                 on_click=self.update_category_service.handle_go_to_main_menu,
             ),
@@ -92,7 +92,7 @@ class UpdateCategoryDialog(interface.IUpdateCategoryDialog):
             Const("Ваша рубрика обновлена"),
 
             Button(
-                Const("В главное меню"),
+                Const("🏠 В главное меню"),
                 id="go_to_main_menu",
                 on_click=self.update_category_service.handle_go_to_main_menu,
             ),

@@ -36,7 +36,7 @@ class CreateCategoryDialog(interface.ICreateCategoryDialog):
             ),
 
             Button(
-                Const("В главное меню"),
+                Const("🏠 В главное меню"),
                 id="go_to_main_menu",
                 on_click=self.create_category_service.handle_go_to_main_menu,
             ),
@@ -51,7 +51,7 @@ class CreateCategoryDialog(interface.ICreateCategoryDialog):
             Format("Рубрика успешно создана!"),
 
             Button(
-                Const("В главное меню"),
+                Const("🏠 В главное меню"),
                 id="go_to_main_menu",
                 on_click=self.create_category_service.handle_go_to_main_menu,
             ),
