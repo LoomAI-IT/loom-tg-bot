@@ -93,7 +93,6 @@ ultrathink
                     history=history,
                     system_prompt=system_prompt,
                     max_tokens=15000,
-                    enable_web_search=False,
                     thinking_tokens=10000
                 )
 
