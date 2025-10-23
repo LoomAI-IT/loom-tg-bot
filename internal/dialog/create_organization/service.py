@@ -75,7 +75,6 @@ class CreateOrganizationService(interface.ICreateOrganizationService):
                     system_prompt=system_prompt,
                     max_tokens=15000,
                     thinking_tokens=10000,
-                    max_searches=10
                 )
 
                 if llm_response_json.get("telegram_channel_username"):
