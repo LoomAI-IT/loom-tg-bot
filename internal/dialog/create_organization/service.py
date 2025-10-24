@@ -70,12 +70,13 @@ class CreateOrganizationService(interface.ICreateOrganizationService):
                 })
 
             async with tg_action(self.bot, message.chat.id):
-                llm_response_json, _ = await self.anthropic_client.generate_json(
+                llm_response_json, generate_cost = await self.anthropic_client.generate_json(
                     history=history,
                     system_prompt=system_prompt,
                     max_tokens=15000,
                     thinking_tokens=10000,
                 )
+                self._track_tokens(dialog_manager, generate_cost)
 
                 if llm_response_json.get("telegram_channel_username"):
                     telegram_channel_username = llm_response_json.get("telegram_channel_username")
@@ -117,6 +118,7 @@ HTML разметка должны быть валидной, если есть 
                             enable_web_search=False,
                             thinking_tokens=10000
                         )
+                        self._track_tokens(dialog_manager, generate_cost)
 
             if llm_response_json.get("organization_data"):
                 organization_data = llm_response_json["organization_data"]
@@ -265,6 +267,26 @@ HTML разметка должны быть валидной, если есть 
 
             formatted_posts.append(post_text)
         return "\n".join(formatted_posts)
+
+    def _track_tokens(self, dialog_manager: DialogManager, generate_cost: dict) -> int:
+        current_total = dialog_manager.dialog_data.get("total_tokens", 0)
+
+        tokens_used = generate_cost.get("details", {}).get("tokens", {}).get("total_tokens", 0)
+
+        new_total = current_total + tokens_used
+        dialog_manager.dialog_data["total_tokens"] = new_total
+
+        self.logger.debug(
+            "Отслеживание токенов",
+            {
+                "previous_total": current_total,
+                "current_request_tokens": tokens_used,
+                "new_total": new_total,
+                "threshold": 0
+            }
+        )
+
+        return new_total
 
     async def _get_state(self, dialog_manager: DialogManager) -> model.UserState:
         if hasattr(dialog_manager.event, 'message') and dialog_manager.event.message:
