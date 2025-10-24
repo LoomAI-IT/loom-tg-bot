@@ -80,7 +80,7 @@ class CreateOrganizationService(interface.ICreateOrganizationService):
                 self._track_tokens(dialog_manager, generate_cost)
                 if self._check_text_length_with_image(llm_response_json["message_to_user"]):
                     compressed_message_to_user, generate_cost = await self.anthropic_client.generate_str(
-                        history=[{"role": "user", "content": llm_response_json["message_to_user"]}],
+                        history=[{"role": "user", "content": "Вот текст для сжатия:\n" + llm_response_json["message_to_user"]}],
                         system_prompt="Твоя задача сжимать тексты до 3700, тебе присылают текст, ты отвечаешь этим же текстом, но до 3700 символов без учета HTML",
                         max_tokens=15000,
                         thinking_tokens=10000,
