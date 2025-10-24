@@ -79,7 +79,8 @@ class CreateOrganizationGetter(interface.ICreateOrganizationGetter):
         return data
 
     def _format_message(self, message_to_user: str) -> str:
-        return message_to_user.replace("\n", "<br>")
+        message_to_user = message_to_user.replace("\n", "<br>")
+        return re.sub(r'</details>(?!\s*</?br\s*/?>)', r'</details><br>', message_to_user)
 
     async def _get_state(self, dialog_manager: DialogManager) -> model.UserState:
         if hasattr(dialog_manager.event, 'message') and dialog_manager.event.message:
