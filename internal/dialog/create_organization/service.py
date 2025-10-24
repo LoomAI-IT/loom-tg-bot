@@ -78,15 +78,6 @@ class CreateOrganizationService(interface.ICreateOrganizationService):
                     thinking_tokens=10000,
                 )
                 self._track_tokens(dialog_manager, generate_cost)
-                if self._check_text_length_with_image(llm_response_json["message_to_user"]):
-                    compressed_message_to_user, generate_cost = await self.anthropic_client.generate_str(
-                        history=[{"role": "user", "content": "Вот текст для сжатия:\n" + llm_response_json["message_to_user"]}],
-                        system_prompt="Твоя задача сжимать тексты до 3700 без потери форматирования и смысла, тебе присылают текст, ты отвечаешь этим же текстом, но до 3700 символов без учета HTML",
-                        max_tokens=15000,
-                        thinking_tokens=10000,
-                    )
-                    llm_response_json["message_to_user"] = compressed_message_to_user
-
             if llm_response_json.get("telegram_channel_username"):
                 telegram_channel_username = llm_response_json.get("telegram_channel_username")
                 telegram_posts = await self.telegram_client.get_channel_posts(
@@ -296,14 +287,6 @@ HTML разметка должны быть валидной, если есть 
         )
 
         return new_total
-
-    def _check_text_length_with_image(self, text: str) -> bool:
-        text_without_tags = re.sub(r'<[^>]+>', '', text)
-        text_length = len(text_without_tags)
-        if text_length > 4090:
-            return True
-
-        return False
 
     async def _get_state(self, dialog_manager: DialogManager) -> model.UserState:
         if hasattr(dialog_manager.event, 'message') and dialog_manager.event.message:
