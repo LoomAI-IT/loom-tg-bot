@@ -84,7 +84,7 @@ class CreateOrganizationGetter(interface.ICreateOrganizationGetter):
         message_to_user = message_to_user.replace("</details>", "</details><br><br>")
         message_to_user = message_to_user.replace("</li>\n", "</li>")
         message_to_user = message_to_user.replace("\n", "<br>")
-        return re.sub(r'</details>(?:\s*</?br\s*/?>)?', r'</details><br><br>', message_to_user)
+        return message_to_user
 
     async def _get_state(self, dialog_manager: DialogManager) -> model.UserState:
         if hasattr(dialog_manager.event, 'message') and dialog_manager.event.message:
