@@ -1,3 +1,4 @@
+import re
 import traceback
 
 from aiogram import Bot
@@ -77,16 +78,24 @@ class CreateOrganizationService(interface.ICreateOrganizationService):
                     thinking_tokens=10000,
                 )
                 self._track_tokens(dialog_manager, generate_cost)
+                if self._check_text_length_with_image(llm_response_json["message_to_user"]):
+                    compressed_message_to_user, generate_cost = await self.anthropic_client.generate_str(
+                        history=[{"role": "user", "content": llm_response_json["message_to_user"]}],
+                        system_prompt="Твоя задача сжимать тексты до 3700, тебе присылают текст, ты отвечаешь этим же текстом, но до 3700 символов без учета HTML",
+                        max_tokens=15000,
+                        thinking_tokens=10000,
+                    )
+                    llm_response_json["message_to_user"] = compressed_message_to_user
 
-                if llm_response_json.get("telegram_channel_username"):
-                    telegram_channel_username = llm_response_json.get("telegram_channel_username")
-                    telegram_posts = await self.telegram_client.get_channel_posts(
+            if llm_response_json.get("telegram_channel_username"):
+                telegram_channel_username = llm_response_json.get("telegram_channel_username")
+                telegram_posts = await self.telegram_client.get_channel_posts(
                             telegram_channel_username,
                             50
                         )
 
-                    posts_text = self._format_telegram_posts(telegram_posts)
-                    message_to_llm = f"""
+                posts_text = self._format_telegram_posts(telegram_posts)
+                message_to_llm = f"""
 <system>
 {posts_text}
 HTML разметка должны быть валидной, если есть открывающий тэг, значит должен быть закрывающий, закрывающий не должен существовать без открывающего
@@ -96,29 +105,29 @@ HTML разметка должны быть валидной, если есть 
 Покажи анализ компани
 </user>
             """
-                    await self.llm_chat_repo.create_message(
+                await self.llm_chat_repo.create_message(
                             chat_id=chat_id,
                             role="user",
                             text=f'{{"message_to_llm": {message_to_llm}}}'
                         )
 
-                    messages = await self.llm_chat_repo.get_all_messages(chat_id)
-                    history = []
-                    for msg in messages:
+                messages = await self.llm_chat_repo.get_all_messages(chat_id)
+                history = []
+                for msg in messages:
                         history.append({
                             "role": msg.role,
                             "content": msg.text
                         })
 
-                    async with tg_action(self.bot, message.chat.id):
-                        llm_response_json, generate_cost = await self.anthropic_client.generate_json(
+                async with tg_action(self.bot, message.chat.id):
+                    llm_response_json, generate_cost = await self.anthropic_client.generate_json(
                             history=history,
                             system_prompt=system_prompt,
                             max_tokens=15000,
                             enable_web_search=False,
                             thinking_tokens=10000
                         )
-                        self._track_tokens(dialog_manager, generate_cost)
+                self._track_tokens(dialog_manager, generate_cost)
 
             if llm_response_json.get("organization_data"):
                 organization_data = llm_response_json["organization_data"]
@@ -287,6 +296,14 @@ HTML разметка должны быть валидной, если есть 
         )
 
         return new_total
+
+    async def _check_text_length_with_image(self, text: str) -> bool:
+        text_without_tags = re.sub(r'<[^>]+>', '', text)
+        text_length = len(text_without_tags)
+        if text_length > 4090:
+            return True
+
+        return False
 
     async def _get_state(self, dialog_manager: DialogManager) -> model.UserState:
         if hasattr(dialog_manager.event, 'message') and dialog_manager.event.message:
