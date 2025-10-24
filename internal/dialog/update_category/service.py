@@ -1,3 +1,4 @@
+import traceback
 from typing import Any
 
 from aiogram import Bot
@@ -68,197 +69,214 @@ class UpdateCategoryService(interface.IUpdateCategoryService):
             widget: MessageInput,
             dialog_manager: DialogManager
     ) -> None:
-        dialog_manager.show_mode = ShowMode.SEND
-
         state = await self._get_state(dialog_manager)
+        try:
+            dialog_manager.show_mode = ShowMode.SEND
 
-        category_id = dialog_manager.dialog_data.get("category_id")
-        chat_id = dialog_manager.dialog_data.get("chat_id")
-        user_text = await self._extract_text_from_message(message)
+            category_id = dialog_manager.dialog_data.get("category_id")
+            chat_id = dialog_manager.dialog_data.get("chat_id")
+            user_text = await self._extract_text_from_message(message)
 
-        await self.llm_chat_repo.create_message(
-            chat_id=chat_id,
-            role="user",
-            text=user_text
-        )
-        organization = await self.loom_organization_client.get_organization_by_id(
-            state.organization_id
-        )
-        category = await self.loom_content_client.get_category_by_id(
-            category_id
-        )
-        system_prompt = await self.update_category_prompt_generator.get_update_category_system_prompt(
-            organization,
-            category,
-        )
-        messages = await self.llm_chat_repo.get_all_messages(chat_id)
-        history = []
-        for msg in messages:
-            history.append({
-                "role": msg.role,
-                "content": msg.text
-            })
-
-        async with tg_action(self.bot, message.chat.id):
-            llm_response_json, _ = await self.anthropic_client.generate_json(
-                history=history,
-                system_prompt=system_prompt,
-                max_tokens=15000,
-                thinking_tokens=10000
+            message_to_llm = f"""
+<system>
+Оветь обязательно в JSON формате и очень хорошо подумай над тем что тебе сказали в глобальных правилах и в самом stage
+HTML разметка должны быть валидной, если есть открывающий тэг, значит должен быть закрывающий, закрывающий не должен существовать без открывающего
+ultrathink
+</system>
+    
+<user>
+{user_text}        
+</user>
+                                    """
+            await self.llm_chat_repo.create_message(
+                chat_id=chat_id,
+                role="user",
+                text=f'{{"message_to_llm": {message_to_llm}}}'
             )
+            organization = await self.loom_organization_client.get_organization_by_id(
+                state.organization_id
+            )
+            category = await self.loom_content_client.get_category_by_id(
+                category_id
+            )
+            system_prompt = await self.update_category_prompt_generator.get_update_category_system_prompt(
+                organization,
+                category,
+            )
+            messages = await self.llm_chat_repo.get_all_messages(chat_id)
+            history = []
+            for msg in messages:
+                history.append({
+                    "role": msg.role,
+                    "content": msg.text
+                })
 
-        if llm_response_json.get("telegram_channel_username_list"):
-            for telegram_channel_username in llm_response_json.get("telegram_channel_username_list"):
-                telegram_posts = await self.telegram_client.get_channel_posts(
-                    telegram_channel_username,
-                    50
+            async with tg_action(self.bot, message.chat.id):
+                llm_response_json, _ = await self.anthropic_client.generate_json(
+                    history=history,
+                    system_prompt=system_prompt,
+                    max_tokens=15000,
+                    thinking_tokens=10000
                 )
 
-                posts_text = self._format_telegram_posts(telegram_posts)
-                message_to_llm = f"""
-<system>
-{posts_text}
-HTML разметка должны быть валидной, если есть открывающий тэг, значит должен быть закрывающий, закрывающий не должен существовать без открывающего
-</system>
+            if llm_response_json.get("telegram_channel_username_list"):
+                for telegram_channel_username in llm_response_json.get("telegram_channel_username_list"):
+                    telegram_posts = await self.telegram_client.get_channel_posts(
+                        telegram_channel_username,
+                        50
+                    )
 
-<user>
-Покажи анализ результата
-</user>
-            """
+                    posts_text = self._format_telegram_posts(telegram_posts)
+                    message_to_llm = f"""
+    <system>
+    {posts_text}
+    HTML разметка должны быть валидной, если есть открывающий тэг, значит должен быть закрывающий, закрывающий не должен существовать без открывающего
+    </system>
+    
+    <user>
+    Покажи анализ результата
+    </user>
+                """
+                    await self.llm_chat_repo.create_message(
+                        chat_id=chat_id,
+                        role="user",
+                        text=f'{{"message_to_llm": {message_to_llm}}}'
+                    )
+
+                await self._check_and_handle_context_overflow(dialog_manager, chat_id, system_prompt)
+
+                messages = await self.llm_chat_repo.get_all_messages(chat_id)
+                history = []
+                for msg in messages:
+                    history.append({
+                        "role": msg.role,
+                        "content": msg.text
+                    })
+
+                async with tg_action(self.bot, message.chat.id):
+                    llm_response_json, generate_cost = await self.anthropic_client.generate_json(
+                        history=history,
+                        system_prompt=system_prompt,
+                        max_tokens=15000,
+                        thinking_tokens=10000
+                    )
+
+                self._track_tokens(dialog_manager, generate_cost)
+
+            if llm_response_json.get("test_category") and llm_response_json.get("user_text_reference"):
+                test_category_data = llm_response_json["test_category"]
+                user_text_reference = llm_response_json["user_text_reference"]
+
+                async with tg_action(self.bot, message.chat.id):
+                    test_publication_text = await self.loom_content_client.test_generate_publication(
+                        user_text_reference=user_text_reference,
+                        organization_id=state.organization_id,
+                        name=test_category_data.get("name", ""),
+                        hint=test_category_data.get("hint", ""),
+                        goal=test_category_data.get("goal", ""),
+                        tone_of_voice=test_category_data.get("tone_of_voice", []),
+                        brand_rules=test_category_data.get("brand_rules", []),
+                        creativity_level=test_category_data.get("creativity_level", 5),
+                        audience_segment=test_category_data.get("audience_segment", ""),
+                        len_min=test_category_data.get("len_min", 200),
+                        len_max=test_category_data.get("len_max", 400),
+                        n_hashtags_min=test_category_data.get("n_hashtags_min", 1),
+                        n_hashtags_max=test_category_data.get("n_hashtags_max", 2),
+                        cta_type=test_category_data.get("cta_type", ""),
+                        cta_strategy=test_category_data.get("cta_strategy", {}),
+                        good_samples=test_category_data.get("good_samples", []),
+                        bad_samples=test_category_data.get("bad_samples", []),
+                        additional_info=test_category_data.get("additional_info", []),
+                        prompt_for_image_style=test_category_data.get("prompt_for_image_style", ""),
+                    )
+
+                message_to_llm = f"""
+    <system>
+    [Сгенерированный тестовый пост]
+    {{
+        "test_category": {test_category_data},
+        "user_text_reference": {user_text_reference},
+        "generated_publication": {test_publication_text},"
+    }}
+    Оветь обязательно в JSON формате
+    HTML разметка должны быть валидной, если есть открывающий тэг, значит должен быть закрывающий, закрывающий не должен существовать без открывающего
+    </system>
+    
+    <user>
+    Вот публикация, показывать ее не надо, подрезюмируй что поменялось, если менялось, если это не первая генерация
+    </user>
+                        """
                 await self.llm_chat_repo.create_message(
                     chat_id=chat_id,
                     role="user",
                     text=f'{{"message_to_llm": {message_to_llm}}}'
                 )
 
-            await self._check_and_handle_context_overflow(dialog_manager, chat_id, system_prompt)
+                await self._check_and_handle_context_overflow(dialog_manager, chat_id, system_prompt)
 
-            messages = await self.llm_chat_repo.get_all_messages(chat_id)
-            history = []
-            for msg in messages:
-                history.append({
-                    "role": msg.role,
-                    "content": msg.text
-                })
+                messages = await self.llm_chat_repo.get_all_messages(chat_id)
+                history = []
+                for msg in messages:
+                    history.append({
+                        "role": msg.role,
+                        "content": msg.text
+                    })
 
-            async with tg_action(self.bot, message.chat.id):
-                llm_response_json, generate_cost = await self.anthropic_client.generate_json(
-                    history=history,
-                    system_prompt=system_prompt,
-                    max_tokens=15000,
-                    thinking_tokens=10000
+                async with tg_action(self.bot, message.chat.id):
+                    llm_response_json, generate_cost = await self.anthropic_client.generate_json(
+                        history=history,
+                        system_prompt=system_prompt,
+                        max_tokens=15000,
+                        thinking_tokens=10000
+                    )
+
+                self._track_tokens(dialog_manager, generate_cost)
+
+                await self.bot.send_message(
+                    chat_id=state.tg_chat_id,
+                    text="Ваша публикация:<br><br>" + test_publication_text,
+                    parse_mode=SULGUK_PARSE_MODE
                 )
 
-            self._track_tokens(dialog_manager, generate_cost)
+            if llm_response_json.get("final_category"):
+                category_data = llm_response_json["final_category"]
 
-        if llm_response_json.get("test_category") and llm_response_json.get("user_text_reference"):
-            test_category_data = llm_response_json["test_category"]
-            user_text_reference = llm_response_json["user_text_reference"]
-
-            async with tg_action(self.bot, message.chat.id):
-                test_publication_text = await self.loom_content_client.test_generate_publication(
-                    user_text_reference=user_text_reference,
-                    organization_id=state.organization_id,
-                    name=test_category_data.get("name", ""),
-                    hint=test_category_data.get("hint", ""),
-                    goal=test_category_data.get("goal", ""),
-                    tone_of_voice=test_category_data.get("tone_of_voice", []),
-                    brand_rules=test_category_data.get("brand_rules", []),
-                    creativity_level=test_category_data.get("creativity_level", 5),
-                    audience_segment=test_category_data.get("audience_segment", ""),
-                    len_min=test_category_data.get("len_min", 200),
-                    len_max=test_category_data.get("len_max", 400),
-                    n_hashtags_min=test_category_data.get("n_hashtags_min", 1),
-                    n_hashtags_max=test_category_data.get("n_hashtags_max", 2),
-                    cta_type=test_category_data.get("cta_type", ""),
-                    cta_strategy=test_category_data.get("cta_strategy", {}),
-                    good_samples=test_category_data.get("good_samples", []),
-                    bad_samples=test_category_data.get("bad_samples", []),
-                    additional_info=test_category_data.get("additional_info", []),
-                    prompt_for_image_style=test_category_data.get("prompt_for_image_style", ""),
+                await self.loom_content_client.update_category(
+                    category_id=category_id,
+                    name=category_data.get("name"),
+                    goal=category_data.get("goal"),
+                    tone_of_voice=category_data.get("tone_of_voice"),
+                    brand_rules=category_data.get("brand_rules"),
+                    creativity_level=category_data.get("creativity_level"),
+                    audience_segment=category_data.get("audience_segment"),
+                    len_min=category_data.get("len_min"),
+                    len_max=category_data.get("len_max"),
+                    n_hashtags_min=category_data.get("n_hashtags_min"),
+                    n_hashtags_max=category_data.get("n_hashtags_max"),
+                    cta_type=category_data.get("cta_type"),
+                    cta_strategy=category_data.get("cta_strategy"),
+                    good_samples=category_data.get("good_samples"),
+                    bad_samples=category_data.get("bad_samples"),
+                    additional_info=category_data.get("additional_info"),
+                    prompt_for_image_style=category_data.get("prompt_for_image_style"),
                 )
 
-            message_to_llm = f"""
-<system>
-[Сгенерированный тестовый пост]
-{{
-    "test_category": {test_category_data},
-    "user_text_reference": {user_text_reference},
-    "generated_publication": {test_publication_text},"
-}}
-Оветь обязательно в JSON формате
-HTML разметка должны быть валидной, если есть открывающий тэг, значит должен быть закрывающий, закрывающий не должен существовать без открывающего
-</system>
+                await dialog_manager.switch_to(model.UpdateCategoryStates.category_updated)
+                return
 
-<user>
-Вот публикация, показывать ее не надо, подрезюмируй что поменялось, если менялось, если это не первая генерация
-</user>
-                    """
+            message_to_user = llm_response_json["message_to_user"]
             await self.llm_chat_repo.create_message(
                 chat_id=chat_id,
-                role="user",
-                text=f'{{"message_to_llm": {message_to_llm}}}'
+                role="assistant",
+                text=str(llm_response_json)
             )
-
-            await self._check_and_handle_context_overflow(dialog_manager, chat_id, system_prompt)
-
-            messages = await self.llm_chat_repo.get_all_messages(chat_id)
-            history = []
-            for msg in messages:
-                history.append({
-                    "role": msg.role,
-                    "content": msg.text
-                })
-
-            async with tg_action(self.bot, message.chat.id):
-                llm_response_json, generate_cost = await self.anthropic_client.generate_json(
-                    history=history,
-                    system_prompt=system_prompt,
-                    max_tokens=15000,
-                    thinking_tokens=10000
-                )
-
-            self._track_tokens(dialog_manager, generate_cost)
-
+            dialog_manager.dialog_data["message_to_user"] = message_to_user
+        except Exception as e:
             await self.bot.send_message(
-                chat_id=state.tg_chat_id,
-                text="Ваша публикация:<br><br>" + test_publication_text,
-                parse_mode=SULGUK_PARSE_MODE
+                state.tg_chat_id,
+                "Произошла непредвиденная ошибка, попробуйте продолжить диалог"
             )
-
-        if llm_response_json.get("final_category"):
-            category_data = llm_response_json["final_category"]
-
-            await self.loom_content_client.update_category(
-                category_id=category_id,
-                name=category_data.get("name"),
-                goal=category_data.get("goal"),
-                tone_of_voice=category_data.get("tone_of_voice"),
-                brand_rules=category_data.get("brand_rules"),
-                creativity_level=category_data.get("creativity_level"),
-                audience_segment=category_data.get("audience_segment"),
-                len_min=category_data.get("len_min"),
-                len_max=category_data.get("len_max"),
-                n_hashtags_min=category_data.get("n_hashtags_min"),
-                n_hashtags_max=category_data.get("n_hashtags_max"),
-                cta_type=category_data.get("cta_type"),
-                cta_strategy=category_data.get("cta_strategy"),
-                good_samples=category_data.get("good_samples"),
-                bad_samples=category_data.get("bad_samples"),
-                additional_info=category_data.get("additional_info"),
-                prompt_for_image_style=category_data.get("prompt_for_image_style"),
-            )
-
-            await dialog_manager.switch_to(model.UpdateCategoryStates.category_updated)
-            return
-
-        message_to_user = llm_response_json["message_to_user"]
-        await self.llm_chat_repo.create_message(
-            chat_id=chat_id,
-            role="assistant",
-            text=message_to_user
-        )
-        dialog_manager.dialog_data["message_to_user"] = message_to_user
+            self.logger.error("Ошибка!!!", {"traceback": traceback.format_exc()})
 
     @auto_log()
     @traced_method()

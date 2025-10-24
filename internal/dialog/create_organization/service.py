@@ -55,10 +55,21 @@ class CreateOrganizationService(interface.ICreateOrganizationService):
             chat_id = dialog_manager.dialog_data.get("chat_id")
             user_text = await self._extract_text_from_message(message)
 
+            message_to_llm = f"""
+<system>
+Оветь обязательно в JSON формате и очень хорошо подумай над тем что тебе сказали в глобальных правилах и в самом stage
+HTML разметка должны быть валидной, если есть открывающий тэг, значит должен быть закрывающий, закрывающий не должен существовать без открывающего
+ultrathink
+</system>
+
+<user>
+{user_text}        
+</user>
+                        """
             await self.llm_chat_repo.create_message(
                 chat_id=chat_id,
                 role="user",
-                text=user_text
+                text=f'{{"message_to_llm": {message_to_llm}}}'
             )
 
             system_prompt = await self.create_organization_prompt_generator.get_create_organization_system_prompt()
@@ -78,6 +89,7 @@ class CreateOrganizationService(interface.ICreateOrganizationService):
                     thinking_tokens=10000,
                 )
                 self._track_tokens(dialog_manager, generate_cost)
+
             if llm_response_json.get("telegram_channel_username"):
                 telegram_channel_username = llm_response_json.get("telegram_channel_username")
                 telegram_posts = await self.telegram_client.get_channel_posts(
@@ -93,7 +105,7 @@ HTML разметка должны быть валидной, если есть 
 </system>
 
 <user>
-Покажи анализ компани
+Покажи что узнал
 </user>
             """
                 await self.llm_chat_repo.create_message(
@@ -157,7 +169,7 @@ HTML разметка должны быть валидной, если есть 
             await self.llm_chat_repo.create_message(
                 chat_id=chat_id,
                 role="assistant",
-                text=message_to_user
+                text=str(llm_response_json)
             )
             dialog_manager.dialog_data["message_to_user"] = message_to_user
         except Exception as e:
@@ -255,8 +267,7 @@ HTML разметка должны быть валидной, если есть 
 
         formatted_posts = [
             "Посты как будто подгрузились в систему, пользователь попросит анализ, ты его сразу дашь",
-            "Нужно проанализировать, что это за компания и извлечь все необходимые параметры"
-            f"[Посты из Telegram канала {posts[0]["link"]} для анализа]:\n"
+            f"[Посты из Telegram канала {posts[0]["link"]} для референса]:\n"
         ]
 
         for i, post in enumerate(posts, 1):
