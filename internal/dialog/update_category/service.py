@@ -252,7 +252,7 @@ HTML разметка должны быть валидной, если есть 
             await dialog_manager.switch_to(model.UpdateCategoryStates.category_updated)
             return
 
-        message_to_user = llm_response_json["message_to_user"].replace("\n\n", "<br>").replace("\n", "")
+        message_to_user = llm_response_json["message_to_user"]
         await self.llm_chat_repo.create_message(
             chat_id=chat_id,
             role="assistant",

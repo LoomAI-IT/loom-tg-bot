@@ -71,7 +71,7 @@ class CreateOrganizationGetter(interface.ICreateOrganizationGetter):
             message_to_user = dialog_manager.dialog_data.get("message_to_user")
 
         data = {
-            "message_to_user": message_to_user,
+            "message_to_user": message_to_user.replace("\n\n", "<br>").replace("\n", ""),
         }
 
         return data
