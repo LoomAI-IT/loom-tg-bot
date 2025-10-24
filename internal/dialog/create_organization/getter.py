@@ -58,6 +58,7 @@ class CreateOrganizationGetter(interface.ICreateOrganizationGetter):
                     history=history,
                     system_prompt=system_prompt,
                     temperature=1,
+                    enable_web_search=False
                 )
 
             message_to_user = llm_response_json["message_to_user"]

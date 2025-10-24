@@ -46,6 +46,7 @@ class CreateOrganizationPromptGenerator(interface.ICreateOrganizationPromptGener
 - <details><summary> для скрытия больших блоков
 - <b>, <i>, <u> для выделения ключевых моментов
 - <ol> и <li> для списков, не используй <ul>
+- Блоки должны визуально резделяться и не слипаться
 - <blockquote> для важных блоков - ТОЛЬКО для фактов пользователя
 - Не оборачивай телефоны и почту в <a>
 </message_formatting>
