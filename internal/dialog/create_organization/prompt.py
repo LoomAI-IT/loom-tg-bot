@@ -51,6 +51,7 @@ class CreateOrganizationPromptGenerator(interface.ICreateOrganizationPromptGener
 - Блоки должны визуально резделяться и не слипаться
 - <blockquote> для важных блоков - ТОЛЬКО для фактов пользователя
 - Не оборачивай телефоны и почту в <a>
+- Используй по минимуму эмодзи, чтобы не перегружать
 </message_formatting>
 
 </critical_rules>
