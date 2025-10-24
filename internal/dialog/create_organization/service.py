@@ -297,7 +297,7 @@ HTML разметка должны быть валидной, если есть 
 
         return new_total
 
-    async def _check_text_length_with_image(self, text: str) -> bool:
+    def _check_text_length_with_image(self, text: str) -> bool:
         text_without_tags = re.sub(r'<[^>]+>', '', text)
         text_length = len(text_without_tags)
         if text_length > 4090:
