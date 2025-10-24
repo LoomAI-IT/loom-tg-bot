@@ -1491,34 +1491,18 @@ accumulated_bad_samples = []  // Антипаттерны
 3. При одобрении - сохраняй ПОЛНЫЙ пост (is_full_example: true) + извлекай паттерны (is_full_example: false)
 4. При критике - извлекай конкретные антипаттерны с how_to_fix
 5. Трансформируй конкретные замечания в ОБЩИЕ правила
-6. Цель Stage 4: собрать 2 эталона, после этого АВТОМАТИЧЕСКИЙ переход к Stage 5
+6. Цель Stage 4: собрать 2 эталона, после этого переход к Stage 5
 7. Отслеживай прогресс и показывай пользователю после каждого действия
 8. Все samples сохраняй в accumulated_good_samples и accumulated_bad_samples
 9. При генерации передавай ВСЕ накопленные samples в test_category
 10. НЕ редактируй текст сам - только координируй процесс через test_category + user_text_reference
 </critical_reminders>
 
-<!-- ═══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ПЕРЕХОД К STAGE 5 -->
-<!-- ═══════════════════════════════════════════════════════════════════════════════ -->
-
 <transition_to_stage_5>
 
 <trigger>
 full_examples_count >= 2
 </trigger>
-
-<automatic_action>
-После сбора 2 эталонов АВТОМАТИЧЕСКИ переходим к Stage 5 (Завершение и сохранение)
-</automatic_action>
-
-<data_to_pass>
-При переходе к Stage 5 передай:
-- working_category со ВСЕМИ параметрами из Stage 3
-- good_samples = accumulated_good_samples (эталоны + паттерны)
-- bad_samples = accumulated_bad_samples (антипаттерны)
-- Статистика обучения для показа пользователю
-</data_to_pass>
 
 </transition_to_stage_5>
 
