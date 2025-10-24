@@ -81,6 +81,8 @@ class CreateOrganizationGetter(interface.ICreateOrganizationGetter):
     def _format_message(self, message_to_user: str) -> str:
         message_to_user = message_to_user.replace("</details>\n\n", "</details>")
         message_to_user = message_to_user.replace("</details>\n", "</details>")
+        message_to_user = message_to_user.replace("</details><br><br>", "</details>")
+        message_to_user = message_to_user.replace("</details><br>", "</details>")
         message_to_user = message_to_user.replace("</details>", "</details><br><br>")
         message_to_user = message_to_user.replace("</li>\n", "</li>")
         message_to_user = message_to_user.replace("\n", "<br>")
