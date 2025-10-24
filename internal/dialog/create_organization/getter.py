@@ -79,6 +79,7 @@ class CreateOrganizationGetter(interface.ICreateOrganizationGetter):
         return data
 
     def _format_message(self, message_to_user: str) -> str:
+        message_to_user = message_to_user.replace("</li>\n", "</li>")
         message_to_user = message_to_user.replace("\n", "<br>")
         return re.sub(r'</details>(?:\s*</?br\s*/?>)?', r'</details><br><br>', message_to_user)
 
