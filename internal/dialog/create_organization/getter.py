@@ -1,3 +1,5 @@
+import re
+
 from aiogram import Bot
 from aiogram_dialog import DialogManager
 
@@ -71,10 +73,13 @@ class CreateOrganizationGetter(interface.ICreateOrganizationGetter):
             message_to_user = dialog_manager.dialog_data.get("message_to_user")
 
         data = {
-            "message_to_user": message_to_user.replace("\n\n", "<br>").replace("\n", ""),
+            "message_to_user": self._format_message(message_to_user),
         }
 
         return data
+
+    def _format_message(self, message_to_user: str) -> str:
+        return re.sub(r'(</(p|h2|b|i|code|summary|details|li|ul|ol)>)\n+', r'\1', message_to_user)
 
     async def _get_state(self, dialog_manager: DialogManager) -> model.UserState:
         if hasattr(dialog_manager.event, 'message') and dialog_manager.event.message:
