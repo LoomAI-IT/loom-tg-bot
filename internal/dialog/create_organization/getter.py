@@ -83,8 +83,11 @@ class CreateOrganizationGetter(interface.ICreateOrganizationGetter):
         message_to_user = message_to_user.replace("</details>\n", "</details>")
         message_to_user = message_to_user.replace("</details><br><br>", "</details>")
         message_to_user = message_to_user.replace("</details><br>", "</details>")
+        message_to_user = message_to_user.replace("<details>\n", "<details>")
+        message_to_user = message_to_user.replace("<details><br>", "<details>")
         message_to_user = message_to_user.replace("</details>", "</details><br><br>")
         message_to_user = message_to_user.replace("</li>\n", "</li>")
+        message_to_user = message_to_user.replace("<li>\n", "</li>")
         message_to_user = message_to_user.replace("\n", "<br>")
         return message_to_user
 
