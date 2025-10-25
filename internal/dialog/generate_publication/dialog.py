@@ -935,8 +935,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
     def get_combine_images_confirm_window(self) -> Window:
         return Window(
             Multi(
-                Const("✅ <b>Результат объединения</b><br><br>"),
-                Const("🖼️ <b>Объединенное изображение:</b>"),
+                Const("🖼️ <b>Результат объединения</b><br><br>"),
                 sep="",
             ),
 
