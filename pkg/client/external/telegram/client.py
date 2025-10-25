@@ -6,19 +6,17 @@ from aiogram.types import BufferedInputFile
 from sulguk import SULGUK_PARSE_MODE, AiogramSulgukMiddleware
 
 import segno
-from telethon import TelegramClient as TelethonClient, TelegramClient
+from telethon import TelegramClient as TelethonClient
 from telethon.sessions import StringSession
 from telethon.tl.functions.auth import ExportLoginTokenRequest
 from telethon.tl.functions.messages import GetStickerSetRequest
 from telethon.tl.types import InputStickerSetShortName
 from telethon.tl.types.auth import LoginTokenSuccess
-from telethon.extensions.html import unparse
 from telethon.errors import (
     AuthTokenExpiredError,
     AuthTokenAlreadyAcceptedError,
     AuthTokenInvalidError,
 )
-from traits.trait_types import self
 
 from internal import interface
 
