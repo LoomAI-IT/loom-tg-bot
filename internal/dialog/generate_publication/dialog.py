@@ -936,29 +936,29 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             DynamicMedia(
                 selector="combine_result_media",
             ),
-
-            Multi(
-                Case(
-                    {
-                        True: Multi(
-                            Const("<br><br>📷 <b>Предыдущее изображение:</b>"),
-                        ),
-                        False: Const(""),
-                    },
-                    selector="has_old_image_backup"
-                ),
-                sep="",
-            ),
-
-            DynamicMedia(
-                selector="old_image_backup_media",
-                when="has_old_image_backup",
-            ),
-
-            Multi(
-                Const("<br><br>💡 <b>Использовать объединенное изображение?</b>"),
-                sep="",
-            ),
+            #
+            # Multi(
+            #     Case(
+            #         {
+            #             True: Multi(
+            #                 Const("<br><br>📷 <b>Предыдущее изображение:</b>"),
+            #             ),
+            #             False: Const(""),
+            #         },
+            #         selector="has_old_image_backup"
+            #     ),
+            #     sep="",
+            # ),
+            #
+            # DynamicMedia(
+            #     selector="old_image_backup_media",
+            #     when="has_old_image_backup",
+            # ),
+            #
+            # Multi(
+            #     Const("<br><br>💡 <b>Использовать объединенное изображение?</b>"),
+            #     sep="",
+            # ),
 
             Row(
                 Button(
