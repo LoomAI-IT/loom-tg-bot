@@ -1,7 +1,7 @@
 from aiogram_dialog import Window, Dialog
 from aiogram_dialog.widgets.input import MessageInput
 from aiogram_dialog.widgets.text import Const, Format, Multi
-from aiogram_dialog.widgets.kbd import Button
+from aiogram_dialog.widgets.kbd import Button, Row, Back
 from sulguk import SULGUK_PARSE_MODE
 
 from internal import interface, model
@@ -22,6 +22,7 @@ class CreateCategoryDialog(interface.ICreateCategoryDialog):
     def get_dialog(self) -> Dialog:
         return Dialog(
             self.get_create_category_window(),
+            self.get_confirm_cancel_window(),
             self.get_category_result_window(),
         )
 
@@ -37,12 +38,35 @@ class CreateCategoryDialog(interface.ICreateCategoryDialog):
 
             Button(
                 Const("❌ Прервать создание рубрики"),
-                id="go_to_main_menu",
-                on_click=self.create_category_service.handle_go_to_main_menu,
+                id="show_confirm_cancel",
+                on_click=lambda c, b, d: d.switch_to(model.CreateCategoryStates.confirm_cancel),
             ),
 
             state=model.CreateCategoryStates.create_category,
             getter=self.create_category_getter.get_create_category_data,
+            parse_mode=SULGUK_PARSE_MODE,
+        )
+
+    def get_confirm_cancel_window(self) -> Window:
+        return Window(
+            Multi(
+                Const("⚠️ <b>Подтверждение завершения</b><br><br>"),
+                Const("Вы уверены, что хотите прервать создание рубрики?<br><br>"),
+                Const("🚨 <b>Внимание:</b> <i>При завершении диалог невозможно будет восстановить!</i><br>"),
+                Const("Весь прогресс создания рубрики будет потерян."),
+                sep="",
+            ),
+
+            Row(
+                Button(
+                    Const("✅ Да, завершить"),
+                    id="confirm_cancel",
+                    on_click=self.create_category_service.handle_confirm_cancel,
+                ),
+                Back(Const("❌ Продолжить диалог")),
+            ),
+
+            state=model.CreateCategoryStates.confirm_cancel,
             parse_mode=SULGUK_PARSE_MODE,
         )
 

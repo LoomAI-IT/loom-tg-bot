@@ -181,6 +181,19 @@ HTML разметка должны быть валидной, если есть 
 
     @auto_log()
     @traced_method()
+    async def handle_confirm_cancel(
+            self,
+            callback: CallbackQuery,
+            button: Button,
+            dialog_manager: DialogManager
+    ) -> None:
+        dialog_manager.show_mode = ShowMode.EDIT
+        await callback.answer()
+
+        await dialog_manager.start(model.IntroStates.intro, mode=StartMode.RESET_STACK)
+
+    @auto_log()
+    @traced_method()
     async def go_to_create_category(
             self,
             callback: CallbackQuery,

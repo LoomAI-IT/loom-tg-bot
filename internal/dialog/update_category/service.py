@@ -280,6 +280,19 @@ ultrathink
 
     @auto_log()
     @traced_method()
+    async def handle_confirm_cancel(
+            self,
+            callback: CallbackQuery,
+            button: Button,
+            dialog_manager: DialogManager
+    ) -> None:
+        dialog_manager.show_mode = ShowMode.EDIT
+        await callback.answer()
+
+        await dialog_manager.start(model.MainMenuStates.main_menu, mode=StartMode.RESET_STACK)
+
+    @auto_log()
+    @traced_method()
     async def handle_go_to_main_menu(
             self,
             callback: CallbackQuery,

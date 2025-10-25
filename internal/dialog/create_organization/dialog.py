@@ -1,7 +1,7 @@
 from aiogram_dialog import Window, Dialog, StartMode
 from aiogram_dialog.widgets.input import MessageInput
 from aiogram_dialog.widgets.text import Const, Format, Multi
-from aiogram_dialog.widgets.kbd import Button
+from aiogram_dialog.widgets.kbd import Button, Row, Back
 from sulguk import SULGUK_PARSE_MODE
 
 from internal import interface, model
@@ -22,6 +22,7 @@ class CreateOrganizationDialog(interface.ICreateOrganizationDialog):
     def get_dialog(self) -> Dialog:
         return Dialog(
             self.get_create_organization_window(),
+            self.get_confirm_cancel_window(),
             self.get_organization_result_window(),
         )
 
@@ -37,12 +38,35 @@ class CreateOrganizationDialog(interface.ICreateOrganizationDialog):
 
             Button(
                 Const("❌ Прервать созание организации"),
-                id="go_to_intro",
-                on_click=lambda c, b, d: d.start(model.IntroStates.intro, mode=StartMode.RESET_STACK),
+                id="show_confirm_cancel",
+                on_click=lambda c, b, d: d.switch_to(model.CreateOrganizationStates.confirm_cancel),
             ),
 
             state=model.CreateOrganizationStates.create_organization,
             getter=self.create_organization_getter.get_create_organization_data,
+            parse_mode=SULGUK_PARSE_MODE,
+        )
+
+    def get_confirm_cancel_window(self) -> Window:
+        return Window(
+            Multi(
+                Const("⚠️ <b>Подтверждение завершения</b><br><br>"),
+                Const("Вы уверены, что хотите прервать создание организации?<br><br>"),
+                Const("🚨 <b>Внимание:</b> <i>При завершении диалог невозможно будет восстановить!</i><br>"),
+                Const("Весь прогресс создания организации будет потерян."),
+                sep="",
+            ),
+
+            Row(
+                Button(
+                    Const("✅ Да, завершить"),
+                    id="confirm_cancel",
+                    on_click=self.create_organization_service.handle_confirm_cancel,
+                ),
+                Back(Const("❌ Продолжить диалог")),
+            ),
+
+            state=model.CreateOrganizationStates.confirm_cancel,
             parse_mode=SULGUK_PARSE_MODE,
         )
 
