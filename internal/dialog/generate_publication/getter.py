@@ -374,8 +374,8 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
         return {
             "is_combining_images": dialog_manager.dialog_data.get("is_combining_images", False),
             "voice_transcribe": dialog_manager.dialog_data.get("voice_transcribe", False),
-            "has_combine_prompt": dialog_manager.dialog_data.get("has_combine_prompt", False),
-            "combine_prompt": dialog_manager.dialog_data.get("combine_prompt", False),
+            "has_combine_prompt": bool(dialog_manager.dialog_data.get("combine_prompt")),
+            "combine_prompt": dialog_manager.dialog_data.get("combine_prompt", ""),
             # Error flags
             "has_small_combine_prompt": dialog_manager.dialog_data.get("has_small_combine_prompt", False),
             "has_big_combine_prompt": dialog_manager.dialog_data.get("has_big_combine_prompt", False),
