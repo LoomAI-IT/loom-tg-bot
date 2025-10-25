@@ -586,7 +586,7 @@ class LoomContentClient(interface.ILoomContentClient):
                 (filename, content, "image/png")
             ))
 
-        response = await self.client.post("/image/combine", json=data, files=files)
+        response = await self.client.post("/image/combine", data=data, files=files)
         json_response = response.json()
 
         return json_response["images_url"]
