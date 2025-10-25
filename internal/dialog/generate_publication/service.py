@@ -1266,6 +1266,8 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         state = await self._get_state(dialog_manager)
         combine_prompt = dialog_manager.dialog_data.get("combine_prompt")
+        if not combine_prompt:
+            combine_prompt = "Объедини эти фотографии в одну композици, чтобы это смотрелось органично"
 
         # Сохраняем старое изображение для возможности отмены
         old_image_backup = None
