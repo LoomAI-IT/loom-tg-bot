@@ -865,7 +865,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                 ),
                 Case(
                     {
-                        True: Format("<br><br>🔄 <b>{combine_prompt}</b>"),
+                        True: Format("<br><br><b>Ваша инструкция для объединения:</b><br>{combine_prompt}"),
                         False: Const(""),
                     },
                     selector="has_combine_prompt",
