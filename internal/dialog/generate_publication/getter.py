@@ -315,6 +315,109 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
             "vkontakte_link": vkontakte_link or "",
         }
 
+    @auto_log()
+    @traced_method()
+    async def get_combine_images_choice_data(
+            self,
+            dialog_manager: DialogManager,
+            **kwargs
+    ) -> dict:
+        has_current_image = dialog_manager.dialog_data.get("has_image", False)
+        return {
+            "has_current_image": has_current_image,
+        }
+
+    @auto_log()
+    @traced_method()
+    async def get_combine_images_upload_data(
+            self,
+            dialog_manager: DialogManager,
+            **kwargs
+    ) -> dict:
+        combine_images_list = dialog_manager.dialog_data.get("combine_images_list", [])
+        combine_current_index = dialog_manager.dialog_data.get("combine_current_index", 0)
+
+        has_combine_images = len(combine_images_list) > 0
+        combine_images_count = len(combine_images_list)
+        has_multiple_combine_images = combine_images_count > 1
+        has_enough_combine_images = combine_images_count >= 2
+
+        combine_current_image_media = None
+        if has_combine_images and combine_current_index < len(combine_images_list):
+            file_id = combine_images_list[combine_current_index]
+            combine_current_image_media = MediaAttachment(
+                file_id=MediaId(file_id),
+                type=ContentType.PHOTO
+            )
+
+        return {
+            "has_combine_images": has_combine_images,
+            "combine_images_count": combine_images_count,
+            "has_multiple_combine_images": has_multiple_combine_images,
+            "has_enough_combine_images": has_enough_combine_images,
+            "combine_current_index": combine_current_index + 1,
+            "combine_current_image_media": combine_current_image_media,
+            # Error flags
+            "has_invalid_combine_image_type": dialog_manager.dialog_data.get("has_invalid_combine_image_type", False),
+            "has_big_combine_image_size": dialog_manager.dialog_data.get("has_big_combine_image_size", False),
+            "combine_images_limit_reached": dialog_manager.dialog_data.get("combine_images_limit_reached", False),
+            "not_enough_combine_images": dialog_manager.dialog_data.get("not_enough_combine_images", False),
+        }
+
+    @auto_log()
+    @traced_method()
+    async def get_combine_images_prompt_data(
+            self,
+            dialog_manager: DialogManager,
+            **kwargs
+    ) -> dict:
+        return {
+            "is_combining_images": dialog_manager.dialog_data.get("is_combining_images", False),
+            "voice_transcribe": dialog_manager.dialog_data.get("voice_transcribe", False),
+            # Error flags
+            "has_small_combine_prompt": dialog_manager.dialog_data.get("has_small_combine_prompt", False),
+            "has_big_combine_prompt": dialog_manager.dialog_data.get("has_big_combine_prompt", False),
+            "has_invalid_content_type": dialog_manager.dialog_data.get("has_invalid_content_type", False),
+        }
+
+    @auto_log()
+    @traced_method()
+    async def get_combine_images_confirm_data(
+            self,
+            dialog_manager: DialogManager,
+            **kwargs
+    ) -> dict:
+        combine_result_url = dialog_manager.dialog_data.get("combine_result_url")
+        old_image_backup = dialog_manager.dialog_data.get("old_image_backup")
+
+        combine_result_media = None
+        if combine_result_url:
+            combine_result_media = MediaAttachment(
+                url=combine_result_url,
+                type=ContentType.PHOTO
+            )
+
+        old_image_backup_media = None
+        has_old_image_backup = False
+        if old_image_backup:
+            has_old_image_backup = True
+            if old_image_backup.get("type") == "file_id":
+                old_image_backup_media = MediaAttachment(
+                    file_id=MediaId(old_image_backup["value"]),
+                    type=ContentType.PHOTO
+                )
+            elif old_image_backup.get("type") == "url":
+                old_image_backup_media = MediaAttachment(
+                    url=old_image_backup["value"],
+                    type=ContentType.PHOTO
+                )
+
+        return {
+            "combine_result_media": combine_result_media,
+            "has_old_image_backup": has_old_image_backup,
+            "old_image_backup_media": old_image_backup_media,
+        }
+
     # Helper methods
     def _is_network_connected(self, social_networks: dict, network_type: str) -> bool:
         if not social_networks:

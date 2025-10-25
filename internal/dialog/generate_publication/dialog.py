@@ -32,6 +32,10 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             self.get_image_menu_window(),
             self.get_edit_text_window(),
             self.get_upload_image_window(),
+            self.get_combine_images_choice_window(),
+            self.get_combine_images_upload_window(),
+            self.get_combine_images_prompt_window(),
+            self.get_combine_images_confirm_window(),
             self.get_social_network_select_window(),
             self.get_text_too_long_alert_window(),
             self.get_publication_success_window()  # Новое окно
@@ -523,6 +527,11 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                     on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.upload_image, ShowMode.EDIT),
                 ),
                 Button(
+                    Const("📐 Объединить изображения"),
+                    id="combine_images",
+                    on_click=self.generate_publication_service.handle_combine_images_start,
+                ),
+                Button(
                     Const("🗑️ Удалить изображение"),
                     id="remove_image",
                     on_click=self.generate_publication_service.handle_remove_image,
@@ -552,7 +561,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                 Case(
                     {
                         True: Const(
-                            "<br>❌ <b>Неверный формат файла</b><br><i>Отправьте изображение (не другой тип файла)</i>"),
+                            "<br>❌ <b>Неверный формат файла</b><br><i>Отправьте изображение</i>"),
                         False: Const(""),
                     },
                     selector="has_invalid_image_type"
@@ -680,6 +689,292 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
 
             state=model.GeneratePublicationStates.text_too_long_alert,
             getter=self.generate_publication_getter.get_text_too_long_alert_data,
+            parse_mode=SULGUK_PARSE_MODE,
+        )
+
+    def get_combine_images_choice_window(self) -> Window:
+        return Window(
+            Multi(
+                Const("📐 <b>Объединение изображений</b><br><br>"),
+                Case(
+                    {
+                        True: Multi(
+                            Const("🖼️ <i>У вас уже есть изображение в публикации</i><br><br>"),
+                            Const("💡 <b>Выберите действие:</b>"),
+                        ),
+                        False: Multi(
+                            Const("📤 <i>Загрузите от 2 до 3 изображений для объединения</i>"),
+                        ),
+                    },
+                    selector="has_current_image"
+                ),
+                sep="",
+            ),
+
+            Column(
+                Button(
+                    Const("➕ Объединить с текущим"),
+                    id="combine_with_current",
+                    on_click=self.generate_publication_service.handle_combine_with_current,
+                    when="has_current_image",
+                ),
+                Button(
+                    Const("🔄 Начать с новых"),
+                    id="combine_from_scratch",
+                    on_click=self.generate_publication_service.handle_combine_from_scratch,
+                    when="has_current_image",
+                ),
+            ),
+
+            Button(
+                Const("◀️ Назад"),
+                id="back_to_image_menu",
+                on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.image_menu, ShowMode.EDIT),
+            ),
+
+            state=model.GeneratePublicationStates.combine_images_choice,
+            getter=self.generate_publication_getter.get_combine_images_choice_data,
+            parse_mode=SULGUK_PARSE_MODE,
+        )
+
+    def get_combine_images_upload_window(self) -> Window:
+        return Window(
+            Multi(
+                Const("📤 <b>Загрузка изображений</b><br><br>"),
+                Case(
+                    {
+                        True: Format("🖼️ <b>Изображений загружено: {combine_images_count} из 3</b><br>"),
+                        False: Const(""),
+                    },
+                    selector="has_combine_images"
+                ),
+                Case(
+                    {
+                        True: Format("<br>📍 <b>Сейчас показано:</b> изображение {combine_current_index} из {combine_images_count}"),
+                        False: Const(""),
+                    },
+                    selector="has_multiple_combine_images"
+                ),
+                Const("<br><br>📷 <i>Отправьте изображения (максимум 3)</i><br>"),
+                Const("💡 <i>После загрузки всех изображений нажмите \"Далее\"</i>"),
+                # Error messages
+                Case(
+                    {
+                        True: Const(
+                            "<br><br>❌ <b>Неверный формат файла</b><br><i>Отправьте изображение (не другой тип файла)</i>"),
+                        False: Const(""),
+                    },
+                    selector="has_invalid_combine_image_type"
+                ),
+                Case(
+                    {
+                        True: Const("<br><br>📁 <b>Файл слишком большой</b><br><i>Максимум 10 МБ</i>"),
+                        False: Const(""),
+                    },
+                    selector="has_big_combine_image_size"
+                ),
+                Case(
+                    {
+                        True: Const("<br><br>⚠️ <b>Достигнут лимит</b><br><i>Максимум 3 изображения</i>"),
+                        False: Const(""),
+                    },
+                    selector="combine_images_limit_reached"
+                ),
+                Case(
+                    {
+                        True: Const("<br><br>⚠️ <b>Минимум 2 изображения</b><br><i>Загрузите хотя бы 2 изображения</i>"),
+                        False: Const(""),
+                    },
+                    selector="not_enough_combine_images"
+                ),
+                sep="",
+            ),
+
+            DynamicMedia(
+                selector="combine_current_image_media",
+                when="has_combine_images",
+            ),
+
+            Row(
+                Button(
+                    Const("⬅️ Предыдущая"),
+                    id="prev_combine_image",
+                    on_click=self.generate_publication_service.handle_prev_combine_image,
+                    when="has_multiple_combine_images",
+                ),
+                Button(
+                    Const("➡️ Следующая"),
+                    id="next_combine_image",
+                    on_click=self.generate_publication_service.handle_next_combine_image,
+                    when="has_multiple_combine_images",
+                ),
+                when="has_multiple_combine_images",
+            ),
+
+            MessageInput(
+                func=self.generate_publication_service.handle_combine_image_upload,
+            ),
+
+            Column(
+                Button(
+                    Const("🗑️ Удалить текущее"),
+                    id="delete_combine_image",
+                    on_click=self.generate_publication_service.handle_delete_combine_image,
+                    when="has_combine_images",
+                ),
+                Button(
+                    Const("▶️ Далее"),
+                    id="next_to_prompt",
+                    on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.combine_images_prompt, ShowMode.EDIT),
+                    when="has_enough_combine_images",
+                ),
+            ),
+
+            Button(
+                Const("◀️ Назад"),
+                id="back_to_image_menu",
+                on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.image_menu, ShowMode.EDIT),
+            ),
+
+            state=model.GeneratePublicationStates.combine_images_upload,
+            getter=self.generate_publication_getter.get_combine_images_upload_data,
+            parse_mode=SULGUK_PARSE_MODE,
+        )
+
+    def get_combine_images_prompt_window(self) -> Window:
+        return Window(
+            Multi(
+                Case(
+                    {
+                        False: Multi(
+                            Const("✍️ <b>Как объединить изображения?</b><br><br>"),
+                            Const("💬 <b>Опишите, как расположить изображения:</b><br>"),
+                            Const("• <i>Расположите горизонтально</i><br>"),
+                            Const("• <i>В виде коллажа</i><br>"),
+                            Const("• <i>Наложите друг на друга</i><br>"),
+                            Const("• <i>Вертикально, одно под другим</i><br><br>"),
+                            Const("🎤 <i>Можно отправить текст или голосовое сообщение</i><br>"),
+                            Const("⏭️ <i>Или пропустите этот шаг — ИИ сам решит, как лучше</i>"),
+                        ),
+                        True: Multi(
+                            Const("⏳ <b>Объединяю изображения...</b><br>"),
+                            Const("🕐 <i>Это может занять время. Пожалуйста, подождите.</i>"),
+                        ),
+                    },
+                    selector="is_combining_images"
+                ),
+                Case(
+                    {
+                        True: Const("<br><br>🔄 <b>Распознаю голосовое сообщение...</b>"),
+                        False: Const(""),
+                    },
+                    selector="voice_transcribe"
+                ),
+                Case(
+                    {
+                        True: Const("<br><br>📏 <b>Слишком короткое описание</b><br><i>Минимум 10 символов</i>"),
+                        False: Const(""),
+                    },
+                    selector="has_small_combine_prompt"
+                ),
+                Case(
+                    {
+                        True: Const("<br><br>📏 <b>Слишком длинное описание</b><br><i>Максимум 1000 символов</i>"),
+                        False: Const(""),
+                    },
+                    selector="has_big_combine_prompt"
+                ),
+                Case(
+                    {
+                        True: Const("<br><br>🎤 <b>Неверный формат</b><br><i>Отправьте текст, голосовое сообщение или аудиофайл</i>"),
+                        False: Const(""),
+                    },
+                    selector="has_invalid_content_type"
+                ),
+                sep="",
+            ),
+
+            MessageInput(
+                func=self.generate_publication_service.handle_combine_prompt_input,
+            ),
+
+            Column(
+                Button(
+                    Const("🔗 Объединить"),
+                    id="execute_combine",
+                    on_click=self.generate_publication_service.handle_execute_combine,
+                    when=~F["is_combining_images"]
+                ),
+                Button(
+                    Const("⏭️ Пропустить"),
+                    id="skip_prompt",
+                    on_click=self.generate_publication_service.handle_execute_combine,
+                    when=~F["is_combining_images"]
+                ),
+            ),
+
+            Button(
+                Const("◀️ Назад"),
+                id="back_to_upload",
+                on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.combine_images_upload, ShowMode.EDIT),
+                when=~F["is_combining_images"]
+            ),
+
+            state=model.GeneratePublicationStates.combine_images_prompt,
+            getter=self.generate_publication_getter.get_combine_images_prompt_data,
+            parse_mode=SULGUK_PARSE_MODE,
+        )
+
+    def get_combine_images_confirm_window(self) -> Window:
+        return Window(
+            Multi(
+                Const("✅ <b>Результат объединения</b><br><br>"),
+                Const("🖼️ <b>Объединенное изображение:</b>"),
+                sep="",
+            ),
+
+            DynamicMedia(
+                selector="combine_result_media",
+            ),
+
+            Multi(
+                Case(
+                    {
+                        True: Multi(
+                            Const("<br><br>📷 <b>Предыдущее изображение:</b>"),
+                        ),
+                        False: Const(""),
+                    },
+                    selector="has_old_image_backup"
+                ),
+                sep="",
+            ),
+
+            DynamicMedia(
+                selector="old_image_backup_media",
+                when="has_old_image_backup",
+            ),
+
+            Multi(
+                Const("<br><br>💡 <b>Использовать объединенное изображение?</b>"),
+                sep="",
+            ),
+
+            Row(
+                Button(
+                    Const("✅ Использовать"),
+                    id="confirm_combine",
+                    on_click=self.generate_publication_service.handle_confirm_combine,
+                ),
+                Button(
+                    Const("❌ Отменить"),
+                    id="cancel_combine",
+                    on_click=self.generate_publication_service.handle_cancel_combine,
+                ),
+            ),
+
+            state=model.GeneratePublicationStates.combine_images_confirm,
+            getter=self.generate_publication_getter.get_combine_images_confirm_data,
             parse_mode=SULGUK_PARSE_MODE,
         )
 

@@ -565,3 +565,28 @@ class LoomContentClient(interface.ILoomContentClient):
         json_response = response.json()
 
         return json_response["text"]
+
+    @traced_method(SpanKind.CLIENT)
+    async def combine_images(
+            self,
+            organization_id: int,
+            images_content: list[bytes],
+            images_filenames: list[str],
+            prompt: str = None,
+    ) -> list[str]:
+        data = {"organization_id": organization_id}
+
+        if prompt is not None:
+            data["prompt"] = prompt
+
+        files = []
+        for i, (content, filename) in enumerate(zip(images_content, images_filenames)):
+            files.append((
+                "images_files",
+                (filename, content, "image/png")
+            ))
+
+        response = await self.client.post("/publication/image/combine", data=data, files=files)
+        json_response = response.json()
+
+        return json_response["images_url"]

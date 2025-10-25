@@ -19,6 +19,12 @@ class GeneratePublicationStates(StatesGroup):
     generate_image = State()
     upload_image = State()
 
+    # Состояния объединения изображений
+    combine_images_choice = State()
+    combine_images_upload = State()
+    combine_images_prompt = State()
+    combine_images_confirm = State()
+
     # Публикация
     social_network_select = State()
 

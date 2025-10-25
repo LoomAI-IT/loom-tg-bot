@@ -1009,3 +1009,374 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 content = await response.read()
                 content_type = response.headers.get('content-type', 'image/png')
                 return content, content_type
+
+    # ============= COMBINE IMAGES HANDLERS =============
+
+    @auto_log()
+    @traced_method()
+    async def handle_combine_images_start(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        dialog_manager.show_mode = ShowMode.EDIT
+
+        await callback.answer()
+
+        # Проверяем, есть ли текущее изображение
+        has_image = dialog_manager.dialog_data.get("has_image", False)
+
+        if has_image:
+            # Переходим к выбору: с текущим или с новых
+            await dialog_manager.switch_to(model.GeneratePublicationStates.combine_images_choice)
+        else:
+            # Сразу переходим к загрузке
+            dialog_manager.dialog_data["combine_images_list"] = []
+            dialog_manager.dialog_data["combine_current_index"] = 0
+            await dialog_manager.switch_to(model.GeneratePublicationStates.combine_images_upload)
+
+    @auto_log()
+    @traced_method()
+    async def handle_combine_with_current(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        dialog_manager.show_mode = ShowMode.EDIT
+
+        await callback.answer()
+
+        # Добавляем текущее изображение как первое в списке
+        combine_images_list = []
+
+        if dialog_manager.dialog_data.get("custom_image_file_id"):
+            file_id = dialog_manager.dialog_data["custom_image_file_id"]
+            combine_images_list.append(file_id)
+        elif dialog_manager.dialog_data.get("publication_images_url"):
+            images_url = dialog_manager.dialog_data["publication_images_url"]
+            current_index = dialog_manager.dialog_data.get("current_image_index", 0)
+            if current_index < len(images_url):
+                # Скачиваем текущее изображение и загружаем в бот, чтобы получить file_id
+                current_url = images_url[current_index]
+                image_content, _ = await self._download_image(current_url)
+
+                # Отправляем изображение себе, чтобы получить file_id
+                message = await self.bot.send_photo(
+                    chat_id=callback.message.chat.id,
+                    photo=image_content
+                )
+                await message.delete()
+                combine_images_list.append(message.photo[-1].file_id)
+
+        dialog_manager.dialog_data["combine_images_list"] = combine_images_list
+        dialog_manager.dialog_data["combine_current_index"] = 0
+
+        await dialog_manager.switch_to(model.GeneratePublicationStates.combine_images_upload)
+
+    @auto_log()
+    @traced_method()
+    async def handle_combine_from_scratch(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        dialog_manager.show_mode = ShowMode.EDIT
+
+        await callback.answer()
+
+        # Начинаем с пустого списка
+        dialog_manager.dialog_data["combine_images_list"] = []
+        dialog_manager.dialog_data["combine_current_index"] = 0
+
+        await dialog_manager.switch_to(model.GeneratePublicationStates.combine_images_upload)
+
+    @auto_log()
+    @traced_method()
+    async def handle_combine_image_upload(
+            self,
+            message: Message,
+            widget: MessageInput,
+            dialog_manager: DialogManager
+    ) -> None:
+        dialog_manager.show_mode = ShowMode.EDIT
+
+        await message.delete()
+
+        # Очистка флагов ошибок
+        dialog_manager.dialog_data.pop("has_invalid_combine_image_type", None)
+        dialog_manager.dialog_data.pop("has_big_combine_image_size", None)
+        dialog_manager.dialog_data.pop("combine_images_limit_reached", None)
+
+        if message.content_type != ContentType.PHOTO:
+            self.logger.info("Неверный тип контента для объединения изображения")
+            dialog_manager.dialog_data["has_invalid_combine_image_type"] = True
+            return
+
+        combine_images_list = dialog_manager.dialog_data.get("combine_images_list", [])
+
+        if len(combine_images_list) >= 3:
+            self.logger.info("Достигнут лимит изображений для объединения")
+            dialog_manager.dialog_data["combine_images_limit_reached"] = True
+            return
+
+        if message.photo:
+            photo = message.photo[-1]
+
+            if hasattr(photo, 'file_size') and photo.file_size:
+                if photo.file_size > 10 * 1024 * 1024:
+                    self.logger.info("Размер изображения превышает лимит")
+                    dialog_manager.dialog_data["has_big_combine_image_size"] = True
+                    return
+
+            combine_images_list.append(photo.file_id)
+            dialog_manager.dialog_data["combine_images_list"] = combine_images_list
+            dialog_manager.dialog_data["combine_current_index"] = len(combine_images_list) - 1
+
+            self.logger.info(f"Изображение добавлено. Всего: {len(combine_images_list)}")
+
+    @auto_log()
+    @traced_method()
+    async def handle_prev_combine_image(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        dialog_manager.show_mode = ShowMode.EDIT
+
+        combine_images_list = dialog_manager.dialog_data.get("combine_images_list", [])
+        current_index = dialog_manager.dialog_data.get("combine_current_index", 0)
+
+        if current_index > 0:
+            dialog_manager.dialog_data["combine_current_index"] = current_index - 1
+        else:
+            dialog_manager.dialog_data["combine_current_index"] = len(combine_images_list) - 1
+
+        await callback.answer()
+
+    @auto_log()
+    @traced_method()
+    async def handle_next_combine_image(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        dialog_manager.show_mode = ShowMode.EDIT
+
+        combine_images_list = dialog_manager.dialog_data.get("combine_images_list", [])
+        current_index = dialog_manager.dialog_data.get("combine_current_index", 0)
+
+        if current_index < len(combine_images_list) - 1:
+            dialog_manager.dialog_data["combine_current_index"] = current_index + 1
+        else:
+            dialog_manager.dialog_data["combine_current_index"] = 0
+
+        await callback.answer()
+
+    @auto_log()
+    @traced_method()
+    async def handle_delete_combine_image(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        dialog_manager.show_mode = ShowMode.EDIT
+
+        combine_images_list = dialog_manager.dialog_data.get("combine_images_list", [])
+        current_index = dialog_manager.dialog_data.get("combine_current_index", 0)
+
+        if current_index < len(combine_images_list):
+            combine_images_list.pop(current_index)
+            dialog_manager.dialog_data["combine_images_list"] = combine_images_list
+
+            # Корректируем индекс
+            if current_index >= len(combine_images_list) and len(combine_images_list) > 0:
+                dialog_manager.dialog_data["combine_current_index"] = len(combine_images_list) - 1
+            elif len(combine_images_list) == 0:
+                dialog_manager.dialog_data["combine_current_index"] = 0
+
+        await callback.answer("Изображение удалено")
+
+    @auto_log()
+    @traced_method()
+    async def handle_combine_prompt_input(
+            self,
+            message: Message,
+            widget: MessageInput,
+            dialog_manager: DialogManager
+    ) -> None:
+        dialog_manager.show_mode = ShowMode.EDIT
+
+        await message.delete()
+
+        # Очистка флагов ошибок
+        dialog_manager.dialog_data.pop("has_small_combine_prompt", None)
+        dialog_manager.dialog_data.pop("has_big_combine_prompt", None)
+        dialog_manager.dialog_data.pop("has_invalid_content_type", None)
+
+        state = await self._get_state(dialog_manager)
+
+        if message.content_type not in [ContentType.VOICE, ContentType.AUDIO, ContentType.TEXT]:
+            self.logger.info("Неверный тип контента для промпта объединения")
+            dialog_manager.dialog_data["has_invalid_content_type"] = True
+            return
+
+        if message.content_type == ContentType.TEXT:
+            prompt = message.text
+        else:
+            prompt = await self._speech_to_text(message, dialog_manager, state.organization_id)
+
+        if prompt and len(prompt) < 10:
+            self.logger.info("Слишком короткий промпт для объединения")
+            dialog_manager.dialog_data["has_small_combine_prompt"] = True
+            return
+
+        if prompt and len(prompt) > 1000:
+            self.logger.info("Слишком длинный промпт для объединения")
+            dialog_manager.dialog_data["has_big_combine_prompt"] = True
+            return
+
+        dialog_manager.dialog_data["combine_prompt"] = prompt
+
+    @auto_log()
+    @traced_method()
+    async def handle_execute_combine(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        dialog_manager.show_mode = ShowMode.EDIT
+
+        combine_images_list = dialog_manager.dialog_data.get("combine_images_list", [])
+
+        if len(combine_images_list) < 2:
+            dialog_manager.dialog_data["not_enough_combine_images"] = True
+            await callback.answer("Нужно минимум 2 изображения", show_alert=True)
+            return
+
+        await callback.answer()
+        dialog_manager.dialog_data["is_combining_images"] = True
+        await dialog_manager.show()
+
+        state = await self._get_state(dialog_manager)
+        combine_prompt = dialog_manager.dialog_data.get("combine_prompt")
+
+        # Сохраняем старое изображение для возможности отмены
+        old_image_backup = None
+        if dialog_manager.dialog_data.get("custom_image_file_id"):
+            old_image_backup = {
+                "type": "file_id",
+                "value": dialog_manager.dialog_data["custom_image_file_id"]
+            }
+        elif dialog_manager.dialog_data.get("publication_images_url"):
+            images_url = dialog_manager.dialog_data["publication_images_url"]
+            current_index = dialog_manager.dialog_data.get("current_image_index", 0)
+            if current_index < len(images_url):
+                old_image_backup = {
+                    "type": "url",
+                    "value": images_url[current_index]
+                }
+
+        dialog_manager.dialog_data["old_image_backup"] = old_image_backup
+
+        # Скачиваем все изображения
+        images_content = []
+        images_filenames = []
+
+        for i, file_id in enumerate(combine_images_list):
+            image_io = await self.bot.download(file_id)
+            content = image_io.read()
+            images_content.append(content)
+            images_filenames.append(f"image_{i}.jpg")
+
+        async with tg_action(self.bot, callback.message.chat.id, "upload_photo"):
+            combined_images_url = await self.loom_content_client.combine_images(
+                organization_id=state.organization_id,
+                images_content=images_content,
+                images_filenames=images_filenames,
+                prompt=combine_prompt,
+            )
+
+        dialog_manager.dialog_data["is_combining_images"] = False
+        dialog_manager.dialog_data["combine_result_url"] = combined_images_url[0] if combined_images_url else None
+
+        await dialog_manager.switch_to(model.GeneratePublicationStates.combine_images_confirm)
+
+    @auto_log()
+    @traced_method()
+    async def handle_confirm_combine(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        dialog_manager.show_mode = ShowMode.EDIT
+
+        await callback.answer("Объединенное изображение применено")
+
+        # Применяем объединенное изображение
+        combine_result_url = dialog_manager.dialog_data.get("combine_result_url")
+
+        if combine_result_url:
+            dialog_manager.dialog_data["publication_images_url"] = [combine_result_url]
+            dialog_manager.dialog_data["has_image"] = True
+            dialog_manager.dialog_data["is_custom_image"] = False
+            dialog_manager.dialog_data["current_image_index"] = 0
+            dialog_manager.dialog_data.pop("custom_image_file_id", None)
+
+        # Очищаем данные объединения
+        dialog_manager.dialog_data.pop("combine_images_list", None)
+        dialog_manager.dialog_data.pop("combine_current_index", None)
+        dialog_manager.dialog_data.pop("combine_prompt", None)
+        dialog_manager.dialog_data.pop("combine_result_url", None)
+        dialog_manager.dialog_data.pop("old_image_backup", None)
+
+        # Проверяем длину текста с изображением
+        if await self._check_text_length_with_image(dialog_manager):
+            return
+
+        await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
+
+    @auto_log()
+    @traced_method()
+    async def handle_cancel_combine(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        dialog_manager.show_mode = ShowMode.EDIT
+
+        await callback.answer("Объединение отменено")
+
+        # Восстанавливаем старое изображение, если оно было
+        old_image_backup = dialog_manager.dialog_data.get("old_image_backup")
+
+        if old_image_backup:
+            if old_image_backup["type"] == "file_id":
+                dialog_manager.dialog_data["custom_image_file_id"] = old_image_backup["value"]
+                dialog_manager.dialog_data["has_image"] = True
+                dialog_manager.dialog_data["is_custom_image"] = True
+                dialog_manager.dialog_data.pop("publication_images_url", None)
+                dialog_manager.dialog_data.pop("current_image_index", None)
+            elif old_image_backup["type"] == "url":
+                dialog_manager.dialog_data["publication_images_url"] = [old_image_backup["value"]]
+                dialog_manager.dialog_data["has_image"] = True
+                dialog_manager.dialog_data["is_custom_image"] = False
+                dialog_manager.dialog_data["current_image_index"] = 0
+                dialog_manager.dialog_data.pop("custom_image_file_id", None)
+
+        # Очищаем данные объединения
+        dialog_manager.dialog_data.pop("combine_images_list", None)
+        dialog_manager.dialog_data.pop("combine_current_index", None)
+        dialog_manager.dialog_data.pop("combine_prompt", None)
+        dialog_manager.dialog_data.pop("combine_result_url", None)
+        dialog_manager.dialog_data.pop("old_image_backup", None)
+
+        await dialog_manager.switch_to(model.GeneratePublicationStates.image_menu)

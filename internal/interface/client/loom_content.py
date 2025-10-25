@@ -249,3 +249,12 @@ class ILoomContentClient(Protocol):
             audio_content: bytes = None,
             audio_filename: str = None,
     ) -> str: pass
+
+    @abstractmethod
+    async def combine_images(
+            self,
+            organization_id: int,
+            images_content: list[bytes],
+            images_filenames: list[str],
+            prompt: str = None,
+    ) -> list[str]: pass
