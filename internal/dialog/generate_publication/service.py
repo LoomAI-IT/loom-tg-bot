@@ -1300,6 +1300,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         async with tg_action(self.bot, callback.message.chat.id, "upload_photo"):
             combined_images_url = await self.loom_content_client.combine_images(
                 organization_id=state.organization_id,
+                category_id=dialog_manager.dialog_data["category_id"],
                 images_content=images_content,
                 images_filenames=images_filenames,
                 prompt=combine_prompt,

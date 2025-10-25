@@ -570,11 +570,12 @@ class LoomContentClient(interface.ILoomContentClient):
     async def combine_images(
             self,
             organization_id: int,
+            category_id: int,
             images_content: list[bytes],
             images_filenames: list[str],
             prompt: str,
     ) -> list[str]:
-        data: dict = {"organization_id": organization_id}
+        data: dict = {"organization_id": organization_id, "category_id": category_id}
 
         if prompt is not None:
             data["prompt"] = prompt

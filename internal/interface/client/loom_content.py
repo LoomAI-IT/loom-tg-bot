@@ -254,6 +254,7 @@ class ILoomContentClient(Protocol):
     async def combine_images(
             self,
             organization_id: int,
+            category_id: int,
             images_content: list[bytes],
             images_filenames: list[str],
             prompt: str,
