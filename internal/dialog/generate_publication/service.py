@@ -5,7 +5,7 @@ import aiohttp
 from aiogram_dialog.widgets.input import MessageInput
 
 from aiogram import Bot
-from aiogram.types import CallbackQuery, Message, ContentType
+from aiogram.types import CallbackQuery, Message, ContentType, BufferedInputFile
 from aiogram_dialog import DialogManager, StartMode, ShowMode
 from aiogram_dialog.widgets.kbd import ManagedCheckbox, Button
 
@@ -1065,7 +1065,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 # Отправляем изображение себе, чтобы получить file_id
                 message = await self.bot.send_photo(
                     chat_id=callback.message.chat.id,
-                    photo=image_content
+                    photo=BufferedInputFile(image_content, filename="tmp_image.png"),
                 )
                 await message.delete()
                 combine_images_list.append(message.photo[-1].file_id)
