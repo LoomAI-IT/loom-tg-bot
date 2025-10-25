@@ -6,9 +6,11 @@ from aiogram.types import BufferedInputFile
 from sulguk import SULGUK_PARSE_MODE, AiogramSulgukMiddleware
 
 import segno
-from telethon import TelegramClient as TelethonClient
+from telethon import TelegramClient as TelethonClient, TelegramClient
 from telethon.sessions import StringSession
 from telethon.tl.functions.auth import ExportLoginTokenRequest
+from telethon.tl.functions.messages import GetStickerSetRequest
+from telethon.tl.types import InputStickerSetShortName
 from telethon.tl.types.auth import LoginTokenSuccess
 from telethon.extensions.html import unparse
 from telethon.errors import (
@@ -16,6 +18,7 @@ from telethon.errors import (
     AuthTokenAlreadyAcceptedError,
     AuthTokenInvalidError,
 )
+from traits.trait_types import self
 
 from internal import interface
 
@@ -44,7 +47,7 @@ class LTelegramClient(interface.ITelegramClient):
     ) -> str:
         try:
             message = await self.bot.send_message(
-                chat_id="@"+channel_id,
+                chat_id="@" + channel_id,
                 text=text,
                 parse_mode=SULGUK_PARSE_MODE,
             )
@@ -65,7 +68,7 @@ class LTelegramClient(interface.ITelegramClient):
             photo_input = BufferedInputFile(photo, "file")
 
             message = await self.bot.send_photo(
-                chat_id="@"+channel_id,
+                chat_id="@" + channel_id,
                 photo=photo_input,
                 caption=caption,
                 parse_mode=SULGUK_PARSE_MODE,
@@ -232,7 +235,8 @@ class LTelegramClient(interface.ITelegramClient):
                             media_type = 'document'
 
                 # Формируем ссылку на пост
-                channel_username = entity.username if hasattr(entity, 'username') and entity.username else str(entity.id)
+                channel_username = entity.username if hasattr(entity, 'username') and entity.username else str(
+                    entity.id)
                 post_link = self._create_post_link(channel_username, message.id)
 
                 post_data = {
@@ -250,3 +254,34 @@ class LTelegramClient(interface.ITelegramClient):
 
         except Exception as e:
             raise
+
+    async def download_emoji_pack(self):
+        if not self.telegram_client:
+            client = TelethonClient(
+                StringSession(self.session_string),
+                self.api_id,
+                self.api_hash,
+                device_model='Server',
+                system_version='Linux',
+                app_version='1.0',
+                lang_code='ru'
+            )
+            await client.connect()
+            self.telegram_client = client
+
+        stickerset = await self.telegram_client(GetStickerSetRequest(
+            stickerset=InputStickerSetShortName(short_name='SquareEmoji'),
+            hash=0
+        ))
+
+        emoji_dict = {}
+
+        for doc in stickerset.documents:
+            # Ищем alt (сам эмодзи-символ)
+            for attr in doc.attributes:
+                if hasattr(attr, 'alt') and attr.alt:
+                    emoji_dict[attr.alt] = doc.id
+                    break
+
+        print(f"Получено {len(emoji_dict)} эмодзи")
+        return emoji_dict
