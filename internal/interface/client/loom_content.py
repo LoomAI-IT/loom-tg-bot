@@ -256,5 +256,5 @@ class ILoomContentClient(Protocol):
             organization_id: int,
             images_content: list[bytes],
             images_filenames: list[str],
-            prompt: str = None,
+            prompt: str,
     ) -> list[str]: pass
