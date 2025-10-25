@@ -17,6 +17,10 @@ class ICreateOrganizationDialog(Protocol):
         pass
 
     @abstractmethod
+    def get_confirm_cancel_window(self) -> Window:
+        pass
+
+    @abstractmethod
     def get_organization_result_window(self) -> Window:
         pass
 
@@ -27,6 +31,15 @@ class ICreateOrganizationService(Protocol):
             self,
             message: Message,
             widget: MessageInput,
+            dialog_manager: DialogManager
+    ) -> None:
+        pass
+
+    @abstractmethod
+    async def handle_confirm_cancel(
+            self,
+            callback: CallbackQuery,
+            button: Button,
             dialog_manager: DialogManager
     ) -> None:
         pass

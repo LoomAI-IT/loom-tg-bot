@@ -19,6 +19,10 @@ class IUpdateCategoryDialog(Protocol):
         pass
 
     @abstractmethod
+    def get_confirm_cancel_window(self) -> Window:
+        pass
+
+    @abstractmethod
     def get_category_result_window(self) -> Window:
         pass
 
@@ -41,6 +45,15 @@ class IUpdateCategoryService(Protocol):
             dialog_manager: DialogManager,
             category_id: str
     ) -> None: pass
+
+    @abstractmethod
+    async def handle_confirm_cancel(
+            self,
+            callback: CallbackQuery,
+            button: Button,
+            dialog_manager: DialogManager
+    ) -> None:
+        pass
 
     @abstractmethod
     async def handle_go_to_main_menu(

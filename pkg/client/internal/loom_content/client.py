@@ -574,7 +574,7 @@ class LoomContentClient(interface.ILoomContentClient):
             images_filenames: list[str],
             prompt: str = None,
     ) -> list[str]:
-        data = {"organization_id": organization_id}
+        data: dict = {"organization_id": organization_id}
 
         if prompt is not None:
             data["prompt"] = prompt
@@ -586,7 +586,7 @@ class LoomContentClient(interface.ILoomContentClient):
                 (filename, content, "image/png")
             ))
 
-        response = await self.client.post("/publication/image/combine", data=data, files=files)
+        response = await self.client.post("/image/combine", data=data, files=files)
         json_response = response.json()
 
         return json_response["images_url"]
