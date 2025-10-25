@@ -755,7 +755,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                     },
                     selector="has_multiple_combine_images"
                 ),
-                Const("<br><br>📷 <i>Отправьте изображения (максимум 3)</i><br>"),
+                Const("📷 <i>Отправьте изображения (максимум 3)</i><br>"),
                 Const("💡 <i>После загрузки всех изображений нажмите \"Далее\"</i>"),
                 # Error messages
                 Case(
@@ -862,6 +862,13 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                         ),
                     },
                     selector="is_combining_images"
+                ),
+                Case(
+                    {
+                        True: Format("<br><br>🔄 <b>{combine_prompt}</b>"),
+                        False: Const(""),
+                    },
+                    selector="has_combine_prompt",
                 ),
                 Case(
                     {
