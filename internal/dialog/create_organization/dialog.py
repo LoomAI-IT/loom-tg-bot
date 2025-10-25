@@ -61,7 +61,7 @@ class CreateOrganizationDialog(interface.ICreateOrganizationDialog):
 
             Button(
                 Const("Создать рубрику"),
-                id="go_to_main_menu",
+                id="go_to_create_category",
                 on_click=self.create_organization_service.go_to_create_category,
             ),
 
