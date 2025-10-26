@@ -1,0 +1,183 @@
+import aiohttp
+from aiogram import Bot
+from aiogram.types import BufferedInputFile
+from aiogram_dialog import DialogManager
+
+from internal import interface, model
+from pkg.tg_action_wrapper import tg_action
+
+
+class _ImageManager:
+    """Менеджер для управления изображениями публикаций"""
+
+    def __init__(
+            self,
+            logger,
+            bot: Bot,
+            loom_content_client: interface.ILoomContentClient
+    ):
+        self.logger = logger
+        self.bot = bot
+        self.loom_content_client = loom_content_client
+
+    def navigate_images(
+            self,
+            dialog_manager: DialogManager,
+            images_key: str,
+            index_key: str,
+            direction: str
+    ) -> None:
+        """Универсальная навигация по списку изображений"""
+        images_list = dialog_manager.dialog_data.get(images_key, [])
+        current_index = dialog_manager.dialog_data.get(index_key, 0)
+
+        if direction == "next":
+            new_index = current_index + 1 if current_index < len(images_list) - 1 else 0
+        else:  # prev
+            new_index = current_index - 1 if current_index > 0 else len(images_list) - 1
+
+        dialog_manager.dialog_data[index_key] = new_index
+
+    def create_image_backup_dict(self, dialog_manager: DialogManager) -> dict | None:
+        """Создает словарь с backup текущего изображения"""
+        if dialog_manager.dialog_data.get("custom_image_file_id"):
+            return {
+                "type": "file_id",
+                "value": dialog_manager.dialog_data["custom_image_file_id"]
+            }
+        elif dialog_manager.dialog_data.get("publication_images_url"):
+            images_url = dialog_manager.dialog_data["publication_images_url"]
+            current_index = dialog_manager.dialog_data.get("current_image_index", 0)
+            return {
+                "type": "url",
+                "value": images_url,
+                "index": current_index
+            }
+        return None
+
+    def backup_current_image(self, dialog_manager: DialogManager) -> None:
+        """Создает backup текущего изображения для возможности отката"""
+        old_image_backup = self.create_image_backup_dict(dialog_manager)
+        dialog_manager.dialog_data["old_generated_image_backup"] = old_image_backup
+
+    def clear_image_data(self, dialog_manager: DialogManager) -> None:
+        """Очищает все данные изображений"""
+        dialog_manager.dialog_data["has_image"] = False
+        dialog_manager.dialog_data.pop("publication_images_url", None)
+        dialog_manager.dialog_data.pop("custom_image_file_id", None)
+        dialog_manager.dialog_data.pop("is_custom_image", None)
+        dialog_manager.dialog_data.pop("current_image_index", None)
+
+    def clear_temporary_image_data(self, dialog_manager: DialogManager) -> None:
+        """Очищает временные данные изображений"""
+        dialog_manager.dialog_data.pop("generated_images_url", None)
+        dialog_manager.dialog_data.pop("combine_result_url", None)
+        dialog_manager.dialog_data.pop("old_generated_image_backup", None)
+        dialog_manager.dialog_data.pop("old_image_backup", None)
+        dialog_manager.dialog_data.pop("image_edit_prompt", None)
+        dialog_manager.dialog_data.pop("combine_images_list", None)
+        dialog_manager.dialog_data.pop("combine_current_index", None)
+        dialog_manager.dialog_data.pop("combine_prompt", None)
+        dialog_manager.dialog_data.pop("showing_old_image", None)
+
+    def set_generated_images(self, dialog_manager: DialogManager, images_url: list[str]) -> None:
+        """Устанавливает сгенерированные изображения"""
+        dialog_manager.dialog_data["publication_images_url"] = images_url
+        dialog_manager.dialog_data["has_image"] = True
+        dialog_manager.dialog_data["is_custom_image"] = False
+        dialog_manager.dialog_data["current_image_index"] = 0
+        dialog_manager.dialog_data.pop("custom_image_file_id", None)
+
+    async def download_image(self, image_url: str) -> tuple[bytes, str]:
+        """Скачивает изображение по URL"""
+        async with aiohttp.ClientSession() as session:
+            async with session.get(image_url) as response:
+                response.raise_for_status()
+                content = await response.read()
+                content_type = response.headers.get('content-type', 'image/png')
+                return content, content_type
+
+    async def download_and_get_file_id(self, image_url: str, chat_id: int) -> str | None:
+        """Скачивает изображение и возвращает его file_id в Telegram"""
+        try:
+            image_content, _ = await self.download_image(image_url)
+
+            message = await self.bot.send_photo(
+                chat_id=chat_id,
+                photo=BufferedInputFile(image_content, filename="tmp_image.png"),
+            )
+            await message.delete()
+            return message.photo[-1].file_id
+        except Exception as e:
+            self.logger.error(f"Ошибка при загрузке изображения: {e}")
+            return None
+
+    async def get_current_image_data(self, dialog_manager: DialogManager) -> tuple[bytes, str] | None:
+        """Получает данные текущего изображения"""
+        try:
+            if dialog_manager.dialog_data.get("custom_image_file_id"):
+                file_id = dialog_manager.dialog_data["custom_image_file_id"]
+                image_content = await self.bot.download(file_id)
+                return image_content.read(), f"{file_id}.jpg"
+
+            elif dialog_manager.dialog_data.get("publication_images_url"):
+                images_url = dialog_manager.dialog_data["publication_images_url"]
+                current_index = dialog_manager.dialog_data.get("current_image_index", 0)
+
+                if current_index < len(images_url):
+                    current_url = images_url[current_index]
+                    image_content, content_type = await self.download_image(current_url)
+                    filename = f"generated_image_{current_index}.jpg"
+                    return image_content, filename
+
+            return None
+        except Exception as err:
+            self.logger.error(f"Ошибка при получении данных изображения: {err}")
+            return None
+
+    async def get_selected_image_data(self, dialog_manager: DialogManager) -> tuple[
+        str | None, bytes | None, str | None]:
+        """Получает данные выбранного изображения для публикации"""
+        if dialog_manager.dialog_data.get("custom_image_file_id"):
+            file_id = dialog_manager.dialog_data["custom_image_file_id"]
+            image_content = await self.bot.download(file_id)
+            return None, image_content.read(), f"{file_id}.jpg"
+
+        elif dialog_manager.dialog_data.get("publication_images_url"):
+            images_url = dialog_manager.dialog_data["publication_images_url"]
+            current_index = dialog_manager.dialog_data.get("current_image_index", 0)
+
+            if current_index < len(images_url):
+                selected_url = images_url[current_index]
+                return selected_url, None, None
+
+        return None, None, None
+
+    async def combine_images_with_prompt(
+            self,
+            dialog_manager: DialogManager,
+            state: model.UserState,
+            combine_images_list: list[str],
+            prompt: str,
+            chat_id: int
+    ) -> list[str] | None:
+        """Объединяет изображения с заданным промптом"""
+        images_content = []
+        images_filenames = []
+
+        for i, file_id in enumerate(combine_images_list):
+            image_io = await self.bot.download(file_id)
+            content = image_io.read()
+            images_content.append(content)
+            images_filenames.append(f"image_{i}.jpg")
+
+        async with tg_action(self.bot, chat_id, "upload_photo"):
+            combined_images_url = await self.loom_content_client.combine_images(
+                organization_id=state.organization_id,
+                category_id=dialog_manager.dialog_data["category_id"],
+                images_content=images_content,
+                images_filenames=images_filenames,
+                prompt=prompt,
+            )
+
+        return combined_images_url
