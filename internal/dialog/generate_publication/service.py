@@ -1195,6 +1195,37 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
     @auto_log()
     @traced_method()
+    async def handle_back_from_combine_upload(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        """
+        Обработка нажатия кнопки "Назад" в окне загрузки изображений для объединения.
+        Возвращает в new_image_confirm, если пришли оттуда, иначе в image_menu.
+        """
+        dialog_manager.show_mode = ShowMode.EDIT
+
+        await callback.answer()
+
+        # Проверяем, есть ли данные от new_image_confirm (generated_images_url или combine_result_url)
+        has_generated_images = dialog_manager.dialog_data.get("generated_images_url") is not None
+        has_combine_result = dialog_manager.dialog_data.get("combine_result_url") is not None
+
+        # Если есть временные данные от генерации/объединения, значит пришли из new_image_confirm
+        if has_generated_images or has_combine_result:
+            # Очищаем временные данные объединения
+            dialog_manager.dialog_data.pop("combine_images_list", None)
+            dialog_manager.dialog_data.pop("combine_current_index", None)
+            # Возвращаемся в new_image_confirm
+            await dialog_manager.switch_to(model.GeneratePublicationStates.new_image_confirm)
+        else:
+            # Иначе возвращаемся в image_menu
+            await dialog_manager.switch_to(model.GeneratePublicationStates.image_menu)
+
+    @auto_log()
+    @traced_method()
     async def handle_delete_combine_image(
             self,
             callback: CallbackQuery,
@@ -1211,7 +1242,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             dialog_manager.dialog_data["combine_images_list"] = combine_images_list
 
             # Корректируем индекс
-            if current_index >= len(combine_images_list) and len(combine_images_list) > 0:
+            if current_index >= len(combine_images_list) > 0:
                 dialog_manager.dialog_data["combine_current_index"] = len(combine_images_list) - 1
             elif len(combine_images_list) == 0:
                 dialog_manager.dialog_data["combine_current_index"] = 0
@@ -1328,6 +1359,80 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         await dialog_manager.switch_to(model.GeneratePublicationStates.new_image_confirm)
 
     # ============= NEW IMAGE CONFIRM HANDLERS =============
+
+    @auto_log()
+    @traced_method()
+    async def handle_combine_from_new_image(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        """
+        Переход к объединению изображений с новой сгенерированной картинкой как первой
+        """
+        dialog_manager.show_mode = ShowMode.EDIT
+
+        await callback.answer()
+
+        # Инициализируем список для объединения
+        combine_images_list = []
+
+        # Получаем новую сгенерированную картинку или результат комбинирования
+        generated_images_url = dialog_manager.dialog_data.get("generated_images_url")
+        combine_result_url = dialog_manager.dialog_data.get("combine_result_url")
+
+        # Определяем, какое изображение использовать
+        image_url_to_download = None
+        if generated_images_url and len(generated_images_url) > 0:
+            image_url_to_download = generated_images_url[0]
+        elif combine_result_url:
+            image_url_to_download = combine_result_url
+
+        # Скачиваем изображение и загружаем в бот, чтобы получить file_id
+        if image_url_to_download:
+            try:
+                image_content, _ = await self._download_image(image_url_to_download)
+
+                # Отправляем изображение себе, чтобы получить file_id
+                message = await self.bot.send_photo(
+                    chat_id=callback.message.chat.id,
+                    photo=BufferedInputFile(image_content, filename="new_generated_image.jpg"),
+                )
+                await message.delete()
+                combine_images_list.append(message.photo[-1].file_id)
+
+                self.logger.info(f"Новая картинка добавлена в список для объединения: {message.photo[-1].file_id}")
+            except Exception as e:
+                self.logger.error(f"Ошибка при загрузке изображения: {e}")
+                await callback.answer("Ошибка при подготовке изображения", show_alert=True)
+                return
+
+        # Сохраняем backup для возможности отмены (используем существующий backup)
+        # Backup уже должен быть сохранен при генерации изображения
+        # Но на всякий случай проверим и сохраним, если его нет
+        if not dialog_manager.dialog_data.get("old_generated_image_backup") and \
+           not dialog_manager.dialog_data.get("old_image_backup"):
+            # Сохраняем текущее состояние новой картинки как backup
+            # На случай если пользователь захочет вернуться
+            if generated_images_url:
+                dialog_manager.dialog_data["old_generated_image_backup"] = {
+                    "type": "url",
+                    "value": generated_images_url,
+                    "index": 0
+                }
+            elif combine_result_url:
+                dialog_manager.dialog_data["old_image_backup"] = {
+                    "type": "url",
+                    "value": combine_result_url
+                }
+
+        # Устанавливаем данные для combine_images_upload
+        dialog_manager.dialog_data["combine_images_list"] = combine_images_list
+        dialog_manager.dialog_data["combine_current_index"] = 0
+
+        # Переходим к окну загрузки дополнительных изображений
+        await dialog_manager.switch_to(model.GeneratePublicationStates.combine_images_upload)
 
     @auto_log()
     @traced_method()

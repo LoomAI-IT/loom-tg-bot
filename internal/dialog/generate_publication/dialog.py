@@ -832,8 +832,8 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
 
             Button(
                 Const("◀️ Назад"),
-                id="back_to_image_menu",
-                on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.image_menu, ShowMode.EDIT),
+                id="back_from_combine_upload",
+                on_click=self.generate_publication_service.handle_back_from_combine_upload,
             ),
 
             state=model.GeneratePublicationStates.combine_images_upload,
@@ -997,18 +997,26 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                 func=self.generate_publication_service.handle_new_image_confirm_input,
             ),
 
-            Row(
+            Column(
                 Button(
-                    Const("✅ Принять"),
-                    id="confirm_new_image",
-                    on_click=self.generate_publication_service.handle_confirm_new_image,
+                    Const("📐 Объединить с другими фото"),
+                    id="combine_from_new_image",
+                    on_click=self.generate_publication_service.handle_combine_from_new_image,
                     when=~F["is_applying_edits"]
                 ),
-                Button(
-                    Const("❌ Отклонить"),
-                    id="reject_new_image",
-                    on_click=self.generate_publication_service.handle_reject_new_image,
-                    when=~F["is_applying_edits"]
+                Row(
+                    Button(
+                        Const("✅ Принять"),
+                        id="confirm_new_image",
+                        on_click=self.generate_publication_service.handle_confirm_new_image,
+                        when=~F["is_applying_edits"]
+                    ),
+                    Button(
+                        Const("❌ Отклонить"),
+                        id="reject_new_image",
+                        on_click=self.generate_publication_service.handle_reject_new_image,
+                        when=~F["is_applying_edits"]
+                    ),
                 ),
             ),
 
