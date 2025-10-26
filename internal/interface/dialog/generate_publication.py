@@ -288,6 +288,14 @@ class IGeneratePublicationService(Protocol):
     ) -> None: pass
 
     @abstractmethod
+    async def handle_back_from_combine_upload(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
+    @abstractmethod
     async def handle_combine_prompt_input(
             self,
             message: Message,
@@ -308,6 +316,14 @@ class IGeneratePublicationService(Protocol):
             self,
             message: Message,
             widget: MessageInput,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
+    @abstractmethod
+    async def handle_combine_from_new_image(
+            self,
+            callback: CallbackQuery,
+            button: Any,
             dialog_manager: DialogManager
     ) -> None: pass
 
