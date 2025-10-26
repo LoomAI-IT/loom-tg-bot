@@ -728,7 +728,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
     ) -> None:
         self._state_helper.set_edit_mode(dialog_manager)
 
-        # Удаляем изображение
         dialog_manager.dialog_data["has_image"] = False
         dialog_manager.dialog_data.pop("publication_images_url", None)
         dialog_manager.dialog_data.pop("custom_image_file_id", None)
