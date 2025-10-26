@@ -418,6 +418,24 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         dialog_manager.dialog_data["is_generating_image"] = True
         await dialog_manager.show()
 
+        # Сохраняем старое изображение для возможности отката
+        old_image_backup = None
+        if dialog_manager.dialog_data.get("custom_image_file_id"):
+            old_image_backup = {
+                "type": "file_id",
+                "value": dialog_manager.dialog_data["custom_image_file_id"]
+            }
+        elif dialog_manager.dialog_data.get("publication_images_url"):
+            images_url = dialog_manager.dialog_data["publication_images_url"]
+            current_index = dialog_manager.dialog_data.get("current_image_index", 0)
+            old_image_backup = {
+                "type": "url",
+                "value": images_url,
+                "index": current_index
+            }
+
+        dialog_manager.dialog_data["old_generated_image_backup"] = old_image_backup
+
         category_id = dialog_manager.dialog_data["category_id"]
         publication_text = dialog_manager.dialog_data["publication_text"]
         text_reference = dialog_manager.dialog_data["input_text"]
@@ -438,17 +456,10 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             )
 
         dialog_manager.dialog_data["is_generating_image"] = False
-        dialog_manager.dialog_data["publication_images_url"] = images_url
-        dialog_manager.dialog_data["has_image"] = True
-        dialog_manager.dialog_data["is_custom_image"] = False
-        dialog_manager.dialog_data["current_image_index"] = 0
-        dialog_manager.dialog_data.pop("custom_image_file_id", None)
+        # Сохраняем сгенерированное изображение во временное хранилище
+        dialog_manager.dialog_data["generated_images_url"] = images_url
 
-        # Проверяем длину текста с изображением
-        if await self._check_text_length_with_image(dialog_manager):
-            return
-
-        await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
+        await dialog_manager.switch_to(model.GeneratePublicationStates.generate_image_confirm)
 
     @auto_log()
     @traced_method()
@@ -501,6 +512,24 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         await dialog_manager.show()
 
+        # Сохраняем старое изображение для возможности отката
+        old_image_backup = None
+        if dialog_manager.dialog_data.get("custom_image_file_id"):
+            old_image_backup = {
+                "type": "file_id",
+                "value": dialog_manager.dialog_data["custom_image_file_id"]
+            }
+        elif dialog_manager.dialog_data.get("publication_images_url"):
+            images_url = dialog_manager.dialog_data["publication_images_url"]
+            current_index = dialog_manager.dialog_data.get("current_image_index", 0)
+            old_image_backup = {
+                "type": "url",
+                "value": images_url,
+                "index": current_index
+            }
+
+        dialog_manager.dialog_data["old_generated_image_backup"] = old_image_backup
+
         current_image_content = None
         current_image_filename = None
 
@@ -517,18 +546,11 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 image_filename=current_image_filename,
             )
 
-        dialog_manager.dialog_data["publication_images_url"] = images_url
-        dialog_manager.dialog_data["has_image"] = True
-        dialog_manager.dialog_data["is_custom_image"] = False
-        dialog_manager.dialog_data["current_image_index"] = 0
-        dialog_manager.dialog_data.pop("custom_image_file_id", None)
         dialog_manager.dialog_data["is_generating_image"] = False
+        # Сохраняем сгенерированное изображение во временное хранилище
+        dialog_manager.dialog_data["generated_images_url"] = images_url
 
-        # Проверяем длину текста с изображением
-        if await self._check_text_length_with_image(dialog_manager):
-            return
-
-        await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
+        await dialog_manager.switch_to(model.GeneratePublicationStates.generate_image_confirm)
 
     @auto_log()
     @traced_method()
@@ -1375,5 +1397,79 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         dialog_manager.dialog_data.pop("combine_prompt", None)
         dialog_manager.dialog_data.pop("combine_result_url", None)
         dialog_manager.dialog_data.pop("old_image_backup", None)
+
+        await dialog_manager.switch_to(model.GeneratePublicationStates.image_menu)
+
+    @auto_log()
+    @traced_method()
+    async def handle_confirm_generated_image(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        dialog_manager.show_mode = ShowMode.EDIT
+
+        await callback.answer("Изображение применено")
+
+        # Применяем сгенерированное изображение
+        generated_images_url = dialog_manager.dialog_data.get("generated_images_url")
+
+        if generated_images_url:
+            dialog_manager.dialog_data["publication_images_url"] = generated_images_url
+            dialog_manager.dialog_data["has_image"] = True
+            dialog_manager.dialog_data["is_custom_image"] = False
+            dialog_manager.dialog_data["current_image_index"] = 0
+            dialog_manager.dialog_data.pop("custom_image_file_id", None)
+
+        # Очищаем данные подтверждения
+        dialog_manager.dialog_data.pop("generated_images_url", None)
+        dialog_manager.dialog_data.pop("old_generated_image_backup", None)
+
+        # Проверяем длину текста с изображением
+        if await self._check_text_length_with_image(dialog_manager):
+            return
+
+        await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
+
+    @auto_log()
+    @traced_method()
+    async def handle_reject_generated_image(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        dialog_manager.show_mode = ShowMode.EDIT
+
+        await callback.answer("Изображение отклонено")
+
+        # Восстанавливаем старое изображение, если оно было
+        old_image_backup = dialog_manager.dialog_data.get("old_generated_image_backup")
+
+        if old_image_backup:
+            if old_image_backup["type"] == "file_id":
+                dialog_manager.dialog_data["custom_image_file_id"] = old_image_backup["value"]
+                dialog_manager.dialog_data["has_image"] = True
+                dialog_manager.dialog_data["is_custom_image"] = True
+                dialog_manager.dialog_data.pop("publication_images_url", None)
+                dialog_manager.dialog_data.pop("current_image_index", None)
+            elif old_image_backup["type"] == "url":
+                dialog_manager.dialog_data["publication_images_url"] = old_image_backup["value"]
+                dialog_manager.dialog_data["has_image"] = True
+                dialog_manager.dialog_data["is_custom_image"] = False
+                dialog_manager.dialog_data["current_image_index"] = old_image_backup.get("index", 0)
+                dialog_manager.dialog_data.pop("custom_image_file_id", None)
+        else:
+            # Если backup нет, удаляем изображение
+            dialog_manager.dialog_data["has_image"] = False
+            dialog_manager.dialog_data.pop("publication_images_url", None)
+            dialog_manager.dialog_data.pop("custom_image_file_id", None)
+            dialog_manager.dialog_data.pop("is_custom_image", None)
+            dialog_manager.dialog_data.pop("current_image_index", None)
+
+        # Очищаем данные подтверждения
+        dialog_manager.dialog_data.pop("generated_images_url", None)
+        dialog_manager.dialog_data.pop("old_generated_image_backup", None)
 
         await dialog_manager.switch_to(model.GeneratePublicationStates.image_menu)

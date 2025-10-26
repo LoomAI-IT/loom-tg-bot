@@ -420,6 +420,26 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
             "old_image_backup_media": old_image_backup_media,
         }
 
+    @auto_log()
+    @traced_method()
+    async def get_generate_image_confirm_data(
+            self,
+            dialog_manager: DialogManager,
+            **kwargs
+    ) -> dict:
+        generated_images_url = dialog_manager.dialog_data.get("generated_images_url", [])
+
+        generated_image_media = None
+        if generated_images_url and len(generated_images_url) > 0:
+            generated_image_media = MediaAttachment(
+                url=generated_images_url[0],
+                type=ContentType.PHOTO
+            )
+
+        return {
+            "generated_image_media": generated_image_media,
+        }
+
     # Helper methods
     def _is_network_connected(self, social_networks: dict, network_type: str) -> bool:
         if not social_networks:

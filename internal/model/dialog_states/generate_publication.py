@@ -17,6 +17,7 @@ class GeneratePublicationStates(StatesGroup):
     # Состояния управления изображением
     image_menu = State()
     generate_image = State()
+    generate_image_confirm = State()
     upload_image = State()
 
     # Состояния объединения изображений

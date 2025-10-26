@@ -32,6 +32,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             self.get_image_menu_window(),
             self.get_edit_text_window(),
             self.get_upload_image_window(),
+            self.get_generate_image_confirm_window(),
             self.get_combine_images_choice_window(),
             self.get_combine_images_upload_window(),
             self.get_combine_images_prompt_window(),
@@ -981,6 +982,36 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
 
             state=model.GeneratePublicationStates.combine_images_confirm,
             getter=self.generate_publication_getter.get_combine_images_confirm_data,
+            parse_mode=SULGUK_PARSE_MODE,
+        )
+
+    def get_generate_image_confirm_window(self) -> Window:
+        return Window(
+            Multi(
+                Const("🖼️ <b>Результат генерации</b><br><br>"),
+                Const("💡 <b>Использовать эту картинку?</b>"),
+                sep="",
+            ),
+
+            DynamicMedia(
+                selector="generated_image_media",
+            ),
+
+            Row(
+                Button(
+                    Const("✅ Принять"),
+                    id="confirm_generated_image",
+                    on_click=self.generate_publication_service.handle_confirm_generated_image,
+                ),
+                Button(
+                    Const("❌ Отклонить"),
+                    id="reject_generated_image",
+                    on_click=self.generate_publication_service.handle_reject_generated_image,
+                ),
+            ),
+
+            state=model.GeneratePublicationStates.generate_image_confirm,
+            getter=self.generate_publication_getter.get_generate_image_confirm_data,
             parse_mode=SULGUK_PARSE_MODE,
         )
 

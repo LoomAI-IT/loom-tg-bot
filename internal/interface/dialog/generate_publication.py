@@ -55,6 +55,9 @@ class IGeneratePublicationDialog(Protocol):
     @abstractmethod
     def get_combine_images_confirm_window(self) -> Window: pass
 
+    @abstractmethod
+    def get_generate_image_confirm_window(self) -> Window: pass
+
 
 class IGeneratePublicationService(Protocol):
 
@@ -319,6 +322,22 @@ class IGeneratePublicationService(Protocol):
             dialog_manager: DialogManager
     ) -> None: pass
 
+    @abstractmethod
+    async def handle_confirm_generated_image(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
+    @abstractmethod
+    async def handle_reject_generated_image(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
 
 class IGeneratePublicationGetter(Protocol):
 
@@ -397,6 +416,12 @@ class IGeneratePublicationGetter(Protocol):
 
     @abstractmethod
     async def get_combine_images_confirm_data(
+            self,
+            dialog_manager: DialogManager,
+    ) -> dict: pass
+
+    @abstractmethod
+    async def get_generate_image_confirm_data(
             self,
             dialog_manager: DialogManager,
     ) -> dict: pass
