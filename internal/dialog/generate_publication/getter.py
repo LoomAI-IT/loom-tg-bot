@@ -414,7 +414,17 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
         generated_images_url = dialog_manager.dialog_data.get("generated_images_url")
         combine_result_url = dialog_manager.dialog_data.get("combine_result_url")
 
+        # Получаем старое изображение из backup
+        old_image_backup = dialog_manager.dialog_data.get("old_generated_image_backup") or \
+                           dialog_manager.dialog_data.get("old_image_backup")
+
+        # Определяем, какое изображение показываем (по умолчанию - новое)
+        showing_old_image = dialog_manager.dialog_data.get("showing_old_image", False)
+
         new_image_media = None
+        old_image_media = None
+
+        # Загружаем новое изображение
         if generated_images_url and len(generated_images_url) > 0:
             new_image_media = MediaAttachment(
                 url=generated_images_url[0],
@@ -426,8 +436,37 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
                 type=ContentType.PHOTO
             )
 
+        # Загружаем старое изображение из backup, если есть
+        if old_image_backup:
+            if old_image_backup["type"] == "file_id":
+                old_image_media = MediaAttachment(
+                    file_id=MediaId(old_image_backup["value"]),
+                    type=ContentType.PHOTO
+                )
+            elif old_image_backup["type"] == "url":
+                value = old_image_backup["value"]
+                if isinstance(value, list):
+                    # Берем изображение по индексу из backup
+                    index = old_image_backup.get("index", 0)
+                    if index < len(value):
+                        old_image_media = MediaAttachment(
+                            url=value[index],
+                            type=ContentType.PHOTO
+                        )
+                else:
+                    old_image_media = MediaAttachment(
+                        url=value,
+                        type=ContentType.PHOTO
+                    )
+
+        # Определяем, какое изображение показать
+        display_image_media = old_image_media if showing_old_image else new_image_media
+
         return {
-            "new_image_media": new_image_media,
+            "new_image_media": display_image_media,
+            "has_old_image": old_image_media is not None,
+            "showing_old_image": showing_old_image,
+            "showing_new_image": not showing_old_image,
             "is_applying_edits": dialog_manager.dialog_data.get("is_applying_edits", False),
             "voice_transcribe": dialog_manager.dialog_data.get("voice_transcribe", False),
             "has_image_edit_prompt": bool(dialog_manager.dialog_data.get("image_edit_prompt")),

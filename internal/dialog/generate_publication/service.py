@@ -1608,12 +1608,39 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         dialog_manager.dialog_data.pop("combine_images_list", None)
         dialog_manager.dialog_data.pop("combine_current_index", None)
         dialog_manager.dialog_data.pop("combine_prompt", None)
+        dialog_manager.dialog_data.pop("showing_old_image", None)
 
         # Проверяем длину текста с изображением
         if await self._check_text_length_with_image(dialog_manager):
             return
 
         await dialog_manager.switch_to(model.GeneratePublicationStates.image_menu)
+
+    @auto_log()
+    @traced_method()
+    async def handle_show_old_image(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        """Переключение на показ старой картинки"""
+        dialog_manager.show_mode = ShowMode.EDIT
+        dialog_manager.dialog_data["showing_old_image"] = True
+        await callback.answer()
+
+    @auto_log()
+    @traced_method()
+    async def handle_show_new_image(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        """Переключение на показ новой картинки"""
+        dialog_manager.show_mode = ShowMode.EDIT
+        dialog_manager.dialog_data["showing_old_image"] = False
+        await callback.answer()
 
     @auto_log()
     @traced_method()
@@ -1667,5 +1694,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         dialog_manager.dialog_data.pop("combine_images_list", None)
         dialog_manager.dialog_data.pop("combine_current_index", None)
         dialog_manager.dialog_data.pop("combine_prompt", None)
+        dialog_manager.dialog_data.pop("showing_old_image", None)
 
         await dialog_manager.switch_to(model.GeneratePublicationStates.image_menu)

@@ -956,6 +956,21 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                     {
                         False: Multi(
                             Const("🖼️ <b>Результат генерации</b><br><br>"),
+                            Case(
+                                {
+                                    True: Multi(
+                                        Case(
+                                            {
+                                                True: Const("📍 <b>Показано:</b> старая картинка<br><br>"),
+                                                False: Const("📍 <b>Показано:</b> новая картинка<br><br>"),
+                                            },
+                                            selector="showing_old_image"
+                                        ),
+                                    ),
+                                    False: Const(""),
+                                },
+                                selector="has_old_image"
+                            ),
                             Const("💡 <b>Что хотите сделать?</b><br>"),
                             Const("• Принять изображение как есть<br>"),
                             Const("• Написать или записать правки для улучшения<br><br>"),
@@ -1008,6 +1023,22 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
 
             DynamicMedia(
                 selector="new_image_media",
+            ),
+
+            Row(
+                Button(
+                    Const("⬅️ Старая"),
+                    id="show_old_image",
+                    on_click=self.generate_publication_service.handle_show_old_image,
+                    when=F["has_old_image"] & F["showing_new_image"] & ~F["is_applying_edits"]
+                ),
+                Button(
+                    Const("➡️ Новая"),
+                    id="show_new_image",
+                    on_click=self.generate_publication_service.handle_show_new_image,
+                    when=F["has_old_image"] & F["showing_old_image"] & ~F["is_applying_edits"]
+                ),
+                when="has_old_image",
             ),
 
             MessageInput(
