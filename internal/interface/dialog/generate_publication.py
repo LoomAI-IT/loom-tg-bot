@@ -304,14 +304,6 @@ class IGeneratePublicationService(Protocol):
     ) -> None: pass
 
     @abstractmethod
-    async def handle_execute_combine(
-            self,
-            callback: CallbackQuery,
-            button: Any,
-            dialog_manager: DialogManager
-    ) -> None: pass
-
-    @abstractmethod
     async def handle_new_image_confirm_input(
             self,
             message: Message,
