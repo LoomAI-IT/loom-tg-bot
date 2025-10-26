@@ -98,18 +98,25 @@ ultrathink
 
             self._track_tokens(dialog_manager, generate_cost)
 
-            if llm_response_json.get("telegram_channel_username"):
-                telegram_channel_username = llm_response_json.get("telegram_channel_username")
-                telegram_posts = await self.telegram_client.get_channel_posts(
-                    telegram_channel_username,
-                    10
-                )
+            if llm_response_json.get("telegram_channel_username_list"):
+                telegram_channel_username_list = llm_response_json.get("telegram_channel_username_list")
 
-                posts_text = self._format_telegram_posts(telegram_posts)
+                all_telegram_posts = []
+                for telegram_channel_username in telegram_channel_username_list:
+                    telegram_posts = await self.telegram_client.get_channel_posts(
+                        telegram_channel_username,
+                        10
+                    )
+                    all_telegram_posts.extend(telegram_posts)
+
                 message_to_llm = f"""
 <system>
-{posts_text}
+{self._format_telegram_posts(all_telegram_posts)}
 </system>
+
+<user>
+Проведи анализ постов из каналов
+</user>
 """
                 await self.llm_chat_repo.create_message(
                     chat_id=chat_id,
