@@ -567,6 +567,27 @@ class LoomContentClient(interface.ILoomContentClient):
         return json_response["text"]
 
     @traced_method(SpanKind.CLIENT)
+    async def edit_image(
+            self,
+            organization_id: int,
+            image_content: bytes,
+            image_filename: str,
+            prompt: str,
+    ) -> list[str]:
+        data: dict = {"organization_id": organization_id, "prompt": prompt}
+
+        files = {"image_file": (
+            image_filename,
+            image_content,
+            "image/png"
+        )}
+
+        response = await self.client.post("/image/edit", data=data, files=files)
+        json_response = response.json()
+
+        return json_response["images_url"]
+
+    @traced_method(SpanKind.CLIENT)
     async def combine_images(
             self,
             organization_id: int,

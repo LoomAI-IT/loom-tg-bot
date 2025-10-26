@@ -452,7 +452,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
     @auto_log()
     @traced_method()
-    async def handle_generate_image_prompt_input(
+    async def handle_edit_image_prompt_input(
             self,
             message: Message,
             widget: MessageInput,
@@ -501,10 +501,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         await dialog_manager.show()
 
-        category_id = dialog_manager.dialog_data["category_id"]
-        publication_text = dialog_manager.dialog_data["publication_text"]
-        text_reference = dialog_manager.dialog_data["input_text"]
-
         current_image_content = None
         current_image_filename = None
 
@@ -514,10 +510,8 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             )
 
         async with tg_action(self.bot, message.chat.id, "upload_photo"):
-            images_url = await self.loom_content_client.generate_publication_image(
-                category_id=category_id,
-                publication_text=publication_text,
-                text_reference=text_reference,
+            images_url = await self.loom_content_client.edit_image(
+                organization_id=state.organization_id,
                 prompt=prompt,
                 image_content=current_image_content,
                 image_filename=current_image_filename,

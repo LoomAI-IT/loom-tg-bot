@@ -512,7 +512,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             ),
 
             MessageInput(
-                func=self.generate_publication_service.handle_generate_image_prompt_input,
+                func=self.generate_publication_service.handle_edit_image_prompt_input,
             ),
 
             Column(

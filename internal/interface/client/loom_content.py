@@ -251,6 +251,15 @@ class ILoomContentClient(Protocol):
     ) -> str: pass
 
     @abstractmethod
+    async def edit_image(
+            self,
+            organization_id: int,
+            image_content: bytes,
+            image_filename: str,
+            prompt: str,
+    ) -> list[str]: pass
+
+    @abstractmethod
     async def combine_images(
             self,
             organization_id: int,

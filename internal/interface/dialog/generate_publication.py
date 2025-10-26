@@ -143,7 +143,7 @@ class IGeneratePublicationService(Protocol):
     ) -> None: pass
 
     @abstractmethod
-    async def handle_generate_image_prompt_input(
+    async def handle_edit_image_prompt_input(
             self,
             message: Message,
             widget: MessageInput,
