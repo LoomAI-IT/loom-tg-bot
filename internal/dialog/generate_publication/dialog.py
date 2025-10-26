@@ -848,6 +848,20 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                     {
                         False: Multi(
                             Const("✍️ <b>Как объединить изображения?</b><br><br>"),
+                            Case(
+                                {
+                                    True: Format("🖼️ <b>Изображений загружено: {combine_images_count}</b><br>"),
+                                    False: Const(""),
+                                },
+                                selector="has_combine_images"
+                            ),
+                            Case(
+                                {
+                                    True: Format("📍 <b>Сейчас показано:</b> изображение {combine_current_index} из {combine_images_count}<br><br>"),
+                                    False: Const(""),
+                                },
+                                selector="has_multiple_combine_images"
+                            ),
                             Const("💬 <b>Опишите, как расположить изображения:</b><br>"),
                             Const("• <i>Расположите горизонтально</i><br>"),
                             Const("• <i>В виде коллажа</i><br>"),
@@ -899,6 +913,27 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                     selector="has_invalid_content_type"
                 ),
                 sep="",
+            ),
+
+            DynamicMedia(
+                selector="combine_current_image_media",
+                when="has_combine_images",
+            ),
+
+            Row(
+                Button(
+                    Const("⬅️ Предыдущая"),
+                    id="prev_combine_image",
+                    on_click=self.generate_publication_service.handle_prev_combine_image,
+                    when="has_multiple_combine_images",
+                ),
+                Button(
+                    Const("➡️ Следующая"),
+                    id="next_combine_image",
+                    on_click=self.generate_publication_service.handle_next_combine_image,
+                    when="has_multiple_combine_images",
+                ),
+                when="has_multiple_combine_images",
             ),
 
             MessageInput(

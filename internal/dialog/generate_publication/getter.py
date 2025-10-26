@@ -371,11 +371,32 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
+        combine_images_list = dialog_manager.dialog_data.get("combine_images_list", [])
+        combine_current_index = dialog_manager.dialog_data.get("combine_current_index", 0)
+
+        has_combine_images = len(combine_images_list) > 0
+        combine_images_count = len(combine_images_list)
+        has_multiple_combine_images = combine_images_count > 1
+
+        combine_current_image_media = None
+        if has_combine_images and combine_current_index < len(combine_images_list):
+            file_id = combine_images_list[combine_current_index]
+            combine_current_image_media = MediaAttachment(
+                file_id=MediaId(file_id),
+                type=ContentType.PHOTO
+            )
+
         return {
             "is_combining_images": dialog_manager.dialog_data.get("is_combining_images", False),
             "voice_transcribe": dialog_manager.dialog_data.get("voice_transcribe", False),
             "has_combine_prompt": bool(dialog_manager.dialog_data.get("combine_prompt")),
             "combine_prompt": dialog_manager.dialog_data.get("combine_prompt", ""),
+            # Image data for navigation
+            "has_combine_images": has_combine_images,
+            "combine_images_count": combine_images_count,
+            "has_multiple_combine_images": has_multiple_combine_images,
+            "combine_current_index": combine_current_index + 1,
+            "combine_current_image_media": combine_current_image_media,
             # Error flags
             "has_small_combine_prompt": dialog_manager.dialog_data.get("has_small_combine_prompt", False),
             "has_big_combine_prompt": dialog_manager.dialog_data.get("has_big_combine_prompt", False),
