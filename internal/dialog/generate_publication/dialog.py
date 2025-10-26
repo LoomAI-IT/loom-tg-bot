@@ -32,14 +32,13 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             self.get_image_menu_window(),
             self.get_edit_text_window(),
             self.get_upload_image_window(),
-            self.get_generate_image_confirm_window(),
+            self.get_new_image_confirm_window(),
             self.get_combine_images_choice_window(),
             self.get_combine_images_upload_window(),
             self.get_combine_images_prompt_window(),
-            self.get_combine_images_confirm_window(),
             self.get_social_network_select_window(),
             self.get_text_too_long_alert_window(),
-            self.get_publication_success_window()  # Новое окно
+            self.get_publication_success_window()
         )
 
     def get_select_category_window(self) -> Window:
@@ -933,85 +932,88 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             parse_mode=SULGUK_PARSE_MODE,
         )
 
-    def get_combine_images_confirm_window(self) -> Window:
+    def get_new_image_confirm_window(self) -> Window:
         return Window(
             Multi(
-                Const("🖼️ <b>Результат объединения</b><br><br>"),
+                Case(
+                    {
+                        False: Multi(
+                            Const("🖼️ <b>Результат генерации</b><br><br>"),
+                            Const("💡 <b>Что хотите сделать?</b><br>"),
+                            Const("• Принять изображение как есть<br>"),
+                            Const("• Написать или записать правки для улучшения<br><br>"),
+                            Const("💬 <i>Отправьте текст или голосовое сообщение с правками, и изображение будет отредактировано</i>"),
+                        ),
+                        True: Multi(
+                            Const("⏳ <b>Применяю правки к изображению...</b><br>"),
+                            Const("🕐 <i>Это может занять время. Пожалуйста, подождите.</i>"),
+                        ),
+                    },
+                    selector="is_applying_edits"
+                ),
+                Case(
+                    {
+                        True: Format("<br><br>📝 <b>Ваши правки:</b><br><i>{image_edit_prompt}</i>"),
+                        False: Const(""),
+                    },
+                    selector="has_image_edit_prompt"
+                ),
+                Case(
+                    {
+                        True: Const("<br><br>🔄 <b>Распознаю голосовое сообщение...</b>"),
+                        False: Const(""),
+                    },
+                    selector="voice_transcribe"
+                ),
+                Case(
+                    {
+                        True: Const("<br><br>📏 <b>Слишком короткое описание правок</b><br><i>Минимум 10 символов</i>"),
+                        False: Const(""),
+                    },
+                    selector="has_small_edit_prompt"
+                ),
+                Case(
+                    {
+                        True: Const("<br><br>📏 <b>Слишком длинное описание правок</b><br><i>Максимум 1000 символов</i>"),
+                        False: Const(""),
+                    },
+                    selector="has_big_edit_prompt"
+                ),
+                Case(
+                    {
+                        True: Const("<br><br>🎤 <b>Неверный формат</b><br><i>Отправьте текст, голосовое сообщение или аудиофайл</i>"),
+                        False: Const(""),
+                    },
+                    selector="has_invalid_content_type"
+                ),
                 sep="",
             ),
 
             DynamicMedia(
-                selector="combine_result_media",
-            ),
-            #
-            # Multi(
-            #     Case(
-            #         {
-            #             True: Multi(
-            #                 Const("<br><br>📷 <b>Предыдущее изображение:</b>"),
-            #             ),
-            #             False: Const(""),
-            #         },
-            #         selector="has_old_image_backup"
-            #     ),
-            #     sep="",
-            # ),
-            #
-            # DynamicMedia(
-            #     selector="old_image_backup_media",
-            #     when="has_old_image_backup",
-            # ),
-            #
-            # Multi(
-            #     Const("<br><br>💡 <b>Использовать объединенное изображение?</b>"),
-            #     sep="",
-            # ),
-
-            Row(
-                Button(
-                    Const("✅ Использовать"),
-                    id="confirm_combine",
-                    on_click=self.generate_publication_service.handle_confirm_combine,
-                ),
-                Button(
-                    Const("❌ Отменить"),
-                    id="cancel_combine",
-                    on_click=self.generate_publication_service.handle_cancel_combine,
-                ),
+                selector="new_image_media",
             ),
 
-            state=model.GeneratePublicationStates.combine_images_confirm,
-            getter=self.generate_publication_getter.get_combine_images_confirm_data,
-            parse_mode=SULGUK_PARSE_MODE,
-        )
-
-    def get_generate_image_confirm_window(self) -> Window:
-        return Window(
-            Multi(
-                Const("🖼️ <b>Результат генерации</b><br><br>"),
-                Const("💡 <b>Использовать эту картинку?</b>"),
-                sep="",
-            ),
-
-            DynamicMedia(
-                selector="generated_image_media",
+            MessageInput(
+                func=self.generate_publication_service.handle_new_image_confirm_input,
             ),
 
             Row(
                 Button(
                     Const("✅ Принять"),
-                    id="confirm_generated_image",
-                    on_click=self.generate_publication_service.handle_confirm_generated_image,
+                    id="confirm_new_image",
+                    on_click=self.generate_publication_service.handle_confirm_new_image,
+                    when=~F["is_applying_edits"]
                 ),
                 Button(
                     Const("❌ Отклонить"),
-                    id="reject_generated_image",
-                    on_click=self.generate_publication_service.handle_reject_generated_image,
+                    id="reject_new_image",
+                    on_click=self.generate_publication_service.handle_reject_new_image,
+                    when=~F["is_applying_edits"]
                 ),
             ),
 
-            state=model.GeneratePublicationStates.generate_image_confirm,
-            getter=self.generate_publication_getter.get_generate_image_confirm_data,
+            state=model.GeneratePublicationStates.new_image_confirm,
+            getter=self.generate_publication_getter.get_new_image_confirm_data,
             parse_mode=SULGUK_PARSE_MODE,
         )
 

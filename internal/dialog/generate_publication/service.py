@@ -459,7 +459,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         # Сохраняем сгенерированное изображение во временное хранилище
         dialog_manager.dialog_data["generated_images_url"] = images_url
 
-        await dialog_manager.switch_to(model.GeneratePublicationStates.generate_image_confirm)
+        await dialog_manager.switch_to(model.GeneratePublicationStates.new_image_confirm)
 
     @auto_log()
     @traced_method()
@@ -550,7 +550,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         # Сохраняем сгенерированное изображение во временное хранилище
         dialog_manager.dialog_data["generated_images_url"] = images_url
 
-        await dialog_manager.switch_to(model.GeneratePublicationStates.generate_image_confirm)
+        await dialog_manager.switch_to(model.GeneratePublicationStates.new_image_confirm)
 
     @auto_log()
     @traced_method()
@@ -1325,84 +1325,97 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         dialog_manager.dialog_data["is_combining_images"] = False
         dialog_manager.dialog_data["combine_result_url"] = combined_images_url[0] if combined_images_url else None
 
-        await dialog_manager.switch_to(model.GeneratePublicationStates.combine_images_confirm)
+        await dialog_manager.switch_to(model.GeneratePublicationStates.new_image_confirm)
+
+    # ============= NEW IMAGE CONFIRM HANDLERS =============
 
     @auto_log()
     @traced_method()
-    async def handle_confirm_combine(
+    async def handle_new_image_confirm_input(
             self,
-            callback: CallbackQuery,
-            button: Any,
+            message: Message,
+            widget: MessageInput,
             dialog_manager: DialogManager
     ) -> None:
         dialog_manager.show_mode = ShowMode.EDIT
 
-        await callback.answer("Объединенное изображение применено")
+        await message.delete()
 
-        # Применяем объединенное изображение
-        combine_result_url = dialog_manager.dialog_data.get("combine_result_url")
+        # Очистка флагов ошибок
+        dialog_manager.dialog_data.pop("has_small_edit_prompt", None)
+        dialog_manager.dialog_data.pop("has_big_edit_prompt", None)
+        dialog_manager.dialog_data.pop("has_invalid_content_type", None)
 
-        if combine_result_url:
-            dialog_manager.dialog_data["publication_images_url"] = [combine_result_url]
-            dialog_manager.dialog_data["has_image"] = True
-            dialog_manager.dialog_data["is_custom_image"] = False
-            dialog_manager.dialog_data["current_image_index"] = 0
-            dialog_manager.dialog_data.pop("custom_image_file_id", None)
+        state = await self._get_state(dialog_manager)
 
-        # Очищаем данные объединения
-        dialog_manager.dialog_data.pop("combine_images_list", None)
-        dialog_manager.dialog_data.pop("combine_current_index", None)
-        dialog_manager.dialog_data.pop("combine_prompt", None)
-        dialog_manager.dialog_data.pop("combine_result_url", None)
-        dialog_manager.dialog_data.pop("old_image_backup", None)
-
-        # Проверяем длину текста с изображением
-        if await self._check_text_length_with_image(dialog_manager):
+        if message.content_type not in [ContentType.VOICE, ContentType.AUDIO, ContentType.TEXT]:
+            self.logger.info("Неверный тип контента для правок изображения")
+            dialog_manager.dialog_data["has_invalid_content_type"] = True
             return
 
-        await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
+        if message.content_type == ContentType.TEXT:
+            prompt = message.text
+        else:
+            prompt = await self._speech_to_text(message, dialog_manager, state.organization_id)
+
+        if not prompt or len(prompt) < 10:
+            self.logger.info("Слишком короткий промпт для правок")
+            dialog_manager.dialog_data["has_small_edit_prompt"] = True
+            return
+
+        if len(prompt) > 1000:
+            self.logger.info("Слишком длинный промпт для правок")
+            dialog_manager.dialog_data["has_big_edit_prompt"] = True
+            return
+
+        dialog_manager.dialog_data["image_edit_prompt"] = prompt
+        dialog_manager.dialog_data["is_applying_edits"] = True
+
+        await dialog_manager.show()
+
+        # Определяем, какое изображение редактируем
+        current_image_content = None
+        current_image_filename = None
+
+        # Проверяем, есть ли сгенерированное изображение или результат комбинирования
+        if dialog_manager.dialog_data.get("generated_images_url"):
+            # Это было сгенерированное изображение
+            images_url = dialog_manager.dialog_data["generated_images_url"]
+            if images_url and len(images_url) > 0:
+                image_content, _ = await self._download_image(images_url[0])
+                current_image_content = image_content
+                current_image_filename = "generated_image.jpg"
+        elif dialog_manager.dialog_data.get("combine_result_url"):
+            # Это был результат комбинирования
+            combine_url = dialog_manager.dialog_data["combine_result_url"]
+            image_content, _ = await self._download_image(combine_url)
+            current_image_content = image_content
+            current_image_filename = "combined_image.jpg"
+
+        async with tg_action(self.bot, message.chat.id, "upload_photo"):
+            images_url = await self.loom_content_client.edit_image(
+                organization_id=state.organization_id,
+                prompt=prompt,
+                image_content=current_image_content,
+                image_filename=current_image_filename,
+            )
+
+        dialog_manager.dialog_data["is_applying_edits"] = False
+
+        # Обновляем изображения - теперь это новое отредактированное изображение
+        if dialog_manager.dialog_data.get("generated_images_url"):
+            dialog_manager.dialog_data["generated_images_url"] = images_url
+        elif dialog_manager.dialog_data.get("combine_result_url"):
+            dialog_manager.dialog_data["combine_result_url"] = images_url[0] if images_url else None
+
+        # Очищаем промпт после применения
+        dialog_manager.dialog_data.pop("image_edit_prompt", None)
+
+        await dialog_manager.show()
 
     @auto_log()
     @traced_method()
-    async def handle_cancel_combine(
-            self,
-            callback: CallbackQuery,
-            button: Any,
-            dialog_manager: DialogManager
-    ) -> None:
-        dialog_manager.show_mode = ShowMode.EDIT
-
-        await callback.answer("Объединение отменено")
-
-        # Восстанавливаем старое изображение, если оно было
-        old_image_backup = dialog_manager.dialog_data.get("old_image_backup")
-
-        if old_image_backup:
-            if old_image_backup["type"] == "file_id":
-                dialog_manager.dialog_data["custom_image_file_id"] = old_image_backup["value"]
-                dialog_manager.dialog_data["has_image"] = True
-                dialog_manager.dialog_data["is_custom_image"] = True
-                dialog_manager.dialog_data.pop("publication_images_url", None)
-                dialog_manager.dialog_data.pop("current_image_index", None)
-            elif old_image_backup["type"] == "url":
-                dialog_manager.dialog_data["publication_images_url"] = [old_image_backup["value"]]
-                dialog_manager.dialog_data["has_image"] = True
-                dialog_manager.dialog_data["is_custom_image"] = False
-                dialog_manager.dialog_data["current_image_index"] = 0
-                dialog_manager.dialog_data.pop("custom_image_file_id", None)
-
-        # Очищаем данные объединения
-        dialog_manager.dialog_data.pop("combine_images_list", None)
-        dialog_manager.dialog_data.pop("combine_current_index", None)
-        dialog_manager.dialog_data.pop("combine_prompt", None)
-        dialog_manager.dialog_data.pop("combine_result_url", None)
-        dialog_manager.dialog_data.pop("old_image_backup", None)
-
-        await dialog_manager.switch_to(model.GeneratePublicationStates.image_menu)
-
-    @auto_log()
-    @traced_method()
-    async def handle_confirm_generated_image(
+    async def handle_confirm_new_image(
             self,
             callback: CallbackQuery,
             button: Any,
@@ -1412,8 +1425,9 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         await callback.answer("Изображение применено")
 
-        # Применяем сгенерированное изображение
+        # Применяем сгенерированное изображение или результат комбинирования
         generated_images_url = dialog_manager.dialog_data.get("generated_images_url")
+        combine_result_url = dialog_manager.dialog_data.get("combine_result_url")
 
         if generated_images_url:
             dialog_manager.dialog_data["publication_images_url"] = generated_images_url
@@ -1421,20 +1435,32 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             dialog_manager.dialog_data["is_custom_image"] = False
             dialog_manager.dialog_data["current_image_index"] = 0
             dialog_manager.dialog_data.pop("custom_image_file_id", None)
+        elif combine_result_url:
+            dialog_manager.dialog_data["publication_images_url"] = [combine_result_url]
+            dialog_manager.dialog_data["has_image"] = True
+            dialog_manager.dialog_data["is_custom_image"] = False
+            dialog_manager.dialog_data["current_image_index"] = 0
+            dialog_manager.dialog_data.pop("custom_image_file_id", None)
 
-        # Очищаем данные подтверждения
+        # Очищаем временные данные
         dialog_manager.dialog_data.pop("generated_images_url", None)
+        dialog_manager.dialog_data.pop("combine_result_url", None)
         dialog_manager.dialog_data.pop("old_generated_image_backup", None)
+        dialog_manager.dialog_data.pop("old_image_backup", None)
+        dialog_manager.dialog_data.pop("image_edit_prompt", None)
+        dialog_manager.dialog_data.pop("combine_images_list", None)
+        dialog_manager.dialog_data.pop("combine_current_index", None)
+        dialog_manager.dialog_data.pop("combine_prompt", None)
 
         # Проверяем длину текста с изображением
         if await self._check_text_length_with_image(dialog_manager):
             return
 
-        await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
+        await dialog_manager.switch_to(model.GeneratePublicationStates.image_menu)
 
     @auto_log()
     @traced_method()
-    async def handle_reject_generated_image(
+    async def handle_reject_new_image(
             self,
             callback: CallbackQuery,
             button: Any,
@@ -1445,7 +1471,8 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         await callback.answer("Изображение отклонено")
 
         # Восстанавливаем старое изображение, если оно было
-        old_image_backup = dialog_manager.dialog_data.get("old_generated_image_backup")
+        old_image_backup = dialog_manager.dialog_data.get("old_generated_image_backup") or \
+                           dialog_manager.dialog_data.get("old_image_backup")
 
         if old_image_backup:
             if old_image_backup["type"] == "file_id":
@@ -1455,10 +1482,16 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 dialog_manager.dialog_data.pop("publication_images_url", None)
                 dialog_manager.dialog_data.pop("current_image_index", None)
             elif old_image_backup["type"] == "url":
-                dialog_manager.dialog_data["publication_images_url"] = old_image_backup["value"]
+                value = old_image_backup["value"]
+                # value может быть строкой или списком
+                if isinstance(value, list):
+                    dialog_manager.dialog_data["publication_images_url"] = value
+                    dialog_manager.dialog_data["current_image_index"] = old_image_backup.get("index", 0)
+                else:
+                    dialog_manager.dialog_data["publication_images_url"] = [value]
+                    dialog_manager.dialog_data["current_image_index"] = 0
                 dialog_manager.dialog_data["has_image"] = True
                 dialog_manager.dialog_data["is_custom_image"] = False
-                dialog_manager.dialog_data["current_image_index"] = old_image_backup.get("index", 0)
                 dialog_manager.dialog_data.pop("custom_image_file_id", None)
         else:
             # Если backup нет, удаляем изображение
@@ -1468,8 +1501,14 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             dialog_manager.dialog_data.pop("is_custom_image", None)
             dialog_manager.dialog_data.pop("current_image_index", None)
 
-        # Очищаем данные подтверждения
+        # Очищаем все временные данные
         dialog_manager.dialog_data.pop("generated_images_url", None)
+        dialog_manager.dialog_data.pop("combine_result_url", None)
         dialog_manager.dialog_data.pop("old_generated_image_backup", None)
+        dialog_manager.dialog_data.pop("old_image_backup", None)
+        dialog_manager.dialog_data.pop("image_edit_prompt", None)
+        dialog_manager.dialog_data.pop("combine_images_list", None)
+        dialog_manager.dialog_data.pop("combine_current_index", None)
+        dialog_manager.dialog_data.pop("combine_prompt", None)
 
         await dialog_manager.switch_to(model.GeneratePublicationStates.image_menu)

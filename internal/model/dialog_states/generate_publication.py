@@ -17,14 +17,13 @@ class GeneratePublicationStates(StatesGroup):
     # Состояния управления изображением
     image_menu = State()
     generate_image = State()
-    generate_image_confirm = State()
+    new_image_confirm = State()
     upload_image = State()
 
     # Состояния объединения изображений
     combine_images_choice = State()
     combine_images_upload = State()
     combine_images_prompt = State()
-    combine_images_confirm = State()
 
     # Публикация
     social_network_select = State()

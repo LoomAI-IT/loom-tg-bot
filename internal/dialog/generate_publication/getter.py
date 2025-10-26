@@ -384,60 +384,37 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
 
     @auto_log()
     @traced_method()
-    async def get_combine_images_confirm_data(
+    async def get_new_image_confirm_data(
             self,
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
+        # Получаем сгенерированное изображение или результат комбинирования
+        generated_images_url = dialog_manager.dialog_data.get("generated_images_url")
         combine_result_url = dialog_manager.dialog_data.get("combine_result_url")
-        old_image_backup = dialog_manager.dialog_data.get("old_image_backup")
 
-        combine_result_media = None
-        if combine_result_url:
-            combine_result_media = MediaAttachment(
+        new_image_media = None
+        if generated_images_url and len(generated_images_url) > 0:
+            new_image_media = MediaAttachment(
+                url=generated_images_url[0],
+                type=ContentType.PHOTO
+            )
+        elif combine_result_url:
+            new_image_media = MediaAttachment(
                 url=combine_result_url,
                 type=ContentType.PHOTO
             )
 
-        old_image_backup_media = None
-        has_old_image_backup = False
-        if old_image_backup:
-            has_old_image_backup = True
-            if old_image_backup.get("type") == "file_id":
-                old_image_backup_media = MediaAttachment(
-                    file_id=MediaId(old_image_backup["value"]),
-                    type=ContentType.PHOTO
-                )
-            elif old_image_backup.get("type") == "url":
-                old_image_backup_media = MediaAttachment(
-                    url=old_image_backup["value"],
-                    type=ContentType.PHOTO
-                )
-
         return {
-            "combine_result_media": combine_result_media,
-            "has_old_image_backup": has_old_image_backup,
-            "old_image_backup_media": old_image_backup_media,
-        }
-
-    @auto_log()
-    @traced_method()
-    async def get_generate_image_confirm_data(
-            self,
-            dialog_manager: DialogManager,
-            **kwargs
-    ) -> dict:
-        generated_images_url = dialog_manager.dialog_data.get("generated_images_url", [])
-
-        generated_image_media = None
-        if generated_images_url and len(generated_images_url) > 0:
-            generated_image_media = MediaAttachment(
-                url=generated_images_url[0],
-                type=ContentType.PHOTO
-            )
-
-        return {
-            "generated_image_media": generated_image_media,
+            "new_image_media": new_image_media,
+            "is_applying_edits": dialog_manager.dialog_data.get("is_applying_edits", False),
+            "voice_transcribe": dialog_manager.dialog_data.get("voice_transcribe", False),
+            "has_image_edit_prompt": bool(dialog_manager.dialog_data.get("image_edit_prompt")),
+            "image_edit_prompt": dialog_manager.dialog_data.get("image_edit_prompt", ""),
+            # Error flags
+            "has_small_edit_prompt": dialog_manager.dialog_data.get("has_small_edit_prompt", False),
+            "has_big_edit_prompt": dialog_manager.dialog_data.get("has_big_edit_prompt", False),
+            "has_invalid_content_type": dialog_manager.dialog_data.get("has_invalid_content_type", False),
         }
 
     # Helper methods
