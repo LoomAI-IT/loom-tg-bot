@@ -1290,14 +1290,67 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         dialog_manager.dialog_data["combine_prompt"] = prompt
 
+        # Автоматически запускаем объединение после получения промпта
+        combine_images_list = dialog_manager.dialog_data.get("combine_images_list", [])
+
+        if len(combine_images_list) < 2:
+            dialog_manager.dialog_data["not_enough_combine_images"] = True
+            return
+
+        dialog_manager.dialog_data["is_combining_images"] = True
+        await dialog_manager.show()
+
+        # Сохраняем старое изображение для возможности отмены
+        old_image_backup = None
+        if dialog_manager.dialog_data.get("custom_image_file_id"):
+            old_image_backup = {
+                "type": "file_id",
+                "value": dialog_manager.dialog_data["custom_image_file_id"]
+            }
+        elif dialog_manager.dialog_data.get("publication_images_url"):
+            images_url = dialog_manager.dialog_data["publication_images_url"]
+            current_index = dialog_manager.dialog_data.get("current_image_index", 0)
+            if current_index < len(images_url):
+                old_image_backup = {
+                    "type": "url",
+                    "value": images_url[current_index]
+                }
+
+        dialog_manager.dialog_data["old_image_backup"] = old_image_backup
+
+        # Скачиваем все изображения
+        images_content = []
+        images_filenames = []
+
+        for i, file_id in enumerate(combine_images_list):
+            image_io = await self.bot.download(file_id)
+            content = image_io.read()
+            images_content.append(content)
+            images_filenames.append(f"image_{i}.jpg")
+
+        async with tg_action(self.bot, message.chat.id, "upload_photo"):
+            combined_images_url = await self.loom_content_client.combine_images(
+                organization_id=state.organization_id,
+                category_id=dialog_manager.dialog_data["category_id"],
+                images_content=images_content,
+                images_filenames=images_filenames,
+                prompt=prompt,
+            )
+
+        dialog_manager.dialog_data["is_combining_images"] = False
+        dialog_manager.dialog_data["combine_result_url"] = combined_images_url[0] if combined_images_url else None
+
+        await dialog_manager.switch_to(model.GeneratePublicationStates.new_image_confirm)
+
     @auto_log()
     @traced_method()
-    async def handle_execute_combine(
+    async def handle_skip_combine_prompt(
             self,
             callback: CallbackQuery,
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
+        """Обработчик для кнопки 'Пропустить' - объединяет изображения с дефолтным промптом"""
         dialog_manager.show_mode = ShowMode.EDIT
 
         combine_images_list = dialog_manager.dialog_data.get("combine_images_list", [])
@@ -1312,9 +1365,8 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         await dialog_manager.show()
 
         state = await self._get_state(dialog_manager)
-        combine_prompt = dialog_manager.dialog_data.get("combine_prompt")
-        if not combine_prompt:
-            combine_prompt = "Объедини эти фотографии в одну композици, чтобы это смотрелось органично"
+        # Используем дефолтный промпт, если пользователь пропустил ввод
+        combine_prompt = "Объедини эти фотографии в одну композицию, чтобы это смотрелось органично"
 
         # Сохраняем старое изображение для возможности отмены
         old_image_backup = None
