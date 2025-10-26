@@ -21,22 +21,11 @@ from ._validation import _ValidationService
 
 
 class GeneratePublicationService(interface.IGeneratePublicationService):
-    MIN_TEXT_PROMPT_LENGTH = 10
-    MAX_TEXT_PROMPT_LENGTH = 2000
-
     MIN_IMAGE_PROMPT_LENGTH = 10
     MAX_IMAGE_PROMPT_LENGTH = 2000
 
-    MIN_EDITED_TEXT_LENGTH = 50
-    MAX_EDITED_TEXT_LENGTH = 4000
-
     MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024
     MAX_COMBINE_IMAGES = 3
-
-    MAX_TEXT_WITH_IMAGE = 1024
-    RECOMMENDED_TEXT_WITH_IMAGE = 800
-    MAX_TEXT_WITHOUT_IMAGE = 4096
-    RECOMMENDED_TEXT_WITHOUT_IMAGE = 3600
 
     DEFAULT_COMBINE_PROMPT = "Объедини эти фотографии в одну композицию, чтобы это смотрелось органично"
 
@@ -974,13 +963,11 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         # Если есть временные данные от генерации/объединения, значит пришли из new_image_confirm
         if has_generated_images or has_combine_result:
-            # Очищаем временные данные объединения
             dialog_manager.dialog_data.pop("combine_images_list", None)
             dialog_manager.dialog_data.pop("combine_current_index", None)
-            # Возвращаемся в new_image_confirm
+
             await dialog_manager.switch_to(model.GeneratePublicationStates.new_image_confirm)
         else:
-            # Иначе возвращаемся в image_menu
             await dialog_manager.switch_to(model.GeneratePublicationStates.image_menu)
 
     @auto_log()

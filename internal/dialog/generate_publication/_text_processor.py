@@ -29,11 +29,12 @@ class _TextProcessor:
             self,
             message: Message,
             dialog_manager: DialogManager,
-            organization_id: int
+            organization_id: int,
+            return_html: bool = False,
     ) -> str:
         """Обрабатывает текстовые, голосовые и аудио сообщения"""
         if message.content_type == ContentType.TEXT:
-            return message.text if hasattr(message, 'text') else message.html_text.replace('\n', '<br/>')
+            return message.text if not return_html else message.html_text.replace('\n', '<br/>')
         else:
             return await self.speech_to_text(message, dialog_manager, organization_id)
 
