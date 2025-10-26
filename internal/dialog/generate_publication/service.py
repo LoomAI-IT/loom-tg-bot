@@ -895,7 +895,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         if has_image and text_length > 1024:
             self.logger.info(f"Текст слишком длинный для публикации с изображением: {text_length} символов")
-            dialog_manager.dialog_data["expected_length"] = 900
+            dialog_manager.dialog_data["expected_length"] = 800
             await dialog_manager.switch_to(model.GeneratePublicationStates.text_too_long_alert)
             return True
 
