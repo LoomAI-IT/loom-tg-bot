@@ -78,10 +78,10 @@ class LoomContentClient(interface.ILoomContentClient):
             "category_id": category_id,
             "text_reference": text_reference,
         }
-        # response = await self.client.post("/publication/text/generate", json=body)
-        # json_response = response.json()
+        response = await self.client.post("/publication/text/generate", json=body)
+        json_response = response.json()
 
-        return {"text": "weerrevrevre"}
+        return json_response
 
     @traced_method(SpanKind.CLIENT)
     async def regenerate_publication_text(
