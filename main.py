@@ -151,7 +151,11 @@ loom_employee_client = LoomEmployeeClient(tel, cfg.loom_employee_host, cfg.loom_
 loom_organization_client = LoomOrganizationClient(tel, cfg.loom_organization_host, cfg.loom_organization_port,
                                                   log_context)
 loom_content_client = LoomContentClient(tel, cfg.loom_content_host, cfg.loom_content_port, log_context)
-anthropic_client = AnthropicClient(tel, cfg.anthropic_api_key)
+anthropic_client = AnthropicClient(
+    tel,
+    cfg.anthropic_api_key,
+    proxy=cfg.proxy
+)
 telegram_client = LTelegramClient(
     cfg.tg_bot_token,
     cfg.tg_session_string,

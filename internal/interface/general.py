@@ -186,6 +186,7 @@ class IAnthropicClient(Protocol):
             cache_ttl: str = "5m",
             enable_web_search: bool = True,
             max_searches: int = 5,
+            images: list[bytes] = None,
     ) -> tuple[str, dict]: pass
 
     @abstractmethod
@@ -201,4 +202,5 @@ class IAnthropicClient(Protocol):
             cache_ttl: str = "5m",
             enable_web_search: bool = True,
             max_searches: int = 5,
+            images: list[bytes] = None,
     ) -> tuple[dict, dict]: pass
