@@ -147,20 +147,20 @@ class DialogDataHelper:
         dialog_manager.dialog_data[flag_name] = value
 
     @staticmethod
-    def cleardialog_data_helper(dialog_manager: DialogManager, *flags: str) -> None:
+    def clear(dialog_manager: DialogManager, *flags: str) -> None:
         for flag in flags:
             dialog_manager.dialog_data.pop(flag, None)
 
-    def clear_reject_commentdialog_data_helper(self, dialog_manager: DialogManager) -> None:
-        self.cleardialog_data_helper(
+    def clear_reject_comment_error_flags(self, dialog_manager: DialogManager) -> None:
+        self.clear(
             dialog_manager,
             "has_void_reject_comment",
             "has_small_reject_comment",
             "has_big_reject_comment"
         )
 
-    def clear_regenerate_promptdialog_data_helper(self, dialog_manager: DialogManager) -> None:
-        self.cleardialog_data_helper(
+    def clear_regenerate_prompt_error_flags(self, dialog_manager: DialogManager) -> None:
+        self.clear(
             dialog_manager,
             "has_void_regenerate_prompt",
             "has_small_regenerate_prompt",
@@ -168,8 +168,8 @@ class DialogDataHelper:
             "has_invalid_content_type"
         )
 
-    def clear_image_promptdialog_data_helper(self, dialog_manager: DialogManager) -> None:
-        self.cleardialog_data_helper(
+    def clear_image_prompt_error_flags(self, dialog_manager: DialogManager) -> None:
+        self.clear(
             dialog_manager,
             "has_void_image_prompt",
             "has_small_image_prompt",
@@ -177,16 +177,16 @@ class DialogDataHelper:
             "has_invalid_content_type"
         )
 
-    def clear_text_editdialog_data_helper(self, dialog_manager: DialogManager) -> None:
-        self.cleardialog_data_helper(
+    def clear_text_edit_error_flags(self, dialog_manager: DialogManager) -> None:
+        self.clear(
             dialog_manager,
             "has_void_text",
             "has_big_text",
             "has_small_text"
         )
 
-    def clear_image_uploaddialog_data_helper(self, dialog_manager: DialogManager) -> None:
-        self.cleardialog_data_helper(
+    def clear_image_upload_error_flags(self, dialog_manager: DialogManager) -> None:
+        self.clear(
             dialog_manager,
             "has_invalid_image_type",
             "has_big_image_size"

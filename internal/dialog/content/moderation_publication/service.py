@@ -107,7 +107,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
         await message.delete()
 
-        self.dialog_data_helper.clear_reject_commentdialog_data_helper(dialog_manager=dialog_manager)
+        self.dialog_data_helper.clear_reject_comment_error_flags(dialog_manager=dialog_manager)
 
         # Очищаем и валидируем комментарий
         comment = self.text_processor.strip_text(comment)
@@ -191,7 +191,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
         await message.delete()
 
-        self.dialog_data_helper.clear_regenerate_promptdialog_data_helper(dialog_manager=dialog_manager)
+        self.dialog_data_helper.clear_regenerate_prompt_error_flags(dialog_manager=dialog_manager)
 
         # Валидация типа контента
         if not self.validation.validate_message_content_type(
@@ -252,7 +252,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
         await message.delete()
 
-        self.dialog_data_helper.clear_text_editdialog_data_helper(dialog_manager=dialog_manager)
+        self.dialog_data_helper.clear_text_edit_error_flags(dialog_manager=dialog_manager)
 
         # Форматируем HTML текст
         new_text = self.text_processor.format_html_text(message.html_text)
@@ -326,7 +326,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
         await message.delete()
 
-        self.dialog_data_helper.clear_image_promptdialog_data_helper(dialog_manager=dialog_manager)
+        self.dialog_data_helper.clear_image_prompt_error_flags(dialog_manager=dialog_manager)
 
         # Валидация типа контента
         if not self.validation.validate_message_content_type(
@@ -393,7 +393,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
         await message.delete()
 
-        self.dialog_data_helper.clear_image_uploaddialog_data_helper(dialog_manager=dialog_manager)
+        self.dialog_data_helper.clear_image_upload_error_flags(dialog_manager=dialog_manager)
 
         # Валидация типа контента
         if not self.validation.validate_message_content_type(

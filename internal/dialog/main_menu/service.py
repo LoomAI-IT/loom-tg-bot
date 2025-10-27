@@ -59,7 +59,7 @@ class MainMenuService(interface.IMainMenuService):
 
         await message.delete()
 
-        self.dialog_data_helper.clear_inputdialog_data_helper(dialog_manager=dialog_manager)
+        self.dialog_data_helper.clear_input(dialog_manager=dialog_manager)
 
         state = await self.state_manager.get_state(dialog_manager=dialog_manager)
 
