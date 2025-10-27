@@ -1,3 +1,4 @@
+from aiogram.types import Message, ContentType
 from aiogram_dialog import DialogManager
 
 
@@ -8,8 +9,15 @@ class ValidationService:
     MIN_IMAGE_PROMPT_LENGTH = 10
     MAX_IMAGE_PROMPT_LENGTH = 2000
 
+    MIN_EDIT_IMAGE_PROMPT_LENGTH = 10
+    MAX_EDIT_IMAGE_PROMPT_LENGTH = 1000
+
     MIN_EDITED_TEXT_LENGTH = 50
     MAX_EDITED_TEXT_LENGTH = 4000
+
+    MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024
+    MAX_COMBINE_IMAGES = 3
+    MIN_COMBINE_IMAGES = 2
 
     def __init__(self, logger):
         self.logger = logger
@@ -100,3 +108,87 @@ class ValidationService:
             return False
 
         return True
+
+    def validate_content_type(
+            self,
+            message: Message,
+            dialog_manager: DialogManager,
+            allowed_types: list = None
+    ) -> bool:
+        if allowed_types is None:
+            allowed_types = [ContentType.VOICE, ContentType.AUDIO, ContentType.TEXT]
+
+        if message.content_type not in allowed_types:
+            self.logger.info(f"Неверный тип контента: {message.content_type}")
+            dialog_manager.dialog_data["has_invalid_content_type"] = True
+            return False
+        return True
+
+    def validate_image_content_type(
+            self,
+            message: Message,
+            dialog_manager: DialogManager,
+            error_flag: str = "has_invalid_image_type"
+    ) -> bool:
+        if message.content_type != ContentType.PHOTO:
+            self.logger.info("Неверный тип контента для изображения")
+            dialog_manager.dialog_data[error_flag] = True
+            return False
+        return True
+
+    def validate_image_size(
+            self,
+            photo,
+            dialog_manager: DialogManager,
+            error_flag: str = "has_big_image_size"
+    ) -> bool:
+        if hasattr(photo, 'file_size') and photo.file_size:
+            if photo.file_size > self.MAX_IMAGE_SIZE_BYTES:
+                self.logger.info(f"Размер изображения превышает лимит: {photo.file_size} bytes")
+                dialog_manager.dialog_data[error_flag] = True
+                return False
+        return True
+
+    def validate_selected_networks(self, selected_networks: dict) -> bool:
+        return any(selected_networks.values())
+
+    def validate_combine_images_count(
+            self,
+            combine_images_list: list,
+            dialog_manager: DialogManager,
+            check_min: bool = True,
+            check_max: bool = True
+    ) -> bool:
+        images_count = len(combine_images_list)
+
+        if check_max and images_count >= self.MAX_COMBINE_IMAGES:
+            self.logger.info(f"Достигнут лимит изображений для объединения: {images_count}")
+            dialog_manager.dialog_data["combine_images_limit_reached"] = True
+            return False
+
+        if check_min and images_count < self.MIN_COMBINE_IMAGES:
+            self.logger.info(f"Недостаточно изображений для объединения: {images_count}")
+            dialog_manager.dialog_data["not_enough_combine_images"] = True
+            return False
+
+        return True
+
+    def validate_edit_image_prompt(
+            self,
+            prompt: str,
+            dialog_manager: DialogManager
+    ) -> bool:
+        if not prompt or len(prompt) < self.MIN_EDIT_IMAGE_PROMPT_LENGTH:
+            self.logger.info("Слишком короткий промпт для редактирования")
+            dialog_manager.dialog_data["has_small_edit_prompt"] = True
+            return False
+
+        if len(prompt) > self.MAX_EDIT_IMAGE_PROMPT_LENGTH:
+            self.logger.info("Слишком длинный промпт для редактирования")
+            dialog_manager.dialog_data["has_big_edit_prompt"] = True
+            return False
+
+        return True
+
+    def validate_category_permission(self, employee) -> bool:
+        return employee.setting_category_permission

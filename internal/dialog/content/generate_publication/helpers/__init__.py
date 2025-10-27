@@ -3,4 +3,6 @@ from internal.dialog.content.generate_publication.helpers.validation import Vali
 from internal.dialog.content.generate_publication.helpers.data_extractor import DataExtractor
 from internal.dialog.content.generate_publication.helpers.social_network_manager import SocialNetworkManager
 from internal.dialog.content.generate_publication.helpers.text_processor import TextProcessor
-from internal.dialog.content.generate_publication.helpers.error_flags_manger import ErrorFlagsManager
+from internal.dialog.content.generate_publication.helpers.error_flags_manager import ErrorFlagsManager
+from internal.dialog.content.generate_publication.helpers.publication_manager import PublicationManager
+from internal.dialog.content.generate_publication.helpers.category_manager import CategoryManager
