@@ -1,7 +1,8 @@
 from aiogram_dialog import DialogManager
 
 from internal import model
-from internal.dialog.content.generate_publication.helpers import DialogDataHelper, ValidationService
+from internal.dialog.content.generate_publication.helpers.dialog_data_helper import DialogDataHelper
+from internal.dialog.content.generate_publication.helpers.validation import ValidationService
 
 
 class TextProcessor:

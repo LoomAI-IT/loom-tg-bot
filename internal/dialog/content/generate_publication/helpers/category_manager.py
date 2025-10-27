@@ -1,7 +1,7 @@
 from aiogram_dialog import DialogManager, StartMode
 
 from internal import interface, model
-from internal.dialog.content.generate_publication.helpers import DialogDataHelper
+from internal.dialog.content.generate_publication.helpers.dialog_data_helper import DialogDataHelper
 
 
 class CategoryManager:

@@ -6,7 +6,7 @@ from aiogram_dialog.api.entities import MediaAttachment, MediaId
 
 from internal import interface, model
 from pkg.tg_action_wrapper import tg_action
-from internal.dialog.content.generate_publication.helpers import DialogDataHelper
+from internal.dialog.content.generate_publication.helpers.dialog_data_helper import DialogDataHelper
 
 
 class ImageManager:
@@ -15,11 +15,12 @@ class ImageManager:
             logger,
             bot: Bot,
             loom_content_client: interface.ILoomContentClient,
+            dialog_data_helper
     ):
         self.logger = logger
         self.bot = bot
         self.loom_content_client = loom_content_client
-        self.dialog_data_helper = DialogDataHelper(self.logger)
+        self.dialog_data_helper = dialog_data_helper
 
     def navigate_images(
             self,

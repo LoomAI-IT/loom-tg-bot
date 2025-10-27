@@ -2,7 +2,7 @@ from aiogram_dialog import DialogManager
 from aiogram_dialog.widgets.kbd import ManagedCheckbox
 
 from internal import interface, model
-from internal.dialog.content.generate_publication.helpers import DialogDataHelper
+from internal.dialog.content.generate_publication.helpers.dialog_data_helper import DialogDataHelper
 
 
 class PublicationManager:

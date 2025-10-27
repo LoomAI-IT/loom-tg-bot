@@ -2,7 +2,8 @@ import re
 
 from aiogram.types import Message, ContentType
 from aiogram_dialog import DialogManager
-from internal.dialog.content.generate_publication.helpers import DialogDataHelper
+from internal.dialog.content.generate_publication.helpers.dialog_data_helper import DialogDataHelper
+
 
 
 class ValidationService:
