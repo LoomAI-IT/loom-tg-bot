@@ -118,7 +118,7 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
         await callback.answer("Видео отклонено", show_alert=True)
 
         await self._remove_current_video_cut_from_list(dialog_manager)
-        await dialog_manager.switch_to(model.VideoCutModerationStates.moderation_list)
+        await dialog_manager.switch_to(state=model.VideoCutModerationStates.moderation_list)
 
     @auto_log()
     @traced_method()
@@ -150,7 +150,7 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
         # Обновляем рабочую версию
         dialog_manager.dialog_data["working_video_cut"]["name"] = new_title
 
-        await dialog_manager.switch_to(model.VideoCutModerationStates.edit_preview)
+        await dialog_manager.switch_to(state=model.VideoCutModerationStates.edit_preview)
 
     @auto_log()
     @traced_method()
@@ -182,7 +182,7 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
         # Обновляем рабочую версию
         dialog_manager.dialog_data["working_video_cut"]["description"] = new_description
 
-        await dialog_manager.switch_to(model.VideoCutModerationStates.edit_preview)
+        await dialog_manager.switch_to(state=model.VideoCutModerationStates.edit_preview)
 
     @auto_log()
     @traced_method()
@@ -215,7 +215,7 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
 
         # Обновляем рабочую версию
         dialog_manager.dialog_data["working_video_cut"]["tags"] = new_tags
-        await dialog_manager.switch_to(model.VideoCutModerationStates.edit_preview)
+        await dialog_manager.switch_to(state=model.VideoCutModerationStates.edit_preview)
 
     @auto_log()
     @traced_method()
@@ -239,7 +239,7 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
 
         await callback.answer("Изменения сохранены", show_alert=True)
 
-        await dialog_manager.switch_to(model.VideoCutModerationStates.moderation_list)
+        await dialog_manager.switch_to(state=model.VideoCutModerationStates.moderation_list)
 
     @auto_log()
     @traced_method()
@@ -251,7 +251,7 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
     ) -> None:
         dialog_manager.show_mode = ShowMode.EDIT
 
-        await dialog_manager.switch_to(model.VideoCutModerationStates.moderation_list)
+        await dialog_manager.switch_to(state=model.VideoCutModerationStates.moderation_list)
 
     @auto_log()
     @traced_method()
@@ -324,7 +324,7 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
         await callback.answer("Видео опубликовано", show_alert=True)
 
         await self._remove_current_video_cut_from_list(dialog_manager)
-        await dialog_manager.switch_to(model.VideoCutModerationStates.moderation_list)
+        await dialog_manager.switch_to(state=model.VideoCutModerationStates.moderation_list)
 
     @auto_log()
     @traced_method()
@@ -341,7 +341,7 @@ class VideoCutModerationService(interface.IVideoCutModerationService):
             return
 
         await dialog_manager.start(
-            model.ContentMenuStates.content_menu,
+            state=model.ContentMenuStates.content_menu,
             mode=StartMode.RESET_STACK
         )
 

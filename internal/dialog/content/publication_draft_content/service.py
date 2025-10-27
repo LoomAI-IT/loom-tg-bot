@@ -45,7 +45,7 @@ class PublicationDraftService(interface.IPublicationDraftService):
                 self.logger.info(f"Выбрана публикация для редактирования: {publication_id}")
 
                 # 🔄 Переходим к превью выбранной публикации
-                await dialog_manager.switch_to(model.PublicationDraftStates.edit_preview)
+                await dialog_manager.switch_to(state=model.PublicationDraftStates.edit_preview)
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
@@ -122,7 +122,7 @@ class PublicationDraftService(interface.IPublicationDraftService):
                 
                 # 🔄 Возвращаемся к списку
                 dialog_manager.dialog_data.pop("selected_publication_id", None)
-                await dialog_manager.switch_to(model.PublicationDraftStates.publication_list)
+                await dialog_manager.switch_to(state=model.PublicationDraftStates.publication_list)
 
                 span.set_status(Status(StatusCode.OK))
             except Exception as err:
@@ -186,7 +186,7 @@ class PublicationDraftService(interface.IPublicationDraftService):
 
             if not new_title:
                 dialog_manager.dialog_data["has_void_title"] = True
-                await dialog_manager.switch_to(model.PublicationDraftStates.edit_title)
+                await dialog_manager.switch_to(state=model.PublicationDraftStates.edit_title)
                 return
 
             # ✅ Очищаем ошибки и сохраняем
@@ -194,7 +194,7 @@ class PublicationDraftService(interface.IPublicationDraftService):
             dialog_manager.dialog_data["publication_title"] = new_title
 
             self.logger.info("Название черновика изменено")
-            await dialog_manager.switch_to(model.PublicationDraftStates.edit_preview)
+            await dialog_manager.switch_to(state=model.PublicationDraftStates.edit_preview)
         except Exception as err:
             await message.answer("❌ Ошибка при сохранении названия")
             raise
@@ -213,7 +213,7 @@ class PublicationDraftService(interface.IPublicationDraftService):
             
             dialog_manager.dialog_data["publication_description"] = new_description
             self.logger.info("Описание черновика изменено")
-            await dialog_manager.switch_to(model.PublicationDraftStates.edit_preview)
+            await dialog_manager.switch_to(state=model.PublicationDraftStates.edit_preview)
         except Exception as err:
             await message.answer("❌ Ошибка при сохранении описания")
             raise
@@ -232,14 +232,14 @@ class PublicationDraftService(interface.IPublicationDraftService):
 
             if not new_content:
                 dialog_manager.dialog_data["has_void_content"] = True
-                await dialog_manager.switch_to(model.PublicationDraftStates.edit_content)
+                await dialog_manager.switch_to(state=model.PublicationDraftStates.edit_content)
                 return
 
             dialog_manager.dialog_data.pop("has_void_content", None)
             dialog_manager.dialog_data["publication_content"] = new_content
 
             self.logger.info("Содержимое черновика изменено")
-            await dialog_manager.switch_to(model.PublicationDraftStates.edit_preview)
+            await dialog_manager.switch_to(state=model.PublicationDraftStates.edit_preview)
         except Exception as err:
             await message.answer("❌ Ошибка при сохранении текста")
             raise
@@ -264,7 +264,7 @@ class PublicationDraftService(interface.IPublicationDraftService):
             
             dialog_manager.dialog_data["publication_tags"] = tags
             self.logger.info("Теги черновика изменены")
-            await dialog_manager.switch_to(model.PublicationDraftStates.edit_preview)
+            await dialog_manager.switch_to(state=model.PublicationDraftStates.edit_preview)
         except Exception as err:
             await message.answer("❌ Ошибка при сохранении тегов")
             raise
@@ -311,7 +311,7 @@ class PublicationDraftService(interface.IPublicationDraftService):
             # dialog_manager.dialog_data["publication_content"] = regenerated_data["text"]
             
             await callback.message.edit_text("✅ Текст перегенерирован!")
-            await dialog_manager.switch_to(model.PublicationDraftStates.edit_preview)
+            await dialog_manager.switch_to(state=model.PublicationDraftStates.edit_preview)
         except Exception as err:
             await callback.answer("❌ Ошибка регенерации", show_alert=True)
             raise
@@ -330,7 +330,7 @@ class PublicationDraftService(interface.IPublicationDraftService):
             
             if not prompt:
                 dialog_manager.dialog_data["has_void_regenerate_prompt"] = True
-                await dialog_manager.switch_to(model.PublicationDraftStates.regenerate_text)
+                await dialog_manager.switch_to(state=model.PublicationDraftStates.regenerate_text)
                 return
                 
             # TODO: Реализовать регенерацию с промптом
@@ -377,7 +377,7 @@ class PublicationDraftService(interface.IPublicationDraftService):
             await self.loom_content_client.send_publication_to_moderation(publication_id)
             
             await callback.answer("📤 Отправлено на модерацию!", show_alert=True)
-            await dialog_manager.start(model.ContentMenuStates.content_menu, mode=StartMode.RESET_STACK)
+            await dialog_manager.start(state=model.ContentMenuStates.content_menu, mode=StartMode.RESET_STACK)
         except Exception as err:
             await callback.answer("❌ Ошибка отправки", show_alert=True)
             raise
@@ -401,7 +401,7 @@ class PublicationDraftService(interface.IPublicationDraftService):
             )
             
             await callback.answer("🚀 Опубликовано!", show_alert=True)
-            await dialog_manager.start(model.ContentMenuStates.content_menu, mode=StartMode.RESET_STACK)
+            await dialog_manager.start(state=model.ContentMenuStates.content_menu, mode=StartMode.RESET_STACK)
         except Exception as err:
             await callback.answer("❌ Ошибка публикации", show_alert=True)
             raise
@@ -416,7 +416,7 @@ class PublicationDraftService(interface.IPublicationDraftService):
     ) -> None:
         """🔙 Возврат к списку черновиков"""
         try:
-            await dialog_manager.switch_to(model.PublicationDraftStates.publication_list)
+            await dialog_manager.switch_to(state=model.PublicationDraftStates.publication_list)
         except Exception as err:
             await callback.answer("❌ Ошибка навигации", show_alert=True)
             raise

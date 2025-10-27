@@ -108,7 +108,7 @@ class CreateOrganizationService(interface.ICreateOrganizationService):
                     organization_data=organization_data
                 )
 
-                await dialog_manager.switch_to(model.CreateOrganizationStates.organization_created)
+                await dialog_manager.switch_to(state=model.CreateOrganizationStates.organization_created)
                 return
 
             await self._llm_interaction.save_llm_response(
@@ -135,7 +135,7 @@ class CreateOrganizationService(interface.ICreateOrganizationService):
         dialog_manager.show_mode = ShowMode.EDIT
         await callback.answer()
 
-        await dialog_manager.start(model.IntroStates.intro, mode=StartMode.RESET_STACK)
+        await dialog_manager.start(state=model.IntroStates.intro, mode=StartMode.RESET_STACK)
 
     @auto_log()
     @traced_method()
@@ -156,7 +156,7 @@ class CreateOrganizationService(interface.ICreateOrganizationService):
             await self.llm_chat_repo.delete_chat(chat[0].id)
 
         await dialog_manager.start(
-            model.CreateCategoryStates.create_category,
+            state=model.CreateCategoryStates.create_category,
             mode=StartMode.RESET_STACK
         )
 
@@ -170,4 +170,4 @@ class CreateOrganizationService(interface.ICreateOrganizationService):
     ) -> None:
         dialog_manager.show_mode = ShowMode.EDIT
 
-        await dialog_manager.start(model.MainMenuStates.main_menu, mode=StartMode.RESET_STACK)
+        await dialog_manager.start(state=model.MainMenuStates.main_menu, mode=StartMode.RESET_STACK)

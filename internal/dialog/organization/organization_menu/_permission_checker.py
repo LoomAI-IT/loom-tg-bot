@@ -14,7 +14,7 @@ class _PermissionChecker:
             callback: CallbackQuery
     ) -> bool:
         employee = await self.loom_employee_client.get_employee_by_account_id(
-            state.account_id,
+            account_id=state.account_id,
         )
 
         if not employee.edit_employee_perm_permission:
@@ -29,7 +29,7 @@ class _PermissionChecker:
             callback: CallbackQuery
     ) -> bool:
         employee = await self.loom_employee_client.get_employee_by_account_id(
-            state.account_id
+            account_id=state.account_id
         )
 
         if not employee.setting_category_permission:
@@ -44,7 +44,7 @@ class _PermissionChecker:
             callback: CallbackQuery
     ) -> bool:
         employee = await self.loom_employee_client.get_employee_by_account_id(
-            state.account_id
+            account_id=state.account_id
         )
 
         if not employee.setting_category_permission:
@@ -59,7 +59,7 @@ class _PermissionChecker:
             callback: CallbackQuery
     ) -> bool:
         employee = await self.loom_employee_client.get_employee_by_account_id(
-            state.account_id,
+            account_id=state.account_id,
         )
 
         if not employee.add_employee_permission:

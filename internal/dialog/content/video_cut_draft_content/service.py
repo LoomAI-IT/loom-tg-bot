@@ -91,7 +91,7 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
         dialog_manager.dialog_data["original_video_cut"] = dict(dialog_manager.dialog_data["working_video_cut"])
         await callback.answer("Изменения успешно сохранены", show_alert=True)
 
-        await dialog_manager.switch_to(model.VideoCutsDraftStates.video_cut_list)
+        await dialog_manager.switch_to(state=model.VideoCutsDraftStates.video_cut_list)
 
     @auto_log()
     @traced_method()
@@ -121,7 +121,7 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
 
         dialog_manager.dialog_data["working_video_cut"]["name"] = new_title
 
-        await dialog_manager.switch_to(model.VideoCutsDraftStates.edit_preview)
+        await dialog_manager.switch_to(state=model.VideoCutsDraftStates.edit_preview)
 
     @auto_log()
     @traced_method()
@@ -151,7 +151,7 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
 
         dialog_manager.dialog_data["working_video_cut"]["description"] = new_description
 
-        await dialog_manager.switch_to(model.VideoCutsDraftStates.edit_preview)
+        await dialog_manager.switch_to(state=model.VideoCutsDraftStates.edit_preview)
 
     @auto_log()
     @traced_method()
@@ -182,7 +182,7 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
 
         dialog_manager.dialog_data["working_video_cut"]["tags"] = new_tags
 
-        await dialog_manager.switch_to(model.VideoCutsDraftStates.edit_preview)
+        await dialog_manager.switch_to(state=model.VideoCutsDraftStates.edit_preview)
 
     @auto_log()
     @traced_method()
@@ -193,7 +193,7 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
             dialog_manager: DialogManager
     ) -> None:
         dialog_manager.show_mode = ShowMode.EDIT
-        await dialog_manager.switch_to(model.VideoCutsDraftStates.video_cut_list)
+        await dialog_manager.switch_to(state=model.VideoCutsDraftStates.video_cut_list)
 
     @auto_log()
     @traced_method()
@@ -220,7 +220,7 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
 
         await self._remove_current_video_cut_from_list(dialog_manager)
 
-        await dialog_manager.switch_to(model.VideoCutsDraftStates.video_cut_list)
+        await dialog_manager.switch_to(state=model.VideoCutsDraftStates.video_cut_list)
 
     @auto_log()
     @traced_method()
@@ -263,7 +263,7 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
 
         await self._remove_current_video_cut_from_list(dialog_manager)
 
-        await dialog_manager.switch_to(model.VideoCutsDraftStates.video_cut_list)
+        await dialog_manager.switch_to(state=model.VideoCutsDraftStates.video_cut_list)
 
     @auto_log()
     @traced_method()
@@ -301,7 +301,7 @@ class VideoCutsDraftService(interface.IVideoCutsDraftService):
             return
 
         await dialog_manager.start(
-            model.ContentMenuStates.content_menu,
+            state=model.ContentMenuStates.content_menu,
             mode=StartMode.RESET_STACK
         )
 

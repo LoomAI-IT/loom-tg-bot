@@ -12,6 +12,7 @@ from pkg.trace_wrapper import traced_method
 
 from internal.dialog._state_helper import _StateHelper
 from internal.dialog._message_extractor import _MessageExtractor
+
 from ._error_flags import _ErrorFlagsManager
 from ._navigation import _NavigationManager
 from ._validation import _ValidationService
@@ -32,11 +33,21 @@ class MainMenuService(interface.IMainMenuService):
         self.loom_content_client = loom_content_client
 
         # Инициализация приватных сервисов
-        self._state_helper = _StateHelper(state_repo)
+        self._state_helper = _StateHelper(
+            self.state_repo
+        )
+        self._validation = _ValidationService(
+            self.logger
+        )
+        self._message_extractor = _MessageExtractor(
+            self.logger,
+            self.bot,
+            self.loom_content_client
+        )
+        self._navigation = _NavigationManager(
+            state_repo
+        )
         self._error_flags = _ErrorFlagsManager()
-        self._validation = _ValidationService(self.logger)
-        self._message_extractor = _MessageExtractor(self.logger, bot, loom_content_client)
-        self._navigation = _NavigationManager(state_repo)
 
     @auto_log()
     @traced_method()
@@ -46,13 +57,13 @@ class MainMenuService(interface.IMainMenuService):
             widget: MessageInput,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager)
+        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
 
         await message.delete()
 
-        self._error_flags.clear_input_error_flags(dialog_manager)
+        self._error_flags.clear_input_error_flags(dialog_manager=dialog_manager)
 
-        state = await self._state_helper.get_state(dialog_manager)
+        state = await self._state_helper.get_state(dialog_manager=dialog_manager)
 
         if message.content_type not in [ContentType.VOICE, ContentType.AUDIO, ContentType.TEXT]:
             self.logger.info("Неверный тип контента")
@@ -60,17 +71,19 @@ class MainMenuService(interface.IMainMenuService):
             return
 
         text = await self._message_extractor.process_voice_or_text_input(
-            message, dialog_manager, state.organization_id
+            message=message,
+            dialog_manager=dialog_manager,
+            organization_id=state.organization_id
         )
 
-        if not self._validation.validate_input_text(text, dialog_manager):
+        if not self._validation.validate_input_text(text=text, dialog_manager=dialog_manager):
             return
 
         dialog_manager.dialog_data["input_text"] = text
         dialog_manager.dialog_data["has_input_text"] = True
 
         await dialog_manager.start(
-            model.GeneratePublicationStates.select_category,
+            state=model.GeneratePublicationStates.select_category,
             data=dialog_manager.dialog_data,
         )
 
@@ -82,8 +95,12 @@ class MainMenuService(interface.IMainMenuService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        state = await self._state_helper.get_state(dialog_manager)
-        await self._navigation.navigate_to_content(callback, dialog_manager, state)
+        state = await self._state_helper.get_state(dialog_manager=dialog_manager)
+        await self._navigation.navigate_to_content(
+            callback=callback,
+            dialog_manager=dialog_manager,
+            state=state
+        )
 
     @auto_log()
     @traced_method()
@@ -93,8 +110,12 @@ class MainMenuService(interface.IMainMenuService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        state = await self._state_helper.get_state(dialog_manager)
-        await self._navigation.navigate_to_organization(callback, dialog_manager, state)
+        state = await self._state_helper.get_state(dialog_manager=dialog_manager)
+        await self._navigation.navigate_to_organization(
+            callback=callback,
+            dialog_manager=dialog_manager,
+            state=state
+        )
 
     @auto_log()
     @traced_method()
@@ -104,5 +125,9 @@ class MainMenuService(interface.IMainMenuService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        state = await self._state_helper.get_state(dialog_manager)
-        await self._navigation.navigate_to_personal_profile(callback, dialog_manager, state)
+        state = await self._state_helper.get_state(dialog_manager=dialog_manager)
+        await self._navigation.navigate_to_personal_profile(
+            callback=callback,
+            dialog_manager=dialog_manager,
+            state=state
+        )

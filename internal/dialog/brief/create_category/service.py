@@ -256,7 +256,7 @@ HTML разметка должны быть валидной, если есть 
                 )
 
                 dialog_manager.dialog_data["category_id"] = category_id
-                await dialog_manager.switch_to(model.CreateCategoryStates.category_created)
+                await dialog_manager.switch_to(state=model.CreateCategoryStates.category_created)
                 return
 
             message_to_user = llm_response_json["message_to_user"]
@@ -284,7 +284,7 @@ HTML разметка должны быть валидной, если есть 
         self._state_helper.set_edit_mode(dialog_manager)
         await callback.answer()
 
-        await dialog_manager.start(model.MainMenuStates.main_menu, mode=StartMode.RESET_STACK)
+        await dialog_manager.start(state=model.MainMenuStates.main_menu, mode=StartMode.RESET_STACK)
 
     @auto_log()
     @traced_method()
@@ -296,4 +296,4 @@ HTML разметка должны быть валидной, если есть 
     ) -> None:
         self._state_helper.set_edit_mode(dialog_manager)
 
-        await dialog_manager.start(model.MainMenuStates.main_menu, mode=StartMode.RESET_STACK)
+        await dialog_manager.start(state=model.MainMenuStates.main_menu, mode=StartMode.RESET_STACK)

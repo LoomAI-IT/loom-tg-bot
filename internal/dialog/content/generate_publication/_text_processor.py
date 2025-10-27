@@ -33,13 +33,15 @@ class _TextProcessor:
         if has_image and text_length > self.MAX_TEXT_WITH_IMAGE:
             self.logger.info(f"Текст слишком длинный для публикации с изображением: {text_length} символов")
             dialog_manager.dialog_data["expected_length"] = self.RECOMMENDED_TEXT_WITH_IMAGE
-            await dialog_manager.switch_to(model.GeneratePublicationStates.text_too_long_alert)
+
+            await dialog_manager.switch_to(state=model.GeneratePublicationStates.text_too_long_alert)
             return True
 
         if not has_image and text_length > self.MAX_TEXT_WITHOUT_IMAGE:
             self.logger.info(f"Текст слишком длинный: {text_length} символов")
             dialog_manager.dialog_data["expected_length"] = self.RECOMMENDED_TEXT_WITHOUT_IMAGE
-            await dialog_manager.switch_to(model.GeneratePublicationStates.text_too_long_alert)
+
+            await dialog_manager.switch_to(state=model.GeneratePublicationStates.text_too_long_alert)
             return True
 
         return False

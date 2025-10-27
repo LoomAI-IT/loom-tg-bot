@@ -25,7 +25,7 @@ class _NavigationManager:
         )
 
         await dialog_manager.start(
-            model.ContentMenuStates.content_menu,
+            state=model.ContentMenuStates.content_menu,
             mode=StartMode.RESET_STACK
         )
 
@@ -43,7 +43,7 @@ class _NavigationManager:
         )
 
         await dialog_manager.start(
-            model.OrganizationMenuStates.organization_menu,
+            state=model.OrganizationMenuStates.organization_menu,
             mode=StartMode.RESET_STACK
         )
 
@@ -61,7 +61,7 @@ class _NavigationManager:
         )
 
         await dialog_manager.start(
-            model.PersonalProfileStates.personal_profile,
+            state=model.PersonalProfileStates.personal_profile,
             mode=StartMode.RESET_STACK
         )
 

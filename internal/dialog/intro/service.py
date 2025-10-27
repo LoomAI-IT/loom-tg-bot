@@ -35,7 +35,7 @@ class IntroService(interface.IIntroService):
             dialog_manager: DialogManager
     ) -> None:
         dialog_manager.dialog_data["user_agreement_accepted"] = True
-        await dialog_manager.switch_to(model.IntroStates.privacy_policy)
+        await dialog_manager.switch_to(state=model.IntroStates.privacy_policy)
 
     @auto_log()
     @traced_method()
@@ -46,7 +46,7 @@ class IntroService(interface.IIntroService):
             dialog_manager: DialogManager
     ) -> None:
         dialog_manager.dialog_data["privacy_policy_accepted"] = True
-        await dialog_manager.switch_to(model.IntroStates.data_processing)
+        await dialog_manager.switch_to(state=model.IntroStates.data_processing)
 
     @auto_log()
     @traced_method()
@@ -74,7 +74,7 @@ class IntroService(interface.IIntroService):
             refresh_token=authorized_data.refresh_token
         )
 
-        await dialog_manager.switch_to(model.IntroStates.intro)
+        await dialog_manager.switch_to(state=model.IntroStates.intro)
 
     @auto_log()
     @traced_method()
@@ -95,7 +95,7 @@ class IntroService(interface.IIntroService):
             await self.llm_chat_repo.delete_chat(chat[0].id)
 
         await dialog_manager.start(
-            model.CreateOrganizationStates.create_organization,
+            state=model.CreateOrganizationStates.create_organization,
             mode=StartMode.RESET_STACK
         )
 

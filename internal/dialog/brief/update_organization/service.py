@@ -78,7 +78,7 @@ class UpdateOrganizationService(interface.IUpdateOrganizationService):
                 additional_info=organization_data.get("additional_info"),
             )
 
-            await dialog_manager.switch_to(model.UpdateOrganizationStates.organization_updated)
+            await dialog_manager.switch_to(state=model.UpdateOrganizationStates.organization_updated)
             return
 
         message_to_user = llm_response_json["message_to_user"]
@@ -96,7 +96,7 @@ class UpdateOrganizationService(interface.IUpdateOrganizationService):
         self._state_helper.set_edit_mode(dialog_manager)
         await callback.answer()
 
-        await dialog_manager.start(model.MainMenuStates.main_menu, mode=StartMode.RESET_STACK)
+        await dialog_manager.start(state=model.MainMenuStates.main_menu, mode=StartMode.RESET_STACK)
 
     @auto_log()
     @traced_method()
@@ -108,4 +108,4 @@ class UpdateOrganizationService(interface.IUpdateOrganizationService):
     ) -> None:
         self._state_helper.set_edit_mode(dialog_manager)
 
-        await dialog_manager.start(model.MainMenuStates.main_menu, mode=StartMode.RESET_STACK)
+        await dialog_manager.start(state=model.MainMenuStates.main_menu, mode=StartMode.RESET_STACK)

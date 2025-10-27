@@ -49,13 +49,29 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         self.loom_employee_client = loom_employee_client
 
         # Инициализация приватных сервисов
-        self._state_helper = _StateHelper(state_repo)
+        self._state_helper = _StateHelper(
+            state_repo=self.state_repo
+        )
+        self._validation = _ValidationService(
+            logger=self.logger
+        )
+        self._text_processor = _TextProcessor(
+            logger=self.logger
+        )
+        self._message_extractor = _MessageExtractor(
+            logger=self.logger,
+            bot=self.bot,
+            loom_content_client=self.loom_content_client
+        )
+        self._alerts_checker = _AlertsChecker(
+            self.state_repo
+        )
+        self._image_manager = _ImageManager(
+            logger=self.logger,
+            bot=self.bot,
+            loom_content_client=self.loom_content_client
+        )
         self._error_flags = _ErrorFlagsManager()
-        self._validation = _ValidationService(self.logger)
-        self._text_processor = _TextProcessor(self.logger)
-        self._message_extractor = _MessageExtractor(self.logger, bot, loom_content_client)
-        self._alerts_checker = _AlertsChecker(state_repo)
-        self._image_manager = _ImageManager(self.logger, bot, loom_content_client)
 
     # ============= PUBLIC HANDLERS: INPUT & CATEGORY =============
 
@@ -67,27 +83,31 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             widget: MessageInput,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager)
+        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
         await message.delete()
 
-        self._error_flags.clear_input_error_flags(dialog_manager)
+        self._error_flags.clear_input_error_flags(dialog_manager=dialog_manager)
 
-        state = await self._state_helper.get_state(dialog_manager)
+        state = await self._state_helper.get_state(dialog_manager=dialog_manager)
 
         if message.content_type not in [ContentType.VOICE, ContentType.AUDIO, ContentType.TEXT]:
             self.logger.info("Неверный тип контента")
             dialog_manager.dialog_data["has_invalid_content_type"] = True
             return
 
-        text = await self._message_extractor.process_voice_or_text_input(message, dialog_manager, state.organization_id)
+        text = await self._message_extractor.process_voice_or_text_input(
+            message=message,
+            dialog_manager=dialog_manager,
+            organization_id=state.organization_id
+        )
 
-        if not self._validation.validate_input_text(text, dialog_manager):
+        if not self._validation.validate_input_text(text=text, dialog_manager=dialog_manager):
             return
 
         dialog_manager.dialog_data["input_text"] = text
         dialog_manager.dialog_data["has_input_text"] = True
 
-        await dialog_manager.switch_to(model.GeneratePublicationStates.generation)
+        await dialog_manager.switch_to(state=model.GeneratePublicationStates.generation)
 
     @auto_log()
     @traced_method()
@@ -98,9 +118,9 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             dialog_manager: DialogManager,
             category_id: str
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager)
+        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
         category = await self.loom_content_client.get_category_by_id(
-            int(category_id)
+            category_id=int(category_id)
         )
 
         dialog_manager.dialog_data["category_id"] = category.id
@@ -112,13 +132,13 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 self.logger.info("Есть стартовый текст")
                 dialog_manager.dialog_data["has_input_text"] = True
                 dialog_manager.dialog_data["input_text"] = dialog_manager.start_data["input_text"]
-                await dialog_manager.switch_to(model.GeneratePublicationStates.generation)
+                await dialog_manager.switch_to(state=model.GeneratePublicationStates.generation)
             else:
                 self.logger.info("Нет стартового текста")
-                await dialog_manager.switch_to(model.GeneratePublicationStates.input_text)
+                await dialog_manager.switch_to(state=model.GeneratePublicationStates.input_text)
         else:
             self.logger.info("Нет стартовых данных")
-            await dialog_manager.switch_to(model.GeneratePublicationStates.input_text)
+            await dialog_manager.switch_to(state=model.GeneratePublicationStates.input_text)
 
     @auto_log()
     @traced_method()
@@ -128,12 +148,12 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Button,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager)
+        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
 
-        state = await self._state_helper.get_state(dialog_manager)
+        state = await self._state_helper.get_state(dialog_manager=dialog_manager)
 
         employee = await self.loom_employee_client.get_employee_by_account_id(
-            state.account_id
+            account_id=state.account_id
         )
 
         if not employee.setting_category_permission:
@@ -142,12 +162,12 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             return
 
         await callback.answer()
-        chat = await self.llm_chat_repo.get_chat_by_state_id(state.id)
+        chat = await self.llm_chat_repo.get_chat_by_state_id(state_id=state.id)
         if chat:
-            await self.llm_chat_repo.delete_chat(chat[0].id)
+            await self.llm_chat_repo.delete_chat(chat_id=chat[0].id)
 
         await dialog_manager.start(
-            model.CreateCategoryStates.create_category,
+            state=model.CreateCategoryStates.create_category,
             mode=StartMode.RESET_STACK
         )
 
@@ -161,7 +181,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager)
+        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
 
         await callback.answer()
         await callback.message.edit_text(
@@ -180,7 +200,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         dialog_manager.dialog_data["publication_text"] = publication_data["text"]
 
-        await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
+        await dialog_manager.switch_to(state=model.GeneratePublicationStates.preview)
 
     @auto_log()
     @traced_method()
@@ -190,7 +210,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager)
+        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
         await callback.answer()
         await callback.message.edit_text(
             "Генерирую текст с картинкой, это может занять минуты 3. Не совершайте никаких действий...",
@@ -210,9 +230,9 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         async with tg_action(self.bot, callback.message.chat.id, "upload_photo"):
             images_url = await self.loom_content_client.generate_publication_image(
-                category_id,
-                publication_data["text"],
-                input_text,
+                category_id=category_id,
+                publication_text=publication_data["text"],
+                text_reference=input_text,
             )
 
         dialog_manager.dialog_data["publication_images_url"] = images_url
@@ -221,10 +241,10 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         dialog_manager.dialog_data["current_image_index"] = 0
 
         # Проверяем длину текста с изображением
-        if await self._text_processor.check_text_length_with_image(dialog_manager):
+        if await self._text_processor.check_text_length_with_image(dialog_manager=dialog_manager):
             return
 
-        await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
+        await dialog_manager.switch_to(state=model.GeneratePublicationStates.preview)
 
     # ============= PUBLIC HANDLERS: IMAGE NAVIGATION =============
 
@@ -236,8 +256,13 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager)
-        self._image_manager.navigate_images(dialog_manager, "publication_images_url", "current_image_index", "next")
+        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
+        self._image_manager.navigate_images(
+            dialog_manager=dialog_manager,
+            images_key="publication_images_url",
+            index_key="current_image_index",
+            direction="next"
+        )
         await callback.answer()
 
     @auto_log()
@@ -248,8 +273,13 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager)
-        self._image_manager.navigate_images(dialog_manager, "publication_images_url", "current_image_index", "prev")
+        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
+        self._image_manager.navigate_images(
+            dialog_manager=dialog_manager,
+            images_key="publication_images_url",
+            index_key="current_image_index",
+            direction="prev"
+        )
         await callback.answer()
 
     @auto_log()
@@ -260,7 +290,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager)
+        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
 
         await callback.answer()
         dialog_manager.dialog_data["is_regenerating_text"] = True
@@ -280,10 +310,10 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         dialog_manager.dialog_data["publication_text"] = regenerated_data["text"]
 
         # Проверяем длину текста с изображением
-        if await self._text_processor.check_text_length_with_image(dialog_manager):
+        if await self._text_processor.check_text_length_with_image(dialog_manager=dialog_manager):
             return
 
-        await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
+        await dialog_manager.switch_to(state=model.GeneratePublicationStates.preview)
 
     @auto_log()
     @traced_method()
@@ -293,26 +323,30 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             widget: MessageInput,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager)
+        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
         await message.delete()
 
-        self._error_flags.clear_regenerate_prompt_error_flags(dialog_manager)
+        self._error_flags.clear_regenerate_prompt_error_flags(dialog_manager=dialog_manager)
 
-        state = await self._state_helper.get_state(dialog_manager)
+        state = await self._state_helper.get_state(dialog_manager=dialog_manager)
 
         if message.content_type not in [ContentType.VOICE, ContentType.AUDIO, ContentType.TEXT]:
             self.logger.info("Неверный тип контента для регенерации")
             dialog_manager.dialog_data["has_invalid_content_type"] = True
             return
 
-        prompt = await self._message_extractor.process_voice_or_text_input(message, dialog_manager, state.organization_id)
+        prompt = await self._message_extractor.process_voice_or_text_input(
+            message=message,
+            dialog_manager=dialog_manager,
+            organization_id=state.organization_id
+        )
 
         if not self._validation.validate_prompt(
-                prompt,
-                dialog_manager,
-                "has_void_regenerate_prompt",
-                "has_small_regenerate_prompt",
-                "has_big_regenerate_prompt"
+                text=prompt,
+                dialog_manager=dialog_manager,
+                void_flag="has_void_regenerate_prompt",
+                small_flag="has_small_regenerate_prompt",
+                big_flag="has_big_regenerate_prompt"
         ):
             return
 
@@ -337,10 +371,10 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         dialog_manager.dialog_data["is_regenerating_text"] = False
         dialog_manager.dialog_data["has_regenerate_prompt"] = False
 
-        if await self._text_processor.check_text_length_with_image(dialog_manager):
+        if await self._text_processor.check_text_length_with_image(dialog_manager=dialog_manager):
             return
 
-        await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
+        await dialog_manager.switch_to(state=model.GeneratePublicationStates.preview)
 
     @auto_log()
     @traced_method()
@@ -351,19 +385,19 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             dialog_manager: DialogManager,
             text: str
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager)
+        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
 
         await message.delete()
 
-        self._error_flags.clear_text_edit_error_flags(dialog_manager)
+        self._error_flags.clear_text_edit_error_flags(dialog_manager=dialog_manager)
 
         new_text = message.html_text.replace('\n', '<br/>')
 
-        if not self._validation.validate_edited_text(new_text, dialog_manager):
+        if not self._validation.validate_edited_text(text=new_text, dialog_manager=dialog_manager):
             return
 
         dialog_manager.dialog_data["publication_text"] = new_text
-        await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
+        await dialog_manager.switch_to(state=model.GeneratePublicationStates.preview)
 
     # ============= PUBLIC HANDLERS: IMAGE GENERATION & EDITING =============
 
@@ -375,13 +409,13 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager)
+        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
 
         await callback.answer()
         dialog_manager.dialog_data["is_generating_image"] = True
         await dialog_manager.show()
 
-        self._image_manager.backup_current_image(dialog_manager)
+        self._image_manager.backup_current_image(dialog_manager=dialog_manager)
 
         category_id = dialog_manager.dialog_data["category_id"]
         publication_text = dialog_manager.dialog_data["publication_text"]
@@ -390,8 +424,10 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         current_image_content = None
         current_image_filename = None
 
-        if await self._image_manager.get_current_image_data(dialog_manager):
-            current_image_content, current_image_filename = await self._image_manager.get_current_image_data(dialog_manager)
+        if await self._image_manager.get_current_image_data(dialog_manager=dialog_manager):
+            current_image_content, current_image_filename = await self._image_manager.get_current_image_data(
+                dialog_manager=dialog_manager
+            )
 
         async with tg_action(self.bot, callback.message.chat.id, "upload_photo"):
             images_url = await self.loom_content_client.generate_publication_image(
@@ -405,7 +441,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         dialog_manager.dialog_data["is_generating_image"] = False
         dialog_manager.dialog_data["generated_images_url"] = images_url
 
-        await dialog_manager.switch_to(model.GeneratePublicationStates.new_image_confirm)
+        await dialog_manager.switch_to(state=model.GeneratePublicationStates.new_image_confirm)
 
     @auto_log()
     @traced_method()
@@ -415,26 +451,30 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             widget: MessageInput,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager)
+        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
         await message.delete()
 
-        self._error_flags.clear_image_prompt_error_flags(dialog_manager)
+        self._error_flags.clear_image_prompt_error_flags(dialog_manager=dialog_manager)
 
-        state = await self._state_helper.get_state(dialog_manager)
+        state = await self._state_helper.get_state(dialog_manager=dialog_manager)
 
         if message.content_type not in [ContentType.VOICE, ContentType.AUDIO, ContentType.TEXT]:
             self.logger.info("Неверный тип контента для генерации изображения")
             dialog_manager.dialog_data["has_invalid_content_type"] = True
             return
 
-        prompt = await self._message_extractor.process_voice_or_text_input(message, dialog_manager, state.organization_id)
+        prompt = await self._message_extractor.process_voice_or_text_input(
+            message=message,
+            dialog_manager=dialog_manager,
+            organization_id=state.organization_id
+        )
 
         if not self._validation.validate_prompt(
-                prompt,
-                dialog_manager,
-                "has_void_image_prompt",
-                "has_small_image_prompt",
-                "has_big_image_prompt"
+                text=prompt,
+                dialog_manager=dialog_manager,
+                void_flag="has_void_image_prompt",
+                small_flag="has_small_image_prompt",
+                big_flag="has_big_image_prompt"
         ):
             return
 
@@ -443,13 +483,13 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         await dialog_manager.show()
 
-        self._image_manager.backup_current_image(dialog_manager)
+        self._image_manager.backup_current_image(dialog_manager=dialog_manager)
 
         current_image_content = None
         current_image_filename = None
 
-        if await self._image_manager.get_current_image_data(dialog_manager):
-            current_image_content, current_image_filename = await self._image_manager.get_current_image_data(dialog_manager)
+        if await self._image_manager.get_current_image_data(dialog_manager=dialog_manager):
+            current_image_content, current_image_filename = await self._image_manager.get_current_image_data(dialog_manager=dialog_manager)
 
         async with tg_action(self.bot, message.chat.id, "upload_photo"):
             images_url = await self.loom_content_client.edit_image(
@@ -462,7 +502,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         dialog_manager.dialog_data["is_generating_image"] = False
         dialog_manager.dialog_data["generated_images_url"] = images_url
 
-        await dialog_manager.switch_to(model.GeneratePublicationStates.new_image_confirm)
+        await dialog_manager.switch_to(state=model.GeneratePublicationStates.new_image_confirm)
 
     @auto_log()
     @traced_method()
@@ -472,11 +512,11 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             widget: MessageInput,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager)
+        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
 
         await message.delete()
 
-        self._error_flags.clear_image_upload_error_flags(dialog_manager)
+        self._error_flags.clear_image_upload_error_flags(dialog_manager=dialog_manager)
 
         if message.content_type != ContentType.PHOTO:
             self.logger.info("Неверный тип контента для изображения")
@@ -499,10 +539,10 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             dialog_manager.dialog_data.pop("publication_images_url", None)
             dialog_manager.dialog_data.pop("current_image_index", None)
 
-            if await self._text_processor.check_text_length_with_image(dialog_manager):
+            if await self._text_processor.check_text_length_with_image(dialog_manager=dialog_manager):
                 return
 
-            await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
+            await dialog_manager.switch_to(state=model.GeneratePublicationStates.preview)
 
             self.logger.info("Конец загрузки изображения")
         else:
@@ -517,12 +557,12 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager)
+        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
 
-        self._image_manager.clear_image_data(dialog_manager)
+        self._image_manager.clear_image_data(dialog_manager=dialog_manager)
 
         await callback.answer("Изображение удалено", show_alert=True)
-        await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
+        await dialog_manager.switch_to(state=model.GeneratePublicationStates.preview)
 
     # ============= PUBLIC HANDLERS: PUBLICATION & MODERATION =============
 
@@ -538,13 +578,13 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         return
         # dialog_manager.show_mode = ShowMode.EDIT
         #
-        # state = await self._get_state(dialog_manager)
+        # state = await self._get_state(dialog_manager=dialog_manager)
         #
         # category_id = dialog_manager.dialog_data["category_id"]
         # text_reference = dialog_manager.dialog_data["input_text"]
         # text = dialog_manager.dialog_data["publication_text"]
         #
-        # image_url, image_content, image_filename = await self._get_selected_image_data(dialog_manager)
+        # image_url, image_content, image_filename = await self._get_selected_image_data(dialog_manager=dialog_manager)
         #
         # publication_data = await self.loom_content_client.create_publication(
         #     state.organization_id,
@@ -573,7 +613,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         #
         # await callback.answer("💾 Сохранено в черновики!", show_alert=True)
         #
-        # if await self._check_alerts(dialog_manager):
+        # if await self._check_alerts(dialog_manager=dialog_manager):
         #     return
         #
         # await dialog_manager.start(
@@ -590,23 +630,23 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager)
+        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
 
-        state = await self._state_helper.get_state(dialog_manager)
+        state = await self._state_helper.get_state(dialog_manager=dialog_manager)
 
         category_id = dialog_manager.dialog_data["category_id"]
         text_reference = dialog_manager.dialog_data["input_text"]
         text = dialog_manager.dialog_data["publication_text"]
 
-        image_url, image_content, image_filename = await self._image_manager.get_selected_image_data(dialog_manager)
+        image_url, image_content, image_filename = await self._image_manager.get_selected_image_data(dialog_manager=dialog_manager)
 
         publication_data = await self.loom_content_client.create_publication(
-            state.organization_id,
-            category_id,
-            state.account_id,
-            text_reference,
-            text,
-            "moderation",
+            organization_id=state.organization_id,
+            category_id=category_id,
+            creator_id=state.account_id,
+            text_reference=text_reference,
+            text=text,
+            moderation_status="moderation",
             image_url=image_url,
             image_content=image_content,
             image_filename=image_filename,
@@ -626,11 +666,11 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         await callback.answer("Публикация отправлена на модерацию", show_alert=True)
 
-        if await self._alerts_checker.check_alerts(dialog_manager, state):
+        if await self._alerts_checker.check_alerts(dialog_manager=dialog_manager, state=state):
             return
 
         await dialog_manager.start(
-            model.ContentMenuStates.content_menu,
+            state=model.ContentMenuStates.content_menu,
             mode=StartMode.RESET_STACK
         )
 
@@ -642,7 +682,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             checkbox: ManagedCheckbox,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager)
+        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
 
         if "selected_social_networks" not in dialog_manager.dialog_data:
             dialog_manager.dialog_data["selected_social_networks"] = {}
@@ -662,9 +702,9 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager)
+        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
 
-        state = await self._state_helper.get_state(dialog_manager)
+        state = await self._state_helper.get_state(dialog_manager=dialog_manager)
 
         selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
         has_selected_networks = any(selected_networks.values())
@@ -681,15 +721,17 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         text_reference = dialog_manager.dialog_data["input_text"]
         text = dialog_manager.dialog_data["publication_text"]
 
-        image_url, image_content, image_filename = await self._image_manager.get_selected_image_data(dialog_manager)
+        image_url, image_content, image_filename = await self._image_manager.get_selected_image_data(
+            dialog_manager=dialog_manager
+        )
 
         publication_data = await self.loom_content_client.create_publication(
-            state.organization_id,
-            category_id,
-            state.account_id,
-            text_reference,
-            text,
-            "draft",
+            organization_id=state.organization_id,
+            category_id=category_id,
+            creator_id=state.account_id,
+            text_reference=text_reference,
+            text=text,
+            moderation_status="draft",
             image_url=image_url,
             image_content=image_content,
             image_filename=image_filename,
@@ -706,20 +748,20 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         )
 
         post_links = await self.loom_content_client.moderate_publication(
-            publication_data["publication_id"],
-            state.account_id,
-            "approved"
+            publication_id=publication_data["publication_id"],
+            moderator_id=state.account_id,
+            moderation_status="approved"
         )
 
         dialog_manager.dialog_data["post_links"] = post_links
 
         await callback.answer("Публикация успешно опубликована", show_alert=True)
 
-        if await self._alerts_checker.check_alerts(dialog_manager, state):
+        if await self._alerts_checker.check_alerts(dialog_manager=dialog_manager, state=state):
             self.logger.info("Переход к алертам")
             return
 
-        await dialog_manager.switch_to(model.GeneratePublicationStates.publication_success)
+        await dialog_manager.switch_to(state=model.GeneratePublicationStates.publication_success)
 
     @auto_log()
     @traced_method()
@@ -729,7 +771,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager)
+        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
 
         dialog_manager.dialog_data["has_image"] = False
         dialog_manager.dialog_data.pop("publication_images_url", None)
@@ -739,7 +781,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         self.logger.info("Изображение удалено из-за длинного текста")
         await callback.answer("Изображение удалено", show_alert=True)
-        await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
+        await dialog_manager.switch_to(state=model.GeneratePublicationStates.preview)
 
     @auto_log()
     @traced_method()
@@ -749,7 +791,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager)
+        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
 
         await callback.answer()
         await callback.message.edit_text(
@@ -772,7 +814,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         dialog_manager.dialog_data["publication_text"] = compressed_data["text"]
 
-        await dialog_manager.switch_to(model.GeneratePublicationStates.preview)
+        await dialog_manager.switch_to(state=model.GeneratePublicationStates.preview)
 
     @auto_log()
     @traced_method()
@@ -782,16 +824,16 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager)
+        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
 
-        state = await self._state_helper.get_state(dialog_manager)
+        state = await self._state_helper.get_state(dialog_manager=dialog_manager)
 
-        if await self._alerts_checker.check_alerts(dialog_manager, state):
+        if await self._alerts_checker.check_alerts(dialog_manager=dialog_manager, state=state):
             self.logger.info("Обнаружены алерты")
             return
 
         await dialog_manager.start(
-            model.ContentMenuStates.content_menu,
+            state=model.ContentMenuStates.content_menu,
             mode=StartMode.RESET_STACK
         )
 
@@ -805,18 +847,18 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager)
+        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
 
         await callback.answer()
 
         has_image = dialog_manager.dialog_data.get("has_image", False)
 
         if has_image:
-            await dialog_manager.switch_to(model.GeneratePublicationStates.combine_images_choice)
+            await dialog_manager.switch_to(state=model.GeneratePublicationStates.combine_images_choice)
         else:
             dialog_manager.dialog_data["combine_images_list"] = []
             dialog_manager.dialog_data["combine_current_index"] = 0
-            await dialog_manager.switch_to(model.GeneratePublicationStates.combine_images_upload)
+            await dialog_manager.switch_to(state=model.GeneratePublicationStates.combine_images_upload)
 
     @auto_log()
     @traced_method()
@@ -826,19 +868,19 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager)
+        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
 
         await callback.answer()
 
         combine_images_list = await self._image_manager.prepare_current_image_for_combine(
-            dialog_manager,
-            callback.message.chat.id
+            dialog_manager=dialog_manager,
+            chat_id=callback.message.chat.id
         )
 
         dialog_manager.dialog_data["combine_images_list"] = combine_images_list
         dialog_manager.dialog_data["combine_current_index"] = 0
 
-        await dialog_manager.switch_to(model.GeneratePublicationStates.combine_images_upload)
+        await dialog_manager.switch_to(state=model.GeneratePublicationStates.combine_images_upload)
 
     @auto_log()
     @traced_method()
@@ -848,14 +890,14 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager)
+        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
 
         await callback.answer()
 
         dialog_manager.dialog_data["combine_images_list"] = []
         dialog_manager.dialog_data["combine_current_index"] = 0
 
-        await dialog_manager.switch_to(model.GeneratePublicationStates.combine_images_upload)
+        await dialog_manager.switch_to(state=model.GeneratePublicationStates.combine_images_upload)
 
     @auto_log()
     @traced_method()
@@ -865,11 +907,11 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             widget: MessageInput,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager)
+        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
 
         await message.delete()
 
-        self._error_flags.clear_combine_upload_error_flags(dialog_manager)
+        self._error_flags.clear_combine_upload_error_flags(dialog_manager=dialog_manager)
 
         if message.content_type != ContentType.PHOTO:
             self.logger.info("Неверный тип контента для объединения изображения")
@@ -906,8 +948,13 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager)
-        self._image_manager.navigate_images(dialog_manager, "combine_images_list", "combine_current_index", "prev")
+        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
+        self._image_manager.navigate_images(
+            dialog_manager=dialog_manager,
+            images_key="combine_images_list",
+            index_key="combine_current_index",
+            direction="prev"
+        )
         await callback.answer()
 
     @auto_log()
@@ -918,8 +965,13 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager)
-        self._image_manager.navigate_images(dialog_manager, "combine_images_list", "combine_current_index", "next")
+        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
+        self._image_manager.navigate_images(
+            dialog_manager=dialog_manager,
+            images_key="combine_images_list",
+            index_key="combine_current_index",
+            direction="next"
+        )
         await callback.answer()
 
     @auto_log()
@@ -934,7 +986,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         Обработка нажатия кнопки "Назад" в окне загрузки изображений для объединения.
         Возвращает в new_image_confirm, если пришли оттуда, иначе в image_menu.
         """
-        self._state_helper.set_edit_mode(dialog_manager)
+        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
 
         await callback.answer()
 
@@ -947,9 +999,9 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             dialog_manager.dialog_data.pop("combine_images_list", None)
             dialog_manager.dialog_data.pop("combine_current_index", None)
 
-            await dialog_manager.switch_to(model.GeneratePublicationStates.new_image_confirm)
+            await dialog_manager.switch_to(state=model.GeneratePublicationStates.new_image_confirm)
         else:
-            await dialog_manager.switch_to(model.GeneratePublicationStates.image_menu)
+            await dialog_manager.switch_to(state=model.GeneratePublicationStates.image_menu)
 
     @auto_log()
     @traced_method()
@@ -959,7 +1011,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager)
+        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
 
         combine_images_list = dialog_manager.dialog_data.get("combine_images_list", [])
         current_index = dialog_manager.dialog_data.get("combine_current_index", 0)
@@ -984,12 +1036,12 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             widget: MessageInput,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager)
+        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
         await message.delete()
 
-        self._error_flags.clear_combine_prompt_error_flags(dialog_manager)
+        self._error_flags.clear_combine_prompt_error_flags(dialog_manager=dialog_manager)
 
-        state = await self._state_helper.get_state(dialog_manager)
+        state = await self._state_helper.get_state(dialog_manager=dialog_manager)
 
         if message.content_type not in [ContentType.VOICE, ContentType.AUDIO, ContentType.TEXT]:
             self.logger.info("Неверный тип контента для промпта объединения")
@@ -997,13 +1049,13 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             return
 
         prompt = await self._message_extractor.process_voice_or_text_input(
-            message,
-            dialog_manager,
-            state.organization_id
+            message=message,
+            dialog_manager=dialog_manager,
+            organization_id=state.organization_id
         )
 
         # Валидация промпта через ValidationService
-        if not self._validation.validate_combine_prompt(prompt, dialog_manager):
+        if not self._validation.validate_combine_prompt(prompt=prompt, dialog_manager=dialog_manager):
             return
 
         dialog_manager.dialog_data["combine_prompt"] = prompt
@@ -1019,16 +1071,22 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         # Сохраняем backup (если старый backup не был создан ранее)
         if not dialog_manager.dialog_data.get("old_image_backup"):
-            dialog_manager.dialog_data["old_image_backup"] = self._image_manager.create_image_backup_dict(dialog_manager)
+            dialog_manager.dialog_data["old_image_backup"] = self._image_manager.create_image_backup_dict(
+                dialog_manager=dialog_manager
+            )
 
         combined_images_url = await self._image_manager.combine_images_with_prompt(
-            dialog_manager, state, combine_images_list, prompt or self.DEFAULT_COMBINE_PROMPT, message.chat.id
+            dialog_manager=dialog_manager,
+            state=state,
+            combine_images_list=combine_images_list,
+            prompt=prompt or self.DEFAULT_COMBINE_PROMPT,
+            chat_id=message.chat.id
         )
 
         dialog_manager.dialog_data["is_combining_images"] = False
         dialog_manager.dialog_data["combine_result_url"] = combined_images_url[0] if combined_images_url else None
 
-        await dialog_manager.switch_to(model.GeneratePublicationStates.new_image_confirm)
+        await dialog_manager.switch_to(state=model.GeneratePublicationStates.new_image_confirm)
 
     @auto_log()
     @traced_method()
@@ -1038,7 +1096,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager)
+        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
 
         combine_images_list = dialog_manager.dialog_data.get("combine_images_list", [])
 
@@ -1051,20 +1109,26 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         dialog_manager.dialog_data["is_combining_images"] = True
         await dialog_manager.show()
 
-        state = await self._state_helper.get_state(dialog_manager)
+        state = await self._state_helper.get_state(dialog_manager=dialog_manager)
 
         # Сохраняем backup (если старый backup не был создан ранее)
         if not dialog_manager.dialog_data.get("old_image_backup"):
-            dialog_manager.dialog_data["old_image_backup"] = self._image_manager.create_image_backup_dict(dialog_manager)
+            dialog_manager.dialog_data["old_image_backup"] = self._image_manager.create_image_backup_dict(
+                dialog_manager=dialog_manager
+            )
 
         combined_images_url = await self._image_manager.combine_images_with_prompt(
-            dialog_manager, state, combine_images_list, self.DEFAULT_COMBINE_PROMPT, callback.message.chat.id
+            dialog_manager=dialog_manager,
+            state=state,
+            combine_images_list=combine_images_list,
+            prompt=self.DEFAULT_COMBINE_PROMPT,
+            chat_id=callback.message.chat.id
         )
 
         dialog_manager.dialog_data["is_combining_images"] = False
         dialog_manager.dialog_data["combine_result_url"] = combined_images_url[0] if combined_images_url else None
 
-        await dialog_manager.switch_to(model.GeneratePublicationStates.new_image_confirm)
+        await dialog_manager.switch_to(state=model.GeneratePublicationStates.new_image_confirm)
 
     # ============= NEW IMAGE CONFIRM HANDLERS =============
 
@@ -1079,7 +1143,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         """
         Переход к объединению изображений с новой сгенерированной картинкой как первой
         """
-        self._state_helper.set_edit_mode(dialog_manager)
+        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
 
         await callback.answer()
 
@@ -1098,8 +1162,8 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         combine_images_list = []
         if image_url:
             file_id = await self._image_manager.download_and_get_file_id(
-                image_url,
-                callback.message.chat.id
+                image_url=image_url,
+                chat_id=callback.message.chat.id
             )
             if file_id:
                 combine_images_list.append(file_id)
@@ -1127,7 +1191,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         dialog_manager.dialog_data["combine_images_list"] = combine_images_list
         dialog_manager.dialog_data["combine_current_index"] = 0
 
-        await dialog_manager.switch_to(model.GeneratePublicationStates.combine_images_upload)
+        await dialog_manager.switch_to(state=model.GeneratePublicationStates.combine_images_upload)
 
     @auto_log()
     @traced_method()
@@ -1137,7 +1201,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             widget: MessageInput,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager)
+        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
         await message.delete()
 
         self._error_flags.clear_error_flags(
@@ -1147,7 +1211,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             "has_invalid_content_type"
         )
 
-        state = await self._state_helper.get_state(dialog_manager)
+        state = await self._state_helper.get_state(dialog_manager=dialog_manager)
 
         if message.content_type not in [ContentType.VOICE, ContentType.AUDIO, ContentType.TEXT]:
             self.logger.info("Неверный тип контента для правок изображения")
@@ -1155,9 +1219,9 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             return
 
         prompt = await self._message_extractor.process_voice_or_text_input(
-            message,
-            dialog_manager,
-            state.organization_id
+            message=message,
+            dialog_manager=dialog_manager,
+            organization_id=state.organization_id
         )
 
         if not prompt or len(prompt) < 10:
@@ -1219,7 +1283,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager)
+        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
 
         await callback.answer("Изображение применено")
 
@@ -1228,16 +1292,22 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         combine_result_url = dialog_manager.dialog_data.get("combine_result_url")
 
         if generated_images_url:
-            self._image_manager.set_generated_images(dialog_manager, generated_images_url)
+            self._image_manager.set_generated_images(
+                dialog_manager=dialog_manager,
+                images_url=generated_images_url
+            )
         elif combine_result_url:
-            self._image_manager.set_generated_images(dialog_manager, [combine_result_url])
+            self._image_manager.set_generated_images(
+                dialog_manager=dialog_manager,
+                images_url=[combine_result_url]
+            )
 
-        self._image_manager.clear_temporary_image_data(dialog_manager)
+        self._image_manager.clear_temporary_image_data(dialog_manager=dialog_manager)
 
-        if await self._text_processor.check_text_length_with_image(dialog_manager):
+        if await self._text_processor.check_text_length_with_image(dialog_manager=dialog_manager):
             return
 
-        await dialog_manager.switch_to(model.GeneratePublicationStates.image_menu)
+        await dialog_manager.switch_to(state=model.GeneratePublicationStates.image_menu)
 
     @auto_log()
     @traced_method()
@@ -1247,7 +1317,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager)
+        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
         dialog_manager.dialog_data["showing_old_image"] = True
         await callback.answer()
 
@@ -1259,7 +1329,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager)
+        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
         dialog_manager.dialog_data["showing_old_image"] = False
         await callback.answer()
 
@@ -1271,14 +1341,17 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager)
+        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
 
         await callback.answer("Изображение отклонено")
 
         old_image_backup = dialog_manager.dialog_data.get("old_generated_image_backup") or \
                            dialog_manager.dialog_data.get("old_image_backup")
 
-        self._image_manager.restore_image_from_backup(dialog_manager, old_image_backup)
-        self._image_manager.clear_temporary_image_data(dialog_manager)
+        self._image_manager.restore_image_from_backup(
+            dialog_manager=dialog_manager,
+            backup_dict=old_image_backup
+        )
+        self._image_manager.clear_temporary_image_data(dialog_manager=dialog_manager)
 
-        await dialog_manager.switch_to(model.GeneratePublicationStates.image_menu)
+        await dialog_manager.switch_to(state=model.GeneratePublicationStates.image_menu)

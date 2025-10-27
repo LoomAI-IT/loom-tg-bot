@@ -128,7 +128,7 @@ class TelegramWebhookController(interface.ITelegramWebhookController):
             chat_id=user_state.tg_chat_id,
         )
 
-        await dialog_manager.start(model.IntroStates.intro)
+        await dialog_manager.start(state=model.IntroStates.intro)
 
         return JSONResponse(
             content={"status": "ok"},

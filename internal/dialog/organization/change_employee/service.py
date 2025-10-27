@@ -31,11 +31,23 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
         self.loom_employee_client = loom_employee_client
 
         # Инициализация приватных сервисов
-        self._state_helper = _StateHelper(state_repo)
-        self._alerts_checker = _AlertsChecker(state_repo)
-        self._permission_manager = _PermissionManager(self.logger, loom_employee_client)
-        self._role_manager = _RoleManager(self.logger, loom_employee_client)
-        self._employee_navigator = _EmployeeNavigator(self.logger)
+        self._state_helper = _StateHelper(
+            self.state_repo
+        )
+        self._alerts_checker = _AlertsChecker(
+            self.state_repo
+        )
+        self._permission_manager = _PermissionManager(
+            self.logger,
+            self.loom_employee_client
+        )
+        self._role_manager = _RoleManager(
+            self.logger,
+            self.loom_employee_client
+        )
+        self._employee_navigator = _EmployeeNavigator(
+            self.logger
+        )
 
     @auto_log()
     @traced_method()
@@ -46,14 +58,14 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
             dialog_manager: DialogManager,
             employee_id: str
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager)
+        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
 
         dialog_manager.dialog_data["selected_account_id"] = employee_id
 
         dialog_manager.dialog_data.pop("temp_permissions", None)
         dialog_manager.dialog_data.pop("original_permissions", None)
 
-        await dialog_manager.switch_to(model.ChangeEmployeeStates.employee_detail)
+        await dialog_manager.switch_to(state=model.ChangeEmployeeStates.employee_detail)
 
     @auto_log()
     @traced_method()
@@ -64,7 +76,7 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
             dialog_manager: DialogManager,
             search_query: str
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager)
+        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
         dialog_manager.dialog_data["search_query"] = search_query.strip()
 
     @auto_log()
@@ -75,7 +87,7 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager)
+        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
         dialog_manager.dialog_data.pop("search_query", None)
         await callback.answer()
 
@@ -89,7 +101,7 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
     ) -> None:
         self.logger.info("Начало обновления списка сотрудников")
 
-        self._state_helper.set_edit_mode(dialog_manager)
+        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
 
         await callback.answer()
         self.logger.info("Завершение обновления списка сотрудников")
@@ -102,8 +114,11 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager)
-        self._employee_navigator.navigate_employee(dialog_manager, button.widget_id)
+        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
+        self._employee_navigator.navigate_employee(
+            dialog_manager=dialog_manager, 
+            button_id=button.widget_id
+        )
 
     @auto_log()
     @traced_method()
@@ -113,15 +128,15 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager)
+        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
 
-        state = await self._state_helper.get_state(dialog_manager)
-        if await self._alerts_checker.check_alerts(dialog_manager, state):
+        state = await self._state_helper.get_state(dialog_manager=dialog_manager)
+        if await self._alerts_checker.check_alerts(dialog_manager=dialog_manager, state=state):
             self.logger.info("Обнаружены алерты, переход прерван")
             return
 
         await dialog_manager.start(
-            model.OrganizationMenuStates.organization_menu,
+            state=model.OrganizationMenuStates.organization_menu,
             mode=StartMode.RESET_STACK
         )
 
@@ -134,8 +149,11 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager)
-        self._permission_manager.toggle_permission(dialog_manager, button.widget_id)
+        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
+        self._permission_manager.toggle_permission(
+            dialog_manager=dialog_manager, 
+            button_id=button.widget_id
+        )
         await callback.answer()
 
     @auto_log()
@@ -146,13 +164,13 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager)
+        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
 
-        await self._permission_manager.save_permissions(dialog_manager)
+        await self._permission_manager.save_permissions(dialog_manager=dialog_manager)
         # TODO сделать вебхук для алерта об изменении прав
 
         await callback.answer("Разрешения успешно сохранены", show_alert=True)
-        await dialog_manager.switch_to(model.ChangeEmployeeStates.employee_detail)
+        await dialog_manager.switch_to(state=model.ChangeEmployeeStates.employee_detail)
 
     @auto_log()
     @traced_method()
@@ -162,8 +180,8 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager)
-        self._permission_manager.reset_permissions(dialog_manager)
+        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
+        self._permission_manager.reset_permissions(dialog_manager=dialog_manager)
         await callback.answer("Изменения отменены", show_alert=True)
 
     @auto_log()
@@ -174,9 +192,9 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager)
+        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
         dialog_manager.dialog_data.pop("selected_new_role", None)
-        await dialog_manager.switch_to(model.ChangeEmployeeStates.change_role)
+        await dialog_manager.switch_to(state=model.ChangeEmployeeStates.change_role)
 
     @auto_log()
     @traced_method()
@@ -187,11 +205,11 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
             dialog_manager: DialogManager,
             role: str
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager)
+        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
 
         is_valid, error_message = await self._role_manager.validate_role_selection(
-            dialog_manager,
-            role
+            dialog_manager=dialog_manager,
+            selected_role=role
         )
 
         if not is_valid:
@@ -209,7 +227,7 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager)
+        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
         dialog_manager.dialog_data.pop("selected_new_role", None)
         await callback.answer()
 
@@ -221,9 +239,9 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager)
+        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
 
-        success, error_message = await self._role_manager.change_role(dialog_manager)
+        success, error_message = await self._role_manager.change_role(dialog_manager=dialog_manager)
 
         if not success:
             await callback.answer(error_message, show_alert=True)
@@ -232,7 +250,7 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
         # TODO сделать вебхук для алерта об изменении роли
 
         await callback.answer("Роль успешно изменена", show_alert=True)
-        await dialog_manager.switch_to(model.ChangeEmployeeStates.employee_detail)
+        await dialog_manager.switch_to(state=model.ChangeEmployeeStates.employee_detail)
 
     @auto_log()
     @traced_method()
@@ -242,15 +260,15 @@ class ChangeEmployeeService(interface.IChangeEmployeeService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager)
+        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
 
         selected_account_id = int(dialog_manager.dialog_data.get("selected_account_id"))
 
-        await self.loom_employee_client.delete_employee(selected_account_id)
+        await self.loom_employee_client.delete_employee(account_id=selected_account_id)
 
         dialog_manager.dialog_data.pop("selected_account_id", None)
         dialog_manager.dialog_data.pop("temp_permissions", None)
         dialog_manager.dialog_data.pop("original_permissions", None)
 
         await callback.answer("Сотрудник успешно удален", show_alert=True)
-        await dialog_manager.switch_to(model.ChangeEmployeeStates.employee_list)
+        await dialog_manager.switch_to(state=model.ChangeEmployeeStates.employee_list)

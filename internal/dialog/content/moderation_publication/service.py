@@ -123,7 +123,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         await self._remove_current_publication_from_list(dialog_manager)
 
         await callback.answer("Публикация отклонена", show_alert=True)
-        await dialog_manager.switch_to(model.ModerationPublicationStates.moderation_list)
+        await dialog_manager.switch_to(state=model.ModerationPublicationStates.moderation_list)
 
     @auto_log()
     @traced_method()
@@ -159,7 +159,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         if await self._check_text_length_with_image(dialog_manager):
             return
 
-        await dialog_manager.switch_to(model.ModerationPublicationStates.edit_preview)
+        await dialog_manager.switch_to(state=model.ModerationPublicationStates.edit_preview)
 
     @auto_log()
     @traced_method()
@@ -234,7 +234,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         if await self._check_text_length_with_image(dialog_manager):
             return
 
-        await dialog_manager.switch_to(model.ModerationPublicationStates.edit_preview)
+        await dialog_manager.switch_to(state=model.ModerationPublicationStates.edit_preview)
 
     @auto_log()
     @traced_method()
@@ -280,7 +280,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         if await self._check_text_length_with_image(dialog_manager):
             return
 
-        await dialog_manager.switch_to(model.ModerationPublicationStates.edit_preview)
+        await dialog_manager.switch_to(state=model.ModerationPublicationStates.edit_preview)
 
     @auto_log()
     @traced_method()
@@ -336,7 +336,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         if await self._check_text_length_with_image(dialog_manager):
             return
 
-        await dialog_manager.switch_to(model.ModerationPublicationStates.edit_preview)
+        await dialog_manager.switch_to(state=model.ModerationPublicationStates.edit_preview)
 
     @auto_log()
     @traced_method()
@@ -432,7 +432,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         if await self._check_text_length_with_image(dialog_manager):
             return
 
-        await dialog_manager.switch_to(model.ModerationPublicationStates.edit_preview)
+        await dialog_manager.switch_to(state=model.ModerationPublicationStates.edit_preview)
 
     @auto_log()
     @traced_method()
@@ -480,7 +480,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             if await self._check_text_length_with_image(dialog_manager):
                 return
 
-            await dialog_manager.switch_to(model.ModerationPublicationStates.edit_preview)
+            await dialog_manager.switch_to(state=model.ModerationPublicationStates.edit_preview)
         else:
             self.logger.info("Ошибка обработки изображения")
             dialog_manager.dialog_data["has_image_processing_error"] = True
@@ -502,7 +502,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
 
         await callback.answer("Изображение удалено", show_alert=True)
 
-        await dialog_manager.switch_to(model.ModerationPublicationStates.edit_preview)
+        await dialog_manager.switch_to(state=model.ModerationPublicationStates.edit_preview)
 
     @auto_log()
     @traced_method()
@@ -528,7 +528,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         del dialog_manager.dialog_data["working_publication"]
 
         await callback.answer("Изменения сохранены", show_alert=True)
-        await dialog_manager.switch_to(model.ModerationPublicationStates.moderation_list)
+        await dialog_manager.switch_to(state=model.ModerationPublicationStates.moderation_list)
 
     @auto_log()
     @traced_method()
@@ -539,7 +539,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             dialog_manager: DialogManager
     ) -> None:
         dialog_manager.show_mode = ShowMode.EDIT
-        await dialog_manager.switch_to(model.ModerationPublicationStates.moderation_list)
+        await dialog_manager.switch_to(state=model.ModerationPublicationStates.moderation_list)
 
     @auto_log()
     @traced_method()
@@ -556,7 +556,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             return
 
         await dialog_manager.start(
-            model.ContentMenuStates.content_menu,
+            state=model.ContentMenuStates.content_menu,
             mode=StartMode.RESET_STACK
         )
 
@@ -666,7 +666,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         await self._remove_current_publication_from_list(dialog_manager)
         await callback.answer("Опубликовано!", show_alert=True)
 
-        await dialog_manager.switch_to(model.ModerationPublicationStates.publication_success)
+        await dialog_manager.switch_to(state=model.ModerationPublicationStates.publication_success)
 
     @auto_log()
     @traced_method()
@@ -688,7 +688,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
 
         self.logger.info("Изображение удалено из-за длинного текста")
         await callback.answer("Изображение удалено", show_alert=True)
-        await dialog_manager.switch_to(model.ModerationPublicationStates.edit_preview)
+        await dialog_manager.switch_to(state=model.ModerationPublicationStates.edit_preview)
 
     @auto_log()
     @traced_method()
@@ -722,7 +722,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
 
         dialog_manager.dialog_data["working_publication"]["text"] = compressed_data["text"]
 
-        await dialog_manager.switch_to(model.ModerationPublicationStates.edit_preview)
+        await dialog_manager.switch_to(state=model.ModerationPublicationStates.edit_preview)
 
     @auto_log()
     @traced_method()
@@ -759,7 +759,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         dialog_manager.dialog_data.pop("previous_has_image", None)
 
         await callback.answer("Изменения отменены", show_alert=True)
-        await dialog_manager.switch_to(model.ModerationPublicationStates.edit_preview)
+        await dialog_manager.switch_to(state=model.ModerationPublicationStates.edit_preview)
 
     # Вспомогательные методы
     def _has_changes(self, dialog_manager: DialogManager) -> bool:
@@ -999,13 +999,13 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         if has_image and text_length > 1024:
             self.logger.info(f"Текст слишком длинный для публикации с изображением: {text_length} символов")
             dialog_manager.dialog_data["expected_length"] = 900
-            await dialog_manager.switch_to(model.ModerationPublicationStates.text_too_long_alert)
+            await dialog_manager.switch_to(state=model.ModerationPublicationStates.text_too_long_alert)
             return True
 
         if not has_image and text_length > 4096:
             self.logger.info(f"Текст слишком длинный: {text_length} символов")
             dialog_manager.dialog_data["expected_length"] = 3600
-            await dialog_manager.switch_to(model.ModerationPublicationStates.text_too_long_alert)
+            await dialog_manager.switch_to(state=model.ModerationPublicationStates.text_too_long_alert)
             return True
 
         return False

@@ -49,7 +49,7 @@ class OrganizationMenuService(interface.IOrganizationMenuService):
         )
 
         await dialog_manager.start(
-            model.ChangeEmployeeStates.employee_list,
+            state=model.ChangeEmployeeStates.employee_list,
             mode=StartMode.RESET_STACK
         )
 
@@ -99,7 +99,7 @@ class OrganizationMenuService(interface.IOrganizationMenuService):
         await self._chat_manager.clear_chat(state.id)
 
         await dialog_manager.start(
-            model.UpdateCategoryStates.select_category,
+            state=model.UpdateCategoryStates.select_category,
             mode=StartMode.RESET_STACK
         )
 
@@ -122,7 +122,7 @@ class OrganizationMenuService(interface.IOrganizationMenuService):
         )
 
         await dialog_manager.start(
-            model.AddEmployeeStates.enter_account_id,
+            state=model.AddEmployeeStates.enter_account_id,
             mode=StartMode.RESET_STACK
         )
 
@@ -145,7 +145,7 @@ class OrganizationMenuService(interface.IOrganizationMenuService):
             dialog_manager: DialogManager
     ) -> None:
         self._state_helper.set_edit_mode(dialog_manager)
-        await dialog_manager.start(model.AddSocialNetworkStates.select_network)
+        await dialog_manager.start(state=model.AddSocialNetworkStates.select_network)
 
     @auto_log()
     @traced_method()
@@ -156,6 +156,6 @@ class OrganizationMenuService(interface.IOrganizationMenuService):
             dialog_manager: DialogManager
     ) -> None:
         await dialog_manager.start(
-            model.MainMenuStates.main_menu,
+            state=model.MainMenuStates.main_menu,
             mode=StartMode.RESET_STACK
         )

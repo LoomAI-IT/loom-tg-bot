@@ -27,7 +27,11 @@ class _MessageExtractor:
         if message.content_type == ContentType.TEXT:
             return message.text if not return_html else message.html_text.replace('\n', '<br/>')
         else:
-            return await self.speech_to_text(message, dialog_manager, organization_id)
+            return await self.speech_to_text(
+                message=message,
+                dialog_manager=dialog_manager,
+                organization_id=organization_id
+            )
 
     async def extract_text_from_message(
             self,
@@ -38,7 +42,11 @@ class _MessageExtractor:
         text_parts = []
 
         if message.content_type in [ContentType.AUDIO, ContentType.VOICE]:
-            audio_text = await self.speech_to_text(message, dialog_manager, organization_id)
+            audio_text = await self.speech_to_text(
+                message=message,
+                dialog_manager=dialog_manager,
+                organization_id=organization_id
+            )
             text_parts.append(audio_text)
 
         if message.html_text:
@@ -53,18 +61,18 @@ class _MessageExtractor:
         if message.forward_origin:
             if hasattr(message, 'forward_from_message') and message.forward_from_message:
                 forwarded_text = await self.extract_text_from_message(
-                    dialog_manager,
-                    message.forward_from_message,
-                    organization_id
+                    dialog_manager=dialog_manager,
+                    message=message.forward_from_message,
+                    organization_id=organization_id
                 )
                 if forwarded_text:
                     text_parts.append(f"[Пересланное сообщение]: {forwarded_text}")
 
         if message.reply_to_message:
             reply_text = await self.extract_text_from_message(
-                dialog_manager,
-                message.reply_to_message,
-                organization_id
+                dialog_manager=dialog_manager,
+                message=message.reply_to_message,
+                organization_id=organization_id
             )
             if reply_text:
                 text_parts.append(f"[Ответ на]: {reply_text}")
@@ -94,7 +102,7 @@ class _MessageExtractor:
         file_data = await self.bot.download_file(file.file_path)
 
         text = await self.loom_content_client.transcribe_audio(
-            organization_id,
+            organization_id=organization_id,
             audio_content=file_data.read(),
             audio_filename="audio.mp3",
         )

@@ -26,7 +26,7 @@ class _RoleManager:
         selected_account_id = int(dialog_manager.dialog_data.get("selected_account_id"))
 
         employee = await self.loom_employee_client.get_employee_by_account_id(
-            selected_account_id
+            account_id=selected_account_id
         )
 
         if employee.role == selected_role:

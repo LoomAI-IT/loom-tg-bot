@@ -90,7 +90,7 @@ class _ImageManager:
 
     async def download_and_get_file_id(self, image_url: str, chat_id: int) -> str | None:
         try:
-            image_content, _ = await self.download_image(image_url)
+            image_content, _ = await self.download_image(image_url=image_url)
 
             message = await self.bot.send_photo(
                 chat_id=chat_id,

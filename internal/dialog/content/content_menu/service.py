@@ -1,10 +1,7 @@
-from typing import Any
-
 from aiogram.types import CallbackQuery
 from aiogram_dialog import DialogManager, StartMode, ShowMode
 from aiogram_dialog.widgets.kbd import Button
 
-from opentelemetry.trace import SpanKind, Status, StatusCode
 
 from internal import interface, model
 from pkg.log_wrapper import auto_log
@@ -30,19 +27,19 @@ class ContentMenuService(interface.IContentMenuService):
     async def handle_go_to_publication_generation(
             self,
             callback: CallbackQuery,
-            button: Any,
+            button: Button,
             dialog_manager: DialogManager
     ) -> None:
         dialog_manager.show_mode = ShowMode.EDIT
 
-        state = await self._get_state(dialog_manager)
+        state = await self._get_state(dialog_manager=dialog_manager)
         await self.state_repo.change_user_state(
             state_id=state.id,
             can_show_alerts=False
         )
 
         await dialog_manager.start(
-            model.GeneratePublicationStates.select_category,
+            state=model.GeneratePublicationStates.select_category,
             mode=StartMode.RESET_STACK
         )
 
@@ -51,19 +48,19 @@ class ContentMenuService(interface.IContentMenuService):
     async def handle_go_to_video_cut_generation(
             self,
             callback: CallbackQuery,
-            button: Any,
+            button: Button,
             dialog_manager: DialogManager
     ) -> None:
         dialog_manager.show_mode = ShowMode.EDIT
 
-        state = await self._get_state(dialog_manager)
+        state = await self._get_state(dialog_manager=dialog_manager)
         await self.state_repo.change_user_state(
             state_id=state.id,
             can_show_alerts=False
         )
 
         await dialog_manager.start(
-            model.GenerateVideoCutStates.input_youtube_link,
+            state=model.GenerateVideoCutStates.input_youtube_link,
             mode=StartMode.RESET_STACK
         )
 
@@ -72,7 +69,7 @@ class ContentMenuService(interface.IContentMenuService):
     async def handle_go_to_publication_drafts(
             self,
             callback: CallbackQuery,
-            button: Any,
+            button: Button,
             dialog_manager: DialogManager
     ) -> None:
         await callback.answer("Функция черновиков публикаций находится в разработке", show_alert=True)
@@ -82,19 +79,19 @@ class ContentMenuService(interface.IContentMenuService):
     async def handle_go_to_video_drafts(
             self,
             callback: CallbackQuery,
-            button: Any,
+            button: Button,
             dialog_manager: DialogManager
     ) -> None:
         dialog_manager.show_mode = ShowMode.EDIT
 
-        state = await self._get_state(dialog_manager)
+        state = await self._get_state(dialog_manager=dialog_manager)
         await self.state_repo.change_user_state(
             state_id=state.id,
             can_show_alerts=False
         )
 
         await dialog_manager.start(
-            model.VideoCutsDraftStates.video_cut_list,
+            state=model.VideoCutsDraftStates.video_cut_list,
             mode=StartMode.RESET_STACK
         )
 
@@ -103,15 +100,15 @@ class ContentMenuService(interface.IContentMenuService):
     async def handle_go_to_publication_moderation(
             self,
             callback: CallbackQuery,
-            button: Any,
+            button: Button,
             dialog_manager: DialogManager
     ) -> None:
         dialog_manager.show_mode = ShowMode.EDIT
 
-        state = await self._get_state(dialog_manager)
+        state = await self._get_state(dialog_manager=dialog_manager)
 
         employee = await self.loom_employee_client.get_employee_by_account_id(
-            state.account_id
+            account_id=state.account_id
         )
 
         can_moderate = employee.role in ["moderator", "admin"]
@@ -130,7 +127,7 @@ class ContentMenuService(interface.IContentMenuService):
         )
 
         await dialog_manager.start(
-            model.ModerationPublicationStates.moderation_list,
+            state=model.ModerationPublicationStates.moderation_list,
             mode=StartMode.RESET_STACK
         )
 
@@ -139,15 +136,15 @@ class ContentMenuService(interface.IContentMenuService):
     async def handle_go_to_video_moderation(
             self,
             callback: CallbackQuery,
-            button: Any,
+            button: Button,
             dialog_manager: DialogManager
     ) -> None:
         dialog_manager.show_mode = ShowMode.EDIT
 
-        state = await self._get_state(dialog_manager)
+        state = await self._get_state(dialog_manager=dialog_manager)
 
         employee = await self.loom_employee_client.get_employee_by_account_id(
-            state.account_id
+            account_id=state.account_id
         )
 
         can_moderate = employee.role in ["moderator", "admin"]
@@ -166,7 +163,7 @@ class ContentMenuService(interface.IContentMenuService):
         )
 
         await dialog_manager.start(
-            model.VideoCutModerationStates.moderation_list,
+            state=model.VideoCutModerationStates.moderation_list,
             mode=StartMode.RESET_STACK
         )
 
@@ -175,13 +172,13 @@ class ContentMenuService(interface.IContentMenuService):
     async def handle_go_to_main_menu(
             self,
             callback: CallbackQuery,
-            button: Any,
+            button: Button,
             dialog_manager: DialogManager
     ) -> None:
         dialog_manager.show_mode = ShowMode.EDIT
 
         await dialog_manager.start(
-            model.MainMenuStates.main_menu,
+            state=model.MainMenuStates.main_menu,
             mode=StartMode.RESET_STACK
         )
 
@@ -190,13 +187,13 @@ class ContentMenuService(interface.IContentMenuService):
     async def handle_go_to_content_menu(
             self,
             callback: CallbackQuery,
-            button: Any,
+            button: Button,
             dialog_manager: DialogManager
     ) -> None:
         dialog_manager.show_mode = ShowMode.EDIT
 
         await dialog_manager.start(
-            model.ContentMenuStates.content_menu,
+            state=model.ContentMenuStates.content_menu,
             mode=StartMode.RESET_STACK
         )
 

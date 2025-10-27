@@ -86,7 +86,7 @@ class UpdateCategoryService(interface.IUpdateCategoryService):
         dialog_manager.dialog_data["category_id"] = category.id
         dialog_manager.dialog_data["category_name"] = category.name
 
-        await dialog_manager.switch_to(model.UpdateCategoryStates.update_category)
+        await dialog_manager.switch_to(state=model.UpdateCategoryStates.update_category)
 
     @auto_log()
     @traced_method()
@@ -152,7 +152,7 @@ class UpdateCategoryService(interface.IUpdateCategoryService):
                     category_data=category_data
                 )
 
-                await dialog_manager.switch_to(model.UpdateCategoryStates.category_updated)
+                await dialog_manager.switch_to(state=model.UpdateCategoryStates.category_updated)
                 return
 
             await self._llm_interaction.save_llm_response(
@@ -179,7 +179,7 @@ class UpdateCategoryService(interface.IUpdateCategoryService):
         self._state_helper.set_edit_mode(dialog_manager)
         await callback.answer()
 
-        await dialog_manager.start(model.MainMenuStates.main_menu, mode=StartMode.RESET_STACK)
+        await dialog_manager.start(state=model.MainMenuStates.main_menu, mode=StartMode.RESET_STACK)
 
     @auto_log()
     @traced_method()
@@ -191,4 +191,4 @@ class UpdateCategoryService(interface.IUpdateCategoryService):
     ) -> None:
         self._state_helper.set_edit_mode(dialog_manager)
 
-        await dialog_manager.start(model.MainMenuStates.main_menu, mode=StartMode.RESET_STACK)
+        await dialog_manager.start(state=model.MainMenuStates.main_menu, mode=StartMode.RESET_STACK)

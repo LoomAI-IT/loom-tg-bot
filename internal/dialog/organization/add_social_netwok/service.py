@@ -97,7 +97,7 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
 
         await callback.answer(f"Telegram канал '@{telegram_channel_username}' подключен", show_alert=True)
 
-        await dialog_manager.switch_to(model.AddSocialNetworkStates.telegram_main)
+        await dialog_manager.switch_to(state=model.AddSocialNetworkStates.telegram_main)
 
     @auto_log()
     @traced_method()
@@ -174,7 +174,7 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
         dialog_manager.dialog_data.pop("working_state", None)
 
         await callback.answer("Настройки Telegram обновлены", show_alert=True)
-        await dialog_manager.switch_to(model.AddSocialNetworkStates.telegram_main)
+        await dialog_manager.switch_to(state=model.AddSocialNetworkStates.telegram_main)
 
     @auto_log()
     @traced_method()
@@ -192,7 +192,7 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
             self.logger.info("Переход к алертам")
             return
 
-        await dialog_manager.switch_to(model.AddSocialNetworkStates.telegram_main, ShowMode.EDIT)
+        await dialog_manager.switch_to(state=model.AddSocialNetworkStates.telegram_main, ShowMode.EDIT)
 
     @auto_log()
     @traced_method()
@@ -241,7 +241,7 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
             return
 
         dialog_manager.dialog_data["working_state"]["telegram_channel_username"] = new_telegram_channel_username
-        await dialog_manager.switch_to(model.AddSocialNetworkStates.telegram_edit)
+        await dialog_manager.switch_to(state=model.AddSocialNetworkStates.telegram_edit)
 
     @auto_log()
     @traced_method()
@@ -258,7 +258,7 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
             return
 
         await dialog_manager.start(
-            model.OrganizationMenuStates.organization_menu,
+            state=model.OrganizationMenuStates.organization_menu,
             mode=StartMode.RESET_STACK
         )
 

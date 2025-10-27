@@ -73,7 +73,7 @@ class GenerateVideoCutService(interface.IGenerateVideoCutService):
             return
 
         await dialog_manager.start(
-            model.ContentMenuStates.content_menu,
+            state=model.ContentMenuStates.content_menu,
             mode=StartMode.RESET_STACK,
         )
 
