@@ -168,12 +168,12 @@ class DialogDataHelper:
     @staticmethod
     def get_new_image_confirm_flags(dialog_manager: DialogManager) -> dict:
         return {
-            "is_applying_edits": dialog_manager.dialog_data.get("is_applying_edits"),
-            "has_image_edit_prompt": dialog_manager.dialog_data.get("has_image_edit_prompt"),
-            "voice_transcribe": dialog_manager.dialog_data.get("voice_transcribe"),
-            "has_small_edit_prompt": dialog_manager.dialog_data.get("has_small_edit_prompt"),
-            "has_big_edit_prompt": dialog_manager.dialog_data.get("has_big_edit_prompt"),
-            "has_invalid_content_type": dialog_manager.dialog_data.get("has_invalid_content_type"),
+            "is_applying_edits": dialog_manager.dialog_data.get("is_applying_edits", False),
+            "has_image_edit_prompt": dialog_manager.dialog_data.get("has_image_edit_prompt", False),
+            "voice_transcribe": dialog_manager.dialog_data.get("voice_transcribe", False),
+            "has_small_edit_prompt": dialog_manager.dialog_data.get("has_small_edit_prompt", False),
+            "has_big_edit_prompt": dialog_manager.dialog_data.get("has_big_edit_prompt", False),
+            "has_invalid_content_type": dialog_manager.dialog_data.get("has_invalid_content_type", False),
         }
 
     @staticmethod

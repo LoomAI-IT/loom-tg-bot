@@ -210,6 +210,20 @@ class PublicationManager:
             image_filename=image_filename,
         )
 
+    async def edit_image(
+            self,
+            organization_id: int,
+            image_content: bytes | None = None,
+            image_filename: str | None = None,
+            prompt: str | None = None
+    ) -> list[str]:
+        return await self.loom_content_client.edit_image(
+            organization_id=organization_id,
+            prompt=prompt,
+            image_content=image_content,
+            image_filename=image_filename,
+        )
+
     async def compress_text(
             self,
             category_id: int,

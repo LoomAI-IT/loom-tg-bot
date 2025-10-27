@@ -361,9 +361,8 @@ class ModerationPublicationService(interface.IModerationPublicationService):
 
         # API вызов генерации изображения с промптом
         async with tg_action(self.bot, message.chat.id, "upload_photo"):
-            images_url = await self.publication_manager.generate_image(
-                category_id=working_pub["category_id"],
-                publication_text=working_pub["text"],
+            images_url = await self.publication_manager.edit_image(
+                organization_id=state.organization_id,
                 image_content=current_image_content,
                 image_filename=current_image_filename,
                 prompt=prompt
