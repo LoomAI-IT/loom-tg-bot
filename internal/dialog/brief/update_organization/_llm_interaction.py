@@ -1,38 +1,55 @@
-from typing import Dict, Any, List
-
 from aiogram import Bot
 from aiogram.types import Message
+from aiogram_dialog import DialogManager
 
 from internal import interface
-from pkg.tg_action_wrapper import tg_action
+from internal.dialog._message_extractor import _MessageExtractor
+from internal.dialog.brief._llm_context_manager import _LLMContextManager
 
 
 class _LLMInteraction:
-    """Класс для взаимодействия с LLM и обработки диалогов"""
-
     def __init__(
             self,
             logger,
             bot: Bot,
             anthropic_client: interface.IAnthropicClient,
+            loom_content_client: interface.ILoomContentClient,
             update_organization_prompt_generator: interface.IUpdateOrganizationPromptGenerator,
             loom_organization_client: interface.ILoomOrganizationClient,
-            llm_chat_repo: interface.ILLMChatRepo
+            llm_chat_repo: interface.ILLMChatRepo,
     ):
         self.logger = logger
         self.bot = bot
         self.anthropic_client = anthropic_client
+        self.loom_content_client = loom_content_client
         self.update_organization_prompt_generator = update_organization_prompt_generator
         self.loom_organization_client = loom_organization_client
         self.llm_chat_repo = llm_chat_repo
 
+        self._message_extractor = _MessageExtractor(
+            logger=self.logger,
+            bot=self.bot,
+            loom_content_client=self.loom_content_client
+        )
+        self.llm_context_manager = _LLMContextManager(
+            logger=self.logger,
+            anthropic_client=self.anthropic_client,
+            llm_chat_repo=self.llm_chat_repo,
+        )
+
     async def process_user_message(
             self,
+            dialog_manager: DialogManager,
+            message: Message,
             chat_id: int,
-            user_text: str,
             organization_id: int,
-            message: Message
-    ) -> Dict[str, Any]:
+    ) -> dict:
+        user_text = await self._message_extractor.extract_text_from_message(
+            dialog_manager=dialog_manager,
+            message=message,
+            organization_id=organization_id
+        )
+
         message_to_llm = f"""
 <system>
 Оветь обязательно в JSON формате и очень хорошо подумай над тем что тебе сказали в глобальных правилах и в самом stage
@@ -41,49 +58,66 @@ ultrathink
 </system>
 
 <user>
-{user_text}        
+{user_text}
 </user>
 """
         await self.llm_chat_repo.create_message(
             chat_id=chat_id,
             role="user",
-            text=user_text
+            text=f'{{"message_to_llm": {message_to_llm}}}'
         )
 
-        organization = await self.loom_organization_client.get_organization_by_id(organization_id)
-        system_prompt = await self.update_organization_prompt_generator.get_update_organization_system_prompt(
-            organization
+        llm_response_json, generate_cost = await self.get_llm_response(
+            dialog_manager=dialog_manager,
+            chat_id=chat_id,
+            organization_id=organization_id
         )
-
-        messages = await self.llm_chat_repo.get_all_messages(chat_id)
-        history = self._build_message_history(messages)
-
-        async with tg_action(self.bot, message.chat.id):
-            llm_response_json, _ = await self.anthropic_client.generate_json(
-                history=history,
-                system_prompt=system_prompt,
-                max_tokens=15000,
-                enable_web_search=False,
-                thinking_tokens=10000
-            )
 
         return llm_response_json
 
-    async def save_assistant_message(self, chat_id: str, message_text: str) -> None:
-        """Сохраняет сообщение ассистента в историю чата"""
+    async def save_llm_response(
+            self,
+            chat_id: int,
+            llm_response_json: dict
+    ) -> None:
         await self.llm_chat_repo.create_message(
             chat_id=chat_id,
             role="assistant",
-            text=message_text
+            text=str(llm_response_json)
         )
 
-    @staticmethod
-    def _build_message_history(messages: List) -> List[Dict[str, str]]:
-        """Формирует историю сообщений для LLM"""
+    async def get_llm_response(
+            self,
+            dialog_manager: DialogManager,
+            chat_id: int,
+            organization_id: int,
+            max_tokens: int = 15000,
+            thinking_tokens: int = 10000,
+            enable_web_search: bool = False
+    ) -> tuple[dict, dict]:
+        messages = await self.llm_chat_repo.get_all_messages(chat_id)
         history = []
         for msg in messages:
             history.append({
                 "role": msg.role,
                 "content": msg.text
             })
-        return history
+
+        organization = await self.loom_organization_client.get_organization_by_id(organization_id)
+        system_prompt = await self.update_organization_prompt_generator.get_update_organization_system_prompt(
+            organization
+        )
+
+        llm_response_json, generate_cost = await self.anthropic_client.generate_json(
+            history=history,
+            system_prompt=system_prompt,
+            max_tokens=max_tokens,
+            thinking_tokens=thinking_tokens,
+            enable_web_search=enable_web_search,
+        )
+        self.llm_context_manager.track_tokens(
+            dialog_manager=dialog_manager,
+            generate_cost=generate_cost
+        )
+
+        return llm_response_json, generate_cost

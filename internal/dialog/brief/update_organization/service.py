@@ -1,16 +1,21 @@
+import traceback
+
 from aiogram import Bot
 from aiogram.types import CallbackQuery, Message
-from aiogram_dialog import DialogManager, StartMode
+from aiogram_dialog import DialogManager, ShowMode, StartMode
 from aiogram_dialog.widgets.input import MessageInput
 from aiogram_dialog.widgets.kbd import Button
 
 from internal import interface, model
 from pkg.log_wrapper import auto_log
+from pkg.tg_action_wrapper import tg_action
 from pkg.trace_wrapper import traced_method
 
-from ._state_helper import _StateHelper
-from ._message_extractor import _MessageExtractor
+from internal.dialog._state_helper import _StateHelper
+from internal.dialog._message_extractor import _MessageExtractor
+
 from ._llm_interaction import _LLMInteraction
+from ._organization_manager import _OrganizationManager
 
 
 class UpdateOrganizationService(interface.IUpdateOrganizationService):
@@ -27,18 +32,34 @@ class UpdateOrganizationService(interface.IUpdateOrganizationService):
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
+        self.bot = bot
+        self.anthropic_client = anthropic_client
+        self.update_organization_prompt_generator = update_organization_prompt_generator
         self.loom_organization_client = loom_organization_client
+        self.loom_content_client = loom_content_client
+        self.llm_chat_repo = llm_chat_repo
+        self.state_repo = state_repo
 
         # Инициализация приватных сервисов
-        self._state_helper = _StateHelper(state_repo)
-        self._message_extractor = _MessageExtractor(bot, loom_content_client)
+        self._state_helper = _StateHelper(
+            state_repo=self.state_repo
+        )
+        self._message_extractor = _MessageExtractor(
+            logger=self.logger,
+            bot=self.bot,
+            loom_content_client=self.loom_content_client
+        )
+        self._organization_manager = _OrganizationManager(
+            loom_organization_client=self.loom_organization_client,
+        )
         self._llm_interaction = _LLMInteraction(
-            self.logger,
-            bot,
-            anthropic_client,
-            update_organization_prompt_generator,
-            loom_organization_client,
-            llm_chat_repo
+            logger=self.logger,
+            bot=self.bot,
+            anthropic_client=self.anthropic_client,
+            loom_content_client=self.loom_content_client,
+            update_organization_prompt_generator=self.update_organization_prompt_generator,
+            loom_organization_client=self.loom_organization_client,
+            llm_chat_repo=self.llm_chat_repo,
         )
 
     @auto_log()
@@ -49,41 +70,43 @@ class UpdateOrganizationService(interface.IUpdateOrganizationService):
             widget: MessageInput,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_send_mode(dialog_manager)
-
         state = await self._state_helper.get_state(dialog_manager)
-        chat_id = dialog_manager.dialog_data.get("chat_id")
+        try:
+            self._state_helper.set_edit_mode(dialog_manager)
 
-        user_text = await self._message_extractor.extract_text_from_message(message)
+            chat_id = dialog_manager.dialog_data["chat_id"]
 
-        llm_response_json = await self._llm_interaction.process_user_message(
-            chat_id=chat_id,
-            user_text=user_text,
-            organization_id=state.organization_id,
-            message=message
-        )
+            async with tg_action(self.bot, message.chat.id):
+                llm_response_json = await self._llm_interaction.process_user_message(
+                    dialog_manager=dialog_manager,
+                    message=message,
+                    chat_id=chat_id,
+                    organization_id=state.organization_id,
+                )
 
-        if llm_response_json.get("organization_data"):
-            organization_data = llm_response_json["organization_data"]
-            dialog_manager.dialog_data["organization_data"] = organization_data
+            if llm_response_json.get("organization_data"):
+                organization_data = llm_response_json["organization_data"]
 
-            await self.loom_organization_client.update_organization(
-                organization_id=state.organization_id,
-                name=organization_data.get("name"),
-                description=organization_data.get("description"),
-                tone_of_voice=organization_data.get("tone_of_voice"),
-                compliance_rules=organization_data.get("compliance_rules"),
-                products=organization_data.get("products"),
-                locale=organization_data.get("locale"),
-                additional_info=organization_data.get("additional_info"),
+                await self._organization_manager.update_organization(
+                    organization_id=state.organization_id,
+                    organization_data=organization_data
+                )
+
+                await dialog_manager.switch_to(state=model.UpdateOrganizationStates.organization_updated)
+                return
+
+            await self._llm_interaction.save_llm_response(
+                chat_id=chat_id,
+                llm_response_json=llm_response_json
             )
+            dialog_manager.dialog_data["message_to_user"] = llm_response_json["message_to_user"]
 
-            await dialog_manager.switch_to(state=model.UpdateOrganizationStates.organization_updated)
-            return
-
-        message_to_user = llm_response_json["message_to_user"]
-        await self._llm_interaction.save_assistant_message(chat_id, message_to_user)
-        dialog_manager.dialog_data["message_to_user"] = message_to_user
+        except Exception as e:
+            await self.bot.send_message(
+                state.tg_chat_id,
+                "Произошла непредвиденная ошибка, попробуйте продолжить диалог"
+            )
+            self.logger.error("Ошибка!!!", {"traceback": traceback.format_exc()})
 
     @auto_log()
     @traced_method()
@@ -93,7 +116,7 @@ class UpdateOrganizationService(interface.IUpdateOrganizationService):
             button: Button,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager)
+        dialog_manager.show_mode = ShowMode.EDIT
         await callback.answer()
 
         await dialog_manager.start(state=model.MainMenuStates.main_menu, mode=StartMode.RESET_STACK)
@@ -106,6 +129,6 @@ class UpdateOrganizationService(interface.IUpdateOrganizationService):
             button: Button,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager)
+        dialog_manager.show_mode = ShowMode.EDIT
 
         await dialog_manager.start(state=model.MainMenuStates.main_menu, mode=StartMode.RESET_STACK)

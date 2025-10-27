@@ -6,7 +6,7 @@ from internal import interface
 from internal.dialog._message_extractor import _MessageExtractor
 from internal.dialog.brief._llm_context_manager import _LLMContextManager
 from internal.dialog.brief._telegram_post_formatter import _TelegramPostFormatter
-from internal.dialog.brief.update_category._category_manager import _CategoryManager
+from internal.dialog.brief.create_category._category_manager import _CategoryManager
 
 
 class _LLMInteraction:
@@ -18,7 +18,7 @@ class _LLMInteraction:
             telegram_client: interface.ITelegramClient,
             loom_organization_client: interface.ILoomOrganizationClient,
             loom_content_client: interface.ILoomContentClient,
-            update_category_prompt_generator: interface.IUpdateCategoryPromptGenerator,
+            create_category_prompt_generator: interface.ICreateCategoryPromptGenerator,
             llm_chat_repo: interface.ILLMChatRepo,
     ):
         self.logger = logger
@@ -27,7 +27,7 @@ class _LLMInteraction:
         self.telegram_client = telegram_client
         self.loom_organization_client = loom_organization_client
         self.loom_content_client = loom_content_client
-        self.update_category_prompt_generator = update_category_prompt_generator
+        self.create_category_prompt_generator = create_category_prompt_generator
         self.llm_chat_repo = llm_chat_repo
 
         # Приватные классы
@@ -51,7 +51,6 @@ class _LLMInteraction:
             dialog_manager: DialogManager,
             message: Message,
             chat_id: int,
-            category_id: int,
             organization_id: int,
     ) -> dict:
         user_text = await self._message_extractor.extract_text_from_message(
@@ -77,10 +76,9 @@ ultrathink
             text=f'{{"message_to_llm": {message_to_llm}}}'
         )
 
-        llm_response_json, generate_cost = await self.get_llm_response(
+        llm_response_json = await self.get_llm_response(
             dialog_manager=dialog_manager,
             chat_id=chat_id,
-            category_id=category_id,
             organization_id=organization_id,
         )
 
@@ -90,7 +88,6 @@ ultrathink
             self,
             dialog_manager: DialogManager,
             chat_id: int,
-            category_id: int,
             organization_id: int,
             telegram_channel_username_list: str
     ) -> dict:
@@ -113,7 +110,7 @@ HTML разметка должны быть валидной, если есть 
 <user>
 Расскажи что узнал
 </user>
-                    """
+            """
         await self.llm_chat_repo.create_message(
             chat_id=chat_id,
             role="user",
@@ -123,7 +120,6 @@ HTML разметка должны быть валидной, если есть 
         llm_response_json = await self.get_llm_response(
             dialog_manager=dialog_manager,
             chat_id=chat_id,
-            category_id=category_id,
             organization_id=organization_id,
             enable_web_search=False
         )
@@ -134,7 +130,6 @@ HTML разметка должны быть валидной, если есть 
             self,
             dialog_manager: DialogManager,
             chat_id: int,
-            category_id: int,
             organization_id: int,
             test_category_data: dict,
             user_text_reference: str,
@@ -170,7 +165,6 @@ HTML разметка должны быть валидной, если есть 
         llm_response_json = await self.get_llm_response(
             dialog_manager=dialog_manager,
             chat_id=chat_id,
-            category_id=category_id,
             organization_id=organization_id,
         )
 
@@ -180,7 +174,6 @@ HTML разметка должны быть валидной, если есть 
             self,
             dialog_manager: DialogManager,
             chat_id: int,
-            category_id: int,
             organization_id: int,
             max_tokens: int = 15000,
             thinking_tokens: int = 10000,
@@ -188,9 +181,6 @@ HTML разметка должны быть валидной, если есть 
     ) -> dict:
         organization = await self.loom_organization_client.get_organization_by_id(
             organization_id=organization_id
-        )
-        category = await self.loom_content_client.get_category_by_id(
-            category_id=category_id
         )
 
         messages = await self.llm_chat_repo.get_all_messages(chat_id=chat_id)
@@ -201,10 +191,16 @@ HTML разметка должны быть валидной, если есть 
                 "content": msg.text
             })
 
-        system_prompt = await self.update_category_prompt_generator.get_update_category_system_prompt(
+        system_prompt = await self.create_category_prompt_generator.get_create_category_system_prompt(
             organization=organization,
-            category=category,
         )
+
+        await self.llm_context_manager.check_and_handle_context_overflow(
+            dialog_manager=dialog_manager,
+            chat_id=chat_id,
+            system_prompt=system_prompt
+        )
+
         llm_response_json, generate_cost = await self.anthropic_client.generate_json(
             history=history,
             system_prompt=system_prompt,

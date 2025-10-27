@@ -115,15 +115,14 @@ class UpdateCategoryService(interface.IUpdateCategoryService):
             if llm_response_json.get("telegram_channel_username_list"):
                 telegram_channel_username_list = llm_response_json["telegram_channel_username_list"]
 
-                for telegram_channel_username in telegram_channel_username_list:
-                    async with tg_action(self.bot, message.chat.id):
-                        llm_response_json, generate_cost = await self._llm_interaction.process_telegram_channel(
-                            dialog_manager=dialog_manager,
-                            chat_id=chat_id,
-                            category_id=category_id,
-                            organization_id=state.organization_id,
-                            telegram_channel_username=telegram_channel_username,
-                        )
+                async with tg_action(self.bot, message.chat.id):
+                    llm_response_json, generate_cost = await self._llm_interaction.process_telegram_channels(
+                        dialog_manager=dialog_manager,
+                        chat_id=chat_id,
+                        category_id=category_id,
+                        organization_id=state.organization_id,
+                        telegram_channel_username_list=telegram_channel_username_list,
+                    )
 
             if llm_response_json.get("test_category") and llm_response_json.get("user_text_reference"):
                 test_category_data = llm_response_json["test_category"]
