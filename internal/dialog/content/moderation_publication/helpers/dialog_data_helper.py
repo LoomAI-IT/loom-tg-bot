@@ -163,7 +163,7 @@ class DialogDataHelper:
 
     @staticmethod
     def get_previous_text(dialog_manager: DialogManager) -> str | None:
-        return dialog_manager.dialog_data.get("previous_text")
+        return dialog_manager.dialog_data.get("previous_text", "")
 
     @staticmethod
     def get_new_image_confirm_flags(dialog_manager: DialogManager) -> dict:
@@ -182,7 +182,7 @@ class DialogDataHelper:
 
     @staticmethod
     def get_previous_has_image(dialog_manager: DialogManager) -> bool | None:
-        return dialog_manager.dialog_data.get("previous_has_image")
+        return dialog_manager.dialog_data.get("previous_has_image", False)
 
     @staticmethod
     def has_previous_has_image(dialog_manager: DialogManager) -> bool:
