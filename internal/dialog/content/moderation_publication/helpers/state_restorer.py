@@ -1,46 +1,44 @@
 from aiogram_dialog import DialogManager
 
+from internal.dialog.content.moderation_publication.helpers.dialog_data_helper import DialogDataHelper
+
 
 class StateRestorer:
     def __init__(self, logger, image_manager):
         self.logger = logger
         self._image_manager = image_manager
+        self.dialog_data_helper = DialogDataHelper()
 
     def save_state_before_modification(
             self,
             dialog_manager: DialogManager,
             include_image: bool = True
     ) -> None:
-        """
-        Сохраняет текущее состояние перед модификацией.
-        Сохраняет previous_text и опционально previous_has_image.
-        """
-        working_pub = dialog_manager.dialog_data.get("working_publication", {})
+        working_pub = self.dialog_data_helper.get_working_publication_safe(dialog_manager)
 
         # Сохраняем текущий текст
         current_text = working_pub.get("text")
         if current_text:
-            dialog_manager.dialog_data["previous_text"] = current_text
+            self.dialog_data_helper.set_previous_text(dialog_manager, current_text)
             self.logger.info("Сохранено предыдущее состояние текста")
 
         # Сохраняем состояние изображения если требуется
         if include_image:
-            has_image = working_pub.get("has_image", False)
-            dialog_manager.dialog_data["previous_has_image"] = has_image
+            has_image = self.dialog_data_helper.get_working_image_has_image(dialog_manager)
+            self.dialog_data_helper.set_previous_has_image(dialog_manager, has_image)
             self.logger.info(f"Сохранено предыдущее состояние изображения: {has_image}")
 
     def restore_previous_state(self, dialog_manager: DialogManager) -> None:
-        """Восстанавливает сохраненное состояние"""
         # Восстанавливаем предыдущий текст
-        previous_text = dialog_manager.dialog_data.get("previous_text")
+        previous_text = self.dialog_data_helper.get_previous_text(dialog_manager)
         if previous_text:
-            dialog_manager.dialog_data["working_publication"]["text"] = previous_text
+            self.dialog_data_helper.update_working_text(dialog_manager, previous_text)
             self.logger.info("Текст восстановлен из предыдущего состояния")
 
         # Восстанавливаем состояние изображения если оно было изменено
-        if "previous_has_image" in dialog_manager.dialog_data:
-            prev_has_image = dialog_manager.dialog_data["previous_has_image"]
-            current_has_image = dialog_manager.dialog_data["working_publication"].get("has_image", False)
+        if self.dialog_data_helper.has_previous_has_image(dialog_manager):
+            prev_has_image = self.dialog_data_helper.get_previous_has_image(dialog_manager)
+            current_has_image = self.dialog_data_helper.get_working_image_has_image(dialog_manager)
 
             # Если изображение было добавлено (и его не было раньше), удаляем его
             if not prev_has_image and current_has_image:
@@ -48,5 +46,4 @@ class StateRestorer:
                 self._image_manager.clear_image_data(dialog_manager=dialog_manager)
 
         # Очищаем сохраненные данные
-        dialog_manager.dialog_data.pop("previous_text", None)
-        dialog_manager.dialog_data.pop("previous_has_image", None)
+        self.dialog_data_helper.clear_previous_state(dialog_manager)

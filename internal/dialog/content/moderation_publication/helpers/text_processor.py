@@ -3,6 +3,7 @@ import re
 from aiogram_dialog import DialogManager
 
 from internal import model
+from internal.dialog.content.moderation_publication.helpers.dialog_data_helper import DialogDataHelper
 
 
 class TextProcessor:
@@ -13,27 +14,28 @@ class TextProcessor:
 
     def __init__(self, logger):
         self.logger = logger
+        self.dialog_data_helper = DialogDataHelper()
 
     async def check_text_length_with_image(
             self,
             dialog_manager: DialogManager
     ) -> bool:
-        working_pub = dialog_manager.dialog_data.get("working_publication", {})
+        working_pub = self.dialog_data_helper.get_working_publication_safe(dialog_manager)
         publication_text = working_pub.get("text", "")
 
         text_without_tags = re.sub(r'<[^>]+>', '', publication_text)
         text_length = len(text_without_tags)
-        has_image = working_pub.get("has_image", False)
+        has_image = self.dialog_data_helper.get_working_image_has_image(dialog_manager)
 
         if has_image and text_length > self.MAX_TEXT_WITH_IMAGE:
             self.logger.info(f"Текст слишком длинный для публикации с изображением: {text_length} символов")
-            dialog_manager.dialog_data["expected_length"] = self.RECOMMENDED_TEXT_WITH_IMAGE
+            self.dialog_data_helper.set_expected_length(dialog_manager, self.RECOMMENDED_TEXT_WITH_IMAGE)
             await dialog_manager.switch_to(state=model.ModerationPublicationStates.text_too_long_alert)
             return True
 
         if not has_image and text_length > self.MAX_TEXT_WITHOUT_IMAGE:
             self.logger.info(f"Текст слишком длинный: {text_length} символов")
-            dialog_manager.dialog_data["expected_length"] = self.RECOMMENDED_TEXT_WITHOUT_IMAGE
+            self.dialog_data_helper.set_expected_length(dialog_manager, self.RECOMMENDED_TEXT_WITHOUT_IMAGE)
             await dialog_manager.switch_to(state=model.ModerationPublicationStates.text_too_long_alert)
             return True
 
@@ -41,15 +43,12 @@ class TextProcessor:
 
     @staticmethod
     def format_html_text(text: str) -> str:
-        """Форматирует текст для HTML, заменяя переносы строк на <br/>"""
         return text.replace('\n', '<br/>')
 
     @staticmethod
     def strip_text(text: str) -> str:
-        """Очищает текст от пробелов по краям"""
         return text.strip()
 
     @staticmethod
     def create_compress_prompt(expected_length: int) -> str:
-        """Создает промпт для сжатия текста до указанной длины"""
         return f"Сожми текст до {expected_length} символов, сохраняя основной смысл и ключевые идеи"

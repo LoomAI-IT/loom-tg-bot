@@ -2,6 +2,7 @@ from aiogram import Bot
 from aiogram_dialog import DialogManager
 
 from internal import interface, model
+from internal.dialog.content.moderation_publication.helpers.dialog_data_helper import DialogDataHelper
 
 
 class PublicationManager:
@@ -14,11 +15,11 @@ class PublicationManager:
         self.logger = logger
         self.bot = bot
         self.loom_content_client = loom_content_client
+        self.dialog_data_helper = DialogDataHelper()
 
     def has_changes(self, dialog_manager: DialogManager) -> bool:
-
-        original = dialog_manager.dialog_data.get("original_publication", {})
-        working = dialog_manager.dialog_data.get("working_publication", {})
+        original = self.dialog_data_helper.get_original_publication_safe(dialog_manager)
+        working = self.dialog_data_helper.get_working_publication_safe(dialog_manager)
 
         if not original or not working:
             return False
@@ -49,8 +50,8 @@ class PublicationManager:
         return False
 
     async def save_publication_changes(self, dialog_manager: DialogManager) -> None:
-        working_pub = dialog_manager.dialog_data["working_publication"]
-        original_pub = dialog_manager.dialog_data["original_publication"]
+        working_pub = self.dialog_data_helper.get_working_publication(dialog_manager)
+        original_pub = self.dialog_data_helper.get_original_publication(dialog_manager)
         publication_id = working_pub["id"]
 
         # Определяем, что делать с изображением
@@ -124,10 +125,10 @@ class PublicationManager:
             dialog_manager: DialogManager,
             state: model.UserState,
     ) -> dict:
-        original_pub = dialog_manager.dialog_data["original_publication"]
+        original_pub = self.dialog_data_helper.get_original_publication(dialog_manager)
         publication_id = original_pub["id"]
 
-        selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
+        selected_networks = self.dialog_data_helper.get_selected_social_networks(dialog_manager)
 
         selected_sources = {
             "tg_source": selected_networks.get("telegram_checkbox", False),
@@ -150,25 +151,22 @@ class PublicationManager:
 
         return post_links
 
-    @staticmethod
-    def remove_current_publication_from_list(dialog_manager: DialogManager) -> None:
-        moderation_list = dialog_manager.dialog_data.get("moderation_list", [])
-        current_index = dialog_manager.dialog_data.get("current_index", 0)
+    def remove_current_publication_from_list(self, dialog_manager: DialogManager) -> None:
+        moderation_list = self.dialog_data_helper.get_moderation_list(dialog_manager)
+        current_index = self.dialog_data_helper.get_current_index(dialog_manager)
 
         if moderation_list and current_index < len(moderation_list):
             moderation_list.pop(current_index)
 
             # Корректируем индекс если нужно
             if current_index >= len(moderation_list) and moderation_list:
-                dialog_manager.dialog_data["current_index"] = len(moderation_list) - 1
+                self.dialog_data_helper.set_current_index(dialog_manager, len(moderation_list) - 1)
             elif not moderation_list:
-                dialog_manager.dialog_data["current_index"] = 0
+                self.dialog_data_helper.set_current_index(dialog_manager, 0)
 
             # Сбрасываем рабочие данные
-            dialog_manager.dialog_data.pop("working_publication", None)
+            self.dialog_data_helper.clear_working_publication_from_data(dialog_manager)
             dialog_manager.dialog_data.pop("selected_networks", None)
-
-    # ========== API методы ==========
 
     async def reject_publication(
             self,
@@ -176,8 +174,6 @@ class PublicationManager:
             moderator_id: int,
             comment: str
     ) -> None:
-        """API вызов отклонения публикации"""
-        self.logger.info(f"Отклонение публикации {publication_id}")
         await self.loom_content_client.moderate_publication(
             publication_id=publication_id,
             moderator_id=moderator_id,
@@ -191,8 +187,6 @@ class PublicationManager:
             text: str,
             prompt: str | None = None
     ) -> dict:
-        """API вызов регенерации текста публикации"""
-        self.logger.info(f"Регенерация текста для категории {category_id}")
         return await self.loom_content_client.regenerate_publication_text(
             category_id=category_id,
             publication_text=text,
@@ -207,8 +201,6 @@ class PublicationManager:
             image_filename: str | None = None,
             prompt: str | None = None
     ) -> list[str]:
-        """API вызов генерации изображения для публикации"""
-        self.logger.info(f"Генерация изображения для категории {category_id}")
         return await self.loom_content_client.generate_publication_image(
             category_id=category_id,
             publication_text=publication_text,
@@ -224,9 +216,7 @@ class PublicationManager:
             text: str,
             expected_length: int
     ) -> dict:
-        """API вызов сжатия текста публикации"""
         compress_prompt = f"Сожми текст до {expected_length} символов, сохраняя основной смысл и ключевые идеи"
-        self.logger.info(f"Сжатие текста для категории {category_id} до {expected_length} символов")
         return await self.loom_content_client.regenerate_publication_text(
             category_id=category_id,
             publication_text=text,

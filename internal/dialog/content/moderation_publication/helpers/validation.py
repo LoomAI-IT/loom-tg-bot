@@ -1,6 +1,8 @@
 from aiogram.types import Message, PhotoSize
 from aiogram_dialog import DialogManager
 
+from internal.dialog.content.moderation_publication.helpers.dialog_data_helper import DialogDataHelper
+
 
 class ValidationService:
     MIN_REJECT_COMMENT_LENGTH = 10
@@ -17,6 +19,7 @@ class ValidationService:
 
     def __init__(self, logger):
         self.logger = logger
+        self.dialog_data_helper = DialogDataHelper()
 
     def validate_text_with_limits(
             self,
@@ -30,17 +33,17 @@ class ValidationService:
     ) -> bool:
         if not text:
             self.logger.info(f"Пустой текст: {void_flag}")
-            dialog_manager.dialog_data[void_flag] = True
+            self.dialog_data_helper.set_validation_flag(dialog_manager, void_flag)
             return False
 
         if len(text) < min_length:
             self.logger.info(f"Слишком короткий текст: {small_flag}")
-            dialog_manager.dialog_data[small_flag] = True
+            self.dialog_data_helper.set_validation_flag(dialog_manager, small_flag)
             return False
 
         if len(text) > max_length:
             self.logger.info(f"Слишком длинный текст: {big_flag}")
-            dialog_manager.dialog_data[big_flag] = True
+            self.dialog_data_helper.set_validation_flag(dialog_manager, big_flag)
             return False
 
         return True
@@ -65,7 +68,6 @@ class ValidationService:
             prompt: str,
             dialog_manager: DialogManager
     ) -> bool:
-        """Валидация промпта для регенерации текста"""
         return self.validate_text_with_limits(
             text=prompt,
             min_length=self.MIN_TEXT_PROMPT_LENGTH,
@@ -107,7 +109,7 @@ class ValidationService:
         )
 
     def validate_selected_networks(self, dialog_manager: DialogManager) -> bool:
-        selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
+        selected_networks = self.dialog_data_helper.get_selected_social_networks(dialog_manager)
         has_selected_networks = any(selected_networks.values())
 
         if not has_selected_networks:
@@ -122,10 +124,9 @@ class ValidationService:
             allowed_types: list[str],
             dialog_manager: DialogManager
     ) -> bool:
-        """Валидация типа контента сообщения"""
         if message.content_type not in allowed_types:
             self.logger.info(f"Неверный тип контента: {message.content_type}, ожидается {allowed_types}")
-            dialog_manager.dialog_data["has_invalid_content_type"] = True
+            self.dialog_data_helper.set_validation_flag(dialog_manager, "has_invalid_content_type")
             return False
         return True
 
@@ -135,11 +136,10 @@ class ValidationService:
             dialog_manager: DialogManager,
             max_size_mb: int = 10
     ) -> bool:
-        """Валидация размера изображения"""
         if hasattr(photo, 'file_size') and photo.file_size:
             max_size_bytes = max_size_mb * 1024 * 1024
             if photo.file_size > max_size_bytes:
                 self.logger.info(f"Размер изображения превышает допустимый: {photo.file_size} > {max_size_bytes}")
-                dialog_manager.dialog_data["has_big_image_size"] = True
+                self.dialog_data_helper.set_validation_flag(dialog_manager, "has_big_image_size")
                 return False
         return True

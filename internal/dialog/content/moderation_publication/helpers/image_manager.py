@@ -6,6 +6,8 @@ from aiogram.types import ContentType
 from aiogram_dialog.api.entities import MediaId, MediaAttachment
 from aiogram_dialog import DialogManager
 
+from internal.dialog.content.moderation_publication.helpers.dialog_data_helper import DialogDataHelper
+
 
 class ImageManager:
     def __init__(
@@ -18,34 +20,36 @@ class ImageManager:
         self.bot = bot
         self.loom_domain = loom_domain
 
+        self.dialog_data_helper = DialogDataHelper()
+
     def navigate_images(
             self,
             dialog_manager: DialogManager,
             direction: str
     ) -> None:
-        working_pub = dialog_manager.dialog_data.get("working_publication", {})
+        working_pub = self.dialog_data_helper.get_working_publication_safe(dialog_manager)
         images_url = working_pub.get("generated_images_url", [])
         current_index = working_pub.get("current_image_index", 0)
 
         if direction == "prev":
             if current_index > 0:
-                dialog_manager.dialog_data["working_publication"]["current_image_index"] = current_index - 1
+                self.dialog_data_helper.set_working_image_index(dialog_manager, current_index - 1)
             else:
                 self.logger.info("Переход к последнему изображению")
-                dialog_manager.dialog_data["working_publication"]["current_image_index"] = len(images_url) - 1
+                self.dialog_data_helper.set_working_image_index(dialog_manager, len(images_url) - 1)
         else:  # next
             if current_index < len(images_url) - 1:
-                dialog_manager.dialog_data["working_publication"]["current_image_index"] = current_index + 1
+                self.dialog_data_helper.set_working_image_index(dialog_manager, current_index + 1)
             else:
                 self.logger.info("Переход к первому изображению")
-                dialog_manager.dialog_data["working_publication"]["current_image_index"] = 0
+                self.dialog_data_helper.set_working_image_index(dialog_manager, 0)
 
     async def get_current_image_data(
             self,
             dialog_manager: DialogManager
     ) -> tuple[bytes, str] | None:
         try:
-            working_pub = dialog_manager.dialog_data.get("working_publication", {})
+            working_pub = self.dialog_data_helper.get_working_publication_safe(dialog_manager)
 
             # Проверяем пользовательское изображение
             if working_pub.get("custom_image_file_id"):
@@ -135,21 +139,20 @@ class ImageManager:
         )
 
     def clear_image_data(self, dialog_manager: DialogManager) -> None:
-        dialog_manager.dialog_data["working_publication"]["has_image"] = False
-        dialog_manager.dialog_data["working_publication"].pop("image_url", None)
-        dialog_manager.dialog_data["working_publication"].pop("custom_image_file_id", None)
-        dialog_manager.dialog_data["working_publication"].pop("is_custom_image", None)
-        dialog_manager.dialog_data["working_publication"].pop("generated_images_url", None)
-        dialog_manager.dialog_data["working_publication"].pop("current_image_index", None)
+        self.dialog_data_helper.set_working_image_has_image(dialog_manager, False)
+        self.dialog_data_helper.remove_working_image_fields(
+            dialog_manager,
+            "image_url",
+            "custom_image_file_id",
+            "is_custom_image",
+            "generated_images_url",
+            "current_image_index"
+        )
 
     async def prepare_current_image_for_generation(
             self,
             dialog_manager: DialogManager
     ) -> tuple[bytes | None, str | None]:
-        """
-        Подготавливает текущее изображение для генерации.
-        Возвращает (content, filename) или (None, None)
-        """
         image_data = await self.get_current_image_data(dialog_manager)
         if image_data:
             self.logger.info("Используется текущее изображение для генерации")
@@ -161,35 +164,30 @@ class ImageManager:
             dialog_manager: DialogManager,
             images_url: list[str]
     ) -> None:
-        """Обновляет working_publication с множественными сгенерированными изображениями"""
-        working_pub = dialog_manager.dialog_data["working_publication"]
-
-        working_pub["generated_images_url"] = images_url
-        working_pub["has_image"] = True
-        working_pub["current_image_index"] = 0
+        self.dialog_data_helper.set_working_generated_images(dialog_manager, images_url)
+        self.dialog_data_helper.set_working_image_has_image(dialog_manager, True)
+        self.dialog_data_helper.set_working_image_index(dialog_manager, 0)
 
         # Удаляем старые данные изображения
-        working_pub.pop("custom_image_file_id", None)
-        working_pub.pop("is_custom_image", None)
-        working_pub.pop("image_url", None)
-
-        self.logger.info(f"Обновлены сгенерированные изображения: {len(images_url)} вариантов")
+        self.dialog_data_helper.remove_working_image_fields(
+            dialog_manager,
+            "custom_image_file_id",
+            "is_custom_image",
+            "image_url"
+        )
 
     def update_custom_image(
             self,
             dialog_manager: DialogManager,
             file_id: str
     ) -> None:
-        """Обновляет working_publication с кастомным загруженным изображением"""
-        working_pub = dialog_manager.dialog_data["working_publication"]
-
-        working_pub["custom_image_file_id"] = file_id
-        working_pub["has_image"] = True
-        working_pub["is_custom_image"] = True
+        self.dialog_data_helper.set_working_custom_image(dialog_manager, file_id)
+        self.dialog_data_helper.set_working_image_has_image(dialog_manager, True)
 
         # Удаляем URL если был
-        working_pub.pop("image_url", None)
-        working_pub.pop("generated_images_url", None)
-        working_pub.pop("current_image_index", None)
-
-        self.logger.info("Обновлено пользовательское изображение")
+        self.dialog_data_helper.remove_working_image_fields(
+            dialog_manager,
+            "image_url",
+            "generated_images_url",
+            "current_image_index"
+        )

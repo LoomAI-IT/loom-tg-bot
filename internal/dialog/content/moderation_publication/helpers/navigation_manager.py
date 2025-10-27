@@ -1,17 +1,20 @@
 from aiogram_dialog import DialogManager
 
+from internal.dialog.content.moderation_publication.helpers.dialog_data_helper import DialogDataHelper
+
 
 class NavigationManager:
     def __init__(self, logger):
         self.logger = logger
+        self.dialog_data_helper = DialogDataHelper()
 
     def navigate_publications(
             self,
             dialog_manager: DialogManager,
             direction: str
     ) -> tuple[int, bool]:
-        current_index = dialog_manager.dialog_data.get("current_index", 0)
-        moderation_list = dialog_manager.dialog_data.get("moderation_list", [])
+        current_index = self.dialog_data_helper.get_current_index(dialog_manager)
+        moderation_list = self.dialog_data_helper.get_moderation_list(dialog_manager)
 
         if direction == "prev":
             self.logger.info("Переход к предыдущей публикации")
@@ -23,17 +26,16 @@ class NavigationManager:
         at_edge = new_index == current_index
 
         if not at_edge:
-            dialog_manager.dialog_data["current_index"] = new_index
-            dialog_manager.dialog_data.pop("working_publication", None)
+            self.dialog_data_helper.set_current_index(dialog_manager, new_index)
+            self.dialog_data_helper.clear_working_publication_from_data(dialog_manager)
         else:
             self.logger.info("Достигнут край списка")
 
         return new_index, at_edge
 
-    @staticmethod
-    def get_navigation_context(dialog_manager: DialogManager) -> dict:
-        current_index = dialog_manager.dialog_data.get("current_index", 0)
-        moderation_list = dialog_manager.dialog_data.get("moderation_list", [])
+    def get_navigation_context(self, dialog_manager: DialogManager) -> dict:
+        current_index = self.dialog_data_helper.get_current_index(dialog_manager)
+        moderation_list = self.dialog_data_helper.get_moderation_list(dialog_manager)
 
         return {
             "current_index": current_index,
@@ -43,9 +45,8 @@ class NavigationManager:
             "has_next": current_index < len(moderation_list) - 1
         }
 
-    @staticmethod
-    def can_navigate(dialog_manager: DialogManager, direction: str) -> bool:
-        context = NavigationManager.get_navigation_context(dialog_manager)
+    def can_navigate(self, dialog_manager: DialogManager, direction: str) -> bool:
+        context = self.get_navigation_context(dialog_manager)
 
         if direction == "prev":
             return context["has_prev"]
