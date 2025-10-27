@@ -11,11 +11,10 @@ from pkg.log_wrapper import auto_log
 from pkg.tg_action_wrapper import tg_action
 from pkg.trace_wrapper import traced_method
 
-from internal.dialog._state_helper import _StateHelper
-from internal.dialog._message_extractor import _MessageExtractor
+from internal.dialog.helpers import StateManager
+from internal.dialog.helpers import MessageExtractor
 
-from ._llm_interaction import _LLMInteraction
-from ._organization_manager import _OrganizationManager
+from internal.dialog.brief.update_organization.helpers import OrganizationManager, LLMChatManager
 
 
 class UpdateOrganizationService(interface.IUpdateOrganizationService):
@@ -41,18 +40,18 @@ class UpdateOrganizationService(interface.IUpdateOrganizationService):
         self.state_repo = state_repo
 
         # Инициализация приватных сервисов
-        self._state_helper = _StateHelper(
+        self.state_manager = StateManager(
             state_repo=self.state_repo
         )
-        self._message_extractor = _MessageExtractor(
+        self.message_extractor = MessageExtractor(
             logger=self.logger,
             bot=self.bot,
             loom_content_client=self.loom_content_client
         )
-        self._organization_manager = _OrganizationManager(
+        self._organization_manager = OrganizationManager(
             loom_organization_client=self.loom_organization_client,
         )
-        self._llm_interaction = _LLMInteraction(
+        self.llm_chat_manager = LLMChatManager(
             logger=self.logger,
             bot=self.bot,
             anthropic_client=self.anthropic_client,
@@ -70,14 +69,14 @@ class UpdateOrganizationService(interface.IUpdateOrganizationService):
             widget: MessageInput,
             dialog_manager: DialogManager
     ) -> None:
-        state = await self._state_helper.get_state(dialog_manager)
+        state = await self.state_manager.get_state(dialog_manager)
         try:
-            self._state_helper.set_edit_mode(dialog_manager)
+            self.state_manager.set_edit_mode(dialog_manager)
 
             chat_id = dialog_manager.dialog_data["chat_id"]
 
             async with tg_action(self.bot, message.chat.id):
-                llm_response_json = await self._llm_interaction.process_user_message(
+                llm_response_json = await self.llm_chat_manager.process_user_message(
                     dialog_manager=dialog_manager,
                     message=message,
                     chat_id=chat_id,
@@ -95,7 +94,7 @@ class UpdateOrganizationService(interface.IUpdateOrganizationService):
                 await dialog_manager.switch_to(state=model.UpdateOrganizationStates.organization_updated)
                 return
 
-            await self._llm_interaction.save_llm_response(
+            await self.llm_chat_manager.save_llm_response(
                 chat_id=chat_id,
                 llm_response_json=llm_response_json
             )

@@ -6,9 +6,8 @@ from internal import interface, model
 from pkg.log_wrapper import auto_log
 from pkg.trace_wrapper import traced_method
 
-from internal.dialog._state_helper import _StateHelper
-from ._permission_checker import _PermissionChecker
-from ._chat_manager import _ChatManager
+from internal.dialog.helpers import StateManager
+from internal.dialog.organization.organization_menu.helpers import PermissionChecker
 
 
 class OrganizationMenuService(interface.IOrganizationMenuService):
@@ -26,9 +25,8 @@ class OrganizationMenuService(interface.IOrganizationMenuService):
         self.loom_employee_client = loom_employee_client
 
         # Инициализация приватных сервисов
-        self._state_helper = _StateHelper(state_repo)
-        self._permission_checker = _PermissionChecker(self.logger, loom_employee_client)
-        self._chat_manager = _ChatManager(self.logger, llm_chat_repo)
+        self.state_manager = StateManager(state_repo)
+        self._permission_checker = PermissionChecker(self.logger, loom_employee_client)
 
     @auto_log()
     @traced_method()
@@ -38,7 +36,7 @@ class OrganizationMenuService(interface.IOrganizationMenuService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        state = await self._state_helper.get_state(dialog_manager)
+        state = await self.state_manager.get_state(dialog_manager)
 
         if not await self._permission_checker.check_employee_settings_permission(state, callback):
             return
@@ -63,9 +61,9 @@ class OrganizationMenuService(interface.IOrganizationMenuService):
     ) -> None:
         await callback.answer("В разработке", show_alert=True)
         return
-        # self._state_helper.set_edit_mode(dialog_manager)
+        # self.state_manager.set_edit_mode(dialog_manager)
         #
-        # state = await self._state_helper.get_state(dialog_manager)
+        # state = await self.state_manager.get_state(dialog_manager)
         #
         # if not await self._permission_checker.check_update_organization_permission(state, callback):
         #     return
@@ -87,16 +85,18 @@ class OrganizationMenuService(interface.IOrganizationMenuService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager)
+        self.state_manager.set_edit_mode(dialog_manager)
 
-        state = await self._state_helper.get_state(dialog_manager)
+        state = await self.state_manager.get_state(dialog_manager)
 
         if not await self._permission_checker.check_update_category_permission(state, callback):
             return
 
         await callback.answer()
 
-        await self._chat_manager.clear_chat(state.id)
+        chat = await self.llm_chat_repo.get_chat_by_state_id(state.id)
+        if chat:
+            await self.llm_chat_repo.delete_chat(chat_id=chat[0].id)
 
         await dialog_manager.start(
             state=model.UpdateCategoryStates.select_category,
@@ -111,7 +111,7 @@ class OrganizationMenuService(interface.IOrganizationMenuService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        state = await self._state_helper.get_state(dialog_manager)
+        state = await self.state_manager.get_state(dialog_manager)
 
         if not await self._permission_checker.check_add_employee_permission(state, callback):
             return
@@ -144,7 +144,7 @@ class OrganizationMenuService(interface.IOrganizationMenuService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager)
+        self.state_manager.set_edit_mode(dialog_manager)
         await dialog_manager.start(state=model.AddSocialNetworkStates.select_network)
 
     @auto_log()

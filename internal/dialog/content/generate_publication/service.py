@@ -12,14 +12,11 @@ from pkg.log_wrapper import auto_log
 from pkg.tg_action_wrapper import tg_action
 from pkg.trace_wrapper import traced_method
 
-from internal.dialog._state_helper import _StateHelper
-from internal.dialog._alerts import _AlertsChecker
-from internal.dialog._message_extractor import _MessageExtractor
+from internal.dialog.helpers import StateManager, AlertsManager, MessageExtractor
 
-from ._error_flags import _ErrorFlagsManager
-from ._image_manager import _ImageManager
-from ._text_processor import _TextProcessor
-from ._validation import _ValidationService
+from internal.dialog.content.generate_publication.helpers import (
+    ErrorFlagsManager, ImageManager, TextProcessor, ValidationService
+)
 
 
 class GeneratePublicationService(interface.IGeneratePublicationService):
@@ -49,29 +46,29 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         self.loom_employee_client = loom_employee_client
 
         # Инициализация приватных сервисов
-        self._state_helper = _StateHelper(
+        self.state_manager = StateManager(
             state_repo=self.state_repo
         )
-        self._validation = _ValidationService(
+        self._validation = ValidationService(
             logger=self.logger
         )
-        self._text_processor = _TextProcessor(
+        self._text_processor = TextProcessor(
             logger=self.logger
         )
-        self._message_extractor = _MessageExtractor(
+        self.message_extractor = MessageExtractor(
             logger=self.logger,
             bot=self.bot,
             loom_content_client=self.loom_content_client
         )
-        self._alerts_checker = _AlertsChecker(
+        self._alerts_manager = AlertsManager(
             self.state_repo
         )
-        self._image_manager = _ImageManager(
+        self._image_manager = ImageManager(
             logger=self.logger,
             bot=self.bot,
             loom_content_client=self.loom_content_client
         )
-        self._error_flags = _ErrorFlagsManager()
+        self._error_flags = ErrorFlagsManager()
 
     # ============= PUBLIC HANDLERS: INPUT & CATEGORY =============
 
@@ -83,19 +80,19 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             widget: MessageInput,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
         await message.delete()
 
         self._error_flags.clear_input_error_flags(dialog_manager=dialog_manager)
 
-        state = await self._state_helper.get_state(dialog_manager=dialog_manager)
+        state = await self.state_manager.get_state(dialog_manager=dialog_manager)
 
         if message.content_type not in [ContentType.VOICE, ContentType.AUDIO, ContentType.TEXT]:
             self.logger.info("Неверный тип контента")
             dialog_manager.dialog_data["has_invalid_content_type"] = True
             return
 
-        text = await self._message_extractor.process_voice_or_text_input(
+        text = await self.message_extractor.process_voice_or_text_input(
             message=message,
             dialog_manager=dialog_manager,
             organization_id=state.organization_id
@@ -118,7 +115,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             dialog_manager: DialogManager,
             category_id: str
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
         category = await self.loom_content_client.get_category_by_id(
             category_id=int(category_id)
         )
@@ -148,9 +145,9 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Button,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
 
-        state = await self._state_helper.get_state(dialog_manager=dialog_manager)
+        state = await self.state_manager.get_state(dialog_manager=dialog_manager)
 
         employee = await self.loom_employee_client.get_employee_by_account_id(
             account_id=state.account_id
@@ -181,7 +178,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
 
         await callback.answer()
         await callback.message.edit_text(
@@ -210,7 +207,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
         await callback.answer()
         await callback.message.edit_text(
             "Генерирую текст с картинкой, это может занять минуты 3. Не совершайте никаких действий...",
@@ -256,7 +253,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
         self._image_manager.navigate_images(
             dialog_manager=dialog_manager,
             images_key="publication_images_url",
@@ -273,7 +270,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
         self._image_manager.navigate_images(
             dialog_manager=dialog_manager,
             images_key="publication_images_url",
@@ -290,7 +287,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
 
         await callback.answer()
         dialog_manager.dialog_data["is_regenerating_text"] = True
@@ -323,19 +320,19 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             widget: MessageInput,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
         await message.delete()
 
         self._error_flags.clear_regenerate_prompt_error_flags(dialog_manager=dialog_manager)
 
-        state = await self._state_helper.get_state(dialog_manager=dialog_manager)
+        state = await self.state_manager.get_state(dialog_manager=dialog_manager)
 
         if message.content_type not in [ContentType.VOICE, ContentType.AUDIO, ContentType.TEXT]:
             self.logger.info("Неверный тип контента для регенерации")
             dialog_manager.dialog_data["has_invalid_content_type"] = True
             return
 
-        prompt = await self._message_extractor.process_voice_or_text_input(
+        prompt = await self.message_extractor.process_voice_or_text_input(
             message=message,
             dialog_manager=dialog_manager,
             organization_id=state.organization_id
@@ -385,7 +382,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             dialog_manager: DialogManager,
             text: str
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
 
         await message.delete()
 
@@ -409,7 +406,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
 
         await callback.answer()
         dialog_manager.dialog_data["is_generating_image"] = True
@@ -451,19 +448,19 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             widget: MessageInput,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
         await message.delete()
 
         self._error_flags.clear_image_prompt_error_flags(dialog_manager=dialog_manager)
 
-        state = await self._state_helper.get_state(dialog_manager=dialog_manager)
+        state = await self.state_manager.get_state(dialog_manager=dialog_manager)
 
         if message.content_type not in [ContentType.VOICE, ContentType.AUDIO, ContentType.TEXT]:
             self.logger.info("Неверный тип контента для генерации изображения")
             dialog_manager.dialog_data["has_invalid_content_type"] = True
             return
 
-        prompt = await self._message_extractor.process_voice_or_text_input(
+        prompt = await self.message_extractor.process_voice_or_text_input(
             message=message,
             dialog_manager=dialog_manager,
             organization_id=state.organization_id
@@ -512,7 +509,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             widget: MessageInput,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
 
         await message.delete()
 
@@ -557,7 +554,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
 
         self._image_manager.clear_image_data(dialog_manager=dialog_manager)
 
@@ -630,9 +627,9 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
 
-        state = await self._state_helper.get_state(dialog_manager=dialog_manager)
+        state = await self.state_manager.get_state(dialog_manager=dialog_manager)
 
         category_id = dialog_manager.dialog_data["category_id"]
         text_reference = dialog_manager.dialog_data["input_text"]
@@ -666,7 +663,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         await callback.answer("Публикация отправлена на модерацию", show_alert=True)
 
-        if await self._alerts_checker.check_alerts(dialog_manager=dialog_manager, state=state):
+        if await self._alerts_manager.check_alerts(dialog_manager=dialog_manager, state=state):
             return
 
         await dialog_manager.start(
@@ -682,7 +679,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             checkbox: ManagedCheckbox,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
 
         if "selected_social_networks" not in dialog_manager.dialog_data:
             dialog_manager.dialog_data["selected_social_networks"] = {}
@@ -702,9 +699,9 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
 
-        state = await self._state_helper.get_state(dialog_manager=dialog_manager)
+        state = await self.state_manager.get_state(dialog_manager=dialog_manager)
 
         selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
         has_selected_networks = any(selected_networks.values())
@@ -757,7 +754,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         await callback.answer("Публикация успешно опубликована", show_alert=True)
 
-        if await self._alerts_checker.check_alerts(dialog_manager=dialog_manager, state=state):
+        if await self._alerts_manager.check_alerts(dialog_manager=dialog_manager, state=state):
             self.logger.info("Переход к алертам")
             return
 
@@ -771,7 +768,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
 
         dialog_manager.dialog_data["has_image"] = False
         dialog_manager.dialog_data.pop("publication_images_url", None)
@@ -791,7 +788,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
 
         await callback.answer()
         await callback.message.edit_text(
@@ -824,11 +821,11 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
 
-        state = await self._state_helper.get_state(dialog_manager=dialog_manager)
+        state = await self.state_manager.get_state(dialog_manager=dialog_manager)
 
-        if await self._alerts_checker.check_alerts(dialog_manager=dialog_manager, state=state):
+        if await self._alerts_manager.check_alerts(dialog_manager=dialog_manager, state=state):
             self.logger.info("Обнаружены алерты")
             return
 
@@ -847,7 +844,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
 
         await callback.answer()
 
@@ -868,7 +865,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
 
         await callback.answer()
 
@@ -890,7 +887,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
 
         await callback.answer()
 
@@ -907,7 +904,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             widget: MessageInput,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
 
         await message.delete()
 
@@ -948,7 +945,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
         self._image_manager.navigate_images(
             dialog_manager=dialog_manager,
             images_key="combine_images_list",
@@ -965,7 +962,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
         self._image_manager.navigate_images(
             dialog_manager=dialog_manager,
             images_key="combine_images_list",
@@ -986,7 +983,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         Обработка нажатия кнопки "Назад" в окне загрузки изображений для объединения.
         Возвращает в new_image_confirm, если пришли оттуда, иначе в image_menu.
         """
-        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
 
         await callback.answer()
 
@@ -1011,7 +1008,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
 
         combine_images_list = dialog_manager.dialog_data.get("combine_images_list", [])
         current_index = dialog_manager.dialog_data.get("combine_current_index", 0)
@@ -1036,19 +1033,19 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             widget: MessageInput,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
         await message.delete()
 
         self._error_flags.clear_combine_prompt_error_flags(dialog_manager=dialog_manager)
 
-        state = await self._state_helper.get_state(dialog_manager=dialog_manager)
+        state = await self.state_manager.get_state(dialog_manager=dialog_manager)
 
         if message.content_type not in [ContentType.VOICE, ContentType.AUDIO, ContentType.TEXT]:
             self.logger.info("Неверный тип контента для промпта объединения")
             dialog_manager.dialog_data["has_invalid_content_type"] = True
             return
 
-        prompt = await self._message_extractor.process_voice_or_text_input(
+        prompt = await self.message_extractor.process_voice_or_text_input(
             message=message,
             dialog_manager=dialog_manager,
             organization_id=state.organization_id
@@ -1096,7 +1093,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
 
         combine_images_list = dialog_manager.dialog_data.get("combine_images_list", [])
 
@@ -1109,7 +1106,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         dialog_manager.dialog_data["is_combining_images"] = True
         await dialog_manager.show()
 
-        state = await self._state_helper.get_state(dialog_manager=dialog_manager)
+        state = await self.state_manager.get_state(dialog_manager=dialog_manager)
 
         # Сохраняем backup (если старый backup не был создан ранее)
         if not dialog_manager.dialog_data.get("old_image_backup"):
@@ -1143,7 +1140,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         """
         Переход к объединению изображений с новой сгенерированной картинкой как первой
         """
-        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
 
         await callback.answer()
 
@@ -1201,7 +1198,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             widget: MessageInput,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
         await message.delete()
 
         self._error_flags.clear_error_flags(
@@ -1211,14 +1208,14 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             "has_invalid_content_type"
         )
 
-        state = await self._state_helper.get_state(dialog_manager=dialog_manager)
+        state = await self.state_manager.get_state(dialog_manager=dialog_manager)
 
         if message.content_type not in [ContentType.VOICE, ContentType.AUDIO, ContentType.TEXT]:
             self.logger.info("Неверный тип контента для правок изображения")
             dialog_manager.dialog_data["has_invalid_content_type"] = True
             return
 
-        prompt = await self._message_extractor.process_voice_or_text_input(
+        prompt = await self.message_extractor.process_voice_or_text_input(
             message=message,
             dialog_manager=dialog_manager,
             organization_id=state.organization_id
@@ -1283,7 +1280,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
 
         await callback.answer("Изображение применено")
 
@@ -1317,7 +1314,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
         dialog_manager.dialog_data["showing_old_image"] = True
         await callback.answer()
 
@@ -1329,7 +1326,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
         dialog_manager.dialog_data["showing_old_image"] = False
         await callback.answer()
 
@@ -1341,7 +1338,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
 
         await callback.answer("Изображение отклонено")
 

@@ -1,0 +1,6 @@
+from internal.dialog.content.generate_publication.helpers.image_manager import ImageManager
+from internal.dialog.content.generate_publication.helpers.validation import ValidationService
+from internal.dialog.content.generate_publication.helpers.data_extractor import DataExtractor
+from internal.dialog.content.generate_publication.helpers.social_network_manager import SocialNetworkManager
+from internal.dialog.content.generate_publication.helpers.text_processor import TextProcessor
+from internal.dialog.content.generate_publication.helpers.error_flags_manger import ErrorFlagsManager

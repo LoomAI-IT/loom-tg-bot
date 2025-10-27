@@ -5,11 +5,11 @@ from internal import interface, model
 from pkg.log_wrapper import auto_log
 from pkg.trace_wrapper import traced_method
 
-from internal.dialog._state_helper import _StateHelper
-from ._image_manager import _ImageManager
-from ._publication_manager import _PublicationManager
-from ._social_network_helper import _SocialNetworkHelper
-from ._datetime_formatter import _DateTimeFormatter
+from internal.dialog.helpers import StateManager
+
+from internal.dialog.content.moderation_publication.helpers import (
+    ImageManager, PublicationManager, SocialNetworkManager, DateTimeFormatter
+)
 
 
 class ModerationPublicationGetter(interface.IModerationPublicationGetter):
@@ -31,23 +31,23 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
         self.loom_domain = loom_domain
 
         # Инициализация вспомогательных классов
-        self._state_helper = _StateHelper(
+        self._state_manager = StateManager(
             state_repo=self.state_repo
         )
-        self._publication_manager = _PublicationManager(
+        self._publication_manager = PublicationManager(
             self.logger,
             self.bot,
             self.loom_content_client,
         )
-        self._image_manager = _ImageManager(
+        self._image_manager = ImageManager(
             logger=self.logger,
             bot=self.bot,
             loom_domain=self.loom_domain,
         )
-        self._social_network_helper = _SocialNetworkHelper(
+        self.__social_network_manger = SocialNetworkManager(
             logger=self.logger
         )
-        self._datetime_formatter = _DateTimeFormatter()
+        self._datetime_formatter = DateTimeFormatter()
 
     @auto_log()
     @traced_method()
@@ -56,7 +56,7 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        state = await self._state_helper.get_state(dialog_manager)
+        state = await self._state_manager.get_state(dialog_manager)
 
         publications = await self.loom_content_client.get_publications_by_organization(
             organization_id=state.organization_id
@@ -126,7 +126,7 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
             social_networks = await self.loom_content_client.get_social_networks_by_organization(
                 organization_id=state.organization_id
             )
-            selected_networks = self._social_network_helper.initialize_network_selection(
+            selected_networks = self.__social_network_manger.initialize_network_selection(
                 social_networks=social_networks
             )
             dialog_manager.dialog_data["selected_social_networks"] = selected_networks
@@ -208,17 +208,17 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        state = await self._state_helper.get_state(dialog_manager)
+        state = await self._state_manager.get_state(dialog_manager)
         social_networks = await self.loom_content_client.get_social_networks_by_organization(
             organization_id=state.organization_id
         )
 
-        telegram_connected = self._social_network_helper.is_network_connected(social_networks, "telegram")
-        vkontakte_connected = self._social_network_helper.is_network_connected(social_networks, "vkontakte")
+        telegram_connected = self.__social_network_manger.is_network_connected(social_networks, "telegram")
+        vkontakte_connected = self.__social_network_manger.is_network_connected(social_networks, "vkontakte")
 
         selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
 
-        await self._social_network_helper.setup_checkbox_states(
+        await self.__social_network_manger.setup_checkbox_states(
             dialog_manager=dialog_manager,
             social_networks=social_networks,
             selected_networks=selected_networks

@@ -13,10 +13,9 @@ from pkg.log_wrapper import auto_log
 from pkg.tg_action_wrapper import tg_action
 from pkg.trace_wrapper import traced_method
 
-from internal.dialog._state_helper import _StateHelper
-from internal.dialog.brief._llm_context_manager import _LLMContextManager
-from ._category_manager import _CategoryManager
-from ._llm_interaction import _LLMInteraction
+from internal.dialog.helpers import StateManager
+from internal.dialog.brief.helpers import LLMContextManager
+from internal.dialog.brief.update_category.helpers import CategoryManager, LLMChatManager
 
 
 class UpdateCategoryService(interface.IUpdateCategoryService):
@@ -44,19 +43,19 @@ class UpdateCategoryService(interface.IUpdateCategoryService):
         self.state_repo = state_repo
 
         # Инициализация приватных сервисов
-        self._state_helper = _StateHelper(
+        self.state_manager = StateManager(
             self.state_repo
         )
 
-        self._llm_context_manager = _LLMContextManager(
+        self._llm_context_manager = LLMContextManager(
             self.logger,
             self.anthropic_client,
             self.llm_chat_repo
         )
-        self._category_manger = _CategoryManager(
+        self._category_manger = CategoryManager(
             self.loom_content_client,
         )
-        self._llm_interaction = _LLMInteraction(
+        self.llm_chat_manager = LLMChatManager(
             self.logger,
             self.bot,
             self.anthropic_client,
@@ -76,7 +75,7 @@ class UpdateCategoryService(interface.IUpdateCategoryService):
             dialog_manager: DialogManager,
             category_id: str
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager)
+        self.state_manager.set_edit_mode(dialog_manager)
         await callback.answer()
 
         category = await self.loom_content_client.get_category_by_id(
@@ -96,15 +95,15 @@ class UpdateCategoryService(interface.IUpdateCategoryService):
             widget: MessageInput,
             dialog_manager: DialogManager
     ) -> None:
-        state = await self._state_helper.get_state(dialog_manager)
+        state = await self.state_manager.get_state(dialog_manager)
         try:
-            self._state_helper.set_edit_mode(dialog_manager)
+            self.state_manager.set_edit_mode(dialog_manager)
 
             category_id = dialog_manager.dialog_data.get("category_id")
             chat_id = dialog_manager.dialog_data.get("chat_id")
 
             async with tg_action(self.bot, message.chat.id):
-                llm_response_json = await self._llm_interaction.process_user_message(
+                llm_response_json = await self.llm_chat_manager.process_user_message(
                     dialog_manager=dialog_manager,
                     message=message,
                     chat_id=chat_id,
@@ -116,7 +115,7 @@ class UpdateCategoryService(interface.IUpdateCategoryService):
                 telegram_channel_username_list = llm_response_json["telegram_channel_username_list"]
 
                 async with tg_action(self.bot, message.chat.id):
-                    llm_response_json, generate_cost = await self._llm_interaction.process_telegram_channels(
+                    llm_response_json, generate_cost = await self.llm_chat_manager.process_telegram_channels(
                         dialog_manager=dialog_manager,
                         chat_id=chat_id,
                         category_id=category_id,
@@ -129,7 +128,7 @@ class UpdateCategoryService(interface.IUpdateCategoryService):
                 user_text_reference = llm_response_json["user_text_reference"]
 
                 async with tg_action(self.bot, message.chat.id):
-                    llm_response_json, test_publication_text = await self._llm_interaction.process_test_generate_publication(
+                    llm_response_json, test_publication_text = await self.llm_chat_manager.process_test_generate_publication(
                         dialog_manager=dialog_manager,
                         chat_id=chat_id,
                         category_id=category_id,
@@ -154,7 +153,7 @@ class UpdateCategoryService(interface.IUpdateCategoryService):
                 await dialog_manager.switch_to(state=model.UpdateCategoryStates.category_updated)
                 return
 
-            await self._llm_interaction.save_llm_response(
+            await self.llm_chat_manager.save_llm_response(
                 chat_id=chat_id,
                 llm_response_json=llm_response_json,
             )
@@ -175,7 +174,7 @@ class UpdateCategoryService(interface.IUpdateCategoryService):
             button: Button,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager)
+        self.state_manager.set_edit_mode(dialog_manager)
         await callback.answer()
 
         await dialog_manager.start(state=model.MainMenuStates.main_menu, mode=StartMode.RESET_STACK)
@@ -188,6 +187,6 @@ class UpdateCategoryService(interface.IUpdateCategoryService):
             button: Button,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager)
+        self.state_manager.set_edit_mode(dialog_manager)
 
         await dialog_manager.start(state=model.MainMenuStates.main_menu, mode=StartMode.RESET_STACK)

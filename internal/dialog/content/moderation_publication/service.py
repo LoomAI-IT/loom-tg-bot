@@ -12,16 +12,12 @@ from pkg.log_wrapper import auto_log
 from pkg.tg_action_wrapper import tg_action
 from pkg.trace_wrapper import traced_method
 
-from internal.dialog._state_helper import _StateHelper
-from internal.dialog._alerts import _AlertsChecker
-from internal.dialog._message_extractor import _MessageExtractor
+from internal.dialog.helpers import StateManager, AlertsManager, MessageExtractor
 
-from ._validation import _ValidationService
-from ._text_processor import _TextProcessor
-from ._image_manager import _ImageManager
-from ._error_flags import _ErrorFlagsManager
-from ._publication_manager import _PublicationManager
-from ._state_restorer import _StateRestorer
+from internal.dialog.content.moderation_publication.helpers import (
+    ValidationService, TextProcessor, ImageManager, ErrorFlagsManager, PublicationManager, StateRestorer
+)
+
 
 
 class ModerationPublicationService(interface.IModerationPublicationService):
@@ -41,38 +37,38 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         self.loom_domain = loom_domain
 
         # Инициализация приватных сервисов
-        self._state_helper = _StateHelper(
+        self._state_manager = StateManager(
             state_repo=self.state_repo
         )
-        self._validation = _ValidationService(
+        self._validation = ValidationService(
             logger=self.logger
         )
-        self._text_processor = _TextProcessor(
+        self._text_processor = TextProcessor(
             logger=self.logger
         )
-        self._message_extractor = _MessageExtractor(
+        self.message_extractor = MessageExtractor(
             logger=self.logger,
             bot=self.bot,
             loom_content_client=self.loom_content_client
         )
-        self._alerts_checker = _AlertsChecker(
+        self._alerts_manager = AlertsManager(
             self.state_repo
         )
-        self._image_manager = _ImageManager(
+        self._image_manager = ImageManager(
             logger=self.logger,
             bot=self.bot,
             loom_domain=self.loom_domain
         )
-        self._error_flags = _ErrorFlagsManager()
-        self._publication_manager = _PublicationManager(
+        self._publication_manager = PublicationManager(
             logger=self.logger,
             bot=self.bot,
             loom_content_client=self.loom_content_client
         )
-        self._state_restorer = _StateRestorer(
+        self._state_restorer = StateRestorer(
             logger=self.logger,
             image_manager=self._image_manager
         )
+        self._error_flags = ErrorFlagsManager()
 
     @auto_log()
     @traced_method()
@@ -82,7 +78,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
+        self._state_manager.set_edit_mode(dialog_manager=dialog_manager)
 
         current_index = dialog_manager.dialog_data.get("current_index", 0)
         moderation_list = dialog_manager.dialog_data.get("moderation_list", [])
@@ -117,7 +113,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             dialog_manager: DialogManager,
             comment: str
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
+        self._state_manager.set_edit_mode(dialog_manager=dialog_manager)
 
         await message.delete()
 
@@ -138,9 +134,9 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
+        self._state_manager.set_edit_mode(dialog_manager=dialog_manager)
 
-        state = await self._state_helper.get_state(dialog_manager)
+        state = await self._state_manager.get_state(dialog_manager)
         original_pub = dialog_manager.dialog_data["original_publication"]
         publication_id = original_pub["id"]
         reject_comment = dialog_manager.dialog_data.get("reject_comment", "Нет комментария")
@@ -166,7 +162,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
+        self._state_manager.set_edit_mode(dialog_manager=dialog_manager)
 
         await callback.answer()
         dialog_manager.dialog_data["is_regenerating_text"] = True
@@ -202,13 +198,13 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             widget: MessageInput,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
+        self._state_manager.set_edit_mode(dialog_manager=dialog_manager)
 
         await message.delete()
 
         self._error_flags.clear_regenerate_prompt_error_flags(dialog_manager=dialog_manager)
 
-        state = await self._state_helper.get_state(dialog_manager)
+        state = await self._state_manager.get_state(dialog_manager)
 
         # ВАЛИДАЦИЯ ТИПА КОНТЕНТА
         if message.content_type not in [ContentType.VOICE, ContentType.AUDIO, ContentType.TEXT]:
@@ -217,7 +213,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             return
 
         # ОБРАБОТКА ТЕКСТА ИЛИ ГОЛОСА
-        prompt = await self._message_extractor.process_voice_or_text_input(
+        prompt = await self.message_extractor.process_voice_or_text_input(
             message=message,
             dialog_manager=dialog_manager,
             organization_id=state.organization_id,
@@ -264,7 +260,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             dialog_manager: DialogManager,
             text: str
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
+        self._state_manager.set_edit_mode(dialog_manager=dialog_manager)
 
         await message.delete()
 
@@ -296,7 +292,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
+        self._state_manager.set_edit_mode(dialog_manager=dialog_manager)
 
         await callback.answer()
         dialog_manager.dialog_data["is_generating_image"] = True
@@ -352,13 +348,13 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             widget: MessageInput,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
+        self._state_manager.set_edit_mode(dialog_manager=dialog_manager)
 
         await message.delete()
 
         self._error_flags.clear_image_prompt_error_flags(dialog_manager=dialog_manager)
 
-        state = await self._state_helper.get_state(dialog_manager)
+        state = await self._state_manager.get_state(dialog_manager)
 
         # ВАЛИДАЦИЯ ТИПА КОНТЕНТА
         if message.content_type not in [ContentType.VOICE, ContentType.AUDIO, ContentType.TEXT]:
@@ -367,7 +363,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             return
 
         # ОБРАБОТКА ТЕКСТА ИЛИ ГОЛОСА
-        prompt = await self._message_extractor.process_voice_or_text_input(
+        prompt = await self.message_extractor.process_voice_or_text_input(
             message=message,
             dialog_manager=dialog_manager,
             organization_id=state.organization_id,
@@ -434,7 +430,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             widget: MessageInput,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
+        self._state_manager.set_edit_mode(dialog_manager=dialog_manager)
 
         await message.delete()
 
@@ -484,7 +480,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
+        self._state_manager.set_edit_mode(dialog_manager=dialog_manager)
 
         self._image_manager.clear_image_data(dialog_manager=dialog_manager)
 
@@ -500,7 +496,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
+        self._state_manager.set_edit_mode(dialog_manager=dialog_manager)
 
         if not self._publication_manager.has_changes(dialog_manager):
             self.logger.info("Нет изменений для сохранения")
@@ -526,7 +522,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
+        self._state_manager.set_edit_mode(dialog_manager=dialog_manager)
         await dialog_manager.switch_to(state=model.ModerationPublicationStates.moderation_list)
 
     @auto_log()
@@ -537,11 +533,11 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
+        self._state_manager.set_edit_mode(dialog_manager=dialog_manager)
 
-        state = await self._state_helper.get_state(dialog_manager)
+        state = await self._state_manager.get_state(dialog_manager)
 
-        if await self._alerts_checker.check_alerts(dialog_manager=dialog_manager, state=state):
+        if await self._alerts_manager.check_alerts(dialog_manager=dialog_manager, state=state):
             self.logger.info("Обнаружены алерты")
             return
 
@@ -612,7 +608,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             )
             return
 
-        state = await self._state_helper.get_state(dialog_manager)
+        state = await self._state_manager.get_state(dialog_manager)
         post_links = await self._publication_manager.approve_and_publish(dialog_manager, state)
 
         dialog_manager.dialog_data["post_links"] = post_links
@@ -630,7 +626,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
+        self._state_manager.set_edit_mode(dialog_manager=dialog_manager)
 
         # Удаляем изображение из рабочей версии
         self._image_manager.clear_image_data(dialog_manager=dialog_manager)
@@ -647,7 +643,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
+        self._state_manager.set_edit_mode(dialog_manager=dialog_manager)
 
         await callback.answer()
         await callback.message.edit_text(
@@ -681,7 +677,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._state_helper.set_edit_mode(dialog_manager=dialog_manager)
+        self._state_manager.set_edit_mode(dialog_manager=dialog_manager)
 
         self._state_restorer.restore_previous_state(dialog_manager)
 

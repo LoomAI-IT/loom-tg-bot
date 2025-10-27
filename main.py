@@ -194,6 +194,7 @@ content_menu_getter = ContentMenuGetter(
 )
 generate_publication_getter = GeneratePublicationDataGetter(
     tel,
+    bot,
     state_repo,
     loom_employee_client,
     loom_content_client,
