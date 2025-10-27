@@ -3,8 +3,6 @@ from typing import Any
 from aiogram.types import Message, CallbackQuery
 from aiogram_dialog import DialogManager, StartMode, ShowMode
 
-from opentelemetry.trace import SpanKind, Status, StatusCode
-
 from internal import interface, model
 from pkg.log_wrapper import auto_log
 from pkg.trace_wrapper import traced_method
@@ -56,7 +54,6 @@ class GenerateVideoCutService(interface.IGenerateVideoCutService):
         if await self._check_alerts(dialog_manager):
             self.logger.info("Найдены алерты, переход к их отображению")
             return
-
 
     @auto_log()
     @traced_method()
