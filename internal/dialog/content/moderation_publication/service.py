@@ -31,12 +31,14 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             bot: Bot,
             state_repo: interface.IStateRepo,
             loom_content_client: interface.ILoomContentClient,
+            loom_domain: str
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
         self.bot = bot
         self.state_repo = state_repo
         self.loom_content_client = loom_content_client
+        self.loom_domain = loom_domain
 
         # Инициализация приватных сервисов
         self._state_helper = _StateHelper(
@@ -58,7 +60,8 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         )
         self._image_manager = _ImageManager(
             logger=self.logger,
-            bot=self.bot
+            bot=self.bot,
+            loom_domain=self.loom_domain
         )
         self._error_flags = _ErrorFlagsManager()
         self._publication_manager = _PublicationManager(

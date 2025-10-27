@@ -7,7 +7,7 @@ from pkg.trace_wrapper import traced_method
 
 from internal.dialog._state_helper import _StateHelper
 from ._image_manager import _ImageManager
-
+from ._publication_manager import _PublicationManager
 from ._social_network_helper import _SocialNetworkHelper
 from ._datetime_formatter import _DateTimeFormatter
 
@@ -33,6 +33,11 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
         # Инициализация вспомогательных классов
         self._state_helper = _StateHelper(
             state_repo=self.state_repo
+        )
+        self._publication_manager = _PublicationManager(
+            self.logger,
+            self.bot,
+            self.loom_content_client,
         )
         self._image_manager = _ImageManager(
             logger=self.logger,
@@ -167,10 +172,10 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
         working_pub = dialog_manager.dialog_data["working_publication"]
         original_pub = dialog_manager.dialog_data["original_publication"]
 
-        creator = await self._data_extractor.get_creator_by_id(working_pub["creator_id"])
-        category = await self._data_extractor.get_category_by_id(working_pub["category_id"])
+        creator = await self.loom_employee_client.get_employee_by_account_id(working_pub["creator_id"])
+        category = await self.loom_content_client.get_category_by_id(working_pub["category_id"])
 
-        preview_image_media = self._image_media_builder.get_edit_preview_image_media(working_pub)
+        preview_image_media = self._image_manager.get_edit_preview_image_media(working_pub)
 
         has_multiple_images = False
         current_image_index = 0
@@ -188,7 +193,7 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
             "publication_text": working_pub["text"],
             "has_image": working_pub.get("has_image", False),
             "preview_image_media": preview_image_media,
-            "has_changes": self._publication_comparer.has_changes(dialog_manager),
+            "has_changes": self._publication_manager.has_changes(dialog_manager),
             "has_multiple_images": has_multiple_images,
             "current_image_index": current_image_index + 1,  # Показываем с 1
             "total_images": total_images,
@@ -259,7 +264,7 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
             **kwargs
     ) -> dict:
         working_pub = dialog_manager.dialog_data.get("working_publication", {})
-        preview_image_media = self._image_media_builder.get_edit_preview_image_media(working_pub)
+        preview_image_media = self._image_manager.get_edit_preview_image_media(working_pub)
 
         return {
             "preview_image_media": preview_image_media,

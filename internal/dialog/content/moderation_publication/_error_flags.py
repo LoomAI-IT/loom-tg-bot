@@ -2,16 +2,12 @@ from aiogram_dialog import DialogManager
 
 
 class _ErrorFlagsManager:
-    """Управление флагами ошибок в dialog_data"""
-
     @staticmethod
     def clear_error_flags(dialog_manager: DialogManager, *flags: str) -> None:
-        """Очищает указанные флаги ошибок из dialog_data"""
         for flag in flags:
             dialog_manager.dialog_data.pop(flag, None)
 
     def clear_reject_comment_error_flags(self, dialog_manager: DialogManager) -> None:
-        """Очищает флаги ошибок для комментария отклонения"""
         self.clear_error_flags(
             dialog_manager,
             "has_void_reject_comment",
@@ -20,7 +16,6 @@ class _ErrorFlagsManager:
         )
 
     def clear_regenerate_prompt_error_flags(self, dialog_manager: DialogManager) -> None:
-        """Очищает флаги ошибок для промпта регенерации"""
         self.clear_error_flags(
             dialog_manager,
             "has_void_regenerate_prompt",
@@ -30,7 +25,6 @@ class _ErrorFlagsManager:
         )
 
     def clear_image_prompt_error_flags(self, dialog_manager: DialogManager) -> None:
-        """Очищает флаги ошибок для промпта изображения"""
         self.clear_error_flags(
             dialog_manager,
             "has_void_image_prompt",
@@ -40,7 +34,6 @@ class _ErrorFlagsManager:
         )
 
     def clear_text_edit_error_flags(self, dialog_manager: DialogManager) -> None:
-        """Очищает флаги ошибок для редактирования текста"""
         self.clear_error_flags(
             dialog_manager,
             "has_void_text",
@@ -49,7 +42,6 @@ class _ErrorFlagsManager:
         )
 
     def clear_image_upload_error_flags(self, dialog_manager: DialogManager) -> None:
-        """Очищает флаги ошибок для загрузки изображения"""
         self.clear_error_flags(
             dialog_manager,
             "has_invalid_image_type",

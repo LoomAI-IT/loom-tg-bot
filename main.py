@@ -201,6 +201,7 @@ generate_publication_getter = GeneratePublicationDataGetter(
 
 moderation_publication_getter = ModerationPublicationGetter(
     tel,
+    bot,
     state_repo,
     loom_employee_client,
     loom_content_client,
@@ -379,6 +380,7 @@ moderation_publication_service = ModerationPublicationService(
     bot,
     state_repo,
     loom_content_client,
+    cfg.domain
 )
 
 video_cuts_draft_service = VideoCutsDraftService(

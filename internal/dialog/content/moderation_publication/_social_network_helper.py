@@ -38,7 +38,6 @@ class _SocialNetworkHelper:
             social_networks: dict,
             selected_networks: dict[str, bool]
     ) -> None:
-        """Устанавливает состояния чекбоксов социальных сетей"""
         vkontakte_connected = self.is_network_connected(social_networks, "vkontakte")
         telegram_connected = self.is_network_connected(social_networks, "telegram")
 
