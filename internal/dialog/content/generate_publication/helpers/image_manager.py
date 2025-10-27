@@ -15,12 +15,11 @@ class ImageManager:
             logger,
             bot: Bot,
             loom_content_client: interface.ILoomContentClient,
-            dialog_data_helper
     ):
         self.logger = logger
         self.bot = bot
         self.loom_content_client = loom_content_client
-        self.dialog_data_helper = dialog_data_helper
+        self.dialog_data_helper = DialogDataHelper(self.logger)
 
     def navigate_images(
             self,
