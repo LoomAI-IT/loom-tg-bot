@@ -3,13 +3,13 @@ from aiogram_dialog import DialogManager
 
 class ErrorFlagsManager:
     @staticmethod
-    def cleardialog_data_helper(dialog_manager: DialogManager, *flag_names: str) -> None:
+    def clear(dialog_manager: DialogManager, *flag_names: str) -> None:
         for flag_name in flag_names:
             dialog_manager.dialog_data.pop(flag_name, None)
 
     @staticmethod
-    def clear_inputdialog_data_helper(dialog_manager: DialogManager) -> None:
-        ErrorFlagsManager.cleardialog_data_helper(
+    def clear_input(dialog_manager: DialogManager) -> None:
+        ErrorFlagsManager.clear(
             dialog_manager,
             "has_void_input_text",
             "has_small_input_text",

@@ -88,7 +88,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
         await message.delete()
 
-        self.dialog_data_helper.clear_inputdialog_data_helper(dialog_manager=dialog_manager)
+        self.dialog_data_helper.clear_input(dialog_manager=dialog_manager)
 
         state = await self.state_manager.get_state(dialog_manager=dialog_manager)
 
@@ -308,7 +308,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, send=True)
         await message.delete()
 
-        self.dialog_data_helper.clear_regenerate_promptdialog_data_helper(dialog_manager=dialog_manager)
+        self.dialog_data_helper.clear_regenerate_prompt(dialog_manager=dialog_manager)
 
         state = await self.state_manager.get_state(dialog_manager=dialog_manager)
 
@@ -369,7 +369,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         await message.delete()
 
-        self.dialog_data_helper.clear_text_editdialog_data_helper(dialog_manager=dialog_manager)
+        self.dialog_data_helper.clear_text_edit(dialog_manager=dialog_manager)
 
         new_text = message.html_text.replace('\n', '<br/>')
 
@@ -423,7 +423,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, send=True)
         await message.delete()
 
-        self.dialog_data_helper.clear_image_promptdialog_data_helper(dialog_manager=dialog_manager)
+        self.dialog_data_helper.clear_image_prompt(dialog_manager=dialog_manager)
 
         state = await self.state_manager.get_state(dialog_manager=dialog_manager)
 
@@ -474,7 +474,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         await message.delete()
 
-        self.dialog_data_helper.clear_image_uploaddialog_data_helper(dialog_manager=dialog_manager)
+        self.dialog_data_helper.clear_image_upload(dialog_manager=dialog_manager)
 
         if not self.validation.validate_image_content_type(message=message, dialog_manager=dialog_manager):
             return
@@ -811,7 +811,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         await message.delete()
 
-        self.dialog_data_helper.clear_combine_uploaddialog_data_helper(dialog_manager=dialog_manager)
+        self.dialog_data_helper.clear_combine_upload(dialog_manager=dialog_manager)
 
         if not self.validation.validate_image_content_type(
                 message=message,
@@ -921,7 +921,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
         await message.delete()
 
-        self.dialog_data_helper.clear_combine_promptdialog_data_helper(dialog_manager=dialog_manager)
+        self.dialog_data_helper.clear_combine_prompt(dialog_manager=dialog_manager)
 
         state = await self.state_manager.get_state(dialog_manager=dialog_manager)
 
