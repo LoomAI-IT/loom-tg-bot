@@ -3,7 +3,7 @@ import re
 from aiogram_dialog import DialogManager
 
 
-class _ValidationService:
+class ValidationService:
     MIN_TEXT_LENGTH = 10
     MAX_TEXT_LENGTH = 2000
 

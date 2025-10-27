@@ -1,12 +1,10 @@
-from typing import Any
-
 from aiogram.types import CallbackQuery
 from aiogram_dialog import DialogManager, StartMode
 
 from internal import interface, model
 
 
-class _NavigationManager:
+class NavigationManager:
     def __init__(
             self,
             state_repo: interface.IStateRepo,

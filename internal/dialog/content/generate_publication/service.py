@@ -1142,8 +1142,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         """
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
 
-        await callback.answer()
-
         # Получаем новую сгенерированную картинку или результат комбинирования
         generated_images_url = dialog_manager.dialog_data.get("generated_images_url")
         combine_result_url = dialog_manager.dialog_data.get("combine_result_url")
@@ -1187,6 +1185,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         # Устанавливаем данные для combine_images_upload
         dialog_manager.dialog_data["combine_images_list"] = combine_images_list
         dialog_manager.dialog_data["combine_current_index"] = 0
+        await callback.answer()
 
         await dialog_manager.switch_to(state=model.GeneratePublicationStates.combine_images_upload)
 

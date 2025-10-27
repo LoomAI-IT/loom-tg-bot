@@ -13,9 +13,7 @@ from pkg.trace_wrapper import traced_method
 from internal.dialog.helpers import StateManager
 from internal.dialog.helpers import MessageExtractor
 
-from ._error_flags import _ErrorFlagsManager
-from ._navigation import _NavigationManager
-from ._validation import _ValidationService
+from internal.dialog.main_menu.helpers import ErrorFlagsManager, NavigationManager, ValidationService
 
 
 class MainMenuService(interface.IMainMenuService):
@@ -36,7 +34,7 @@ class MainMenuService(interface.IMainMenuService):
         self.state_manager = StateManager(
             self.state_repo
         )
-        self._validation = _ValidationService(
+        self._validation = ValidationService(
             self.logger
         )
         self.message_extractor = MessageExtractor(
@@ -44,10 +42,10 @@ class MainMenuService(interface.IMainMenuService):
             self.bot,
             self.loom_content_client
         )
-        self._navigation = _NavigationManager(
+        self._navigation = NavigationManager(
             state_repo
         )
-        self._error_flags = _ErrorFlagsManager()
+        self._error_flags = ErrorFlagsManager()
 
     @auto_log()
     @traced_method()
