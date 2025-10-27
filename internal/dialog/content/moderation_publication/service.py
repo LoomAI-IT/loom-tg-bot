@@ -305,15 +305,12 @@ class ModerationPublicationService(interface.IModerationPublicationService):
                 image_filename=current_image_filename
             )
 
-        # Обновляем рабочую версию с сгенерированными изображениями
-        self.image_manager.update_generated_images(dialog_manager, images_url)
+        # Сохраняем сгенерированные изображения для подтверждения
+        self.dialog_data_helper.set_generated_images_url(dialog_manager, images_url)
         self.dialog_data_helper.set_generating_image_flag(dialog_manager, False)
 
-        # Проверяем длину текста с изображением
-        if await self.text_processor.check_text_length_with_image(dialog_manager):
-            return
-
-        await dialog_manager.switch_to(state=model.ModerationPublicationStates.edit_preview)
+        # Переходим к окну подтверждения нового изображения
+        await dialog_manager.switch_to(state=model.ModerationPublicationStates.new_image_confirm)
 
     @auto_log()
     @traced_method()
@@ -372,15 +369,12 @@ class ModerationPublicationService(interface.IModerationPublicationService):
                 prompt=prompt
             )
 
-        # Обновляем рабочую версию с сгенерированными изображениями
-        self.image_manager.update_generated_images(dialog_manager, images_url)
+        # Сохраняем сгенерированные изображения для подтверждения
+        self.dialog_data_helper.set_generated_images_url(dialog_manager, images_url)
         self.dialog_data_helper.set_generating_image_flag(dialog_manager, False)
 
-        # Проверяем длину текста с изображением
-        if await self.text_processor.check_text_length_with_image(dialog_manager):
-            return
-
-        await dialog_manager.switch_to(state=model.ModerationPublicationStates.edit_preview)
+        # Переходим к окну подтверждения нового изображения
+        await dialog_manager.switch_to(state=model.ModerationPublicationStates.new_image_confirm)
 
     @auto_log()
     @traced_method()
@@ -634,3 +628,391 @@ class ModerationPublicationService(interface.IModerationPublicationService):
 
         await callback.answer("Изменения отменены", show_alert=True)
         await dialog_manager.switch_to(state=model.ModerationPublicationStates.edit_preview)
+
+    # ============= ОБРАБОТЧИКИ ДЛЯ COMBINE IMAGES =============
+
+    @auto_log()
+    @traced_method()
+    async def handle_combine_images_start(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
+
+        await callback.answer()
+
+        if self.image_manager.start_combine_images(dialog_manager=dialog_manager):
+            await dialog_manager.switch_to(state=model.ModerationPublicationStates.combine_images_choice)
+        else:
+            self.image_manager.init_combine_from_scratch(dialog_manager=dialog_manager)
+            await dialog_manager.switch_to(state=model.ModerationPublicationStates.combine_images_upload)
+
+    @auto_log()
+    @traced_method()
+    async def handle_combine_with_current(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
+
+        await callback.answer()
+
+        combine_images_list = await self.image_manager.prepare_current_image_for_combine(
+            dialog_manager=dialog_manager,
+            chat_id=callback.message.chat.id
+        )
+
+        self.dialog_data_helper.set_combine_images_list(dialog_manager, combine_images_list, 0)
+
+        await dialog_manager.switch_to(state=model.ModerationPublicationStates.combine_images_upload)
+
+    @auto_log()
+    @traced_method()
+    async def handle_combine_from_scratch(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
+
+        await callback.answer()
+
+        self.image_manager.init_combine_from_scratch(dialog_manager=dialog_manager)
+
+        await dialog_manager.switch_to(state=model.ModerationPublicationStates.combine_images_upload)
+
+    @auto_log()
+    @traced_method()
+    async def handle_combine_image_upload(
+            self,
+            message: Message,
+            widget: MessageInput,
+            dialog_manager: DialogManager
+    ) -> None:
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
+
+        await message.delete()
+
+        self.dialog_data_helper.clear_combine_upload_error_flags(dialog_manager=dialog_manager)
+
+        if not self.validation.validate_message_content_type(
+                message,
+                [ContentType.PHOTO],
+                dialog_manager,
+        ):
+            return
+
+        combine_images_list = self.dialog_data_helper.get_combine_images_list(dialog_manager)
+
+        # Проверка максимального количества (пусть будет 5)
+        if len(combine_images_list) >= 5:
+            self.dialog_data_helper.set_validation_flag(dialog_manager, "combine_images_limit_reached")
+            return
+
+        if message.photo:
+            photo = message.photo[-1]
+
+            if not self.validation.validate_image_size(
+                    photo,
+                    dialog_manager,
+            ):
+                return
+
+            self.image_manager.upload_combine_image(photo=photo, dialog_manager=dialog_manager)
+
+    @auto_log()
+    @traced_method()
+    async def handle_prev_combine_image(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
+        self.image_manager.navigate_combine_images(
+            dialog_manager=dialog_manager,
+            direction="prev"
+        )
+        await callback.answer()
+
+    @auto_log()
+    @traced_method()
+    async def handle_next_combine_image(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
+        self.image_manager.navigate_combine_images(
+            dialog_manager=dialog_manager,
+            direction="next"
+        )
+        await callback.answer()
+
+    @auto_log()
+    @traced_method()
+    async def handle_back_from_combine_upload(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
+
+        await callback.answer()
+
+        if self.image_manager.should_return_to_new_image_confirm(dialog_manager=dialog_manager):
+            self.image_manager.cleanup_combine_data(dialog_manager=dialog_manager)
+            await dialog_manager.switch_to(state=model.ModerationPublicationStates.new_image_confirm)
+        else:
+            await dialog_manager.switch_to(state=model.ModerationPublicationStates.edit_image_menu)
+
+    @auto_log()
+    @traced_method()
+    async def handle_delete_combine_image(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
+        self.image_manager.delete_combine_image(dialog_manager=dialog_manager)
+        await callback.answer("Изображение удалено")
+
+    @auto_log()
+    @traced_method()
+    async def handle_combine_prompt_input(
+            self,
+            message: Message,
+            widget: MessageInput,
+            dialog_manager: DialogManager
+    ) -> None:
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
+        await message.delete()
+
+        self.dialog_data_helper.clear_combine_prompt_error_flags(dialog_manager=dialog_manager)
+
+        state = await self.state_manager.get_state(dialog_manager=dialog_manager)
+
+        if not self.validation.validate_message_content_type(
+                message,
+                [ContentType.VOICE, ContentType.AUDIO, ContentType.TEXT],
+                dialog_manager
+        ):
+            return
+
+        prompt = await self.message_extractor.process_voice_or_text_input(
+            message=message,
+            dialog_manager=dialog_manager,
+            organization_id=state.organization_id
+        )
+
+        if not self.validation.validate_combine_prompt(prompt=prompt, dialog_manager=dialog_manager):
+            return
+
+        combine_images_list = self.dialog_data_helper.get_combine_images_list(dialog_manager)
+
+        if len(combine_images_list) < 2:
+            self.dialog_data_helper.set_validation_flag(dialog_manager, "not_enough_combine_images")
+            return
+
+        self.dialog_data_helper.set_combine_prompt(dialog_manager, prompt)
+        self.dialog_data_helper.set_is_combining_images(dialog_manager, True)
+        await dialog_manager.show()
+
+        combined_result_url = await self.image_manager.process_combine_with_prompt(
+            dialog_manager=dialog_manager,
+            combine_images_list=combine_images_list,
+            prompt=prompt or "Объедини эти фотографии в одну композицию",
+            chat_id=message.chat.id,
+            loom_content_client=self.loom_content_client
+        )
+
+        self.dialog_data_helper.set_is_combining_images(dialog_manager, False)
+        self.dialog_data_helper.set_combine_result_url(dialog_manager, combined_result_url)
+
+        await dialog_manager.switch_to(state=model.ModerationPublicationStates.new_image_confirm)
+
+    @auto_log()
+    @traced_method()
+    async def handle_skip_combine_prompt(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
+
+        combine_images_list = self.dialog_data_helper.get_combine_images_list(dialog_manager)
+
+        if len(combine_images_list) < 2:
+            await callback.answer("Нужно минимум 2 изображения", show_alert=True)
+            return
+
+        await callback.answer()
+        self.dialog_data_helper.set_is_combining_images(dialog_manager, True)
+        await dialog_manager.show()
+
+        combined_result_url = await self.image_manager.process_combine_with_prompt(
+            dialog_manager=dialog_manager,
+            combine_images_list=combine_images_list,
+            prompt="Объедини эти фотографии в одну композицию",
+            chat_id=callback.message.chat.id,
+            loom_content_client=self.loom_content_client
+        )
+
+        self.dialog_data_helper.set_is_combining_images(dialog_manager, False)
+        self.dialog_data_helper.set_combine_result_url(dialog_manager, combined_result_url)
+
+        await dialog_manager.switch_to(state=model.ModerationPublicationStates.new_image_confirm)
+
+    @auto_log()
+    @traced_method()
+    async def handle_combine_from_new_image(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
+
+        combine_images_list = await self.image_manager.combine_from_new_image(
+            dialog_manager=dialog_manager,
+            chat_id=callback.message.chat.id
+        )
+
+        if not combine_images_list:
+            await callback.answer("Ошибка при подготовке изображения", show_alert=True)
+            return
+
+        self.dialog_data_helper.set_combine_images_list(dialog_manager, combine_images_list, 0)
+        await callback.answer()
+
+        await dialog_manager.switch_to(state=model.ModerationPublicationStates.combine_images_upload)
+
+    # ============= ОБРАБОТЧИКИ ДЛЯ NEW IMAGE CONFIRM =============
+
+    @auto_log()
+    @traced_method()
+    async def handle_new_image_confirm_input(
+            self,
+            message: Message,
+            widget: MessageInput,
+            dialog_manager: DialogManager
+    ) -> None:
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
+        await message.delete()
+
+        self.dialog_data_helper.clear_new_image_confirm_error_flags(dialog_manager=dialog_manager)
+
+        state = await self.state_manager.get_state(dialog_manager=dialog_manager)
+
+        if not self.validation.validate_message_content_type(
+                message,
+                [ContentType.VOICE, ContentType.AUDIO, ContentType.TEXT],
+                dialog_manager
+        ):
+            return
+
+        prompt = await self.message_extractor.process_voice_or_text_input(
+            message=message,
+            dialog_manager=dialog_manager,
+            organization_id=state.organization_id
+        )
+
+        # Валидация промпта (min 10, max 1000)
+        if len(prompt) < 10:
+            self.dialog_data_helper.set_validation_flag(dialog_manager, "has_small_edit_prompt")
+            return
+        if len(prompt) > 1000:
+            self.dialog_data_helper.set_validation_flag(dialog_manager, "has_big_edit_prompt")
+            return
+
+        self.dialog_data_helper.set_image_edit_prompt(dialog_manager, prompt)
+        self.dialog_data_helper.set_is_applying_edits(dialog_manager, True)
+
+        await dialog_manager.show()
+
+        images_url = await self.image_manager.edit_new_image_with_prompt(
+            dialog_manager=dialog_manager,
+            organization_id=state.organization_id,
+            prompt=prompt,
+            chat_id=message.chat.id,
+            loom_content_client=self.loom_content_client
+        )
+
+        self.dialog_data_helper.set_is_applying_edits(dialog_manager, False)
+
+        self.image_manager.update_image_after_edit(
+            dialog_manager=dialog_manager,
+            images_url=images_url
+        )
+
+        self.dialog_data_helper.set_image_edit_prompt(dialog_manager, "")
+
+        await dialog_manager.show()
+
+    @auto_log()
+    @traced_method()
+    async def handle_confirm_new_image(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
+
+        await callback.answer("Изображение применено")
+
+        self.image_manager.confirm_new_image(dialog_manager=dialog_manager)
+
+        if await self.text_processor.check_text_length_with_image(dialog_manager=dialog_manager):
+            return
+
+        await dialog_manager.switch_to(state=model.ModerationPublicationStates.edit_image_menu)
+
+    @auto_log()
+    @traced_method()
+    async def handle_show_old_image(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
+        self.image_manager.toggle_showing_old_image(dialog_manager=dialog_manager, show_old=True)
+        await callback.answer()
+
+    @auto_log()
+    @traced_method()
+    async def handle_show_new_image(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
+        self.image_manager.toggle_showing_old_image(dialog_manager=dialog_manager, show_old=False)
+        await callback.answer()
+
+    @auto_log()
+    @traced_method()
+    async def handle_reject_new_image(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
+
+        await callback.answer("Изображение отклонено")
+
+        self.image_manager.reject_new_image(dialog_manager=dialog_manager)
+
+        await dialog_manager.switch_to(state=model.ModerationPublicationStates.edit_image_menu)

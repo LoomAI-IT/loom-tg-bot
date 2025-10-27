@@ -12,6 +12,14 @@ class ModerationPublicationStates(StatesGroup):
     edit_text = State()
     upload_image = State()
 
+    # Состояния подтверждения нового изображения
+    new_image_confirm = State()
+
+    # Состояния объединения изображений
+    combine_images_choice = State()
+    combine_images_upload = State()
+    combine_images_prompt = State()
+
     social_network_select = State()
 
     # Алерты

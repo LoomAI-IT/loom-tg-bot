@@ -272,3 +272,70 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
             **kwargs
     ) -> dict:
         return self.dialog_data_helper.get_publication_success_window_data(dialog_manager)
+
+    @auto_log()
+    @traced_method()
+    async def get_new_image_confirm_data(
+            self,
+            dialog_manager: DialogManager,
+            **kwargs
+    ) -> dict:
+        new_image_media, old_image_media, showing_old_image = \
+            self.image_manager.get_new_image_confirm_media(dialog_manager)
+
+        display_image_media = old_image_media if showing_old_image else new_image_media
+
+        flags_data = self.dialog_data_helper.get_new_image_confirm_flags(dialog_manager)
+
+        return {
+            "new_image_media": display_image_media,
+            "has_old_image": old_image_media is not None,
+            "showing_old_image": showing_old_image,
+            "showing_new_image": not showing_old_image,
+            **flags_data
+        }
+
+    @auto_log()
+    @traced_method()
+    async def get_combine_images_choice_data(
+            self,
+            dialog_manager: DialogManager,
+            **kwargs
+    ) -> dict:
+        return self.dialog_data_helper.get_combine_images_choice_data(dialog_manager)
+
+    @auto_log()
+    @traced_method()
+    async def get_combine_images_upload_data(
+            self,
+            dialog_manager: DialogManager,
+            **kwargs
+    ) -> dict:
+        combine_current_image_media, combine_current_index, combine_images_count = \
+            self.image_manager.get_combine_images_media(dialog_manager)
+
+        flags_data = self.dialog_data_helper.get_combine_images_upload_flags(dialog_manager)
+
+        return {
+            "combine_current_index": combine_current_index + 1,
+            "combine_current_image_media": combine_current_image_media,
+            **flags_data
+        }
+
+    @auto_log()
+    @traced_method()
+    async def get_combine_images_prompt_data(
+            self,
+            dialog_manager: DialogManager,
+            **kwargs
+    ) -> dict:
+        combine_current_image_media, combine_current_index, combine_images_count = \
+            self.image_manager.get_combine_images_media(dialog_manager)
+
+        flags_data = self.dialog_data_helper.get_combine_images_prompt_flags(dialog_manager)
+
+        return {
+            "combine_current_index": combine_current_index + 1,
+            "combine_current_image_media": combine_current_image_media,
+            **flags_data
+        }

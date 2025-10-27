@@ -61,6 +61,50 @@ class DialogDataHelper:
         return dialog_manager.dialog_data.get("current_index", 0)
 
     @staticmethod
+    def get_combine_images_choice_data(dialog_manager: DialogManager) -> dict:
+        has_current_image = dialog_manager.dialog_data.get("has_image", False)
+        return {
+            "has_current_image": has_current_image,
+        }
+
+    @staticmethod
+    def get_combine_images_upload_flags(dialog_manager: DialogManager) -> dict:
+        combine_images_list = dialog_manager.dialog_data.get("combine_images_list", [])
+        combine_images_count = len(combine_images_list)
+
+        return {
+            "has_combine_images": combine_images_count > 0,
+            "combine_images_count": combine_images_count,
+            "has_multiple_combine_images": combine_images_count > 1,
+            "has_enough_combine_images": combine_images_count >= 2,
+            # Error flags
+            "has_invalid_combine_image_type": dialog_manager.dialog_data.get("has_invalid_combine_image_type", False),
+            "has_big_combine_image_size": dialog_manager.dialog_data.get("has_big_combine_image_size", False),
+            "combine_images_limit_reached": dialog_manager.dialog_data.get("combine_images_limit_reached", False),
+            "not_enough_combine_images": dialog_manager.dialog_data.get("not_enough_combine_images", False),
+        }
+
+    @staticmethod
+    def get_combine_images_prompt_flags(dialog_manager: DialogManager) -> dict:
+        combine_images_list = dialog_manager.dialog_data.get("combine_images_list", [])
+        combine_images_count = len(combine_images_list)
+
+        return {
+            "is_combining_images": dialog_manager.dialog_data.get("is_combining_images", False),
+            "voice_transcribe": dialog_manager.dialog_data.get("voice_transcribe", False),
+            "has_combine_prompt": bool(dialog_manager.dialog_data.get("combine_prompt")),
+            "combine_prompt": dialog_manager.dialog_data.get("combine_prompt", ""),
+            # Image data for navigation
+            "has_combine_images": combine_images_count > 0,
+            "combine_images_count": combine_images_count,
+            "has_multiple_combine_images": combine_images_count > 1,
+            # Error flags
+            "has_small_combine_prompt": dialog_manager.dialog_data.get("has_small_combine_prompt", False),
+            "has_big_combine_prompt": dialog_manager.dialog_data.get("has_big_combine_prompt", False),
+            "has_invalid_content_type": dialog_manager.dialog_data.get("has_invalid_content_type", False),
+        }
+
+    @staticmethod
     def set_current_index(dialog_manager: DialogManager, index: int) -> None:
         dialog_manager.dialog_data["current_index"] = index
 
@@ -120,6 +164,17 @@ class DialogDataHelper:
     @staticmethod
     def get_previous_text(dialog_manager: DialogManager) -> str | None:
         return dialog_manager.dialog_data.get("previous_text")
+
+    @staticmethod
+    def get_new_image_confirm_flags(dialog_manager: DialogManager) -> dict:
+        return {
+            "is_applying_edits": dialog_manager.dialog_data.get("is_applying_edits"),
+            "has_image_edit_prompt": dialog_manager.dialog_data.get("has_image_edit_prompt"),
+            "voice_transcribe": dialog_manager.dialog_data.get("voice_transcribe"),
+            "has_small_edit_prompt": dialog_manager.dialog_data.get("has_small_edit_prompt"),
+            "has_big_edit_prompt": dialog_manager.dialog_data.get("has_big_edit_prompt"),
+            "has_invalid_content_type": dialog_manager.dialog_data.get("has_invalid_content_type"),
+        }
 
     @staticmethod
     def set_previous_has_image(dialog_manager: DialogManager, value: bool) -> None:
@@ -192,101 +247,6 @@ class DialogDataHelper:
             "has_big_image_size"
         )
 
-    # ============= ДОПОЛНИТЕЛЬНЫЕ ГЕТТЕРЫ =============
-
-    @staticmethod
-    def get_reject_comment(dialog_manager: DialogManager) -> str:
-        return dialog_manager.dialog_data.get("reject_comment", "")
-
-    @staticmethod
-    def get_post_links(dialog_manager: DialogManager) -> dict:
-        return dialog_manager.dialog_data.get("post_links", {})
-
-    @staticmethod
-    def get_image_prompt(dialog_manager: DialogManager) -> str:
-        return dialog_manager.dialog_data.get("image_prompt", "")
-
-    @staticmethod
-    def get_regenerate_prompt(dialog_manager: DialogManager) -> str:
-        return dialog_manager.dialog_data.get("regenerate_prompt", "")
-
-    @staticmethod
-    def get_voice_transcribe(dialog_manager: DialogManager) -> bool:
-        return dialog_manager.dialog_data.get("voice_transcribe", False)
-
-    # Error flags getters
-    @staticmethod
-    def get_has_void_text(dialog_manager: DialogManager) -> bool:
-        return dialog_manager.dialog_data.get("has_void_text", False)
-
-    @staticmethod
-    def get_has_small_text(dialog_manager: DialogManager) -> bool:
-        return dialog_manager.dialog_data.get("has_small_text", False)
-
-    @staticmethod
-    def get_has_big_text(dialog_manager: DialogManager) -> bool:
-        return dialog_manager.dialog_data.get("has_big_text", False)
-
-    @staticmethod
-    def get_is_regenerating_text(dialog_manager: DialogManager) -> bool:
-        return dialog_manager.dialog_data.get("is_regenerating_text", False)
-
-    @staticmethod
-    def get_has_regenerate_prompt(dialog_manager: DialogManager) -> bool:
-        return bool(dialog_manager.dialog_data.get("regenerate_prompt", ""))
-
-    @staticmethod
-    def get_has_invalid_content_type(dialog_manager: DialogManager) -> bool:
-        return dialog_manager.dialog_data.get("has_invalid_content_type", False)
-
-    @staticmethod
-    def get_has_void_regenerate_prompt(dialog_manager: DialogManager) -> bool:
-        return dialog_manager.dialog_data.get("has_void_regenerate_prompt", False)
-
-    @staticmethod
-    def get_has_small_regenerate_prompt(dialog_manager: DialogManager) -> bool:
-        return dialog_manager.dialog_data.get("has_small_regenerate_prompt", False)
-
-    @staticmethod
-    def get_has_big_regenerate_prompt(dialog_manager: DialogManager) -> bool:
-        return dialog_manager.dialog_data.get("has_big_regenerate_prompt", False)
-
-    @staticmethod
-    def get_has_void_image_prompt(dialog_manager: DialogManager) -> bool:
-        return dialog_manager.dialog_data.get("has_void_image_prompt", False)
-
-    @staticmethod
-    def get_has_small_image_prompt(dialog_manager: DialogManager) -> bool:
-        return dialog_manager.dialog_data.get("has_small_image_prompt", False)
-
-    @staticmethod
-    def get_has_big_image_prompt(dialog_manager: DialogManager) -> bool:
-        return dialog_manager.dialog_data.get("has_big_image_prompt", False)
-
-    @staticmethod
-    def get_is_generating_image(dialog_manager: DialogManager) -> bool:
-        return dialog_manager.dialog_data.get("is_generating_image", False)
-
-    @staticmethod
-    def get_has_image_prompt(dialog_manager: DialogManager) -> bool:
-        return dialog_manager.dialog_data.get("image_prompt", "") != ""
-
-    @staticmethod
-    def get_has_invalid_image_type(dialog_manager: DialogManager) -> bool:
-        return dialog_manager.dialog_data.get("has_invalid_image_type", False)
-
-    @staticmethod
-    def get_has_big_image_size(dialog_manager: DialogManager) -> bool:
-        return dialog_manager.dialog_data.get("has_big_image_size", False)
-
-    @staticmethod
-    def get_has_image_processing_error(dialog_manager: DialogManager) -> bool:
-        return dialog_manager.dialog_data.get("has_image_processing_error", False)
-
-    @staticmethod
-    def get_has_reject_comment(dialog_manager: DialogManager) -> bool:
-        return bool(dialog_manager.dialog_data.get("reject_comment"))
-
     # ============= ДОПОЛНИТЕЛЬНЫЕ СЕТТЕРЫ =============
 
     @staticmethod
@@ -303,10 +263,6 @@ class DialogDataHelper:
         dialog_manager.dialog_data["original_publication"] = publication_data
 
     @staticmethod
-    def set_working_publication(dialog_manager: DialogManager, publication_data: dict) -> None:
-        dialog_manager.dialog_data["working_publication"] = publication_data
-
-    @staticmethod
     def initialize_working_from_original(dialog_manager: DialogManager) -> None:
         if "working_publication" not in dialog_manager.dialog_data:
             dialog_manager.dialog_data["working_publication"] = dict(
@@ -318,17 +274,8 @@ class DialogDataHelper:
         dialog_manager.dialog_data["post_links"] = post_links
 
     @staticmethod
-    def set_voice_transcribe(dialog_manager: DialogManager, value: bool) -> None:
-        dialog_manager.dialog_data["voice_transcribe"] = value
-
-    @staticmethod
     def set_selected_social_networks(dialog_manager: DialogManager, networks: dict) -> None:
         dialog_manager.dialog_data["selected_social_networks"] = networks
-
-    @staticmethod
-    def initialize_selected_social_networks_if_needed(dialog_manager: DialogManager) -> None:
-        if "selected_social_networks" not in dialog_manager.dialog_data:
-            dialog_manager.dialog_data["selected_social_networks"] = {}
 
     @staticmethod
     def toggle_social_network_selection(dialog_manager: DialogManager, network_id: str, is_checked: bool) -> None:
@@ -428,3 +375,140 @@ class DialogDataHelper:
             "telegram_link": telegram_link or "",
             "vkontakte_link": vkontakte_link or "",
         }
+
+    # ============= МЕТОДЫ ДЛЯ COMBINE IMAGES =============
+
+    @staticmethod
+    def get_combine_images_list(dialog_manager: DialogManager) -> list[str]:
+        return dialog_manager.dialog_data.get("combine_images_list", [])
+
+    @staticmethod
+    def get_combine_current_index(dialog_manager: DialogManager) -> int:
+        return dialog_manager.dialog_data.get("combine_current_index", 0)
+
+    @staticmethod
+    def get_combine_prompt(dialog_manager: DialogManager) -> str:
+        return dialog_manager.dialog_data.get("combine_prompt", "")
+
+    @staticmethod
+    def get_combine_result_url(dialog_manager: DialogManager) -> str | None:
+        return dialog_manager.dialog_data.get("combine_result_url")
+
+    @staticmethod
+    def set_combine_images_list(dialog_manager: DialogManager, images: list[str], index: int = 0) -> None:
+        dialog_manager.dialog_data["combine_images_list"] = images
+        dialog_manager.dialog_data["combine_current_index"] = index
+
+    @staticmethod
+    def set_combine_current_index(dialog_manager: DialogManager, index: int) -> None:
+        dialog_manager.dialog_data["combine_current_index"] = index
+
+    @staticmethod
+    def set_combine_prompt(dialog_manager: DialogManager, prompt: str) -> None:
+        dialog_manager.dialog_data["combine_prompt"] = prompt
+
+    @staticmethod
+    def set_combine_result_url(dialog_manager: DialogManager, url: str) -> None:
+        dialog_manager.dialog_data["combine_result_url"] = url
+
+    @staticmethod
+    def set_is_combining_images(dialog_manager: DialogManager, value: bool) -> None:
+        dialog_manager.dialog_data["is_combining_images"] = value
+
+    @staticmethod
+    def get_is_combining_images(dialog_manager: DialogManager) -> bool:
+        return dialog_manager.dialog_data.get("is_combining_images", False)
+
+    @staticmethod
+    def clear_combine_prompt_error_flags(dialog_manager: DialogManager) -> None:
+        dialog_manager.dialog_data.pop("has_small_combine_prompt", None)
+        dialog_manager.dialog_data.pop("has_big_combine_prompt", None)
+        dialog_manager.dialog_data.pop("has_invalid_content_type", None)
+
+    @staticmethod
+    def clear_combine_upload_error_flags(dialog_manager: DialogManager) -> None:
+        dialog_manager.dialog_data.pop("has_invalid_combine_image_type", None)
+        dialog_manager.dialog_data.pop("has_big_combine_image_size", None)
+        dialog_manager.dialog_data.pop("combine_images_limit_reached", None)
+
+    @staticmethod
+    def clear_combine_data(dialog_manager: DialogManager) -> None:
+        dialog_manager.dialog_data.pop("combine_images_list", None)
+        dialog_manager.dialog_data.pop("combine_current_index", None)
+        dialog_manager.dialog_data.pop("combine_prompt", None)
+        dialog_manager.dialog_data.pop("combine_result_url", None)
+
+    # ============= МЕТОДЫ ДЛЯ NEW IMAGE CONFIRM =============
+
+    @staticmethod
+    def get_generated_images_url(dialog_manager: DialogManager) -> list[str] | None:
+        return dialog_manager.dialog_data.get("generated_images_url")
+
+    @staticmethod
+    def set_generated_images_url(dialog_manager: DialogManager, urls: list[str]) -> None:
+        dialog_manager.dialog_data["generated_images_url"] = urls
+
+    @staticmethod
+    def get_old_image_backup(dialog_manager: DialogManager) -> dict | None:
+        return dialog_manager.dialog_data.get("old_image_backup")
+
+    @staticmethod
+    def get_old_generated_image_backup(dialog_manager: DialogManager) -> dict | None:
+        return dialog_manager.dialog_data.get("old_generated_image_backup")
+
+    @staticmethod
+    def set_old_image_backup(dialog_manager: DialogManager, backup_dict: dict | None) -> None:
+        if backup_dict is None:
+            dialog_manager.dialog_data.pop("old_image_backup", None)
+        else:
+            dialog_manager.dialog_data["old_image_backup"] = backup_dict
+
+    @staticmethod
+    def set_old_generated_image_backup(dialog_manager: DialogManager, backup_dict: dict | None) -> None:
+        if backup_dict is None:
+            dialog_manager.dialog_data.pop("old_generated_image_backup", None)
+        else:
+            dialog_manager.dialog_data["old_generated_image_backup"] = backup_dict
+
+    @staticmethod
+    def get_showing_old_image(dialog_manager: DialogManager) -> bool:
+        return dialog_manager.dialog_data.get("showing_old_image", False)
+
+    @staticmethod
+    def set_showing_old_image(dialog_manager: DialogManager, value: bool) -> None:
+        dialog_manager.dialog_data["showing_old_image"] = value
+
+    @staticmethod
+    def get_image_edit_prompt(dialog_manager: DialogManager) -> str:
+        return dialog_manager.dialog_data.get("image_edit_prompt", "")
+
+    @staticmethod
+    def set_image_edit_prompt(dialog_manager: DialogManager, prompt: str) -> None:
+        dialog_manager.dialog_data["image_edit_prompt"] = prompt
+
+    @staticmethod
+    def get_is_applying_edits(dialog_manager: DialogManager) -> bool:
+        return dialog_manager.dialog_data.get("is_applying_edits", False)
+
+    @staticmethod
+    def set_is_applying_edits(dialog_manager: DialogManager, value: bool) -> None:
+        dialog_manager.dialog_data["is_applying_edits"] = value
+
+    @staticmethod
+    def clear_new_image_confirm_error_flags(dialog_manager: DialogManager) -> None:
+        dialog_manager.dialog_data.pop("has_small_edit_prompt", None)
+        dialog_manager.dialog_data.pop("has_big_edit_prompt", None)
+        dialog_manager.dialog_data.pop("has_invalid_content_type", None)
+
+    @staticmethod
+    def clear_temporary_image_data(dialog_manager: DialogManager) -> None:
+        """Очистка временных данных об изображениях"""
+        dialog_manager.dialog_data.pop("generated_images_url", None)
+        dialog_manager.dialog_data.pop("combine_result_url", None)
+        dialog_manager.dialog_data.pop("old_generated_image_backup", None)
+        dialog_manager.dialog_data.pop("old_image_backup", None)
+        dialog_manager.dialog_data.pop("image_edit_prompt", None)
+        dialog_manager.dialog_data.pop("combine_images_list", None)
+        dialog_manager.dialog_data.pop("combine_current_index", None)
+        dialog_manager.dialog_data.pop("combine_prompt", None)
+        dialog_manager.dialog_data.pop("showing_old_image", None)

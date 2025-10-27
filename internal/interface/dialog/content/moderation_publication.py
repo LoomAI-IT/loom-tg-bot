@@ -34,6 +34,18 @@ class IModerationPublicationDialog(Protocol):
     def get_upload_image_window(self) -> Window: pass
 
     @abstractmethod
+    def get_new_image_confirm_window(self) -> Window: pass
+
+    @abstractmethod
+    def get_combine_images_choice_window(self) -> Window: pass
+
+    @abstractmethod
+    def get_combine_images_upload_window(self) -> Window: pass
+
+    @abstractmethod
+    def get_combine_images_prompt_window(self) -> Window: pass
+
+    @abstractmethod
     def get_social_network_select_window(self) -> Window: pass
 
     @abstractmethod
@@ -208,6 +220,136 @@ class IModerationPublicationService(Protocol):
             dialog_manager: DialogManager
     ) -> None: pass
 
+    # Combine images handlers
+    @abstractmethod
+    async def handle_combine_images_start(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
+    @abstractmethod
+    async def handle_combine_with_current(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
+    @abstractmethod
+    async def handle_combine_from_scratch(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
+    @abstractmethod
+    async def handle_combine_image_upload(
+            self,
+            message: Message,
+            widget: MessageInput,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
+    @abstractmethod
+    async def handle_prev_combine_image(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
+    @abstractmethod
+    async def handle_next_combine_image(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
+    @abstractmethod
+    async def handle_back_from_combine_upload(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
+    @abstractmethod
+    async def handle_delete_combine_image(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
+    @abstractmethod
+    async def handle_combine_prompt_input(
+            self,
+            message: Message,
+            widget: MessageInput,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
+    @abstractmethod
+    async def handle_skip_combine_prompt(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
+    @abstractmethod
+    async def handle_combine_from_new_image(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
+    # New image confirm handlers
+    @abstractmethod
+    async def handle_new_image_confirm_input(
+            self,
+            message: Message,
+            widget: MessageInput,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
+    @abstractmethod
+    async def handle_confirm_new_image(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
+    @abstractmethod
+    async def handle_show_old_image(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
+    @abstractmethod
+    async def handle_show_new_image(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
+    @abstractmethod
+    async def handle_reject_new_image(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
 
 class IModerationPublicationGetter(Protocol):
     @abstractmethod
@@ -261,6 +403,30 @@ class IModerationPublicationGetter(Protocol):
 
     @abstractmethod
     async def get_publication_success_data(
+            self,
+            dialog_manager: DialogManager,
+    ) -> dict: pass
+
+    @abstractmethod
+    async def get_new_image_confirm_data(
+            self,
+            dialog_manager: DialogManager,
+    ) -> dict: pass
+
+    @abstractmethod
+    async def get_combine_images_choice_data(
+            self,
+            dialog_manager: DialogManager,
+    ) -> dict: pass
+
+    @abstractmethod
+    async def get_combine_images_upload_data(
+            self,
+            dialog_manager: DialogManager,
+    ) -> dict: pass
+
+    @abstractmethod
+    async def get_combine_images_prompt_data(
             self,
             dialog_manager: DialogManager,
     ) -> dict: pass
