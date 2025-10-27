@@ -55,10 +55,10 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             bot=self.bot,
             loom_content_client=self.loom_content_client
         )
-        self._alerts_manager = AlertsManager(
+        self.alerts_manager = AlertsManager(
             self.state_repo
         )
-        self._image_manager = ImageManager(
+        self.image_manager = ImageManager(
             logger=self.logger,
             bot=self.bot,
             loom_content_client=self.loom_content_client
@@ -239,7 +239,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             dialog_manager: DialogManager
     ) -> None:
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
-        self._image_manager.navigate_images(
+        self.image_manager.navigate_images(
             dialog_manager=dialog_manager,
             images_key="publication_images_url",
             index_key="current_image_index",
@@ -256,7 +256,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             dialog_manager: DialogManager
     ) -> None:
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
-        self._image_manager.navigate_images(
+        self.image_manager.navigate_images(
             dialog_manager=dialog_manager,
             images_key="publication_images_url",
             index_key="current_image_index",
@@ -399,7 +399,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         publication_text = dialog_manager.dialog_data["publication_text"]
         text_reference = dialog_manager.dialog_data["input_text"]
 
-        images_url = await self._image_manager.generate_new_image(
+        images_url = await self.image_manager.generate_new_image(
             dialog_manager=dialog_manager,
             category_id=category_id,
             publication_text=publication_text,
@@ -450,7 +450,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         await dialog_manager.show()
 
-        images_url = await self._image_manager.edit_image_with_prompt(
+        images_url = await self.image_manager.edit_image_with_prompt(
             dialog_manager=dialog_manager,
             organization_id=state.organization_id,
             prompt=prompt,
@@ -485,7 +485,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             if not self.validation.validate_image_size(photo=photo, dialog_manager=dialog_manager):
                 return
 
-            await self._image_manager.upload_custom_image(photo=photo, dialog_manager=dialog_manager)
+            await self.image_manager.upload_custom_image(photo=photo, dialog_manager=dialog_manager)
 
             if await self.text_processor.check_text_length_with_image(dialog_manager=dialog_manager):
                 return
@@ -507,7 +507,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
     ) -> None:
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
 
-        self._image_manager.clear_image_data(dialog_manager=dialog_manager)
+        self.image_manager.clear_image_data(dialog_manager=dialog_manager)
 
         await callback.answer("Изображение удалено", show_alert=True)
         await dialog_manager.switch_to(state=model.GeneratePublicationStates.preview)
@@ -587,7 +587,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         text = dialog_manager.dialog_data["publication_text"]
         selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
 
-        image_url, image_content, image_filename = await self._image_manager.get_selected_image_data(
+        image_url, image_content, image_filename = await self.image_manager.get_selected_image_data(
             dialog_manager=dialog_manager
         )
 
@@ -604,7 +604,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         await callback.answer("Публикация отправлена на модерацию", show_alert=True)
 
-        if await self._alerts_manager.check_alerts(dialog_manager=dialog_manager, state=state):
+        if await self.alerts_manager.check_alerts(dialog_manager=dialog_manager, state=state):
             return
 
         await dialog_manager.start(
@@ -650,7 +650,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         text_reference = dialog_manager.dialog_data["input_text"]
         text = dialog_manager.dialog_data["publication_text"]
 
-        image_url, image_content, image_filename = await self._image_manager.get_selected_image_data(
+        image_url, image_content, image_filename = await self.image_manager.get_selected_image_data(
             dialog_manager=dialog_manager
         )
 
@@ -668,7 +668,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         await callback.answer("Публикация успешно опубликована", show_alert=True)
 
-        if await self._alerts_manager.check_alerts(dialog_manager=dialog_manager, state=state):
+        if await self.alerts_manager.check_alerts(dialog_manager=dialog_manager, state=state):
             self.logger.info("Переход к алертам")
             return
 
@@ -732,7 +732,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         state = await self.state_manager.get_state(dialog_manager=dialog_manager)
 
-        if await self._alerts_manager.check_alerts(dialog_manager=dialog_manager, state=state):
+        if await self.alerts_manager.check_alerts(dialog_manager=dialog_manager, state=state):
             self.logger.info("Обнаружены алерты")
             return
 
@@ -755,10 +755,10 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         await callback.answer()
 
-        if self._image_manager.start_combine_images(dialog_manager=dialog_manager):
+        if self.image_manager.start_combine_images(dialog_manager=dialog_manager):
             await dialog_manager.switch_to(state=model.GeneratePublicationStates.combine_images_choice)
         else:
-            self._image_manager.init_combine_from_scratch(dialog_manager=dialog_manager)
+            self.image_manager.init_combine_from_scratch(dialog_manager=dialog_manager)
             await dialog_manager.switch_to(state=model.GeneratePublicationStates.combine_images_upload)
 
     @auto_log()
@@ -773,7 +773,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         await callback.answer()
 
-        combine_images_list = await self._image_manager.prepare_current_image_for_combine(
+        combine_images_list = await self.image_manager.prepare_current_image_for_combine(
             dialog_manager=dialog_manager,
             chat_id=callback.message.chat.id
         )
@@ -795,7 +795,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         await callback.answer()
 
-        self._image_manager.init_combine_from_scratch(dialog_manager=dialog_manager)
+        self.image_manager.init_combine_from_scratch(dialog_manager=dialog_manager)
 
         await dialog_manager.switch_to(state=model.GeneratePublicationStates.combine_images_upload)
 
@@ -840,7 +840,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             ):
                 return
 
-            self._image_manager.upload_combine_image(photo=photo, dialog_manager=dialog_manager)
+            self.image_manager.upload_combine_image(photo=photo, dialog_manager=dialog_manager)
 
     @auto_log()
     @traced_method()
@@ -851,7 +851,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             dialog_manager: DialogManager
     ) -> None:
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
-        self._image_manager.navigate_images(
+        self.image_manager.navigate_images(
             dialog_manager=dialog_manager,
             images_key="combine_images_list",
             index_key="combine_current_index",
@@ -868,7 +868,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             dialog_manager: DialogManager
     ) -> None:
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
-        self._image_manager.navigate_images(
+        self.image_manager.navigate_images(
             dialog_manager=dialog_manager,
             images_key="combine_images_list",
             index_key="combine_current_index",
@@ -892,8 +892,8 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         await callback.answer()
 
-        if self._image_manager.should_return_to_new_image_confirm(dialog_manager=dialog_manager):
-            self._image_manager.cleanup_combine_data(dialog_manager=dialog_manager)
+        if self.image_manager.should_return_to_new_image_confirm(dialog_manager=dialog_manager):
+            self.image_manager.cleanup_combine_data(dialog_manager=dialog_manager)
             await dialog_manager.switch_to(state=model.GeneratePublicationStates.new_image_confirm)
         else:
             await dialog_manager.switch_to(state=model.GeneratePublicationStates.image_menu)
@@ -907,7 +907,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             dialog_manager: DialogManager
     ) -> None:
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
-        self._image_manager.delete_combine_image(dialog_manager=dialog_manager)
+        self.image_manager.delete_combine_image(dialog_manager=dialog_manager)
         await callback.answer("Изображение удалено")
 
     @auto_log()
@@ -951,7 +951,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         dialog_manager.dialog_data["is_combining_images"] = True
         await dialog_manager.show()
 
-        combined_result_url = await self._image_manager.process_combine_with_prompt(
+        combined_result_url = await self.image_manager.process_combine_with_prompt(
             dialog_manager=dialog_manager,
             state=state,
             combine_images_list=combine_images_list,
@@ -991,7 +991,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         state = await self.state_manager.get_state(dialog_manager=dialog_manager)
 
-        combined_result_url = await self._image_manager.process_combine_with_prompt(
+        combined_result_url = await self.image_manager.process_combine_with_prompt(
             dialog_manager=dialog_manager,
             state=state,
             combine_images_list=combine_images_list,
@@ -1014,7 +1014,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
     ) -> None:
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
 
-        combine_images_list = await self._image_manager.combine_from_new_image(
+        combine_images_list = await self.image_manager.combine_from_new_image(
             dialog_manager=dialog_manager,
             chat_id=callback.message.chat.id
         )
@@ -1066,7 +1066,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         await dialog_manager.show()
 
-        images_url = await self._image_manager.edit_new_image_with_prompt(
+        images_url = await self.image_manager.edit_new_image_with_prompt(
             dialog_manager=dialog_manager,
             organization_id=state.organization_id,
             prompt=prompt,
@@ -1075,7 +1075,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         dialog_manager.dialog_data["is_applying_edits"] = False
 
-        self._image_manager.update_image_after_edit(
+        self.image_manager.update_image_after_edit(
             dialog_manager=dialog_manager,
             images_url=images_url
         )
@@ -1096,7 +1096,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         await callback.answer("Изображение применено")
 
-        self._image_manager.confirm_new_image(dialog_manager=dialog_manager)
+        self.image_manager.confirm_new_image(dialog_manager=dialog_manager)
 
         if await self.text_processor.check_text_length_with_image(dialog_manager=dialog_manager):
             return
@@ -1112,7 +1112,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             dialog_manager: DialogManager
     ) -> None:
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
-        self._image_manager.toggle_showing_old_image(dialog_manager=dialog_manager, show_old=True)
+        self.image_manager.toggle_showing_old_image(dialog_manager=dialog_manager, show_old=True)
         await callback.answer()
 
     @auto_log()
@@ -1124,7 +1124,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             dialog_manager: DialogManager
     ) -> None:
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
-        self._image_manager.toggle_showing_old_image(dialog_manager=dialog_manager, show_old=False)
+        self.image_manager.toggle_showing_old_image(dialog_manager=dialog_manager, show_old=False)
         await callback.answer()
 
     @auto_log()
@@ -1139,6 +1139,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         await callback.answer("Изображение отклонено")
 
-        self._image_manager.reject_new_image(dialog_manager=dialog_manager)
+        self.image_manager.reject_new_image(dialog_manager=dialog_manager)
 
         await dialog_manager.switch_to(state=model.GeneratePublicationStates.image_menu)

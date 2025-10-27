@@ -6,7 +6,7 @@ from internal.dialog.content.moderation_publication.helpers.dialog_data_helper i
 class StateRestorer:
     def __init__(self, logger, image_manager):
         self.logger = logger
-        self._image_manager = image_manager
+        self.image_manager = image_manager
         self.dialog_data_helper = DialogDataHelper()
 
     def save_state_before_modification(
@@ -43,7 +43,7 @@ class StateRestorer:
             # Если изображение было добавлено (и его не было раньше), удаляем его
             if not prev_has_image and current_has_image:
                 self.logger.info("Удаление добавленного изображения")
-                self._image_manager.clear_image_data(dialog_manager=dialog_manager)
+                self.image_manager.clear_image_data(dialog_manager=dialog_manager)
 
         # Очищаем сохраненные данные
         self.dialog_data_helper.clear_previous_state(dialog_manager)

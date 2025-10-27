@@ -26,7 +26,7 @@ class OrganizationMenuService(interface.IOrganizationMenuService):
 
         # Инициализация приватных сервисов
         self.state_manager = StateManager(state_repo)
-        self._permission_checker = PermissionChecker(self.logger, loom_employee_client)
+        self.permission_checker = PermissionChecker(self.logger, loom_employee_client)
 
     @auto_log()
     @traced_method()
@@ -38,7 +38,7 @@ class OrganizationMenuService(interface.IOrganizationMenuService):
     ) -> None:
         state = await self.state_manager.get_state(dialog_manager)
 
-        if not await self._permission_checker.check_employee_settings_permission(state, callback):
+        if not await self.permission_checker.check_employee_settings_permission(state, callback):
             return
 
         await self.state_repo.change_user_state(
@@ -65,7 +65,7 @@ class OrganizationMenuService(interface.IOrganizationMenuService):
         #
         # state = await self.state_manager.get_state(dialog_manager)
         #
-        # if not await self._permission_checker.check_update_organization_permission(state, callback):
+        # if not await self.permission_checker.check_update_organization_permission(state, callback):
         #     return
         #
         # await callback.answer()
@@ -89,7 +89,7 @@ class OrganizationMenuService(interface.IOrganizationMenuService):
 
         state = await self.state_manager.get_state(dialog_manager)
 
-        if not await self._permission_checker.check_update_category_permission(state, callback):
+        if not await self.permission_checker.check_update_category_permission(state, callback):
             return
 
         await callback.answer()
@@ -113,7 +113,7 @@ class OrganizationMenuService(interface.IOrganizationMenuService):
     ) -> None:
         state = await self.state_manager.get_state(dialog_manager)
 
-        if not await self._permission_checker.check_add_employee_permission(state, callback):
+        if not await self.permission_checker.check_add_employee_permission(state, callback):
             return
 
         await self.state_repo.change_user_state(

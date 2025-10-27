@@ -42,7 +42,7 @@ class MainMenuService(interface.IMainMenuService):
             self.bot,
             self.loom_content_client
         )
-        self._navigation = NavigationManager(
+        self.navigation = NavigationManager(
             state_repo
         )
         self.dialog_data_helper = ErrorFlagsManager()
@@ -94,7 +94,7 @@ class MainMenuService(interface.IMainMenuService):
             dialog_manager: DialogManager
     ) -> None:
         state = await self.state_manager.get_state(dialog_manager=dialog_manager)
-        await self._navigation.navigate_to_content(
+        await self.navigation.navigate_to_content(
             callback=callback,
             dialog_manager=dialog_manager,
             state=state
@@ -109,7 +109,7 @@ class MainMenuService(interface.IMainMenuService):
             dialog_manager: DialogManager
     ) -> None:
         state = await self.state_manager.get_state(dialog_manager=dialog_manager)
-        await self._navigation.navigate_to_organization(
+        await self.navigation.navigate_to_organization(
             callback=callback,
             dialog_manager=dialog_manager,
             state=state
@@ -124,7 +124,7 @@ class MainMenuService(interface.IMainMenuService):
             dialog_manager: DialogManager
     ) -> None:
         state = await self.state_manager.get_state(dialog_manager=dialog_manager)
-        await self._navigation.navigate_to_personal_profile(
+        await self.navigation.navigate_to_personal_profile(
             callback=callback,
             dialog_manager=dialog_manager,
             state=state

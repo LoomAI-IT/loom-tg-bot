@@ -31,7 +31,7 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
         self.state_manager = StateManager(
             state_repo=self.state_repo
         )
-        self._image_manager = ImageManager(
+        self.image_manager = ImageManager(
             logger=self.logger,
             bot=self.bot,
             loom_content_client=self.loom_content_client,
@@ -59,7 +59,7 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
         text = dialog_manager.dialog_data.get("publication_text", "")
 
         preview_image_media, has_multiple_images, current_image_index, total_images = \
-            self._image_manager.get_preview_image_media(dialog_manager)
+            self.image_manager.get_preview_image_media(dialog_manager)
 
         has_image = preview_image_media is not None
 
@@ -157,7 +157,7 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        preview_image_media = self._image_manager.get_image_menu_media(dialog_manager)
+        preview_image_media = self.image_manager.get_image_menu_media(dialog_manager)
         has_image = preview_image_media is not None
 
         flags_data = self._data_extractor.get_image_menu_flags(dialog_manager)
@@ -212,7 +212,7 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
             **kwargs
     ) -> dict:
         combine_current_image_media, combine_current_index, combine_images_count = \
-            self._image_manager.get_combine_images_media(dialog_manager)
+            self.image_manager.get_combine_images_media(dialog_manager)
 
         flags_data = self._data_extractor.get_combine_images_upload_flags(dialog_manager)
 
@@ -230,7 +230,7 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
             **kwargs
     ) -> dict:
         combine_current_image_media, combine_current_index, combine_images_count = \
-            self._image_manager.get_combine_images_media(dialog_manager)
+            self.image_manager.get_combine_images_media(dialog_manager)
 
         flags_data = self._data_extractor.get_combine_images_prompt_flags(dialog_manager)
 
@@ -248,7 +248,7 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
             **kwargs
     ) -> dict:
         new_image_media, old_image_media, showing_old_image = \
-            self._image_manager.get_new_image_confirm_media(dialog_manager)
+            self.image_manager.get_new_image_confirm_media(dialog_manager)
 
         display_image_media = old_image_media if showing_old_image else new_image_media
 

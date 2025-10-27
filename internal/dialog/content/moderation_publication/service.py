@@ -20,7 +20,6 @@ from internal.dialog.content.moderation_publication.helpers import (
 )
 
 
-
 class ModerationPublicationService(interface.IModerationPublicationService):
     def __init__(
             self,
@@ -52,10 +51,10 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             bot=self.bot,
             loom_content_client=self.loom_content_client
         )
-        self._alerts_manager = AlertsManager(
+        self.alerts_manager = AlertsManager(
             self.state_repo
         )
-        self._image_manager = ImageManager(
+        self.image_manager = ImageManager(
             logger=self.logger,
             bot=self.bot,
             loom_domain=self.loom_domain
@@ -67,9 +66,9 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         )
         self.state_restorer = StateRestorer(
             logger=self.logger,
-            image_manager=self._image_manager
+            image_manager=self.image_manager
         )
-        self._navigation_manager = NavigationManager(
+        self.navigation_manager = NavigationManager(
             logger=self.logger
         )
         self.dialog_data_helper = DialogDataHelper()
@@ -88,7 +87,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         direction = "prev" if button.widget_id == "prev_publication" else "next"
 
         # Делегируем навигацию в NavigationManager
-        _, at_edge = self._navigation_manager.navigate_publications(dialog_manager, direction)
+        _, at_edge = self.navigation_manager.navigate_publications(dialog_manager, direction)
 
         if at_edge:
             await callback.answer("Это крайняя публикация в списке")
@@ -196,7 +195,9 @@ class ModerationPublicationService(interface.IModerationPublicationService):
 
         # Валидация типа контента
         if not self.validation.validate_message_content_type(
-                message, [ContentType.VOICE, ContentType.AUDIO, ContentType.TEXT], dialog_manager
+                message,
+                [ContentType.VOICE, ContentType.AUDIO, ContentType.TEXT],
+                dialog_manager
         ):
             return
 
@@ -288,7 +289,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         working_pub = self.dialog_data_helper.get_working_publication(dialog_manager)
 
         # Подготавливаем текущее изображение для генерации
-        current_image_content, current_image_filename = await self._image_manager.prepare_current_image_for_generation(
+        current_image_content, current_image_filename = await self.image_manager.prepare_current_image_for_generation(
             dialog_manager
         )
 
@@ -305,7 +306,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             )
 
         # Обновляем рабочую версию с сгенерированными изображениями
-        self._image_manager.update_generated_images(dialog_manager, images_url)
+        self.image_manager.update_generated_images(dialog_manager, images_url)
         self.dialog_data_helper.set_generating_image_flag(dialog_manager, False)
 
         # Проверяем длину текста с изображением
@@ -329,7 +330,9 @@ class ModerationPublicationService(interface.IModerationPublicationService):
 
         # Валидация типа контента
         if not self.validation.validate_message_content_type(
-                message, [ContentType.VOICE, ContentType.AUDIO, ContentType.TEXT], dialog_manager
+                message,
+                [ContentType.VOICE, ContentType.AUDIO, ContentType.TEXT],
+                dialog_manager
         ):
             return
 
@@ -352,7 +355,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         working_pub = self.dialog_data_helper.get_working_publication(dialog_manager)
 
         # Подготавливаем текущее изображение для генерации
-        current_image_content, current_image_filename = await self._image_manager.prepare_current_image_for_generation(
+        current_image_content, current_image_filename = await self.image_manager.prepare_current_image_for_generation(
             dialog_manager
         )
 
@@ -370,7 +373,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             )
 
         # Обновляем рабочую версию с сгенерированными изображениями
-        self._image_manager.update_generated_images(dialog_manager, images_url)
+        self.image_manager.update_generated_images(dialog_manager, images_url)
         self.dialog_data_helper.set_generating_image_flag(dialog_manager, False)
 
         # Проверяем длину текста с изображением
@@ -393,7 +396,11 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         self.dialog_data_helper.clear_image_uploaddialog_data_helper(dialog_manager=dialog_manager)
 
         # Валидация типа контента
-        if not self.validation.validate_message_content_type(message, [ContentType.PHOTO], dialog_manager):
+        if not self.validation.validate_message_content_type(
+                message,
+                [ContentType.PHOTO],
+                dialog_manager
+        ):
             dialog_manager.dialog_data["has_invalid_image_type"] = True
             return
 
@@ -408,7 +415,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             self.state_restorer.save_state_before_modification(dialog_manager, include_image=True)
 
             # Обновляем рабочую версию с загруженным изображением
-            self._image_manager.update_custom_image(dialog_manager, photo.file_id)
+            self.image_manager.update_custom_image(dialog_manager, photo.file_id)
             self.logger.info("Изображение загружено")
 
             # Проверяем длину текста с изображением
@@ -430,7 +437,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
     ) -> None:
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
 
-        self._image_manager.clear_image_data(dialog_manager=dialog_manager)
+        self.image_manager.clear_image_data(dialog_manager=dialog_manager)
 
         await callback.answer("Изображение удалено", show_alert=True)
 
@@ -486,7 +493,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
 
         state = await self.state_manager.get_state(dialog_manager)
 
-        if await self._alerts_manager.check_alerts(dialog_manager=dialog_manager, state=state):
+        if await self.alerts_manager.check_alerts(dialog_manager=dialog_manager, state=state):
             self.logger.info("Обнаружены алерты")
             return
 
@@ -522,7 +529,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._image_manager.navigate_images(
+        self.image_manager.navigate_images(
             dialog_manager=dialog_manager,
             direction="prev"
         )
@@ -536,7 +543,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self._image_manager.navigate_images(
+        self.image_manager.navigate_images(
             dialog_manager=dialog_manager,
             direction="next"
         )
@@ -578,7 +585,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
 
         # Удаляем изображение из рабочей версии
-        self._image_manager.clear_image_data(dialog_manager=dialog_manager)
+        self.image_manager.clear_image_data(dialog_manager=dialog_manager)
 
         self.logger.info("Изображение удалено из-за длинного текста")
         await callback.answer("Изображение удалено", show_alert=True)

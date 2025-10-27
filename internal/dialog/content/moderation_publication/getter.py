@@ -39,12 +39,12 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
             self.bot,
             self.loom_content_client,
         )
-        self._image_manager = ImageManager(
+        self.image_manager = ImageManager(
             logger=self.logger,
             bot=self.bot,
             loom_domain=self.loom_domain,
         )
-        self.__social_network_manger = SocialNetworkManager(
+        self.social_network_manger = SocialNetworkManager(
             logger=self.logger
         )
         self._datetime_formatter = DateTimeFormatter()
@@ -87,7 +87,7 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
         category = await self.loom_content_client.get_category_by_id(current_pub.category_id)
 
         # Подготавливаем медиа для изображения
-        preview_image_media, image_url = self._image_manager.get_moderation_image_media(
+        preview_image_media, image_url = self.image_manager.get_moderation_image_media(
             publication_id=current_pub.id,
             image_fid=current_pub.image_fid
         )
@@ -126,7 +126,7 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
             social_networks = await self.loom_content_client.get_social_networks_by_organization(
                 organization_id=state.organization_id
             )
-            selected_networks = self.__social_network_manger.initialize_network_selection(
+            selected_networks = self.social_network_manger.initialize_network_selection(
                 social_networks=social_networks
             )
             dialog_manager.dialog_data["selected_social_networks"] = selected_networks
@@ -175,7 +175,7 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
         creator = await self.loom_employee_client.get_employee_by_account_id(working_pub["creator_id"])
         category = await self.loom_content_client.get_category_by_id(working_pub["category_id"])
 
-        preview_image_media = self._image_manager.get_edit_preview_image_media(working_pub)
+        preview_image_media = self.image_manager.get_edit_preview_image_media(working_pub)
 
         has_multiple_images = False
         current_image_index = 0
@@ -213,12 +213,12 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
             organization_id=state.organization_id
         )
 
-        telegram_connected = self.__social_network_manger.is_network_connected(social_networks, "telegram")
-        vkontakte_connected = self.__social_network_manger.is_network_connected(social_networks, "vkontakte")
+        telegram_connected = self.social_network_manger.is_network_connected(social_networks, "telegram")
+        vkontakte_connected = self.social_network_manger.is_network_connected(social_networks, "vkontakte")
 
         selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
 
-        await self.__social_network_manger.setup_checkbox_states(
+        await self.social_network_manger.setup_checkbox_states(
             dialog_manager=dialog_manager,
             social_networks=social_networks,
             selected_networks=selected_networks
@@ -264,7 +264,7 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
             **kwargs
     ) -> dict:
         working_pub = dialog_manager.dialog_data.get("working_publication", {})
-        preview_image_media = self._image_manager.get_edit_preview_image_media(working_pub)
+        preview_image_media = self.image_manager.get_edit_preview_image_media(working_pub)
 
         return {
             "preview_image_media": preview_image_media,
