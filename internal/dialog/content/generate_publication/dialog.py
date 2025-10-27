@@ -913,13 +913,13 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             Row(
                 Button(
                     Const("⬅️ Предыдущая"),
-                    id="prev_combine_image",
+                    id="prev_combine_image_prompt",
                     on_click=self.generate_publication_service.handle_prev_combine_image,
                     when="has_multiple_combine_images",
                 ),
                 Button(
                     Const("➡️ Следующая"),
-                    id="next_combine_image",
+                    id="next_combine_image_prompt",
                     on_click=self.generate_publication_service.handle_next_combine_image,
                     when="has_multiple_combine_images",
                 ),
