@@ -1,10 +1,14 @@
 from typing import Any
 from aiogram.types import CallbackQuery
-from aiogram_dialog import DialogManager, StartMode, ShowMode
+from aiogram_dialog import DialogManager, StartMode
 
 from internal import interface, model
 from pkg.log_wrapper import auto_log
 from pkg.trace_wrapper import traced_method
+
+from internal.dialog._state_helper import _StateHelper
+from ._permission_checker import _PermissionChecker
+from ._chat_manager import _ChatManager
 
 
 class OrganizationMenuService(interface.IOrganizationMenuService):
@@ -21,6 +25,11 @@ class OrganizationMenuService(interface.IOrganizationMenuService):
         self.llm_chat_repo = llm_chat_repo
         self.loom_employee_client = loom_employee_client
 
+        # Инициализация приватных сервисов
+        self._state_helper = _StateHelper(state_repo)
+        self._permission_checker = _PermissionChecker(self.logger, loom_employee_client)
+        self._chat_manager = _ChatManager(self.logger, llm_chat_repo)
+
     @auto_log()
     @traced_method()
     async def handle_go_to_employee_settings(
@@ -29,15 +38,9 @@ class OrganizationMenuService(interface.IOrganizationMenuService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        state = await self._get_state(dialog_manager)
+        state = await self._state_helper.get_state(dialog_manager)
 
-        employee = await self.loom_employee_client.get_employee_by_account_id(
-            state.account_id,
-        )
-
-        if not employee.edit_employee_perm_permission:
-            self.logger.info("Отказано в доступе")
-            await callback.answer("Недостаточно прав для управления сотрудниками", show_alert=True)
+        if not await self._permission_checker.check_employee_settings_permission(state, callback):
             return
 
         await self.state_repo.change_user_state(
@@ -60,24 +63,16 @@ class OrganizationMenuService(interface.IOrganizationMenuService):
     ) -> None:
         await callback.answer("В разработке", show_alert=True)
         return
-        # dialog_manager.show_mode = ShowMode.EDIT
+        # self._state_helper.set_edit_mode(dialog_manager)
         #
-        # state = await self._get_state(dialog_manager)
+        # state = await self._state_helper.get_state(dialog_manager)
         #
-        # employee = await self.loom_employee_client.get_employee_by_account_id(
-        #     state.account_id
-        # )
-        #
-        # if not employee.setting_category_permission:
-        #     self.logger.info("Отказано в доступе")
-        #     await callback.answer("У вас нет прав обновлять организацию", show_alert=True)
+        # if not await self._permission_checker.check_update_organization_permission(state, callback):
         #     return
         #
         # await callback.answer()
         #
-        # chat = await self.llm_chat_repo.get_chat_by_state_id(state.id)
-        # if chat:
-        #     await self.llm_chat_repo.delete_chat(chat[0].id)
+        # await self._chat_manager.clear_chat(state.id)
         #
         # await dialog_manager.start(
         #     model.UpdateOrganizationStates.update_organization,
@@ -92,24 +87,16 @@ class OrganizationMenuService(interface.IOrganizationMenuService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        dialog_manager.show_mode = ShowMode.EDIT
+        self._state_helper.set_edit_mode(dialog_manager)
 
-        state = await self._get_state(dialog_manager)
+        state = await self._state_helper.get_state(dialog_manager)
 
-        employee = await self.loom_employee_client.get_employee_by_account_id(
-            state.account_id
-        )
-
-        if not employee.setting_category_permission:
-            self.logger.info("Отказано в доступе")
-            await callback.answer("У вас нет прав обновлять рубрики", show_alert=True)
+        if not await self._permission_checker.check_update_category_permission(state, callback):
             return
 
         await callback.answer()
 
-        chat = await self.llm_chat_repo.get_chat_by_state_id(state.id)
-        if chat:
-            await self.llm_chat_repo.delete_chat(chat[0].id)
+        await self._chat_manager.clear_chat(state.id)
 
         await dialog_manager.start(
             model.UpdateCategoryStates.select_category,
@@ -124,15 +111,9 @@ class OrganizationMenuService(interface.IOrganizationMenuService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        state = await self._get_state(dialog_manager)
+        state = await self._state_helper.get_state(dialog_manager)
 
-        employee = await self.loom_employee_client.get_employee_by_account_id(
-            state.account_id,
-        )
-
-        if not employee.add_employee_permission:
-            self.logger.info("Отказано в доступе")
-            await callback.answer("Недостаточно прав для добавления сотрудников", show_alert=True)
+        if not await self._permission_checker.check_add_employee_permission(state, callback):
             return
 
         await self.state_repo.change_user_state(
@@ -163,7 +144,7 @@ class OrganizationMenuService(interface.IOrganizationMenuService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        dialog_manager.show_mode = ShowMode.EDIT
+        self._state_helper.set_edit_mode(dialog_manager)
         await dialog_manager.start(model.AddSocialNetworkStates.select_network)
 
     @auto_log()
@@ -178,17 +159,3 @@ class OrganizationMenuService(interface.IOrganizationMenuService):
             model.MainMenuStates.main_menu,
             mode=StartMode.RESET_STACK
         )
-
-
-    async def _get_state(self, dialog_manager: DialogManager) -> model.UserState:
-        if hasattr(dialog_manager.event, 'message') and dialog_manager.event.message:
-            chat_id = dialog_manager.event.message.chat.id
-        elif hasattr(dialog_manager.event, 'chat'):
-            chat_id = dialog_manager.event.chat.id
-        else:
-            raise ValueError("Cannot extract chat_id from dialog_manager")
-
-        state = await self.state_repo.state_by_id(chat_id)
-        if not state:
-            raise ValueError(f"State not found for chat_id: {chat_id}")
-        return state[0]

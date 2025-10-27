@@ -4,8 +4,6 @@ from internal import interface, model
 
 
 class _AlertsChecker:
-    """Сервис для проверки уведомлений пользователя"""
-
     def __init__(self, state_repo: interface.IStateRepo):
         self.state_repo = state_repo
 
@@ -14,10 +12,6 @@ class _AlertsChecker:
             dialog_manager: DialogManager,
             state: model.UserState
     ) -> bool:
-        """
-        Проверяет наличие уведомлений для пользователя.
-        Возвращает True, если есть уведомления и был выполнен переход.
-        """
         publication_approved_alerts = await self.state_repo.get_publication_approved_alert_by_state_id(
             state_id=state.id
         )

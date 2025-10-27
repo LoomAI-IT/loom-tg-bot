@@ -2,8 +2,6 @@ from aiogram_dialog import DialogManager
 
 
 class _ValidationService:
-    """Сервис для валидации текстов и промптов"""
-
     MIN_TEXT_PROMPT_LENGTH = 10
     MAX_TEXT_PROMPT_LENGTH = 2000
 
@@ -26,7 +24,6 @@ class _ValidationService:
             small_flag: str,
             big_flag: str
     ) -> bool:
-        """Универсальная валидация текста с указанными лимитами"""
         if not text:
             self.logger.info(f"Пустой текст: {void_flag}")
             dialog_manager.dialog_data[void_flag] = True
@@ -52,7 +49,6 @@ class _ValidationService:
             small_flag: str,
             big_flag: str
     ) -> bool:
-        """Валидация промпта"""
         return self.validate_text_with_limits(
             text,
             self.MIN_TEXT_PROMPT_LENGTH,
@@ -64,7 +60,6 @@ class _ValidationService:
         )
 
     def validate_input_text(self, text: str, dialog_manager: DialogManager) -> bool:
-        """Валидация входного текста"""
         return self.validate_text_with_limits(
             text,
             self.MIN_TEXT_PROMPT_LENGTH,
@@ -76,7 +71,6 @@ class _ValidationService:
         )
 
     def validate_edited_text(self, text: str, dialog_manager: DialogManager) -> bool:
-        """Валидация отредактированного текста"""
         return self.validate_text_with_limits(
             text,
             self.MIN_EDITED_TEXT_LENGTH,
@@ -86,3 +80,23 @@ class _ValidationService:
             "has_small_text",
             "has_big_text"
         )
+
+    def validate_combine_prompt(
+            self,
+            prompt: str | None,
+            dialog_manager: DialogManager
+    ) -> bool:
+        if not prompt:
+            return True
+
+        if len(prompt) < self.MIN_IMAGE_PROMPT_LENGTH:
+            self.logger.info("Слишком короткий промпт для объединения")
+            dialog_manager.dialog_data["has_small_combine_prompt"] = True
+            return False
+
+        if len(prompt) > self.MAX_IMAGE_PROMPT_LENGTH:
+            self.logger.info("Слишком длинный промпт для объединения")
+            dialog_manager.dialog_data["has_big_combine_prompt"] = True
+            return False
+
+        return True

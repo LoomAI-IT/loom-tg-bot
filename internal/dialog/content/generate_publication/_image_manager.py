@@ -8,8 +8,6 @@ from pkg.tg_action_wrapper import tg_action
 
 
 class _ImageManager:
-    """Менеджер для управления изображениями публикаций"""
-
     def __init__(
             self,
             logger,
@@ -27,7 +25,6 @@ class _ImageManager:
             index_key: str,
             direction: str
     ) -> None:
-        """Универсальная навигация по списку изображений"""
         images_list = dialog_manager.dialog_data.get(images_key, [])
         current_index = dialog_manager.dialog_data.get(index_key, 0)
 
@@ -39,7 +36,6 @@ class _ImageManager:
         dialog_manager.dialog_data[index_key] = new_index
 
     def create_image_backup_dict(self, dialog_manager: DialogManager) -> dict | None:
-        """Создает словарь с backup текущего изображения"""
         if dialog_manager.dialog_data.get("custom_image_file_id"):
             return {
                 "type": "file_id",
@@ -56,12 +52,10 @@ class _ImageManager:
         return None
 
     def backup_current_image(self, dialog_manager: DialogManager) -> None:
-        """Создает backup текущего изображения для возможности отката"""
         old_image_backup = self.create_image_backup_dict(dialog_manager)
         dialog_manager.dialog_data["old_generated_image_backup"] = old_image_backup
 
     def clear_image_data(self, dialog_manager: DialogManager) -> None:
-        """Очищает все данные изображений"""
         dialog_manager.dialog_data["has_image"] = False
         dialog_manager.dialog_data.pop("publication_images_url", None)
         dialog_manager.dialog_data.pop("custom_image_file_id", None)
@@ -69,7 +63,6 @@ class _ImageManager:
         dialog_manager.dialog_data.pop("current_image_index", None)
 
     def clear_temporary_image_data(self, dialog_manager: DialogManager) -> None:
-        """Очищает временные данные изображений"""
         dialog_manager.dialog_data.pop("generated_images_url", None)
         dialog_manager.dialog_data.pop("combine_result_url", None)
         dialog_manager.dialog_data.pop("old_generated_image_backup", None)
@@ -81,7 +74,6 @@ class _ImageManager:
         dialog_manager.dialog_data.pop("showing_old_image", None)
 
     def set_generated_images(self, dialog_manager: DialogManager, images_url: list[str]) -> None:
-        """Устанавливает сгенерированные изображения"""
         dialog_manager.dialog_data["publication_images_url"] = images_url
         dialog_manager.dialog_data["has_image"] = True
         dialog_manager.dialog_data["is_custom_image"] = False
@@ -89,7 +81,6 @@ class _ImageManager:
         dialog_manager.dialog_data.pop("custom_image_file_id", None)
 
     async def download_image(self, image_url: str) -> tuple[bytes, str]:
-        """Скачивает изображение по URL"""
         async with aiohttp.ClientSession() as session:
             async with session.get(image_url) as response:
                 response.raise_for_status()
@@ -98,7 +89,6 @@ class _ImageManager:
                 return content, content_type
 
     async def download_and_get_file_id(self, image_url: str, chat_id: int) -> str | None:
-        """Скачивает изображение и возвращает его file_id в Telegram"""
         try:
             image_content, _ = await self.download_image(image_url)
 
@@ -113,7 +103,6 @@ class _ImageManager:
             return None
 
     async def get_current_image_data(self, dialog_manager: DialogManager) -> tuple[bytes, str] | None:
-        """Получает данные текущего изображения"""
         try:
             if dialog_manager.dialog_data.get("custom_image_file_id"):
                 file_id = dialog_manager.dialog_data["custom_image_file_id"]
@@ -136,8 +125,8 @@ class _ImageManager:
             return None
 
     async def get_selected_image_data(self, dialog_manager: DialogManager) -> tuple[
-        str | None, bytes | None, str | None]:
-        """Получает данные выбранного изображения для публикации"""
+        str | None, bytes | None, str | None
+    ]:
         if dialog_manager.dialog_data.get("custom_image_file_id"):
             file_id = dialog_manager.dialog_data["custom_image_file_id"]
             image_content = await self.bot.download(file_id)
@@ -161,7 +150,6 @@ class _ImageManager:
             prompt: str,
             chat_id: int
     ) -> list[str] | None:
-        """Объединяет изображения с заданным промптом"""
         images_content = []
         images_filenames = []
 
@@ -181,3 +169,56 @@ class _ImageManager:
             )
 
         return combined_images_url
+
+    def restore_image_from_backup(
+            self,
+            dialog_manager: DialogManager,
+            backup_dict: dict | None
+    ) -> None:
+        if not backup_dict:
+            self.clear_image_data(dialog_manager)
+            return
+
+        if backup_dict["type"] == "file_id":
+            dialog_manager.dialog_data["custom_image_file_id"] = backup_dict["value"]
+            dialog_manager.dialog_data["has_image"] = True
+            dialog_manager.dialog_data["is_custom_image"] = True
+            dialog_manager.dialog_data.pop("publication_images_url", None)
+            dialog_manager.dialog_data.pop("current_image_index", None)
+        elif backup_dict["type"] == "url":
+            value = backup_dict["value"]
+            if isinstance(value, list):
+                dialog_manager.dialog_data["publication_images_url"] = value
+                dialog_manager.dialog_data["current_image_index"] = backup_dict.get("index", 0)
+            else:
+                dialog_manager.dialog_data["publication_images_url"] = [value]
+                dialog_manager.dialog_data["current_image_index"] = 0
+            dialog_manager.dialog_data["has_image"] = True
+            dialog_manager.dialog_data["is_custom_image"] = False
+            dialog_manager.dialog_data.pop("custom_image_file_id", None)
+
+    async def prepare_current_image_for_combine(
+            self,
+            dialog_manager: DialogManager,
+            chat_id: int
+    ) -> list[str]:
+        """
+        Подготавливает текущее изображение для комбинирования.
+        Возвращает список с одним file_id.
+        """
+        combine_images_list = []
+
+        if dialog_manager.dialog_data.get("custom_image_file_id"):
+            file_id = dialog_manager.dialog_data["custom_image_file_id"]
+            combine_images_list.append(file_id)
+        elif dialog_manager.dialog_data.get("publication_images_url"):
+            images_url = dialog_manager.dialog_data["publication_images_url"]
+            current_index = dialog_manager.dialog_data.get("current_image_index", 0)
+            if current_index < len(images_url):
+                current_url = images_url[current_index]
+                file_id = await self.download_and_get_file_id(current_url, chat_id)
+                if file_id:
+                    combine_images_list.append(file_id)
+
+        return combine_images_list
+

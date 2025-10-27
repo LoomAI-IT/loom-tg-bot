@@ -4,18 +4,14 @@ from internal import interface, model
 
 
 class _StateHelper:
-    """Вспомогательный класс для работы с состояниями пользователя"""
-
     def __init__(self, state_repo: interface.IStateRepo):
         self.state_repo = state_repo
 
     @staticmethod
     def set_edit_mode(dialog_manager: DialogManager) -> None:
-        """Устанавливает режим редактирования для диалога"""
         dialog_manager.show_mode = ShowMode.EDIT
 
     async def get_state(self, dialog_manager: DialogManager) -> model.UserState:
-        """Получает состояние пользователя из репозитория"""
         if hasattr(dialog_manager.event, 'message') and dialog_manager.event.message:
             chat_id = dialog_manager.event.message.chat.id
         elif hasattr(dialog_manager.event, 'chat'):

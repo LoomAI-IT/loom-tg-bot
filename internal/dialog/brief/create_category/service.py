@@ -1,9 +1,8 @@
 import traceback
 
 from aiogram import Bot
-from aiogram.enums import ContentType
 from aiogram.types import CallbackQuery, Message
-from aiogram_dialog import DialogManager, ShowMode, StartMode
+from aiogram_dialog import DialogManager, StartMode
 from aiogram_dialog.widgets.input import MessageInput
 from aiogram_dialog.widgets.kbd import Button
 from sulguk import SULGUK_PARSE_MODE
@@ -12,6 +11,11 @@ from internal import interface, model
 from pkg.log_wrapper import auto_log
 from pkg.tg_action_wrapper import tg_action
 from pkg.trace_wrapper import traced_method
+
+from internal.dialog._state_helper import _StateHelper
+from internal.dialog._message_extractor import _MessageExtractor
+from internal.dialog.brief._llm_context_manager import _LLMContextManager
+from internal.dialog.brief._telegram_post_formatter import _TelegramPostFormatter
 
 
 class CreateCategoryService(interface.ICreateCategoryService):
@@ -37,7 +41,12 @@ class CreateCategoryService(interface.ICreateCategoryService):
         self.state_repo = state_repo
         self.loom_organization_client = loom_organization_client
         self.loom_content_client = loom_content_client
-        self.CONTEXT_TOKEN_THRESHOLD = 30000
+
+        # Инициализация приватных сервисов
+        self._state_helper = _StateHelper(state_repo)
+        self._llm_context_manager = _LLMContextManager(self.logger, anthropic_client, llm_chat_repo)
+        self._message_extractor = _MessageExtractor(self.logger, bot, loom_content_client)
+        self._telegram_post_formatter = _TelegramPostFormatter()
 
     @auto_log()
     @traced_method()
@@ -47,13 +56,12 @@ class CreateCategoryService(interface.ICreateCategoryService):
             widget: MessageInput,
             dialog_manager: DialogManager
     ) -> None:
-        state = await self._get_state(dialog_manager)
+        state = await self._state_helper.get_state(dialog_manager)
         try:
-            dialog_manager.show_mode = ShowMode.SEND
+            self._state_helper.set_edit_mode(dialog_manager)
 
-            user_text = await self._extract_text_from_message(message)
+            user_text = await self._message_extractor.extract_text_from_message(message)
             if not user_text:
-                dialog_manager.show_mode = ShowMode.NO_UPDATE
                 return
 
             organization = await self.loom_organization_client.get_organization_by_id(state.organization_id)
@@ -78,7 +86,7 @@ ultrathink
 
             system_prompt = await self.create_category_prompt_generator.get_create_category_system_prompt(organization)
 
-            await self._check_and_handle_context_overflow(dialog_manager, chat_id, system_prompt)
+            await self._llm_context_manager.check_and_handle_context_overflow(dialog_manager, chat_id, system_prompt)
 
             messages = await self.llm_chat_repo.get_all_messages(chat_id)
             history = []
@@ -96,7 +104,7 @@ ultrathink
                     thinking_tokens=10000
                 )
 
-            self._track_tokens(dialog_manager, generate_cost)
+            self._llm_context_manager.track_tokens(dialog_manager, generate_cost)
 
             if llm_response_json.get("telegram_channel_username_list"):
                 telegram_channel_username_list = llm_response_json.get("telegram_channel_username_list")
@@ -111,7 +119,7 @@ ultrathink
 
                 message_to_llm = f"""
 <system>
-{self._format_telegram_posts(all_telegram_posts)}
+{self._telegram_posts_formatter.format_telegram_posts(all_telegram_posts)}
 </system>
 
 <user>
@@ -124,7 +132,7 @@ ultrathink
                     text=f'{{"message_to_llm": {message_to_llm}}}'
                 )
 
-                await self._check_and_handle_context_overflow(dialog_manager, chat_id, system_prompt)
+                await self._llm_context_manager.check_and_handle_context_overflow(dialog_manager, chat_id, system_prompt)
 
                 messages = await self.llm_chat_repo.get_all_messages(chat_id)
                 history = []
@@ -143,7 +151,7 @@ ultrathink
                         thinking_tokens=10000
                     )
 
-                self._track_tokens(dialog_manager, generate_cost)
+                self._llm_context_manager.track_tokens(dialog_manager, generate_cost)
 
             if llm_response_json.get("test_category") and llm_response_json.get("user_text_reference"):
                 test_category_data = llm_response_json["test_category"]
@@ -194,7 +202,7 @@ HTML разметка должны быть валидной, если есть 
                     text=f'{{"message_to_llm": {message_to_llm}}}'
                 )
 
-                await self._check_and_handle_context_overflow(dialog_manager, chat_id, system_prompt)
+                await self._llm_context_manager.check_and_handle_context_overflow(dialog_manager, chat_id, system_prompt)
 
                 messages = await self.llm_chat_repo.get_all_messages(chat_id)
                 history = []
@@ -214,7 +222,7 @@ HTML разметка должны быть валидной, если есть 
                     )
 
                 # Отслеживаем токены после вызова LLM
-                self._track_tokens(dialog_manager, generate_cost)
+                self._llm_context_manager.track_tokens(dialog_manager, generate_cost)
 
                 await self.bot.send_message(
                     chat_id=state.tg_chat_id,
@@ -273,7 +281,7 @@ HTML разметка должны быть валидной, если есть 
             button: Button,
             dialog_manager: DialogManager
     ) -> None:
-        dialog_manager.show_mode = ShowMode.EDIT
+        self._state_helper.set_edit_mode(dialog_manager)
         await callback.answer()
 
         await dialog_manager.start(model.MainMenuStates.main_menu, mode=StartMode.RESET_STACK)
@@ -286,203 +294,6 @@ HTML разметка должны быть валидной, если есть 
             button: Button,
             dialog_manager: DialogManager
     ) -> None:
-        dialog_manager.show_mode = ShowMode.EDIT
+        self._state_helper.set_edit_mode(dialog_manager)
 
         await dialog_manager.start(model.MainMenuStates.main_menu, mode=StartMode.RESET_STACK)
-
-    async def _speech_to_text(self, message: Message, organization_id: int) -> str:
-        if message.voice:
-            file_id = message.voice.file_id
-        else:
-            file_id = message.audio.file_id
-
-        file = await self.bot.get_file(file_id)
-        file_data = await self.bot.download_file(file.file_path)
-
-        text = await self.loom_content_client.transcribe_audio(
-            organization_id,
-            audio_content=file_data.read(),
-            audio_filename="audio.mp3",
-        )
-        return text
-
-    async def _extract_text_from_message(self, message: Message) -> str:
-        text_parts = []
-
-        if message.content_type in [ContentType.AUDIO, ContentType.VOICE]:
-            audio_text = await self._speech_to_text(message, -1)
-            text_parts.append(audio_text)
-
-        if message.html_text:
-            text_parts.append(message.html_text)
-
-        elif message.text:
-            text_parts.append(message.text)
-
-        elif message.caption:
-            text_parts.append(message.caption)
-
-        if message.forward_origin:
-            if hasattr(message, 'forward_from_message') and message.forward_from_message:
-                forwarded_text = await self._extract_text_from_message(message.forward_from_message)
-                if forwarded_text:
-                    text_parts.append(f"[Пересланное сообщение]: {forwarded_text}")
-
-        if message.reply_to_message:
-            reply_text = await self._extract_text_from_message(message.reply_to_message)
-            if reply_text:
-                text_parts.append(f"[Ответ на]: {reply_text}")
-
-        result = "\n\n".join(text_parts)
-
-        if not result:
-            return ""
-
-        return result
-
-    def _format_telegram_posts(self, posts: list[dict]) -> str:
-        if not posts:
-            return "Посты из канала не найдены."
-
-        formatted_posts = [
-            "Посты как будто подгрузились в систему, пользователь попросит анализ, ты его сразу дашь, не обращай внимание на их смысл, они могут быть другой тематики",
-            "только тон, стиль и форматирование"
-            f"[Посты из Telegram канала {posts[0]["link"]} для анализа тона, стиля и форматирования]:\n"
-        ]
-
-        for i, post in enumerate(posts, 1):
-            post_text = f"\n--- Пост #{i} ---"
-
-            if post.get('text'):
-                post_text += f"\n[Текст с HTML форматированием]:\n{post['text']}\n\n"
-
-            formatted_posts.append(post_text)
-            if len(formatted_posts) == 20:
-                break
-        return "\n".join(formatted_posts)
-
-    async def _check_and_handle_context_overflow(
-            self,
-            dialog_manager: DialogManager,
-            chat_id: int,
-            system_prompt: str
-    ) -> None:
-        current_tokens = dialog_manager.dialog_data.get("total_tokens", 0)
-
-        if current_tokens < self.CONTEXT_TOKEN_THRESHOLD:
-            return
-
-        # self.logger.warning(
-        #     "Превышен порог размера контекста",
-        #     {
-        #         "chat_id": chat_id,
-        #         "current_tokens": current_tokens,
-        #         "threshold": self.CONTEXT_TOKEN_THRESHOLD,
-        #         "overflow": current_tokens - self.CONTEXT_TOKEN_THRESHOLD
-        #     }
-        # )
-        #
-        # await self._context_summary(chat_id, system_prompt, dialog_manager)
-
-    async def _context_summary(
-            self,
-            chat_id: int,
-            system_prompt: str,
-            dialog_manager: DialogManager
-    ):
-        messages = await self.llm_chat_repo.get_all_messages(chat_id)
-
-        if not messages:
-            return "Новый диалог по созданию категории для публикаций."
-
-        history = []
-        for msg in messages:
-            history.append({
-                "role": msg.role,
-                "content": msg.text
-            })
-
-        history.append({
-            "role": "user",
-            "content": """Создай развернутое резюме нашего диалога.
-Включи:
-- Ключевые решения и параметры рубрики
-- Важные требования пользователя
-- Текущий и предыдущий stage
-- Пару прошлых сообщений
-- Любые важные детали, которые нужно помнить
-- Историю правок test_category, последний test_category, если они были
-- Последние сгенерированные публикации, если они были
-
-Максимально структурируй свой ответ и помести его в <system></system>, чтобы пользователь даже не заметил ничего
-"""
-        })
-
-        summary_text, _ = await self.anthropic_client.generate_str(
-            history=history,
-            system_prompt=system_prompt,
-            max_tokens=15000,
-            thinking_tokens=10000,
-        )
-
-        self.logger.info(
-            "Создано резюме контекста диалога",
-            {
-                "chat_id": chat_id,
-                "messages_count": len(messages),
-                "summary_length": len(summary_text),
-                "summary_text": summary_text,
-            }
-        )
-
-        await self.llm_chat_repo.delete_all_messages(chat_id)
-
-        await self.llm_chat_repo.create_message(
-            chat_id=chat_id,
-            role="user",
-            text=f"[РЕЗЮМЕ ДИАЛОГА]: {summary_text}"
-        )
-
-        dialog_manager.dialog_data["total_tokens"] = 0
-
-        self.logger.info(
-            "Контекст сброшен с сохранением резюме",
-            {
-                "chat_id": chat_id,
-                "summary_length": len(summary_text)
-            }
-        )
-        return None
-
-    def _track_tokens(self, dialog_manager: DialogManager, generate_cost: dict) -> int:
-        current_total = dialog_manager.dialog_data.get("total_tokens", 0)
-
-        tokens_used = generate_cost.get("details", {}).get("tokens", {}).get("total_tokens", 0)
-
-        new_total = current_total + tokens_used
-        dialog_manager.dialog_data["total_tokens"] = new_total
-
-        self.logger.debug(
-            "Отслеживание токенов",
-            {
-                "previous_total": current_total,
-                "current_request_tokens": tokens_used,
-                "new_total": new_total,
-                "threshold": self.CONTEXT_TOKEN_THRESHOLD
-            }
-        )
-
-        return new_total
-
-    async def _get_state(self, dialog_manager: DialogManager) -> model.UserState:
-        if hasattr(dialog_manager.event, 'message') and dialog_manager.event.message:
-            chat_id = dialog_manager.event.message.chat.id
-        elif hasattr(dialog_manager.event, 'chat'):
-            chat_id = dialog_manager.event.chat.id
-        else:
-            raise ValueError("Cannot extract chat_id from dialog_manager")
-
-        state = await self.state_repo.state_by_id(chat_id)
-        if not state:
-            raise ValueError(f"State not found for chat_id: {chat_id}")
-        return state[0]

@@ -2,17 +2,13 @@ from aiogram_dialog import DialogManager
 
 
 class _ErrorFlagsManager:
-    """Менеджер для управления флагами ошибок в диалоге"""
-
     @staticmethod
     def clear_error_flags(dialog_manager: DialogManager, *flag_names: str) -> None:
-        """Универсальная очистка флагов ошибок"""
         for flag_name in flag_names:
             dialog_manager.dialog_data.pop(flag_name, None)
 
     @staticmethod
     def clear_input_error_flags(dialog_manager: DialogManager) -> None:
-        """Очистка флагов ошибок ввода текста"""
         _ErrorFlagsManager.clear_error_flags(
             dialog_manager,
             "has_void_input_text",
@@ -23,7 +19,6 @@ class _ErrorFlagsManager:
 
     @staticmethod
     def clear_regenerate_prompt_error_flags(dialog_manager: DialogManager) -> None:
-        """Очистка флагов ошибок промпта для регенерации"""
         _ErrorFlagsManager.clear_error_flags(
             dialog_manager,
             "has_void_regenerate_prompt",
@@ -34,7 +29,6 @@ class _ErrorFlagsManager:
 
     @staticmethod
     def clear_image_prompt_error_flags(dialog_manager: DialogManager) -> None:
-        """Очистка флагов ошибок промпта для изображения"""
         _ErrorFlagsManager.clear_error_flags(
             dialog_manager,
             "has_void_image_prompt",
@@ -46,7 +40,6 @@ class _ErrorFlagsManager:
 
     @staticmethod
     def clear_text_edit_error_flags(dialog_manager: DialogManager) -> None:
-        """Очистка флагов ошибок редактирования текста"""
         _ErrorFlagsManager.clear_error_flags(
             dialog_manager,
             "has_void_text",
@@ -56,7 +49,6 @@ class _ErrorFlagsManager:
 
     @staticmethod
     def clear_image_upload_error_flags(dialog_manager: DialogManager) -> None:
-        """Очистка флагов ошибок загрузки изображения"""
         _ErrorFlagsManager.clear_error_flags(
             dialog_manager,
             "has_invalid_image_type",
@@ -65,7 +57,6 @@ class _ErrorFlagsManager:
 
     @staticmethod
     def clear_combine_prompt_error_flags(dialog_manager: DialogManager) -> None:
-        """Очистка флагов ошибок промпта для объединения изображений"""
         _ErrorFlagsManager.clear_error_flags(
             dialog_manager,
             "has_small_combine_prompt",
@@ -75,7 +66,6 @@ class _ErrorFlagsManager:
 
     @staticmethod
     def clear_combine_upload_error_flags(dialog_manager: DialogManager) -> None:
-        """Очистка флагов ошибок загрузки изображений для объединения"""
         _ErrorFlagsManager.clear_error_flags(
             dialog_manager,
             "has_invalid_combine_image_type",
@@ -85,7 +75,6 @@ class _ErrorFlagsManager:
 
     @staticmethod
     def clear_new_image_confirm_error_flags(dialog_manager: DialogManager) -> None:
-        """Очистка флагов ошибок подтверждения нового изображения"""
         _ErrorFlagsManager.clear_error_flags(
             dialog_manager,
             "has_small_edit_prompt",

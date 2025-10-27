@@ -3,8 +3,8 @@ from typing import Any
 from aiogram_dialog.widgets.input import MessageInput
 
 from aiogram import Bot
-from aiogram.types import CallbackQuery, Message, ContentType, BufferedInputFile
-from aiogram_dialog import DialogManager, StartMode, ShowMode
+from aiogram.types import CallbackQuery, Message, ContentType
+from aiogram_dialog import DialogManager, StartMode
 from aiogram_dialog.widgets.kbd import ManagedCheckbox, Button
 
 from internal import interface, model
@@ -12,10 +12,12 @@ from pkg.log_wrapper import auto_log
 from pkg.tg_action_wrapper import tg_action
 from pkg.trace_wrapper import traced_method
 
-from ._alerts import _AlertsChecker
+from internal.dialog._state_helper import _StateHelper
+from internal.dialog._alerts import _AlertsChecker
+from internal.dialog._message_extractor import _MessageExtractor
+
 from ._error_flags import _ErrorFlagsManager
 from ._image_manager import _ImageManager
-from ._state_helper import _StateHelper
 from ._text_processor import _TextProcessor
 from ._validation import _ValidationService
 
@@ -50,7 +52,8 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         self._state_helper = _StateHelper(state_repo)
         self._error_flags = _ErrorFlagsManager()
         self._validation = _ValidationService(self.logger)
-        self._text_processor = _TextProcessor(self.logger, bot, loom_content_client)
+        self._text_processor = _TextProcessor(self.logger)
+        self._message_extractor = _MessageExtractor(self.logger, bot, loom_content_client)
         self._alerts_checker = _AlertsChecker(state_repo)
         self._image_manager = _ImageManager(self.logger, bot, loom_content_client)
 
@@ -76,7 +79,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             dialog_manager.dialog_data["has_invalid_content_type"] = True
             return
 
-        text = await self._text_processor.process_voice_or_text_input(message, dialog_manager, state.organization_id)
+        text = await self._message_extractor.process_voice_or_text_input(message, dialog_manager, state.organization_id)
 
         if not self._validation.validate_input_text(text, dialog_manager):
             return
@@ -302,7 +305,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             dialog_manager.dialog_data["has_invalid_content_type"] = True
             return
 
-        prompt = await self._text_processor.process_voice_or_text_input(message, dialog_manager, state.organization_id)
+        prompt = await self._message_extractor.process_voice_or_text_input(message, dialog_manager, state.organization_id)
 
         if not self._validation.validate_prompt(
                 prompt,
@@ -424,7 +427,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             dialog_manager.dialog_data["has_invalid_content_type"] = True
             return
 
-        prompt = await self._text_processor.process_voice_or_text_input(message, dialog_manager, state.organization_id)
+        prompt = await self._message_extractor.process_voice_or_text_input(message, dialog_manager, state.organization_id)
 
         if not self._validation.validate_prompt(
                 prompt,
@@ -806,14 +809,11 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         await callback.answer()
 
-        # Проверяем, есть ли текущее изображение
         has_image = dialog_manager.dialog_data.get("has_image", False)
 
         if has_image:
-            # Переходим к выбору: с текущим или с новых
             await dialog_manager.switch_to(model.GeneratePublicationStates.combine_images_choice)
         else:
-            # Сразу переходим к загрузке
             dialog_manager.dialog_data["combine_images_list"] = []
             dialog_manager.dialog_data["combine_current_index"] = 0
             await dialog_manager.switch_to(model.GeneratePublicationStates.combine_images_upload)
@@ -830,27 +830,10 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         await callback.answer()
 
-        # Добавляем текущее изображение как первое в списке
-        combine_images_list = []
-
-        if dialog_manager.dialog_data.get("custom_image_file_id"):
-            file_id = dialog_manager.dialog_data["custom_image_file_id"]
-            combine_images_list.append(file_id)
-        elif dialog_manager.dialog_data.get("publication_images_url"):
-            images_url = dialog_manager.dialog_data["publication_images_url"]
-            current_index = dialog_manager.dialog_data.get("current_image_index", 0)
-            if current_index < len(images_url):
-                # Скачиваем текущее изображение и загружаем в бот, чтобы получить file_id
-                current_url = images_url[current_index]
-                image_content, _ = await self._image_manager.download_image(current_url)
-
-                # Отправляем изображение себе, чтобы получить file_id
-                message = await self.bot.send_photo(
-                    chat_id=callback.message.chat.id,
-                    photo=BufferedInputFile(image_content, filename="tmp_image.png"),
-                )
-                await message.delete()
-                combine_images_list.append(message.photo[-1].file_id)
+        combine_images_list = await self._image_manager.prepare_current_image_for_combine(
+            dialog_manager,
+            callback.message.chat.id
+        )
 
         dialog_manager.dialog_data["combine_images_list"] = combine_images_list
         dialog_manager.dialog_data["combine_current_index"] = 0
@@ -869,7 +852,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         await callback.answer()
 
-        # Начинаем с пустого списка
         dialog_manager.dialog_data["combine_images_list"] = []
         dialog_manager.dialog_data["combine_current_index"] = 0
 
@@ -1014,18 +996,14 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             dialog_manager.dialog_data["has_invalid_content_type"] = True
             return
 
-        prompt = message.text if message.content_type == ContentType.TEXT else \
-            await self._text_processor.speech_to_text(message, dialog_manager, state.organization_id)
+        prompt = await self._message_extractor.process_voice_or_text_input(
+            message,
+            dialog_manager,
+            state.organization_id
+        )
 
-        # Валидация промпта с допущением пустого значения
-        if prompt and len(prompt) < self.MIN_IMAGE_PROMPT_LENGTH:
-            self.logger.info("Слишком короткий промпт для объединения")
-            dialog_manager.dialog_data["has_small_combine_prompt"] = True
-            return
-
-        if prompt and len(prompt) > self.MAX_IMAGE_PROMPT_LENGTH:
-            self.logger.info("Слишком длинный промпт для объединения")
-            dialog_manager.dialog_data["has_big_combine_prompt"] = True
+        # Валидация промпта через ValidationService
+        if not self._validation.validate_combine_prompt(prompt, dialog_manager):
             return
 
         dialog_manager.dialog_data["combine_prompt"] = prompt
@@ -1044,7 +1022,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             dialog_manager.dialog_data["old_image_backup"] = self._image_manager.create_image_backup_dict(dialog_manager)
 
         combined_images_url = await self._image_manager.combine_images_with_prompt(
-            dialog_manager, state, combine_images_list, prompt, message.chat.id
+            dialog_manager, state, combine_images_list, prompt or self.DEFAULT_COMBINE_PROMPT, message.chat.id
         )
 
         dialog_manager.dialog_data["is_combining_images"] = False
@@ -1060,7 +1038,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        """Обработчик для кнопки 'Пропустить' - объединяет изображения с дефолтным промптом"""
         self._state_helper.set_edit_mode(dialog_manager)
 
         combine_images_list = dialog_manager.dialog_data.get("combine_images_list", [])
@@ -1106,46 +1083,34 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         await callback.answer()
 
-        # Инициализируем список для объединения
-        combine_images_list = []
-
         # Получаем новую сгенерированную картинку или результат комбинирования
         generated_images_url = dialog_manager.dialog_data.get("generated_images_url")
         combine_result_url = dialog_manager.dialog_data.get("combine_result_url")
 
-        # Определяем, какое изображение использовать
-        image_url_to_download = None
+        # Определяем URL изображения для подготовки
+        image_url = None
         if generated_images_url and len(generated_images_url) > 0:
-            image_url_to_download = generated_images_url[0]
+            image_url = generated_images_url[0]
         elif combine_result_url:
-            image_url_to_download = combine_result_url
+            image_url = combine_result_url
 
-        # Скачиваем изображение и загружаем в бот, чтобы получить file_id
-        if image_url_to_download:
-            try:
-                image_content, _ = await self._image_manager.download_image(image_url_to_download)
-
-                # Отправляем изображение себе, чтобы получить file_id
-                message = await self.bot.send_photo(
-                    chat_id=callback.message.chat.id,
-                    photo=BufferedInputFile(image_content, filename="new_generated_image.jpg"),
-                )
-                await message.delete()
-                combine_images_list.append(message.photo[-1].file_id)
-
-                self.logger.info(f"Новая картинка добавлена в список для объединения: {message.photo[-1].file_id}")
-            except Exception as e:
-                self.logger.error(f"Ошибка при загрузке изображения: {e}")
+        # Подготавливаем изображение для комбинирования
+        combine_images_list = []
+        if image_url:
+            file_id = await self._image_manager.download_and_get_file_id(
+                image_url,
+                callback.message.chat.id
+            )
+            if file_id:
+                combine_images_list.append(file_id)
+                self.logger.info(f"Новая картинка добавлена в список для объединения: {file_id}")
+            else:
                 await callback.answer("Ошибка при подготовке изображения", show_alert=True)
                 return
 
-        # Сохраняем backup для возможности отмены (используем существующий backup)
-        # Backup уже должен быть сохранен при генерации изображения
-        # Но на всякий случай проверим и сохраним, если его нет
+        # Сохраняем backup для возможности отмены
         if not dialog_manager.dialog_data.get("old_generated_image_backup") and \
                 not dialog_manager.dialog_data.get("old_image_backup"):
-            # Сохраняем текущее состояние новой картинки как backup
-            # На случай если пользователь захочет вернуться
             if generated_images_url:
                 dialog_manager.dialog_data["old_generated_image_backup"] = {
                     "type": "url",
@@ -1162,7 +1127,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         dialog_manager.dialog_data["combine_images_list"] = combine_images_list
         dialog_manager.dialog_data["combine_current_index"] = 0
 
-        # Переходим к окну загрузки дополнительных изображений
         await dialog_manager.switch_to(model.GeneratePublicationStates.combine_images_upload)
 
     @auto_log()
@@ -1190,8 +1154,11 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             dialog_manager.dialog_data["has_invalid_content_type"] = True
             return
 
-        prompt = message.text if message.content_type == ContentType.TEXT else \
-            await self._text_processor.speech_to_text(message, dialog_manager, state.organization_id)
+        prompt = await self._message_extractor.process_voice_or_text_input(
+            message,
+            dialog_manager,
+            state.organization_id
+        )
 
         if not prompt or len(prompt) < 10:
             self.logger.info("Слишком короткий промпт для правок")
@@ -1208,24 +1175,21 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         await dialog_manager.show()
 
-        # Определяем, какое изображение редактируем
-        current_image_content = None
-        current_image_filename = None
-
-        # Проверяем, есть ли сгенерированное изображение или результат комбинирования
+        # Определяем URL текущего изображения
+        image_url = None
         if dialog_manager.dialog_data.get("generated_images_url"):
-            # Это было сгенерированное изображение
             images_url = dialog_manager.dialog_data["generated_images_url"]
             if images_url and len(images_url) > 0:
-                image_content, _ = await self._image_manager.download_image(images_url[0])
-                current_image_content = image_content
-                current_image_filename = "generated_image.jpg"
+                image_url = images_url[0]
         elif dialog_manager.dialog_data.get("combine_result_url"):
-            # Это был результат комбинирования
-            combine_url = dialog_manager.dialog_data["combine_result_url"]
-            image_content, _ = await self._image_manager.download_image(combine_url)
-            current_image_content = image_content
-            current_image_filename = "combined_image.jpg"
+            image_url = dialog_manager.dialog_data["combine_result_url"]
+
+        # Скачиваем и редактируем изображение
+        current_image_content = None
+        current_image_filename = None
+        if image_url:
+            current_image_content, _ = await self._image_manager.download_image(image_url)
+            current_image_filename = "current_image.jpg"
 
         async with tg_action(self.bot, message.chat.id, "upload_photo"):
             images_url = await self.loom_content_client.edit_image(
@@ -1237,13 +1201,12 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         dialog_manager.dialog_data["is_applying_edits"] = False
 
-        # Обновляем изображения - теперь это новое отредактированное изображение
+        # Обновляем изображения
         if dialog_manager.dialog_data.get("generated_images_url"):
             dialog_manager.dialog_data["generated_images_url"] = images_url
         elif dialog_manager.dialog_data.get("combine_result_url"):
             dialog_manager.dialog_data["combine_result_url"] = images_url[0] if images_url else None
 
-        # Очищаем промпт после применения
         dialog_manager.dialog_data.pop("image_edit_prompt", None)
 
         await dialog_manager.show()
@@ -1284,7 +1247,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        """Переключение на показ старой картинки"""
         self._state_helper.set_edit_mode(dialog_manager)
         dialog_manager.dialog_data["showing_old_image"] = True
         await callback.answer()
@@ -1297,7 +1259,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        """Переключение на показ новой картинки"""
         self._state_helper.set_edit_mode(dialog_manager)
         dialog_manager.dialog_data["showing_old_image"] = False
         await callback.answer()
@@ -1314,31 +1275,10 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         await callback.answer("Изображение отклонено")
 
-        # Восстанавливаем старое изображение, если оно было
         old_image_backup = dialog_manager.dialog_data.get("old_generated_image_backup") or \
                            dialog_manager.dialog_data.get("old_image_backup")
 
-        if old_image_backup:
-            if old_image_backup["type"] == "file_id":
-                dialog_manager.dialog_data["custom_image_file_id"] = old_image_backup["value"]
-                dialog_manager.dialog_data["has_image"] = True
-                dialog_manager.dialog_data["is_custom_image"] = True
-                dialog_manager.dialog_data.pop("publication_images_url", None)
-                dialog_manager.dialog_data.pop("current_image_index", None)
-            elif old_image_backup["type"] == "url":
-                value = old_image_backup["value"]
-                if isinstance(value, list):
-                    dialog_manager.dialog_data["publication_images_url"] = value
-                    dialog_manager.dialog_data["current_image_index"] = old_image_backup.get("index", 0)
-                else:
-                    dialog_manager.dialog_data["publication_images_url"] = [value]
-                    dialog_manager.dialog_data["current_image_index"] = 0
-                dialog_manager.dialog_data["has_image"] = True
-                dialog_manager.dialog_data["is_custom_image"] = False
-                dialog_manager.dialog_data.pop("custom_image_file_id", None)
-        else:
-            self._image_manager.clear_image_data(dialog_manager)
-
+        self._image_manager.restore_image_from_backup(dialog_manager, old_image_backup)
         self._image_manager.clear_temporary_image_data(dialog_manager)
 
         await dialog_manager.switch_to(model.GeneratePublicationStates.image_menu)

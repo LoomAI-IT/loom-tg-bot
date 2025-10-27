@@ -1,9 +1,7 @@
-import re
 from typing import Any
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import CallbackQuery
 from aiogram_dialog import DialogManager, StartMode, ShowMode
 
-from opentelemetry.trace import SpanKind, Status, StatusCode
 
 from internal import interface, model
 from pkg.log_wrapper import auto_log
