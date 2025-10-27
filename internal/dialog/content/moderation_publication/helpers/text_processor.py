@@ -38,3 +38,18 @@ class TextProcessor:
             return True
 
         return False
+
+    @staticmethod
+    def format_html_text(text: str) -> str:
+        """Форматирует текст для HTML, заменяя переносы строк на <br/>"""
+        return text.replace('\n', '<br/>')
+
+    @staticmethod
+    def strip_text(text: str) -> str:
+        """Очищает текст от пробелов по краям"""
+        return text.strip()
+
+    @staticmethod
+    def create_compress_prompt(expected_length: int) -> str:
+        """Создает промпт для сжатия текста до указанной длины"""
+        return f"Сожми текст до {expected_length} символов, сохраняя основной смысл и ключевые идеи"

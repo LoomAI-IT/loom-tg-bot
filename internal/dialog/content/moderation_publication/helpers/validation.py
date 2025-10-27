@@ -1,3 +1,4 @@
+from aiogram.types import Message, PhotoSize
 from aiogram_dialog import DialogManager
 
 
@@ -113,4 +114,32 @@ class ValidationService:
             self.logger.info("Не выбрана ни одна социальная сеть")
             return False
 
+        return True
+
+    def validate_message_content_type(
+            self,
+            message: Message,
+            allowed_types: list[str],
+            dialog_manager: DialogManager
+    ) -> bool:
+        """Валидация типа контента сообщения"""
+        if message.content_type not in allowed_types:
+            self.logger.info(f"Неверный тип контента: {message.content_type}, ожидается {allowed_types}")
+            dialog_manager.dialog_data["has_invalid_content_type"] = True
+            return False
+        return True
+
+    def validate_image_size(
+            self,
+            photo: PhotoSize,
+            dialog_manager: DialogManager,
+            max_size_mb: int = 10
+    ) -> bool:
+        """Валидация размера изображения"""
+        if hasattr(photo, 'file_size') and photo.file_size:
+            max_size_bytes = max_size_mb * 1024 * 1024
+            if photo.file_size > max_size_bytes:
+                self.logger.info(f"Размер изображения превышает допустимый: {photo.file_size} > {max_size_bytes}")
+                dialog_manager.dialog_data["has_big_image_size"] = True
+                return False
         return True

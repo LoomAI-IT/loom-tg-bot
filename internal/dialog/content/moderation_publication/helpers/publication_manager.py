@@ -167,3 +167,68 @@ class PublicationManager:
             # Сбрасываем рабочие данные
             dialog_manager.dialog_data.pop("working_publication", None)
             dialog_manager.dialog_data.pop("selected_networks", None)
+
+    # ========== API методы ==========
+
+    async def reject_publication(
+            self,
+            publication_id: int,
+            moderator_id: int,
+            comment: str
+    ) -> None:
+        """API вызов отклонения публикации"""
+        self.logger.info(f"Отклонение публикации {publication_id}")
+        await self.loom_content_client.moderate_publication(
+            publication_id=publication_id,
+            moderator_id=moderator_id,
+            moderation_status="rejected",
+            moderation_comment=comment,
+        )
+
+    async def regenerate_text(
+            self,
+            category_id: int,
+            text: str,
+            prompt: str | None = None
+    ) -> dict:
+        """API вызов регенерации текста публикации"""
+        self.logger.info(f"Регенерация текста для категории {category_id}")
+        return await self.loom_content_client.regenerate_publication_text(
+            category_id=category_id,
+            publication_text=text,
+            prompt=prompt
+        )
+
+    async def generate_image(
+            self,
+            category_id: int,
+            publication_text: str,
+            image_content: bytes | None = None,
+            image_filename: str | None = None,
+            prompt: str | None = None
+    ) -> list[str]:
+        """API вызов генерации изображения для публикации"""
+        self.logger.info(f"Генерация изображения для категории {category_id}")
+        return await self.loom_content_client.generate_publication_image(
+            category_id=category_id,
+            publication_text=publication_text,
+            text_reference=publication_text[:200],
+            prompt=prompt,
+            image_content=image_content,
+            image_filename=image_filename,
+        )
+
+    async def compress_text(
+            self,
+            category_id: int,
+            text: str,
+            expected_length: int
+    ) -> dict:
+        """API вызов сжатия текста публикации"""
+        compress_prompt = f"Сожми текст до {expected_length} символов, сохраняя основной смысл и ключевые идеи"
+        self.logger.info(f"Сжатие текста для категории {category_id} до {expected_length} символов")
+        return await self.loom_content_client.regenerate_publication_text(
+            category_id=category_id,
+            publication_text=text,
+            prompt=compress_prompt
+        )

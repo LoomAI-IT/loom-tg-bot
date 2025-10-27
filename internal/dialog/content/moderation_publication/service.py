@@ -15,7 +15,8 @@ from pkg.trace_wrapper import traced_method
 from internal.dialog.helpers import StateManager, AlertsManager, MessageExtractor
 
 from internal.dialog.content.moderation_publication.helpers import (
-    ValidationService, TextProcessor, ImageManager, ErrorFlagsManager, PublicationManager, StateRestorer
+    ValidationService, TextProcessor, ImageManager, ErrorFlagsManager, PublicationManager, StateRestorer,
+    NavigationManager, DialogDataHelper
 )
 
 
@@ -68,6 +69,10 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             logger=self.logger,
             image_manager=self._image_manager
         )
+        self._navigation_manager = NavigationManager(
+            logger=self.logger
+        )
+        self.dialog_data_helper = DialogDataHelper()
         self._error_flags = ErrorFlagsManager()
 
     @auto_log()
@@ -80,27 +85,15 @@ class ModerationPublicationService(interface.IModerationPublicationService):
     ) -> None:
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
 
-        current_index = dialog_manager.dialog_data.get("current_index", 0)
-        moderation_list = dialog_manager.dialog_data.get("moderation_list", [])
-
         # Определяем направление навигации
-        if button.widget_id == "prev_publication":
-            self.logger.info("Переход к предыдущей публикации")
-            new_index = max(0, current_index - 1)
-        else:
-            self.logger.info("Переход к следующей публикации")
-            new_index = min(len(moderation_list) - 1, current_index + 1)
+        direction = "prev" if button.widget_id == "prev_publication" else "next"
 
-        if new_index == current_index:
-            self.logger.info("Достигнут край списка")
+        # Делегируем навигацию в NavigationManager
+        _, at_edge = self._navigation_manager.navigate_publications(dialog_manager, direction)
+
+        if at_edge:
             await callback.answer("Это крайняя публикация в списке")
             return
-
-        # Обновляем индекс
-        dialog_manager.dialog_data["current_index"] = new_index
-
-        # Сбрасываем рабочие данные для новой публикации
-        dialog_manager.dialog_data.pop("working_publication", None)
 
         await callback.answer()
 
@@ -114,17 +107,17 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             comment: str
     ) -> None:
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
-
         await message.delete()
 
         self._error_flags.clear_reject_comment_error_flags(dialog_manager=dialog_manager)
 
-        comment = comment.strip()
+        # Очищаем и валидируем комментарий
+        comment = self._text_processor.strip_text(comment)
 
         if not self._validation.validate_reject_comment(comment=comment, dialog_manager=dialog_manager):
             return
 
-        dialog_manager.dialog_data["reject_comment"] = comment
+        self.dialog_data_helper.set_reject_comment(dialog_manager, comment)
 
     @auto_log()
     @traced_method()
@@ -137,15 +130,13 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
 
         state = await self.state_manager.get_state(dialog_manager)
-        original_pub = dialog_manager.dialog_data["original_publication"]
-        publication_id = original_pub["id"]
-        reject_comment = dialog_manager.dialog_data.get("reject_comment", "Нет комментария")
+        _, publication_id, reject_comment = self.dialog_data_helper.get_reject_comment_data(dialog_manager)
 
-        await self.loom_content_client.moderate_publication(
+        # API вызов отклонения публикации
+        await self._publication_manager.reject_publication(
             publication_id=publication_id,
             moderator_id=state.account_id,
-            moderation_status="rejected",
-            moderation_comment=reject_comment,
+            comment=reject_comment
         )
         # TODO сделать вебхук для отклонения публикации
 
@@ -165,24 +156,25 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
 
         await callback.answer()
-        dialog_manager.dialog_data["is_regenerating_text"] = True
+        self.dialog_data_helper.set_regenerating_text_flag(dialog_manager, True)
         await dialog_manager.show()
 
-        working_pub = dialog_manager.dialog_data["working_publication"]
+        working_pub = self.dialog_data_helper.get_working_publication(dialog_manager)
 
+        # Сохраняем предыдущее состояние
+        self._state_restorer.save_state_before_modification(dialog_manager, include_image=False)
+
+        # API вызов регенерации текста
         async with tg_action(self.bot, callback.message.chat.id):
-            regenerated_data = await self.loom_content_client.regenerate_publication_text(
+            regenerated_data = await self._publication_manager.regenerate_text(
                 category_id=working_pub["category_id"],
-                publication_text=working_pub["text"],
+                text=working_pub["text"],
                 prompt=None
             )
 
-        # Сохраняем предыдущий текст на случай превышения лимита
-        dialog_manager.dialog_data["previous_text"] = working_pub["text"]
-
-        # Обновляем данные
-        dialog_manager.dialog_data["working_publication"]["text"] = regenerated_data["text"]
-        dialog_manager.dialog_data["is_regenerating_text"] = False
+        # Обновляем текст
+        self.dialog_data_helper.update_working_text(dialog_manager, regenerated_data["text"])
+        self.dialog_data_helper.set_regenerating_text_flag(dialog_manager, False)
 
         # Проверяем длину текста с изображением
         if await self._text_processor.check_text_length_with_image(dialog_manager):
@@ -199,20 +191,18 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             dialog_manager: DialogManager
     ) -> None:
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
-
         await message.delete()
 
         self._error_flags.clear_regenerate_prompt_error_flags(dialog_manager=dialog_manager)
 
-        state = await self.state_manager.get_state(dialog_manager)
-
-        # ВАЛИДАЦИЯ ТИПА КОНТЕНТА
-        if message.content_type not in [ContentType.VOICE, ContentType.AUDIO, ContentType.TEXT]:
-            self.logger.info("Неверный тип контента для регенерации")
-            dialog_manager.dialog_data["has_invalid_content_type"] = True
+        # Валидация типа контента
+        if not self._validation.validate_message_content_type(
+                message, [ContentType.VOICE, ContentType.AUDIO, ContentType.TEXT], dialog_manager
+        ):
             return
 
-        # ОБРАБОТКА ТЕКСТА ИЛИ ГОЛОСА
+        # Обработка текста или голоса
+        state = await self.state_manager.get_state(dialog_manager)
         prompt = await self.message_extractor.process_voice_or_text_input(
             message=message,
             dialog_manager=dialog_manager,
@@ -223,27 +213,26 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         if not self._validation.validate_regenerate_prompt(prompt=prompt, dialog_manager=dialog_manager):
             return
 
-        dialog_manager.dialog_data["regenerate_prompt"] = prompt
-        dialog_manager.dialog_data["has_regenerate_prompt"] = True
-        dialog_manager.dialog_data["is_regenerating_text"] = True
-
+        self.dialog_data_helper.set_regenerate_prompt(dialog_manager, prompt)
+        self.dialog_data_helper.set_regenerating_text_flag(dialog_manager, True)
         await dialog_manager.show()
 
-        working_pub = dialog_manager.dialog_data["working_publication"]
+        working_pub = self.dialog_data_helper.get_working_publication(dialog_manager)
 
-        # Сохраняем предыдущий текст на случай превышения лимита
-        dialog_manager.dialog_data["previous_text"] = working_pub["text"]
+        # Сохраняем предыдущее состояние
+        self._state_restorer.save_state_before_modification(dialog_manager, include_image=False)
 
+        # API вызов регенерации текста с промптом
         async with tg_action(self.bot, message.chat.id):
-            regenerated_data = await self.loom_content_client.regenerate_publication_text(
+            regenerated_data = await self._publication_manager.regenerate_text(
                 category_id=working_pub["category_id"],
-                publication_text=working_pub["text"],
+                text=working_pub["text"],
                 prompt=prompt
             )
 
-        dialog_manager.dialog_data["working_publication"]["text"] = regenerated_data["text"]
-        dialog_manager.dialog_data["is_regenerating_text"] = False
-        dialog_manager.dialog_data["has_regenerate_prompt"] = False
+        self.dialog_data_helper.update_working_text(dialog_manager, regenerated_data["text"])
+        self.dialog_data_helper.set_regenerating_text_flag(dialog_manager, False)
+        self.dialog_data_helper.clear_regenerate_prompt(dialog_manager)
 
         # Проверяем длину текста с изображением
         if await self._text_processor.check_text_length_with_image(dialog_manager):
@@ -261,22 +250,21 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             text: str
     ) -> None:
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
-
         await message.delete()
 
         self._error_flags.clear_text_edit_error_flags(dialog_manager=dialog_manager)
 
-        new_text = message.html_text.replace('\n', '<br/>')
+        # Форматируем HTML текст
+        new_text = self._text_processor.format_html_text(message.html_text)
 
         if not self._validation.validate_publication_text(text=new_text, dialog_manager=dialog_manager):
             return
 
-        # Сохраняем предыдущий текст на случай превышения лимита
-        working_pub = dialog_manager.dialog_data["working_publication"]
-        dialog_manager.dialog_data["previous_text"] = working_pub["text"]
+        # Сохраняем предыдущее состояние
+        self._state_restorer.save_state_before_modification(dialog_manager, include_image=False)
 
-        # Обновляем рабочую версию
-        dialog_manager.dialog_data["working_publication"]["text"] = new_text
+        # Обновляем текст
+        self.dialog_data_helper.update_working_text(dialog_manager, new_text)
 
         # Проверяем длину текста с изображением
         if await self._text_processor.check_text_length_with_image(dialog_manager):
@@ -295,44 +283,31 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
 
         await callback.answer()
-        dialog_manager.dialog_data["is_generating_image"] = True
+        self.dialog_data_helper.set_generating_image_flag(dialog_manager, True)
         await dialog_manager.show()
 
-        working_pub = dialog_manager.dialog_data["working_publication"]
-        category_id = working_pub["category_id"]
-        publication_text = working_pub["text"]
+        working_pub = self.dialog_data_helper.get_working_publication(dialog_manager)
 
-        # Передаем текущее изображение если есть
-        current_image_content = None
-        current_image_filename = None
+        # Подготавливаем текущее изображение для генерации
+        current_image_content, current_image_filename = await self._image_manager.prepare_current_image_for_generation(
+            dialog_manager
+        )
 
-        if await self._image_manager.get_current_image_data(dialog_manager):
-            self.logger.info("Используется текущее изображение для генерации")
-            current_image_content, current_image_filename = await self._image_manager.get_current_image_data(
-                dialog_manager)
+        # Сохраняем предыдущее состояние
+        self._state_restorer.save_state_before_modification(dialog_manager, include_image=True)
 
-        # Сохраняем предыдущее состояние на случай превышения лимита
-        dialog_manager.dialog_data["previous_text"] = working_pub["text"]
-        dialog_manager.dialog_data["previous_has_image"] = working_pub.get("has_image", False)
-
+        # API вызов генерации изображения
         async with tg_action(self.bot, callback.message.chat.id, "upload_photo"):
-            images_url = await self.loom_content_client.generate_publication_image(
-                category_id=category_id,
-                publication_text=publication_text,
-                text_reference=publication_text[:200],
+            images_url = await self._publication_manager.generate_image(
+                category_id=working_pub["category_id"],
+                publication_text=working_pub["text"],
                 image_content=current_image_content,
-                image_filename=current_image_filename,
+                image_filename=current_image_filename
             )
 
-        # Обновляем рабочую версию с множественными изображениями
-        dialog_manager.dialog_data["working_publication"]["generated_images_url"] = images_url
-        dialog_manager.dialog_data["working_publication"]["has_image"] = True
-        dialog_manager.dialog_data["working_publication"]["current_image_index"] = 0
-        # Удаляем старые данные изображения
-        dialog_manager.dialog_data["working_publication"].pop("custom_image_file_id", None)
-        dialog_manager.dialog_data["working_publication"].pop("is_custom_image", None)
-        dialog_manager.dialog_data["working_publication"].pop("image_url", None)
-        dialog_manager.dialog_data["is_generating_image"] = False
+        # Обновляем рабочую версию с сгенерированными изображениями
+        self._image_manager.update_generated_images(dialog_manager, images_url)
+        self.dialog_data_helper.set_generating_image_flag(dialog_manager, False)
 
         # Проверяем длину текста с изображением
         if await self._text_processor.check_text_length_with_image(dialog_manager):
@@ -349,20 +324,18 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             dialog_manager: DialogManager
     ) -> None:
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
-
         await message.delete()
 
         self._error_flags.clear_image_prompt_error_flags(dialog_manager=dialog_manager)
 
-        state = await self.state_manager.get_state(dialog_manager)
-
-        # ВАЛИДАЦИЯ ТИПА КОНТЕНТА
-        if message.content_type not in [ContentType.VOICE, ContentType.AUDIO, ContentType.TEXT]:
-            self.logger.info("Неверный тип контента для генерации изображения")
-            dialog_manager.dialog_data["has_invalid_content_type"] = True
+        # Валидация типа контента
+        if not self._validation.validate_message_content_type(
+                message, [ContentType.VOICE, ContentType.AUDIO, ContentType.TEXT], dialog_manager
+        ):
             return
 
-        # ОБРАБОТКА ТЕКСТА ИЛИ ГОЛОСА
+        # Обработка текста или голоса
+        state = await self.state_manager.get_state(dialog_manager)
         prompt = await self.message_extractor.process_voice_or_text_input(
             message=message,
             dialog_manager=dialog_manager,
@@ -373,48 +346,33 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         if not self._validation.validate_image_prompt(prompt=prompt, dialog_manager=dialog_manager):
             return
 
-        dialog_manager.dialog_data["image_prompt"] = prompt
-        dialog_manager.dialog_data["is_generating_image"] = True
-
+        self.dialog_data_helper.set_image_prompt(dialog_manager, prompt)
+        self.dialog_data_helper.set_generating_image_flag(dialog_manager, True)
         await dialog_manager.show()
 
-        working_pub = dialog_manager.dialog_data["working_publication"]
-        category_id = working_pub["category_id"]
-        publication_text = working_pub["text"]
+        working_pub = self.dialog_data_helper.get_working_publication(dialog_manager)
 
-        # Передаем текущее изображение если есть
-        current_image_content = None
-        current_image_filename = None
+        # Подготавливаем текущее изображение для генерации
+        current_image_content, current_image_filename = await self._image_manager.prepare_current_image_for_generation(
+            dialog_manager
+        )
 
-        if await self._image_manager.get_current_image_data(dialog_manager):
-            self.logger.info("Используется текущее изображение для генерации")
-            current_image_content, current_image_filename = await self._image_manager.get_current_image_data(
-                dialog_manager
-            )
+        # Сохраняем предыдущее состояние
+        self._state_restorer.save_state_before_modification(dialog_manager, include_image=True)
 
-        # Сохраняем предыдущее состояние на случай превышения лимита
-        dialog_manager.dialog_data["previous_text"] = working_pub["text"]
-        dialog_manager.dialog_data["previous_has_image"] = working_pub.get("has_image", False)
-
+        # API вызов генерации изображения с промптом
         async with tg_action(self.bot, message.chat.id, "upload_photo"):
-            images_url = await self.loom_content_client.generate_publication_image(
-                category_id=category_id,
-                publication_text=publication_text,
-                text_reference=publication_text[:200],
-                prompt=prompt,
+            images_url = await self._publication_manager.generate_image(
+                category_id=working_pub["category_id"],
+                publication_text=working_pub["text"],
                 image_content=current_image_content,
                 image_filename=current_image_filename,
+                prompt=prompt
             )
 
-        # Обновляем рабочую версию с множественными изображениями
-        dialog_manager.dialog_data["working_publication"]["generated_images_url"] = images_url
-        dialog_manager.dialog_data["working_publication"]["has_image"] = True
-        dialog_manager.dialog_data["working_publication"]["current_image_index"] = 0
-        # Удаляем старые данные изображения
-        dialog_manager.dialog_data["working_publication"].pop("custom_image_file_id", None)
-        dialog_manager.dialog_data["working_publication"].pop("is_custom_image", None)
-        dialog_manager.dialog_data["working_publication"].pop("image_url", None)
-        dialog_manager.dialog_data["is_generating_image"] = False
+        # Обновляем рабочую версию с сгенерированными изображениями
+        self._image_manager.update_generated_images(dialog_manager, images_url)
+        self.dialog_data_helper.set_generating_image_flag(dialog_manager, False)
 
         # Проверяем длину текста с изображением
         if await self._text_processor.check_text_length_with_image(dialog_manager):
@@ -431,36 +389,27 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             dialog_manager: DialogManager
     ) -> None:
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
-
         await message.delete()
 
         self._error_flags.clear_image_upload_error_flags(dialog_manager=dialog_manager)
 
-        if message.content_type != ContentType.PHOTO:
-            self.logger.info("Неверный тип файла изображения")
+        # Валидация типа контента
+        if not self._validation.validate_message_content_type(message, [ContentType.PHOTO], dialog_manager):
             dialog_manager.dialog_data["has_invalid_image_type"] = True
             return
 
         if message.photo:
             photo = message.photo[-1]
-            if hasattr(photo, 'file_size') and photo.file_size:
-                if photo.file_size > 10 * 1024 * 1024:  # 10 МБ
-                    self.logger.info("Размер изображения превышает допустимый")
-                    dialog_manager.dialog_data["has_big_image_size"] = True
-                    return
 
-            # Сохраняем предыдущее состояние на случай превышения лимита
-            working_pub = dialog_manager.dialog_data["working_publication"]
-            dialog_manager.dialog_data["previous_text"] = working_pub["text"]
-            dialog_manager.dialog_data["previous_has_image"] = working_pub.get("has_image", False)
+            # Валидация размера изображения
+            if not self._validation.validate_image_size(photo, dialog_manager):
+                return
 
-            # Обновляем рабочую версию
-            dialog_manager.dialog_data["working_publication"]["custom_image_file_id"] = photo.file_id
-            dialog_manager.dialog_data["working_publication"]["has_image"] = True
-            dialog_manager.dialog_data["working_publication"]["is_custom_image"] = True
-            # Удаляем URL если был
-            dialog_manager.dialog_data["working_publication"].pop("image_url", None)
+            # Сохраняем предыдущее состояние
+            self._state_restorer.save_state_before_modification(dialog_manager, include_image=True)
 
+            # Обновляем рабочую версию с загруженным изображением
+            self._image_manager.update_custom_image(dialog_manager, photo.file_id)
             self.logger.info("Изображение загружено")
 
             # Проверяем длину текста с изображением
@@ -503,13 +452,14 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             await callback.answer("Нет изменений для сохранения")
             return
 
-        # Сохраняем изменения
+        # Сохраняем изменения через API
         await self._publication_manager.save_publication_changes(dialog_manager)
 
-        # Обновляем оригинальную версию
-        dialog_manager.dialog_data["original_publication"] = dialog_manager.dialog_data["working_publication"]
+        # Обновляем оригинальную версию из working
+        self.dialog_data_helper.update_original_from_working(dialog_manager)
 
-        del dialog_manager.dialog_data["working_publication"]
+        # Очищаем working_publication
+        self.dialog_data_helper.clear_working_publication(dialog_manager)
 
         await callback.answer("Изменения сохранены", show_alert=True)
         await dialog_manager.switch_to(state=model.ModerationPublicationStates.moderation_list)
@@ -651,21 +601,19 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             reply_markup=None
         )
 
-        working_pub = dialog_manager.dialog_data["working_publication"]
-        category_id = working_pub["category_id"]
-        current_text = working_pub["text"]
-        expected_length = dialog_manager.dialog_data.get("expected_length", 900)
+        working_pub = self.dialog_data_helper.get_working_publication(dialog_manager)
+        expected_length = self.dialog_data_helper.get_expected_length(dialog_manager)
 
-        compress_prompt = f"Сожми текст до {expected_length} символов, сохраняя основной смысл и ключевые идеи"
-
+        # API вызов сжатия текста
         async with tg_action(self.bot, callback.message.chat.id):
-            compressed_data = await self.loom_content_client.regenerate_publication_text(
-                category_id=category_id,
-                publication_text=current_text,
-                prompt=compress_prompt
+            compressed_data = await self._publication_manager.compress_text(
+                category_id=working_pub["category_id"],
+                text=working_pub["text"],
+                expected_length=expected_length
             )
 
-        dialog_manager.dialog_data["working_publication"]["text"] = compressed_data["text"]
+        # Обновляем текст
+        self.dialog_data_helper.update_working_text(dialog_manager, compressed_data["text"])
 
         await dialog_manager.switch_to(state=model.ModerationPublicationStates.edit_preview)
 

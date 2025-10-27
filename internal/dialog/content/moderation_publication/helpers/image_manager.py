@@ -141,3 +141,55 @@ class ImageManager:
         dialog_manager.dialog_data["working_publication"].pop("is_custom_image", None)
         dialog_manager.dialog_data["working_publication"].pop("generated_images_url", None)
         dialog_manager.dialog_data["working_publication"].pop("current_image_index", None)
+
+    async def prepare_current_image_for_generation(
+            self,
+            dialog_manager: DialogManager
+    ) -> tuple[bytes | None, str | None]:
+        """
+        Подготавливает текущее изображение для генерации.
+        Возвращает (content, filename) или (None, None)
+        """
+        image_data = await self.get_current_image_data(dialog_manager)
+        if image_data:
+            self.logger.info("Используется текущее изображение для генерации")
+            return image_data
+        return None, None
+
+    def update_generated_images(
+            self,
+            dialog_manager: DialogManager,
+            images_url: list[str]
+    ) -> None:
+        """Обновляет working_publication с множественными сгенерированными изображениями"""
+        working_pub = dialog_manager.dialog_data["working_publication"]
+
+        working_pub["generated_images_url"] = images_url
+        working_pub["has_image"] = True
+        working_pub["current_image_index"] = 0
+
+        # Удаляем старые данные изображения
+        working_pub.pop("custom_image_file_id", None)
+        working_pub.pop("is_custom_image", None)
+        working_pub.pop("image_url", None)
+
+        self.logger.info(f"Обновлены сгенерированные изображения: {len(images_url)} вариантов")
+
+    def update_custom_image(
+            self,
+            dialog_manager: DialogManager,
+            file_id: str
+    ) -> None:
+        """Обновляет working_publication с кастомным загруженным изображением"""
+        working_pub = dialog_manager.dialog_data["working_publication"]
+
+        working_pub["custom_image_file_id"] = file_id
+        working_pub["has_image"] = True
+        working_pub["is_custom_image"] = True
+
+        # Удаляем URL если был
+        working_pub.pop("image_url", None)
+        working_pub.pop("generated_images_url", None)
+        working_pub.pop("current_image_index", None)
+
+        self.logger.info("Обновлено пользовательское изображение")

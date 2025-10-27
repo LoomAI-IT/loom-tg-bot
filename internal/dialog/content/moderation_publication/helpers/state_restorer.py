@@ -6,7 +6,31 @@ class StateRestorer:
         self.logger = logger
         self._image_manager = image_manager
 
+    def save_state_before_modification(
+            self,
+            dialog_manager: DialogManager,
+            include_image: bool = True
+    ) -> None:
+        """
+        Сохраняет текущее состояние перед модификацией.
+        Сохраняет previous_text и опционально previous_has_image.
+        """
+        working_pub = dialog_manager.dialog_data.get("working_publication", {})
+
+        # Сохраняем текущий текст
+        current_text = working_pub.get("text")
+        if current_text:
+            dialog_manager.dialog_data["previous_text"] = current_text
+            self.logger.info("Сохранено предыдущее состояние текста")
+
+        # Сохраняем состояние изображения если требуется
+        if include_image:
+            has_image = working_pub.get("has_image", False)
+            dialog_manager.dialog_data["previous_has_image"] = has_image
+            self.logger.info(f"Сохранено предыдущее состояние изображения: {has_image}")
+
     def restore_previous_state(self, dialog_manager: DialogManager) -> None:
+        """Восстанавливает сохраненное состояние"""
         # Восстанавливаем предыдущий текст
         previous_text = dialog_manager.dialog_data.get("previous_text")
         if previous_text:
