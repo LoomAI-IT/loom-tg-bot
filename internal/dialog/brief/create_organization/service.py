@@ -77,7 +77,7 @@ class CreateOrganizationService(interface.ICreateOrganizationService):
     ) -> None:
         state = await self.state_manager.get_state(dialog_manager)
         try:
-            dialog_manager.show_mode = ShowMode.SEND
+            self.state_manager.set_show_mode(dialog_manager, send=True)
 
             chat_id = dialog_manager.dialog_data["chat_id"]
 
@@ -101,7 +101,7 @@ class CreateOrganizationService(interface.ICreateOrganizationService):
             if llm_response_json.get("organization_data"):
                 organization_data = llm_response_json["organization_data"]
 
-                organization_id = await self._organization_manager.create_organization_and_admin(
+                _ = await self._organization_manager.create_organization_and_admin(
                     state_id=state.id,
                     account_id=state.account_id,
                     organization_data=organization_data

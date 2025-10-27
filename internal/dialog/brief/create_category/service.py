@@ -46,12 +46,12 @@ class CreateCategoryService(interface.ICreateCategoryService):
             self.state_repo
         )
 
-        self._llm_context_manager = LLMContextManager(
+        self.llm_context_manager = LLMContextManager(
             self.logger,
             self.anthropic_client,
             self.llm_chat_repo
         )
-        self._category_manager = CategoryManager(
+        self.category_manager = CategoryManager(
             self.loom_content_client,
         )
         self.llm_chat_manager = LLMChatManager(
@@ -75,8 +75,7 @@ class CreateCategoryService(interface.ICreateCategoryService):
     ) -> None:
         state = await self.state_manager.get_state(dialog_manager=dialog_manager)
         try:
-            dialog_manager.show_mode = ShowMode.SEND
-
+            self.state_manager.set_show_mode(dialog_manager, send=True)
 
             chat_id = dialog_manager.dialog_data.get("chat_id")
 
@@ -120,7 +119,7 @@ class CreateCategoryService(interface.ICreateCategoryService):
 
             if llm_response_json.get("final_category"):
                 category_data = llm_response_json["final_category"]
-                category_id = await self._category_manager.create_category(
+                category_id = await self.category_manager.create_category(
                     organization_id=state.organization_id,
                     category_data=category_data
                 )

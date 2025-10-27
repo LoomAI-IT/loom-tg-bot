@@ -68,7 +68,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             logger=self.logger,
             loom_content_client=self.loom_content_client
         )
-        self._category_manager = CategoryManager(
+        self.category_manager = CategoryManager(
             logger=self.logger,
             loom_content_client=self.loom_content_client,
             loom_employee_client=self.loom_employee_client,
@@ -120,13 +120,13 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
     ) -> None:
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
 
-        await self._category_manager.select_category(
+        await self.category_manager.select_category(
             dialog_manager=dialog_manager,
             category_id=int(category_id)
         )
 
-        if self._category_manager.has_start_text(dialog_manager):
-            self._category_manager.set_start_text(dialog_manager)
+        if self.category_manager.has_start_text(dialog_manager):
+            self.category_manager.set_start_text(dialog_manager)
             await dialog_manager.switch_to(state=model.GeneratePublicationStates.generation)
         else:
             self.logger.info("Нет стартового текста")
@@ -144,7 +144,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         state = await self.state_manager.get_state(dialog_manager=dialog_manager)
 
-        if not await self._category_manager.navigate_to_create_category(
+        if not await self.category_manager.navigate_to_create_category(
                 dialog_manager=dialog_manager,
                 state=state
         ):

@@ -71,7 +71,7 @@ class UpdateOrganizationService(interface.IUpdateOrganizationService):
     ) -> None:
         state = await self.state_manager.get_state(dialog_manager)
         try:
-            dialog_manager.show_mode = ShowMode.SEND
+            self.state_manager.set_show_mode(dialog_manager, send=True)
 
             chat_id = dialog_manager.dialog_data["chat_id"]
 

@@ -47,7 +47,7 @@ class UpdateCategoryService(interface.IUpdateCategoryService):
             self.state_repo
         )
 
-        self._llm_context_manager = LLMContextManager(
+        self.llm_context_manager = LLMContextManager(
             self.logger,
             self.anthropic_client,
             self.llm_chat_repo
@@ -97,7 +97,7 @@ class UpdateCategoryService(interface.IUpdateCategoryService):
     ) -> None:
         state = await self.state_manager.get_state(dialog_manager)
         try:
-            dialog_manager.show_mode = ShowMode.SEND
+            self.state_manager.set_show_mode(dialog_manager, send=True)
 
             category_id = dialog_manager.dialog_data.get("category_id")
             chat_id = dialog_manager.dialog_data.get("chat_id")
