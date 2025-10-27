@@ -63,7 +63,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             bot=self.bot,
             loom_content_client=self.loom_content_client
         )
-        self._error_flags = ErrorFlagsManager()
+        self.dialog_data_helper = ErrorFlagsManager()
         self._publication_manager = PublicationManager(
             logger=self.logger,
             loom_content_client=self.loom_content_client
@@ -88,7 +88,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
         await message.delete()
 
-        self._error_flags.clear_input_error_flags(dialog_manager=dialog_manager)
+        self.dialog_data_helper.clear_inputdialog_data_helper(dialog_manager=dialog_manager)
 
         state = await self.state_manager.get_state(dialog_manager=dialog_manager)
 
@@ -308,7 +308,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, send=True)
         await message.delete()
 
-        self._error_flags.clear_regenerate_prompt_error_flags(dialog_manager=dialog_manager)
+        self.dialog_data_helper.clear_regenerate_promptdialog_data_helper(dialog_manager=dialog_manager)
 
         state = await self.state_manager.get_state(dialog_manager=dialog_manager)
 
@@ -369,7 +369,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         await message.delete()
 
-        self._error_flags.clear_text_edit_error_flags(dialog_manager=dialog_manager)
+        self.dialog_data_helper.clear_text_editdialog_data_helper(dialog_manager=dialog_manager)
 
         new_text = message.html_text.replace('\n', '<br/>')
 
@@ -423,7 +423,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, send=True)
         await message.delete()
 
-        self._error_flags.clear_image_prompt_error_flags(dialog_manager=dialog_manager)
+        self.dialog_data_helper.clear_image_promptdialog_data_helper(dialog_manager=dialog_manager)
 
         state = await self.state_manager.get_state(dialog_manager=dialog_manager)
 
@@ -474,7 +474,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         await message.delete()
 
-        self._error_flags.clear_image_upload_error_flags(dialog_manager=dialog_manager)
+        self.dialog_data_helper.clear_image_uploaddialog_data_helper(dialog_manager=dialog_manager)
 
         if not self._validation.validate_image_content_type(message=message, dialog_manager=dialog_manager):
             return
@@ -811,7 +811,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         await message.delete()
 
-        self._error_flags.clear_combine_upload_error_flags(dialog_manager=dialog_manager)
+        self.dialog_data_helper.clear_combine_uploaddialog_data_helper(dialog_manager=dialog_manager)
 
         if not self._validation.validate_image_content_type(
                 message=message,
@@ -921,7 +921,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
         await message.delete()
 
-        self._error_flags.clear_combine_prompt_error_flags(dialog_manager=dialog_manager)
+        self.dialog_data_helper.clear_combine_promptdialog_data_helper(dialog_manager=dialog_manager)
 
         state = await self.state_manager.get_state(dialog_manager=dialog_manager)
 
@@ -1040,7 +1040,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
         await message.delete()
 
-        self._error_flags.clear_error_flags(
+        self.dialog_data_helper.cleardialog_data_helper(
             dialog_manager,
             "has_small_edit_prompt",
             "has_big_edit_prompt",

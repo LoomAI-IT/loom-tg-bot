@@ -45,7 +45,7 @@ class MainMenuService(interface.IMainMenuService):
         self._navigation = NavigationManager(
             state_repo
         )
-        self._error_flags = ErrorFlagsManager()
+        self.dialog_data_helper = ErrorFlagsManager()
 
     @auto_log()
     @traced_method()
@@ -59,7 +59,7 @@ class MainMenuService(interface.IMainMenuService):
 
         await message.delete()
 
-        self._error_flags.clear_input_error_flags(dialog_manager=dialog_manager)
+        self.dialog_data_helper.clear_inputdialog_data_helper(dialog_manager=dialog_manager)
 
         state = await self.state_manager.get_state(dialog_manager=dialog_manager)
 

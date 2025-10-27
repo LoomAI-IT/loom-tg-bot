@@ -175,7 +175,7 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        return self._data_extractor.get_upload_image_error_flags(dialog_manager)
+        return self._data_extractor.get_upload_imagedialog_data_helper(dialog_manager)
 
     @auto_log()
     @traced_method()

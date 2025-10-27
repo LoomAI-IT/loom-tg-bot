@@ -53,7 +53,7 @@ class DataExtractor:
             "has_invalid_content_type": dialog_manager.dialog_data.get("has_invalid_content_type", False),
         }
 
-    def get_upload_image_error_flags(self, dialog_manager: DialogManager) -> dict:
+    def get_upload_imagedialog_data_helper(self, dialog_manager: DialogManager) -> dict:
         return {
             "has_invalid_image_type": dialog_manager.dialog_data.get("has_invalid_image_type", False),
             "has_big_image_size": dialog_manager.dialog_data.get("has_big_image_size", False),
