@@ -3,7 +3,7 @@ from typing import Any
 
 from aiogram import Bot
 from aiogram.types import Message, CallbackQuery
-from aiogram_dialog import DialogManager, StartMode
+from aiogram_dialog import DialogManager, StartMode, ShowMode
 from aiogram_dialog.widgets.input import MessageInput
 from aiogram_dialog.widgets.kbd import Button
 from sulguk import SULGUK_PARSE_MODE
@@ -97,7 +97,7 @@ class UpdateCategoryService(interface.IUpdateCategoryService):
     ) -> None:
         state = await self.state_manager.get_state(dialog_manager)
         try:
-            self.state_manager.set_edit_mode(dialog_manager)
+            dialog_manager.show_mode = ShowMode.SEND
 
             category_id = dialog_manager.dialog_data.get("category_id")
             chat_id = dialog_manager.dialog_data.get("chat_id")

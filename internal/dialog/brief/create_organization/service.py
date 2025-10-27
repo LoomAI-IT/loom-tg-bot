@@ -77,7 +77,7 @@ class CreateOrganizationService(interface.ICreateOrganizationService):
     ) -> None:
         state = await self.state_manager.get_state(dialog_manager)
         try:
-            self.state_manager.set_edit_mode(dialog_manager)
+            dialog_manager.show_mode = ShowMode.SEND
 
             chat_id = dialog_manager.dialog_data["chat_id"]
 
