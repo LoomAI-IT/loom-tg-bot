@@ -191,3 +191,240 @@ class DialogDataHelper:
             "has_invalid_image_type",
             "has_big_image_size"
         )
+
+    # ============= ДОПОЛНИТЕЛЬНЫЕ ГЕТТЕРЫ =============
+
+    @staticmethod
+    def get_reject_comment(dialog_manager: DialogManager) -> str:
+        return dialog_manager.dialog_data.get("reject_comment", "")
+
+    @staticmethod
+    def get_post_links(dialog_manager: DialogManager) -> dict:
+        return dialog_manager.dialog_data.get("post_links", {})
+
+    @staticmethod
+    def get_image_prompt(dialog_manager: DialogManager) -> str:
+        return dialog_manager.dialog_data.get("image_prompt", "")
+
+    @staticmethod
+    def get_regenerate_prompt(dialog_manager: DialogManager) -> str:
+        return dialog_manager.dialog_data.get("regenerate_prompt", "")
+
+    @staticmethod
+    def get_voice_transcribe(dialog_manager: DialogManager) -> bool:
+        return dialog_manager.dialog_data.get("voice_transcribe", False)
+
+    # Error flags getters
+    @staticmethod
+    def get_has_void_text(dialog_manager: DialogManager) -> bool:
+        return dialog_manager.dialog_data.get("has_void_text", False)
+
+    @staticmethod
+    def get_has_small_text(dialog_manager: DialogManager) -> bool:
+        return dialog_manager.dialog_data.get("has_small_text", False)
+
+    @staticmethod
+    def get_has_big_text(dialog_manager: DialogManager) -> bool:
+        return dialog_manager.dialog_data.get("has_big_text", False)
+
+    @staticmethod
+    def get_is_regenerating_text(dialog_manager: DialogManager) -> bool:
+        return dialog_manager.dialog_data.get("is_regenerating_text", False)
+
+    @staticmethod
+    def get_has_regenerate_prompt(dialog_manager: DialogManager) -> bool:
+        return bool(dialog_manager.dialog_data.get("regenerate_prompt", ""))
+
+    @staticmethod
+    def get_has_invalid_content_type(dialog_manager: DialogManager) -> bool:
+        return dialog_manager.dialog_data.get("has_invalid_content_type", False)
+
+    @staticmethod
+    def get_has_void_regenerate_prompt(dialog_manager: DialogManager) -> bool:
+        return dialog_manager.dialog_data.get("has_void_regenerate_prompt", False)
+
+    @staticmethod
+    def get_has_small_regenerate_prompt(dialog_manager: DialogManager) -> bool:
+        return dialog_manager.dialog_data.get("has_small_regenerate_prompt", False)
+
+    @staticmethod
+    def get_has_big_regenerate_prompt(dialog_manager: DialogManager) -> bool:
+        return dialog_manager.dialog_data.get("has_big_regenerate_prompt", False)
+
+    @staticmethod
+    def get_has_void_image_prompt(dialog_manager: DialogManager) -> bool:
+        return dialog_manager.dialog_data.get("has_void_image_prompt", False)
+
+    @staticmethod
+    def get_has_small_image_prompt(dialog_manager: DialogManager) -> bool:
+        return dialog_manager.dialog_data.get("has_small_image_prompt", False)
+
+    @staticmethod
+    def get_has_big_image_prompt(dialog_manager: DialogManager) -> bool:
+        return dialog_manager.dialog_data.get("has_big_image_prompt", False)
+
+    @staticmethod
+    def get_is_generating_image(dialog_manager: DialogManager) -> bool:
+        return dialog_manager.dialog_data.get("is_generating_image", False)
+
+    @staticmethod
+    def get_has_image_prompt(dialog_manager: DialogManager) -> bool:
+        return dialog_manager.dialog_data.get("image_prompt", "") != ""
+
+    @staticmethod
+    def get_has_invalid_image_type(dialog_manager: DialogManager) -> bool:
+        return dialog_manager.dialog_data.get("has_invalid_image_type", False)
+
+    @staticmethod
+    def get_has_big_image_size(dialog_manager: DialogManager) -> bool:
+        return dialog_manager.dialog_data.get("has_big_image_size", False)
+
+    @staticmethod
+    def get_has_image_processing_error(dialog_manager: DialogManager) -> bool:
+        return dialog_manager.dialog_data.get("has_image_processing_error", False)
+
+    @staticmethod
+    def get_has_reject_comment(dialog_manager: DialogManager) -> bool:
+        return bool(dialog_manager.dialog_data.get("reject_comment"))
+
+    # ============= ДОПОЛНИТЕЛЬНЫЕ СЕТТЕРЫ =============
+
+    @staticmethod
+    def set_moderation_list(dialog_manager: DialogManager, moderation_list: list) -> None:
+        dialog_manager.dialog_data["moderation_list"] = moderation_list
+
+    @staticmethod
+    def initialize_current_index_if_needed(dialog_manager: DialogManager) -> None:
+        if "current_index" not in dialog_manager.dialog_data:
+            dialog_manager.dialog_data["current_index"] = 0
+
+    @staticmethod
+    def set_original_publication(dialog_manager: DialogManager, publication_data: dict) -> None:
+        dialog_manager.dialog_data["original_publication"] = publication_data
+
+    @staticmethod
+    def set_working_publication(dialog_manager: DialogManager, publication_data: dict) -> None:
+        dialog_manager.dialog_data["working_publication"] = publication_data
+
+    @staticmethod
+    def initialize_working_from_original(dialog_manager: DialogManager) -> None:
+        if "working_publication" not in dialog_manager.dialog_data:
+            dialog_manager.dialog_data["working_publication"] = dict(
+                dialog_manager.dialog_data["original_publication"]
+            )
+
+    @staticmethod
+    def set_post_links(dialog_manager: DialogManager, post_links: dict) -> None:
+        dialog_manager.dialog_data["post_links"] = post_links
+
+    @staticmethod
+    def set_voice_transcribe(dialog_manager: DialogManager, value: bool) -> None:
+        dialog_manager.dialog_data["voice_transcribe"] = value
+
+    @staticmethod
+    def set_selected_social_networks(dialog_manager: DialogManager, networks: dict) -> None:
+        dialog_manager.dialog_data["selected_social_networks"] = networks
+
+    @staticmethod
+    def initialize_selected_social_networks_if_needed(dialog_manager: DialogManager) -> None:
+        if "selected_social_networks" not in dialog_manager.dialog_data:
+            dialog_manager.dialog_data["selected_social_networks"] = {}
+
+    @staticmethod
+    def toggle_social_network_selection(dialog_manager: DialogManager, network_id: str, is_checked: bool) -> None:
+        if "selected_social_networks" not in dialog_manager.dialog_data:
+            dialog_manager.dialog_data["selected_social_networks"] = {}
+        dialog_manager.dialog_data["selected_social_networks"][network_id] = is_checked
+
+    @staticmethod
+    def clear_selected_networks(dialog_manager: DialogManager) -> None:
+        """Очистка выбранных социальных сетей"""
+        dialog_manager.dialog_data.pop("selected_networks", None)
+
+    # ============= МЕТОДЫ ДЛЯ ПОЛУЧЕНИЯ ДАННЫХ ГЕТТЕРА =============
+
+    @staticmethod
+    def get_edit_text_window_data(dialog_manager: DialogManager) -> dict:
+        """Возвращает данные для окна редактирования текста"""
+        working_pub = dialog_manager.dialog_data["working_publication"]
+        return {
+            "publication_text": working_pub["text"],
+            "has_void_text": dialog_manager.dialog_data.get("has_void_text", False),
+            "has_small_text": dialog_manager.dialog_data.get("has_small_text", False),
+            "has_big_text": dialog_manager.dialog_data.get("has_big_text", False),
+            "is_regenerating_text": dialog_manager.dialog_data.get("is_regenerating_text", False),
+            "regenerate_prompt": dialog_manager.dialog_data.get("regenerate_prompt", ""),
+            "has_regenerate_prompt": bool(dialog_manager.dialog_data.get("regenerate_prompt", "")),
+            "voice_transcribe": dialog_manager.dialog_data.get("voice_transcribe", False),
+            "has_invalid_content_type": dialog_manager.dialog_data.get("has_invalid_content_type", False),
+            "has_void_regenerate_prompt": dialog_manager.dialog_data.get("has_void_regenerate_prompt", False),
+            "has_small_regenerate_prompt": dialog_manager.dialog_data.get("has_small_regenerate_prompt", False),
+            "has_big_regenerate_prompt": dialog_manager.dialog_data.get("has_big_regenerate_prompt", False),
+        }
+
+    @staticmethod
+    def get_image_menu_window_data(dialog_manager: DialogManager) -> dict:
+        """Возвращает данные для меню редактирования изображения"""
+        working_pub = dialog_manager.dialog_data.get("working_publication", {})
+        return {
+            "has_void_image_prompt": dialog_manager.dialog_data.get("has_void_image_prompt", False),
+            "has_small_image_prompt": dialog_manager.dialog_data.get("has_small_image_prompt", False),
+            "has_big_image_prompt": dialog_manager.dialog_data.get("has_big_image_prompt", False),
+            "is_generating_image": dialog_manager.dialog_data.get("is_generating_image", False),
+            "has_image": working_pub.get("has_image", False),
+            "is_custom_image": working_pub.get("is_custom_image", False),
+            "image_prompt": dialog_manager.dialog_data.get("image_prompt", ""),
+            "has_image_prompt": dialog_manager.dialog_data.get("image_prompt", "") != "",
+            "voice_transcribe": dialog_manager.dialog_data.get("voice_transcribe", False),
+            "has_invalid_content_type": dialog_manager.dialog_data.get("has_invalid_content_type", False),
+        }
+
+    @staticmethod
+    def get_upload_image_window_data(dialog_manager: DialogManager) -> dict:
+        """Возвращает данные для окна загрузки изображения"""
+        working_pub = dialog_manager.dialog_data.get("working_publication", {})
+        return {
+            "has_invalid_image_type": dialog_manager.dialog_data.get("has_invalid_image_type", False),
+            "has_big_image_size": dialog_manager.dialog_data.get("has_big_image_size", False),
+            "has_image_processing_error": dialog_manager.dialog_data.get("has_image_processing_error", False),
+            "has_image": working_pub.get("has_image", False),
+            "is_custom_image": working_pub.get("is_custom_image", False),
+        }
+
+    @staticmethod
+    def get_reject_comment_window_data(dialog_manager: DialogManager) -> dict:
+        """Возвращает данные для окна комментария отклонения"""
+        return {
+            "has_comment": bool(dialog_manager.dialog_data.get("reject_comment")),
+            "reject_comment": dialog_manager.dialog_data.get("reject_comment", ""),
+        }
+
+    @staticmethod
+    def get_text_too_long_alert_window_data(dialog_manager: DialogManager) -> dict:
+        """Возвращает данные для предупреждения о длинном тексте"""
+        working_pub = dialog_manager.dialog_data.get("working_publication", {})
+        publication_text = working_pub.get("text", "")
+        current_text_length = len(publication_text)
+        max_length_with_image = 1024
+
+        return {
+            "current_text_length": current_text_length,
+            "max_length_with_image": max_length_with_image,
+            "publication_text": publication_text,
+            "has_previous_text": bool(dialog_manager.dialog_data.get("previous_text")),
+        }
+
+    @staticmethod
+    def get_publication_success_window_data(dialog_manager: DialogManager) -> dict:
+        """Возвращает данные для окна успешной публикации"""
+        post_links = dialog_manager.dialog_data.get("post_links", {})
+        telegram_link = post_links.get("telegram")
+        vkontakte_link = post_links.get("vkontakte")
+
+        return {
+            "has_post_links": bool(post_links),
+            "has_telegram_link": bool(telegram_link),
+            "has_vkontakte_link": bool(vkontakte_link),
+            "telegram_link": telegram_link or "",
+            "vkontakte_link": vkontakte_link or "",
+        }

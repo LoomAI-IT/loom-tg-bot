@@ -401,7 +401,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
                 [ContentType.PHOTO],
                 dialog_manager
         ):
-            dialog_manager.dialog_data["has_invalid_image_type"] = True
+            self.dialog_data_helper.set_validation_flag(dialog_manager, "has_invalid_image_type")
             return
 
         if message.photo:
@@ -425,7 +425,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             await dialog_manager.switch_to(state=model.ModerationPublicationStates.edit_preview)
         else:
             self.logger.info("Ошибка обработки изображения")
-            dialog_manager.dialog_data["has_image_processing_error"] = True
+            self.dialog_data_helper.set_validation_flag(dialog_manager, "has_image_processing_error")
 
     @auto_log()
     @traced_method()
@@ -510,14 +510,11 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             checkbox: ManagedCheckbox,
             dialog_manager: DialogManager
     ) -> None:
-        if "selected_social_networks" not in dialog_manager.dialog_data:
-            dialog_manager.dialog_data["selected_social_networks"] = {}
-
         network_id = checkbox.widget_id
         is_checked = checkbox.is_checked()
 
         # Сохраняем состояние чекбокса
-        dialog_manager.dialog_data["selected_social_networks"][network_id] = is_checked
+        self.dialog_data_helper.toggle_social_network_selection(dialog_manager, network_id, is_checked)
 
         await callback.answer()
 
@@ -567,7 +564,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         state = await self.state_manager.get_state(dialog_manager)
         post_links = await self.publication_manager.approve_and_publish(dialog_manager, state)
 
-        dialog_manager.dialog_data["post_links"] = post_links
+        self.dialog_data_helper.set_post_links(dialog_manager, post_links)
 
         self.publication_manager.remove_current_publication_from_list(dialog_manager)
         await callback.answer("Опубликовано!", show_alert=True)

@@ -1,5 +1,8 @@
+import re
+
 from aiogram.types import Message, ContentType
 from aiogram_dialog import DialogManager
+from internal.dialog.content.generate_publication.helpers import DialogDataHelper
 
 
 class ValidationService:
@@ -19,8 +22,15 @@ class ValidationService:
     MAX_COMBINE_IMAGES = 3
     MIN_COMBINE_IMAGES = 2
 
+    # Константы для валидации длины публикационного текста
+    MAX_TEXT_WITH_IMAGE = 1024
+    RECOMMENDED_TEXT_WITH_IMAGE = 800
+    MAX_TEXT_WITHOUT_IMAGE = 4096
+    RECOMMENDED_TEXT_WITHOUT_IMAGE = 3600
+
     def __init__(self, logger):
         self.logger = logger
+        self.dialog_data_helper = DialogDataHelper(self.logger)
 
     def validate_text_with_limits(
             self,
@@ -34,17 +44,17 @@ class ValidationService:
     ) -> bool:
         if not text:
             self.logger.info(f"Пустой текст: {void_flag}")
-            dialog_manager.dialog_data[void_flag] = True
+            self.dialog_data_helper.set_error_flag(dialog_manager, void_flag)
             return False
 
         if len(text) < min_length:
             self.logger.info(f"Слишком короткий текст: {small_flag}")
-            dialog_manager.dialog_data[small_flag] = True
+            self.dialog_data_helper.set_error_flag(dialog_manager, small_flag)
             return False
 
         if len(text) > max_length:
             self.logger.info(f"Слишком длинный текст: {big_flag}")
-            dialog_manager.dialog_data[big_flag] = True
+            self.dialog_data_helper.set_error_flag(dialog_manager, big_flag)
             return False
 
         return True
@@ -99,12 +109,12 @@ class ValidationService:
 
         if len(prompt) < self.MIN_IMAGE_PROMPT_LENGTH:
             self.logger.info("Слишком короткий промпт для объединения")
-            dialog_manager.dialog_data["has_small_combine_prompt"] = True
+            self.dialog_data_helper.set_error_flag(dialog_manager, "has_small_combine_prompt")
             return False
 
         if len(prompt) > self.MAX_IMAGE_PROMPT_LENGTH:
             self.logger.info("Слишком длинный промпт для объединения")
-            dialog_manager.dialog_data["has_big_combine_prompt"] = True
+            self.dialog_data_helper.set_error_flag(dialog_manager, "has_big_combine_prompt")
             return False
 
         return True
@@ -120,7 +130,7 @@ class ValidationService:
 
         if message.content_type not in allowed_types:
             self.logger.info(f"Неверный тип контента: {message.content_type}")
-            dialog_manager.dialog_data["has_invalid_content_type"] = True
+            self.dialog_data_helper.set_error_flag(dialog_manager, "has_invalid_content_type")
             return False
         return True
 
@@ -132,7 +142,7 @@ class ValidationService:
     ) -> bool:
         if message.content_type != ContentType.PHOTO:
             self.logger.info("Неверный тип контента для изображения")
-            dialog_manager.dialog_data[error_flag] = True
+            self.dialog_data_helper.set_error_flag(dialog_manager, error_flag)
             return False
         return True
 
@@ -145,7 +155,7 @@ class ValidationService:
         if hasattr(photo, 'file_size') and photo.file_size:
             if photo.file_size > self.MAX_IMAGE_SIZE_BYTES:
                 self.logger.info(f"Размер изображения превышает лимит: {photo.file_size} bytes")
-                dialog_manager.dialog_data[error_flag] = True
+                self.dialog_data_helper.set_error_flag(dialog_manager, error_flag)
                 return False
         return True
 
@@ -163,12 +173,12 @@ class ValidationService:
 
         if check_max and images_count >= self.MAX_COMBINE_IMAGES:
             self.logger.info(f"Достигнут лимит изображений для объединения: {images_count}")
-            dialog_manager.dialog_data["combine_images_limit_reached"] = True
+            self.dialog_data_helper.set_error_flag(dialog_manager, "combine_images_limit_reached")
             return False
 
         if check_min and images_count < self.MIN_COMBINE_IMAGES:
             self.logger.info(f"Недостаточно изображений для объединения: {images_count}")
-            dialog_manager.dialog_data["not_enough_combine_images"] = True
+            self.dialog_data_helper.set_error_flag(dialog_manager, "not_enough_combine_images")
             return False
 
         return True
@@ -180,15 +190,70 @@ class ValidationService:
     ) -> bool:
         if not prompt or len(prompt) < self.MIN_EDIT_IMAGE_PROMPT_LENGTH:
             self.logger.info("Слишком короткий промпт для редактирования")
-            dialog_manager.dialog_data["has_small_edit_prompt"] = True
+            self.dialog_data_helper.set_error_flag(dialog_manager, "has_small_edit_prompt")
             return False
 
         if len(prompt) > self.MAX_EDIT_IMAGE_PROMPT_LENGTH:
             self.logger.info("Слишком длинный промпт для редактирования")
-            dialog_manager.dialog_data["has_big_edit_prompt"] = True
+            self.dialog_data_helper.set_error_flag(dialog_manager, "has_big_edit_prompt")
             return False
 
         return True
 
     def validate_category_permission(self, employee) -> bool:
         return employee.setting_category_permission
+
+    def validate_publication_text_length(
+            self,
+            text: str,
+            has_image: bool,
+            dialog_manager: DialogManager
+    ) -> tuple[bool, int | None]:
+        """
+        Валидирует длину публикационного текста в зависимости от наличия изображения.
+        Возвращает (is_valid, expected_length).
+        Если is_valid=False, то expected_length содержит рекомендуемую длину.
+        """
+        # Удаляем HTML-теги для подсчета реальной длины
+        text_without_tags = re.sub(r'<[^>]+>', '', text)
+        text_length = len(text_without_tags)
+
+        if has_image and text_length > self.MAX_TEXT_WITH_IMAGE:
+            self.logger.info(f"Текст слишком длинный для публикации с изображением: {text_length} символов")
+            return False, self.RECOMMENDED_TEXT_WITH_IMAGE
+
+        if not has_image and text_length > self.MAX_TEXT_WITHOUT_IMAGE:
+            self.logger.info(f"Текст слишком длинный: {text_length} символов")
+            return False, self.RECOMMENDED_TEXT_WITHOUT_IMAGE
+
+        return True, None
+
+    def validate_message_has_photo(
+            self,
+            message: Message,
+            dialog_manager: DialogManager
+    ) -> bool:
+        """
+        Проверяет наличие фото в сообщении.
+        Устанавливает флаг has_image_processing_error при ошибке.
+        """
+        if not message.photo:
+            self.logger.info("В сообщении отсутствует фото")
+            self.dialog_data_helper.set_error_flag(dialog_manager, "has_image_processing_error")
+            return False
+        return True
+
+    def validate_combine_images_list_not_empty(
+            self,
+            combine_images_list: list,
+            dialog_manager: DialogManager
+    ) -> bool:
+        """
+        Проверяет, что список изображений для комбинирования не пустой.
+        Устанавливает флаг has_empty_combine_images_list при ошибке.
+        """
+        if not combine_images_list:
+            self.logger.info("Список изображений для комбинирования пуст")
+            self.dialog_data_helper.set_error_flag(dialog_manager, "has_empty_combine_images_list")
+            return False
+        return True

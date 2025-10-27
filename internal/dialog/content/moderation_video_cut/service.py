@@ -1,6 +1,5 @@
 from typing import Any
 
-from aiogram.enums import ParseMode
 from aiogram import Bot
 from aiogram.types import CallbackQuery, Message
 from aiogram_dialog import DialogManager, StartMode, ShowMode

@@ -166,7 +166,7 @@ class PublicationManager:
 
             # Сбрасываем рабочие данные
             self.dialog_data_helper.clear_working_publication_from_data(dialog_manager)
-            dialog_manager.dialog_data.pop("selected_networks", None)
+            self.dialog_data_helper.clear_selected_networks(dialog_manager)
 
     async def reject_publication(
             self,

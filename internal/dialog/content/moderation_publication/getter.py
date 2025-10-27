@@ -8,7 +8,7 @@ from pkg.trace_wrapper import traced_method
 from internal.dialog.helpers import StateManager
 
 from internal.dialog.content.moderation_publication.helpers import (
-    ImageManager, PublicationManager, SocialNetworkManager, DateTimeFormatter
+    ImageManager, PublicationManager, SocialNetworkManager, DateTimeFormatter, DialogDataHelper
 )
 
 
@@ -48,6 +48,7 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
             logger=self.logger
         )
         self._datetime_formatter = DateTimeFormatter()
+        self.dialog_data_helper = DialogDataHelper()
 
     @auto_log()
     @traced_method()
@@ -75,12 +76,10 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
                 "period_text": "",
             }
 
-        dialog_manager.dialog_data["moderation_list"] = moderation_publications
+        self.dialog_data_helper.set_moderation_list(dialog_manager, moderation_publications)
+        self.dialog_data_helper.initialize_current_index_if_needed(dialog_manager)
 
-        if "current_index" not in dialog_manager.dialog_data:
-            dialog_manager.dialog_data["current_index"] = 0
-
-        current_index = dialog_manager.dialog_data["current_index"]
+        current_index = self.dialog_data_helper.get_current_index(dialog_manager)
         current_pub = model.Publication(**moderation_publications[current_index])
 
         creator = await self.loom_employee_client.get_employee_by_account_id(current_pub.creator_id)
@@ -107,7 +106,7 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
         }
 
         # Сохраняем данные текущей публикации для редактирования
-        dialog_manager.dialog_data["original_publication"] = {
+        self.dialog_data_helper.set_original_publication(dialog_manager, {
             "id": current_pub.id,
             "creator_id": current_pub.creator_id,
             "text": current_pub.text,
@@ -116,9 +115,9 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
             "has_image": bool(current_pub.image_fid),
             "moderation_status": current_pub.moderation_status,
             "created_at": current_pub.created_at,
-        }
+        })
 
-        selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
+        selected_networks = self.dialog_data_helper.get_selected_social_networks(dialog_manager)
 
         if not selected_networks:
             self.logger.info("Инициализация выбранных социальных сетей")
@@ -129,12 +128,10 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
             selected_networks = self.social_network_manger.initialize_network_selection(
                 social_networks=social_networks
             )
-            dialog_manager.dialog_data["selected_social_networks"] = selected_networks
+            self.dialog_data_helper.set_selected_social_networks(dialog_manager, selected_networks)
 
         # Копируем в рабочую версию, если ее еще нет
-        if "working_publication" not in dialog_manager.dialog_data:
-            dialog_manager.dialog_data["working_publication"] = dict(
-                dialog_manager.dialog_data["original_publication"])
+        self.dialog_data_helper.initialize_working_from_original(dialog_manager)
 
         return data
 
@@ -145,16 +142,13 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        original_pub = dialog_manager.dialog_data.get("original_publication", {})
+        original_pub = self.dialog_data_helper.get_original_publication_safe(dialog_manager)
         creator = await self.loom_employee_client.get_employee_by_account_id(original_pub["creator_id"])
 
-        data = {
+        return {
             "creator_name": creator.name,
-            "has_comment": bool(dialog_manager.dialog_data.get("reject_comment")),
-            "reject_comment": dialog_manager.dialog_data.get("reject_comment", ""),
+            **self.dialog_data_helper.get_reject_comment_window_data(dialog_manager)
         }
-
-        return data
 
     @auto_log()
     @traced_method()
@@ -163,14 +157,10 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        if "working_publication" not in dialog_manager.dialog_data:
-            self.logger.info("Инициализация рабочей публикации")
-            dialog_manager.dialog_data["working_publication"] = dict(
-                dialog_manager.dialog_data["original_publication"]
-            )
+        self.dialog_data_helper.initialize_working_from_original(dialog_manager)
 
-        working_pub = dialog_manager.dialog_data["working_publication"]
-        original_pub = dialog_manager.dialog_data["original_publication"]
+        working_pub = self.dialog_data_helper.get_working_publication(dialog_manager)
+        original_pub = self.dialog_data_helper.get_original_publication(dialog_manager)
 
         creator = await self.loom_employee_client.get_employee_by_account_id(working_pub["creator_id"])
         category = await self.loom_content_client.get_category_by_id(working_pub["category_id"])
@@ -216,7 +206,7 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
         telegram_connected = self.social_network_manger.is_network_connected(social_networks, "telegram")
         vkontakte_connected = self.social_network_manger.is_network_connected(social_networks, "vkontakte")
 
-        selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
+        selected_networks = self.dialog_data_helper.get_selected_social_networks(dialog_manager)
 
         await self.social_network_manger.setup_checkbox_states(
             dialog_manager=dialog_manager,
@@ -239,22 +229,7 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        working_pub = dialog_manager.dialog_data["working_publication"]
-        return {
-            "publication_text": working_pub["text"],
-            "has_void_text": dialog_manager.dialog_data.get("has_void_text", False),
-            "has_small_text": dialog_manager.dialog_data.get("has_small_text", False),
-            "has_big_text": dialog_manager.dialog_data.get("has_big_text", False),
-            "is_regenerating_text": dialog_manager.dialog_data.get("is_regenerating_text", False),
-            "regenerate_prompt": dialog_manager.dialog_data.get("regenerate_prompt", ""),
-            "has_regenerate_prompt": bool(dialog_manager.dialog_data.get("regenerate_prompt", "")),
-            # Voice input support
-            "voice_transcribe": dialog_manager.dialog_data.get("voice_transcribe", False),
-            "has_invalid_content_type": dialog_manager.dialog_data.get("has_invalid_content_type", False),
-            "has_void_regenerate_prompt": dialog_manager.dialog_data.get("has_void_regenerate_prompt", False),
-            "has_small_regenerate_prompt": dialog_manager.dialog_data.get("has_small_regenerate_prompt", False),
-            "has_big_regenerate_prompt": dialog_manager.dialog_data.get("has_big_regenerate_prompt", False),
-        }
+        return self.dialog_data_helper.get_edit_text_window_data(dialog_manager)
 
     @auto_log()
     @traced_method()
@@ -263,22 +238,12 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        working_pub = dialog_manager.dialog_data.get("working_publication", {})
+        working_pub = self.dialog_data_helper.get_working_publication_safe(dialog_manager)
         preview_image_media = self.image_manager.get_edit_preview_image_media(working_pub)
 
         return {
             "preview_image_media": preview_image_media,
-            "has_void_image_prompt": dialog_manager.dialog_data.get("has_void_image_prompt", False),
-            "has_small_image_prompt": dialog_manager.dialog_data.get("has_small_image_prompt", False),
-            "has_big_image_prompt": dialog_manager.dialog_data.get("has_big_image_prompt", False),
-            "is_generating_image": dialog_manager.dialog_data.get("is_generating_image", False),
-            "has_image": working_pub.get("has_image", False),
-            "is_custom_image": working_pub.get("is_custom_image", False),
-            "image_prompt": dialog_manager.dialog_data.get("image_prompt", ""),
-            "has_image_prompt": dialog_manager.dialog_data.get("image_prompt", "") != "",
-            # Voice input support
-            "voice_transcribe": dialog_manager.dialog_data.get("voice_transcribe", False),
-            "has_invalid_content_type": dialog_manager.dialog_data.get("has_invalid_content_type", False),
+            **self.dialog_data_helper.get_image_menu_window_data(dialog_manager)
         }
 
     @auto_log()
@@ -288,14 +253,7 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        working_pub = dialog_manager.dialog_data.get("working_publication", {})
-        return {
-            "has_invalid_image_type": dialog_manager.dialog_data.get("has_invalid_image_type", False),
-            "has_big_image_size": dialog_manager.dialog_data.get("has_big_image_size", False),
-            "has_image_processing_error": dialog_manager.dialog_data.get("has_image_processing_error", False),
-            "has_image": working_pub.get("has_image", False),
-            "is_custom_image": working_pub.get("is_custom_image", False),
-        }
+        return self.dialog_data_helper.get_upload_image_window_data(dialog_manager)
 
     @auto_log()
     @traced_method()
@@ -304,17 +262,7 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        working_pub = dialog_manager.dialog_data.get("working_publication", {})
-        publication_text = working_pub.get("text", "")
-        current_text_length = len(publication_text)
-        max_length_with_image = 1024
-
-        return {
-            "current_text_length": current_text_length,
-            "max_length_with_image": max_length_with_image,
-            "publication_text": publication_text,
-            "has_previous_text": bool(dialog_manager.dialog_data.get("previous_text")),
-        }
+        return self.dialog_data_helper.get_text_too_long_alert_window_data(dialog_manager)
 
     @auto_log()
     @traced_method()
@@ -323,15 +271,4 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        post_links = dialog_manager.dialog_data.get("post_links", {})
-
-        telegram_link = post_links.get("telegram")
-        vkontakte_link = post_links.get("vkontakte")
-
-        return {
-            "has_post_links": bool(post_links),
-            "has_telegram_link": bool(telegram_link),
-            "has_vkontakte_link": bool(vkontakte_link),
-            "telegram_link": telegram_link or "",
-            "vkontakte_link": vkontakte_link or "",
-        }
+        return self.dialog_data_helper.get_publication_success_window_data(dialog_manager)

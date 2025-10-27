@@ -1,6 +1,7 @@
 from aiogram_dialog import DialogManager, StartMode
 
 from internal import interface, model
+from internal.dialog.content.generate_publication.helpers import DialogDataHelper
 
 
 class CategoryManager:
@@ -15,6 +16,7 @@ class CategoryManager:
         self.loom_content_client = loom_content_client
         self.loom_employee_client = loom_employee_client
         self.llm_chat_repo = llm_chat_repo
+        self.dialog_data_helper = DialogDataHelper(self.logger)
 
     async def select_category(
             self,
@@ -25,9 +27,12 @@ class CategoryManager:
             category_id=category_id
         )
 
-        dialog_manager.dialog_data["category_id"] = category.id
-        dialog_manager.dialog_data["category_name"] = category.name
-        dialog_manager.dialog_data["category_hint"] = category.hint
+        self.dialog_data_helper.set_category_data(
+            dialog_manager=dialog_manager,
+            category_id=category.id,
+            category_name=category.name,
+            category_hint=category.hint
+        )
 
         return category.id, category.name, category.hint
 
@@ -39,8 +44,11 @@ class CategoryManager:
     def set_start_text(self, dialog_manager: DialogManager) -> None:
         if dialog_manager.start_data and dialog_manager.start_data.get("has_input_text"):
             self.logger.info("Есть стартовый текст")
-            dialog_manager.dialog_data["has_input_text"] = True
-            dialog_manager.dialog_data["input_text"] = dialog_manager.start_data["input_text"]
+            self.dialog_data_helper.set_input_text(
+                dialog_manager=dialog_manager,
+                text=dialog_manager.start_data["input_text"],
+                has_input=True
+            )
 
     async def check_category_permission(
             self,
@@ -56,7 +64,7 @@ class CategoryManager:
             dialog_manager: DialogManager,
             state: model.UserState
     ) -> bool:
-        if await self.check_category_permission(state):
+        if not await self.check_category_permission(state):
             self.logger.info("Отказано в доступе к созданию категории")
             return False
 

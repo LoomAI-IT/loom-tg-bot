@@ -7,7 +7,7 @@ from pkg.trace_wrapper import traced_method
 
 from internal.dialog.helpers import StateManager
 
-from internal.dialog.content.generate_publication.helpers import ImageManager, DataExtractor, SocialNetworkManager
+from internal.dialog.content.generate_publication.helpers import ImageManager, DialogDataHelper, SocialNetworkManager
 
 
 
@@ -40,7 +40,7 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
             logger=self.logger,
             loom_content_client=self.loom_content_client
         )
-        self._data_extractor = DataExtractor(
+        self.dialog_data_helper = DialogDataHelper(
             logger=self.logger
         )
 
@@ -56,7 +56,7 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
             state.account_id
         )
 
-        text = dialog_manager.dialog_data.get("publication_text", "")
+        text = self.dialog_data_helper.get_publication_text(dialog_manager)
 
         preview_image_media, has_multiple_images, current_image_index, total_images = \
             self.image_manager.get_preview_image_media(dialog_manager)
@@ -73,7 +73,7 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
         can_publish_directly = not requires_moderation
 
         data = {
-            "category_name": dialog_manager.dialog_data.get("category_name", ""),
+            "category_name": self.dialog_data_helper.get_category_name(dialog_manager),
             "publication_text": text,
             "has_scheduled_time": False,
             "publish_time": "",
@@ -84,7 +84,7 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
             "total_images": total_images,
             "requires_moderation": requires_moderation,
             "can_publish_directly": can_publish_directly,
-            "is_custom_image": dialog_manager.dialog_data.get("is_custom_image", False),
+            "is_custom_image": self.dialog_data_helper.get_is_custom_image(dialog_manager),
         }
         return data
 
@@ -111,7 +111,7 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        return self._data_extractor.get_input_text_data(dialog_manager)
+        return self.dialog_data_helper.get_input_text_data(dialog_manager)
 
     @auto_log()
     @traced_method()
@@ -148,7 +148,7 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        return self._data_extractor.get_edit_text_data(dialog_manager)
+        return self.dialog_data_helper.get_edit_text_data(dialog_manager)
 
     @auto_log()
     @traced_method()
@@ -160,7 +160,7 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
         preview_image_media = self.image_manager.get_image_menu_media(dialog_manager)
         has_image = preview_image_media is not None
 
-        flags_data = self._data_extractor.get_image_menu_flags(dialog_manager)
+        flags_data = self.dialog_data_helper.get_image_menu_flags(dialog_manager)
 
         return {
             "has_image": has_image,
@@ -175,7 +175,7 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        return self._data_extractor.get_upload_imagedialog_data_helper(dialog_manager)
+        return self.dialog_data_helper.get_upload_imagedialog_data_helper(dialog_manager)
 
     @auto_log()
     @traced_method()
@@ -184,7 +184,7 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        return self._data_extractor.get_text_too_long_alert_data(dialog_manager)
+        return self.dialog_data_helper.get_text_too_long_alert_data(dialog_manager)
 
     @auto_log()
     @traced_method()
@@ -193,7 +193,7 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        return self._data_extractor.get_publication_success_data(dialog_manager)
+        return self.dialog_data_helper.get_publication_success_data(dialog_manager)
 
     @auto_log()
     @traced_method()
@@ -202,7 +202,7 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        return self._data_extractor.get_combine_images_choice_data(dialog_manager)
+        return self.dialog_data_helper.get_combine_images_choice_data(dialog_manager)
 
     @auto_log()
     @traced_method()
@@ -214,7 +214,7 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
         combine_current_image_media, combine_current_index, combine_images_count = \
             self.image_manager.get_combine_images_media(dialog_manager)
 
-        flags_data = self._data_extractor.get_combine_images_upload_flags(dialog_manager)
+        flags_data = self.dialog_data_helper.get_combine_images_upload_flags(dialog_manager)
 
         return {
             "combine_current_index": combine_current_index + 1,
@@ -232,7 +232,7 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
         combine_current_image_media, combine_current_index, combine_images_count = \
             self.image_manager.get_combine_images_media(dialog_manager)
 
-        flags_data = self._data_extractor.get_combine_images_prompt_flags(dialog_manager)
+        flags_data = self.dialog_data_helper.get_combine_images_prompt_flags(dialog_manager)
 
         return {
             "combine_current_index": combine_current_index + 1,
@@ -252,7 +252,7 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
 
         display_image_media = old_image_media if showing_old_image else new_image_media
 
-        flags_data = self._data_extractor.get_new_image_confirm_flags(dialog_manager)
+        flags_data = self.dialog_data_helper.get_new_image_confirm_flags(dialog_manager)
 
         return {
             "new_image_media": display_image_media,

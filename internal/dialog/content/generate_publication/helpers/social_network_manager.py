@@ -2,16 +2,18 @@ from aiogram_dialog import DialogManager
 from aiogram_dialog.widgets.kbd import ManagedCheckbox
 
 from internal import interface
+from internal.dialog.content.generate_publication.helpers import DialogDataHelper
 
 
 class SocialNetworkManager:
     def __init__(
             self,
             logger,
-            loom_content_client: interface.ILoomContentClient
+            loom_content_client: interface.ILoomContentClient,
     ):
         self.logger = logger
         self.loom_content_client = loom_content_client
+        self.dialog_data_helper = DialogDataHelper(self.logger)
 
     def is_network_connected(self, social_networks: dict, network_type: str) -> bool:
 
@@ -24,7 +26,7 @@ class SocialNetworkManager:
             dialog_manager: DialogManager,
             organization_id: int
     ) -> dict[str, bool]:
-        selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
+        selected_networks = self.dialog_data_helper.get_selected_social_networks(dialog_manager)
 
         if not selected_networks:
             self.logger.info("Загрузка соцсетей по умолчанию")
@@ -45,7 +47,7 @@ class SocialNetworkManager:
                 autoselect = social_networks["telegram"][0].get("autoselect", False)
                 selected_networks[widget_id] = autoselect
 
-            dialog_manager.dialog_data["selected_social_networks"] = selected_networks
+            self.dialog_data_helper.set_selected_social_networks(dialog_manager, selected_networks)
 
         return selected_networks
 
@@ -61,7 +63,7 @@ class SocialNetworkManager:
         telegram_connected = self.is_network_connected(social_networks, "telegram")
         vkontakte_connected = self.is_network_connected(social_networks, "vkontakte")
 
-        selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
+        selected_networks = self.dialog_data_helper.get_selected_social_networks(dialog_manager)
 
         if vkontakte_connected:
             self.logger.info("Установка состояния чекбокса VK")
