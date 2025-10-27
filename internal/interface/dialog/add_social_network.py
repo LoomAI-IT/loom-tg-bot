@@ -2,7 +2,6 @@ from abc import abstractmethod
 from typing import Protocol, Any
 from aiogram_dialog import DialogManager, Dialog, Window
 from aiogram.types import CallbackQuery, Message
-from aiogram_dialog.widgets.kbd import ManagedCheckbox
 
 
 class IAddSocialNetworkDialog(Protocol):

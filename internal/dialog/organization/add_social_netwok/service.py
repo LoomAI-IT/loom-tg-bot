@@ -184,6 +184,7 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
+        dialog_manager.show_mode = ShowMode.EDIT
         # Очищаем временные данные при выходе без сохранения
         dialog_manager.dialog_data.pop("original_state", None)
         dialog_manager.dialog_data.pop("working_state", None)
@@ -192,7 +193,7 @@ class AddSocialNetworkService(interface.IAddSocialNetworkService):
             self.logger.info("Переход к алертам")
             return
 
-        await dialog_manager.switch_to(state=model.AddSocialNetworkStates.telegram_main, ShowMode.EDIT)
+        await dialog_manager.switch_to(state=model.AddSocialNetworkStates.telegram_main)
 
     @auto_log()
     @traced_method()

@@ -1,6 +1,6 @@
 from abc import abstractmethod
 from typing import Protocol, Any
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import CallbackQuery
 from aiogram_dialog import DialogManager, Dialog, Window
 
 

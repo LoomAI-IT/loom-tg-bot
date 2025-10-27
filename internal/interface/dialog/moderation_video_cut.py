@@ -1,4 +1,3 @@
-# internal/interface/dialog/video_cut_moderation.py
 from abc import abstractmethod
 from typing import Protocol, Any
 from aiogram_dialog import DialogManager, Dialog, Window
