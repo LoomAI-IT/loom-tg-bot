@@ -61,7 +61,7 @@ class OrganizationMenuService(interface.IOrganizationMenuService):
     ) -> None:
         await callback.answer("В разработке", show_alert=True)
         return
-        # self.state_manager.set_edit_mode(dialog_manager)
+        # self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
         #
         # state = await self.state_manager.get_state(dialog_manager)
         #
@@ -85,7 +85,7 @@ class OrganizationMenuService(interface.IOrganizationMenuService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.state_manager.set_edit_mode(dialog_manager)
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
 
         state = await self.state_manager.get_state(dialog_manager)
 
@@ -144,7 +144,7 @@ class OrganizationMenuService(interface.IOrganizationMenuService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.state_manager.set_edit_mode(dialog_manager)
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
         await dialog_manager.start(state=model.AddSocialNetworkStates.select_network)
 
     @auto_log()

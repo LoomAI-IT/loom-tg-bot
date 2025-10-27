@@ -8,8 +8,21 @@ class StateManager:
         self.state_repo = state_repo
 
     @staticmethod
-    def set_edit_mode(dialog_manager: DialogManager) -> None:
-        dialog_manager.show_mode = ShowMode.EDIT
+    def set_show_mode(
+            dialog_manager: DialogManager,
+            edit: bool = False,
+            delete_and_send: bool = False,
+            send: bool = False,
+            no_update: bool = False,
+    ) -> None:
+        if edit:
+            dialog_manager.show_edit = ShowMode.EDIT
+        elif delete_and_send:
+            dialog_manager.show_edit = ShowMode.DELETE_AND_SEND
+        elif send:
+            dialog_manager.show_edit = ShowMode.SEND
+        elif no_update:
+            dialog_manager.show_edit = ShowMode.NO_UPDATE
 
     async def get_state(self, dialog_manager: DialogManager) -> model.UserState:
         if hasattr(dialog_manager.event, 'message') and dialog_manager.event.message:

@@ -80,7 +80,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             widget: MessageInput,
             dialog_manager: DialogManager
     ) -> None:
-        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
         await message.delete()
 
         self._error_flags.clear_input_error_flags(dialog_manager=dialog_manager)
@@ -115,7 +115,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             dialog_manager: DialogManager,
             category_id: str
     ) -> None:
-        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
         category = await self.loom_content_client.get_category_by_id(
             category_id=int(category_id)
         )
@@ -145,7 +145,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Button,
             dialog_manager: DialogManager
     ) -> None:
-        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
 
         state = await self.state_manager.get_state(dialog_manager=dialog_manager)
 
@@ -178,7 +178,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, delete_and_send=True)
 
         await callback.answer()
         await callback.message.edit_text(
@@ -207,7 +207,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, delete_and_send=True)
         await callback.answer()
         await callback.message.edit_text(
             "Генерирую текст с картинкой, это может занять минуты 3. Не совершайте никаких действий...",
@@ -253,7 +253,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
         self._image_manager.navigate_images(
             dialog_manager=dialog_manager,
             images_key="publication_images_url",
@@ -270,7 +270,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
         self._image_manager.navigate_images(
             dialog_manager=dialog_manager,
             images_key="publication_images_url",
@@ -287,7 +287,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, send=True)
 
         await callback.answer()
         dialog_manager.dialog_data["is_regenerating_text"] = True
@@ -320,7 +320,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             widget: MessageInput,
             dialog_manager: DialogManager
     ) -> None:
-        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, send=True)
         await message.delete()
 
         self._error_flags.clear_regenerate_prompt_error_flags(dialog_manager=dialog_manager)
@@ -382,7 +382,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             dialog_manager: DialogManager,
             text: str
     ) -> None:
-        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
 
         await message.delete()
 
@@ -406,7 +406,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, send=True)
 
         await callback.answer()
         dialog_manager.dialog_data["is_generating_image"] = True
@@ -448,7 +448,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             widget: MessageInput,
             dialog_manager: DialogManager
     ) -> None:
-        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, send=True)
         await message.delete()
 
         self._error_flags.clear_image_prompt_error_flags(dialog_manager=dialog_manager)
@@ -509,7 +509,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             widget: MessageInput,
             dialog_manager: DialogManager
     ) -> None:
-        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
 
         await message.delete()
 
@@ -554,7 +554,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
 
         self._image_manager.clear_image_data(dialog_manager=dialog_manager)
 
@@ -627,7 +627,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
 
         state = await self.state_manager.get_state(dialog_manager=dialog_manager)
 
@@ -679,7 +679,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             checkbox: ManagedCheckbox,
             dialog_manager: DialogManager
     ) -> None:
-        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
 
         if "selected_social_networks" not in dialog_manager.dialog_data:
             dialog_manager.dialog_data["selected_social_networks"] = {}
@@ -699,7 +699,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
 
         state = await self.state_manager.get_state(dialog_manager=dialog_manager)
 
@@ -768,7 +768,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
 
         dialog_manager.dialog_data["has_image"] = False
         dialog_manager.dialog_data.pop("publication_images_url", None)
@@ -788,7 +788,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
 
         await callback.answer()
         await callback.message.edit_text(
@@ -821,7 +821,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
 
         state = await self.state_manager.get_state(dialog_manager=dialog_manager)
 
@@ -844,7 +844,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
 
         await callback.answer()
 
@@ -865,7 +865,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
 
         await callback.answer()
 
@@ -887,7 +887,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
 
         await callback.answer()
 
@@ -904,7 +904,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             widget: MessageInput,
             dialog_manager: DialogManager
     ) -> None:
-        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
 
         await message.delete()
 
@@ -945,7 +945,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
         self._image_manager.navigate_images(
             dialog_manager=dialog_manager,
             images_key="combine_images_list",
@@ -962,7 +962,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
         self._image_manager.navigate_images(
             dialog_manager=dialog_manager,
             images_key="combine_images_list",
@@ -983,7 +983,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         Обработка нажатия кнопки "Назад" в окне загрузки изображений для объединения.
         Возвращает в new_image_confirm, если пришли оттуда, иначе в image_menu.
         """
-        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
 
         await callback.answer()
 
@@ -1008,7 +1008,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
 
         combine_images_list = dialog_manager.dialog_data.get("combine_images_list", [])
         current_index = dialog_manager.dialog_data.get("combine_current_index", 0)
@@ -1033,7 +1033,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             widget: MessageInput,
             dialog_manager: DialogManager
     ) -> None:
-        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
         await message.delete()
 
         self._error_flags.clear_combine_prompt_error_flags(dialog_manager=dialog_manager)
@@ -1093,7 +1093,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
 
         combine_images_list = dialog_manager.dialog_data.get("combine_images_list", [])
 
@@ -1140,7 +1140,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         """
         Переход к объединению изображений с новой сгенерированной картинкой как первой
         """
-        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
 
         await callback.answer()
 
@@ -1198,7 +1198,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             widget: MessageInput,
             dialog_manager: DialogManager
     ) -> None:
-        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
         await message.delete()
 
         self._error_flags.clear_error_flags(
@@ -1280,7 +1280,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
 
         await callback.answer("Изображение применено")
 
@@ -1314,7 +1314,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
         dialog_manager.dialog_data["showing_old_image"] = True
         await callback.answer()
 
@@ -1326,7 +1326,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
         dialog_manager.dialog_data["showing_old_image"] = False
         await callback.answer()
 
@@ -1338,7 +1338,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
 
         await callback.answer("Изображение отклонено")
 

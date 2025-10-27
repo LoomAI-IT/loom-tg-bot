@@ -57,7 +57,7 @@ class MainMenuService(interface.IMainMenuService):
             widget: MessageInput,
             dialog_manager: DialogManager
     ) -> None:
-        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
 
         await message.delete()
 

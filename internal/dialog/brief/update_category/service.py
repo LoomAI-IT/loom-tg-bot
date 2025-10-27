@@ -75,7 +75,7 @@ class UpdateCategoryService(interface.IUpdateCategoryService):
             dialog_manager: DialogManager,
             category_id: str
     ) -> None:
-        self.state_manager.set_edit_mode(dialog_manager)
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
         await callback.answer()
 
         category = await self.loom_content_client.get_category_by_id(
@@ -174,7 +174,7 @@ class UpdateCategoryService(interface.IUpdateCategoryService):
             button: Button,
             dialog_manager: DialogManager
     ) -> None:
-        self.state_manager.set_edit_mode(dialog_manager)
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
         await callback.answer()
 
         await dialog_manager.start(state=model.MainMenuStates.main_menu, mode=StartMode.RESET_STACK)
@@ -187,6 +187,6 @@ class UpdateCategoryService(interface.IUpdateCategoryService):
             button: Button,
             dialog_manager: DialogManager
     ) -> None:
-        self.state_manager.set_edit_mode(dialog_manager)
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
 
         await dialog_manager.start(state=model.MainMenuStates.main_menu, mode=StartMode.RESET_STACK)

@@ -150,7 +150,7 @@ class CreateCategoryService(interface.ICreateCategoryService):
             button: Button,
             dialog_manager: DialogManager
     ) -> None:
-        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
         await callback.answer()
 
         await dialog_manager.start(state=model.MainMenuStates.main_menu, mode=StartMode.RESET_STACK)
@@ -163,6 +163,6 @@ class CreateCategoryService(interface.ICreateCategoryService):
             button: Button,
             dialog_manager: DialogManager
     ) -> None:
-        self.state_manager.set_edit_mode(dialog_manager=dialog_manager)
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
 
         await dialog_manager.start(state=model.MainMenuStates.main_menu, mode=StartMode.RESET_STACK)

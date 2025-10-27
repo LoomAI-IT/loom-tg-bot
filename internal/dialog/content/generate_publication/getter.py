@@ -28,7 +28,7 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
         self.loom_content_client = loom_content_client
 
         # Инициализация приватных сервисов
-        self._state_manager = StateManager(
+        self.state_manager = StateManager(
             state_repo=self.state_repo
         )
         self._image_manager = ImageManager(
@@ -51,7 +51,7 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        state = await self._state_manager.get_state(dialog_manager)
+        state = await self.state_manager.get_state(dialog_manager)
         employee = await self.loom_employee_client.get_employee_by_account_id(
             state.account_id
         )
@@ -95,7 +95,7 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        state = await self._state_manager.get_state(dialog_manager)
+        state = await self.state_manager.get_state(dialog_manager)
 
         data = await self.social_network_manager.get_social_network_data(
             dialog_manager=dialog_manager,
@@ -120,7 +120,7 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        state = await self._state_manager.get_state(dialog_manager)
+        state = await self.state_manager.get_state(dialog_manager)
 
         categories = await self.loom_content_client.get_categories_by_organization(
             state.organization_id

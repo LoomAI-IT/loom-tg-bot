@@ -31,7 +31,7 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
         self.loom_domain = loom_domain
 
         # Инициализация вспомогательных классов
-        self._state_manager = StateManager(
+        self.state_manager = StateManager(
             state_repo=self.state_repo
         )
         self._publication_manager = PublicationManager(
@@ -56,7 +56,7 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        state = await self._state_manager.get_state(dialog_manager)
+        state = await self.state_manager.get_state(dialog_manager)
 
         publications = await self.loom_content_client.get_publications_by_organization(
             organization_id=state.organization_id
@@ -208,7 +208,7 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        state = await self._state_manager.get_state(dialog_manager)
+        state = await self.state_manager.get_state(dialog_manager)
         social_networks = await self.loom_content_client.get_social_networks_by_organization(
             organization_id=state.organization_id
         )

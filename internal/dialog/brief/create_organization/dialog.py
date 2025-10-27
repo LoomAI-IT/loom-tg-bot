@@ -37,7 +37,7 @@ class CreateOrganizationDialog(interface.ICreateOrganizationDialog):
             ),
 
             Button(
-                Const("❌ Прервать созание организации"),
+                Const("❌ Прервать создание организации"),
                 id="show_confirm_cancel",
                 on_click=lambda c, b, d: d.switch_to(model.CreateOrganizationStates.confirm_cancel),
             ),
