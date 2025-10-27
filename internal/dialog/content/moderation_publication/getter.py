@@ -34,7 +34,7 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
         self.state_manager = StateManager(
             state_repo=self.state_repo
         )
-        self._publication_manager = PublicationManager(
+        self.publication_manager = PublicationManager(
             self.logger,
             self.bot,
             self.loom_content_client,
@@ -193,7 +193,7 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
             "publication_text": working_pub["text"],
             "has_image": working_pub.get("has_image", False),
             "preview_image_media": preview_image_media,
-            "has_changes": self._publication_manager.has_changes(dialog_manager),
+            "has_changes": self.publication_manager.has_changes(dialog_manager),
             "has_multiple_images": has_multiple_images,
             "current_image_index": current_image_index + 1,  # Показываем с 1
             "total_images": total_images,

@@ -34,7 +34,7 @@ class MainMenuService(interface.IMainMenuService):
         self.state_manager = StateManager(
             self.state_repo
         )
-        self._validation = ValidationService(
+        self.validation = ValidationService(
             self.logger
         )
         self.message_extractor = MessageExtractor(
@@ -74,7 +74,7 @@ class MainMenuService(interface.IMainMenuService):
             organization_id=state.organization_id
         )
 
-        if not self._validation.validate_input_text(text=text, dialog_manager=dialog_manager):
+        if not self.validation.validate_input_text(text=text, dialog_manager=dialog_manager):
             return
 
         dialog_manager.dialog_data["input_text"] = text

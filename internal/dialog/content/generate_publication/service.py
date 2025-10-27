@@ -44,10 +44,10 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         self.state_manager = StateManager(
             state_repo=self.state_repo
         )
-        self._validation = ValidationService(
+        self.validation = ValidationService(
             logger=self.logger
         )
-        self._text_processor = TextProcessor(
+        self.text_processor = TextProcessor(
             logger=self.logger
         )
         self.message_extractor = MessageExtractor(
@@ -64,7 +64,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             loom_content_client=self.loom_content_client
         )
         self.dialog_data_helper = ErrorFlagsManager()
-        self._publication_manager = PublicationManager(
+        self.publication_manager = PublicationManager(
             logger=self.logger,
             loom_content_client=self.loom_content_client
         )
@@ -92,7 +92,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         state = await self.state_manager.get_state(dialog_manager=dialog_manager)
 
-        if not self._validation.validate_content_type(message=message, dialog_manager=dialog_manager):
+        if not self.validation.validate_content_type(message=message, dialog_manager=dialog_manager):
             return
 
         text = await self.message_extractor.process_voice_or_text_input(
@@ -101,7 +101,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             organization_id=state.organization_id
         )
 
-        if not self._validation.validate_input_text(text=text, dialog_manager=dialog_manager):
+        if not self.validation.validate_input_text(text=text, dialog_manager=dialog_manager):
             return
 
         dialog_manager.dialog_data["input_text"] = text
@@ -223,7 +223,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         dialog_manager.dialog_data["current_image_index"] = 0
 
         # Проверяем длину текста с изображением
-        if await self._text_processor.check_text_length_with_image(dialog_manager=dialog_manager):
+        if await self.text_processor.check_text_length_with_image(dialog_manager=dialog_manager):
             return
 
         await dialog_manager.switch_to(state=model.GeneratePublicationStates.preview)
@@ -292,7 +292,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         dialog_manager.dialog_data["publication_text"] = regenerated_data["text"]
 
         # Проверяем длину текста с изображением
-        if await self._text_processor.check_text_length_with_image(dialog_manager=dialog_manager):
+        if await self.text_processor.check_text_length_with_image(dialog_manager=dialog_manager):
             return
 
         await dialog_manager.switch_to(state=model.GeneratePublicationStates.preview)
@@ -312,7 +312,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         state = await self.state_manager.get_state(dialog_manager=dialog_manager)
 
-        if not self._validation.validate_content_type(message=message, dialog_manager=dialog_manager):
+        if not self.validation.validate_content_type(message=message, dialog_manager=dialog_manager):
             return
 
         prompt = await self.message_extractor.process_voice_or_text_input(
@@ -321,7 +321,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             organization_id=state.organization_id
         )
 
-        if not self._validation.validate_prompt(
+        if not self.validation.validate_prompt(
                 text=prompt,
                 dialog_manager=dialog_manager,
                 void_flag="has_void_regenerate_prompt",
@@ -351,7 +351,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         dialog_manager.dialog_data["is_regenerating_text"] = False
         dialog_manager.dialog_data["has_regenerate_prompt"] = False
 
-        if await self._text_processor.check_text_length_with_image(dialog_manager=dialog_manager):
+        if await self.text_processor.check_text_length_with_image(dialog_manager=dialog_manager):
             return
 
         await dialog_manager.switch_to(state=model.GeneratePublicationStates.preview)
@@ -373,7 +373,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         new_text = message.html_text.replace('\n', '<br/>')
 
-        if not self._validation.validate_edited_text(text=new_text, dialog_manager=dialog_manager):
+        if not self.validation.validate_edited_text(text=new_text, dialog_manager=dialog_manager):
             return
 
         dialog_manager.dialog_data["publication_text"] = new_text
@@ -427,7 +427,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         state = await self.state_manager.get_state(dialog_manager=dialog_manager)
 
-        if not self._validation.validate_content_type(message=message, dialog_manager=dialog_manager):
+        if not self.validation.validate_content_type(message=message, dialog_manager=dialog_manager):
             return
 
         prompt = await self.message_extractor.process_voice_or_text_input(
@@ -436,7 +436,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             organization_id=state.organization_id
         )
 
-        if not self._validation.validate_prompt(
+        if not self.validation.validate_prompt(
                 text=prompt,
                 dialog_manager=dialog_manager,
                 void_flag="has_void_image_prompt",
@@ -476,18 +476,18 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         self.dialog_data_helper.clear_image_uploaddialog_data_helper(dialog_manager=dialog_manager)
 
-        if not self._validation.validate_image_content_type(message=message, dialog_manager=dialog_manager):
+        if not self.validation.validate_image_content_type(message=message, dialog_manager=dialog_manager):
             return
 
         if message.photo:
             photo = message.photo[-1]
 
-            if not self._validation.validate_image_size(photo=photo, dialog_manager=dialog_manager):
+            if not self.validation.validate_image_size(photo=photo, dialog_manager=dialog_manager):
                 return
 
             await self._image_manager.upload_custom_image(photo=photo, dialog_manager=dialog_manager)
 
-            if await self._text_processor.check_text_length_with_image(dialog_manager=dialog_manager):
+            if await self.text_processor.check_text_length_with_image(dialog_manager=dialog_manager):
                 return
 
             await dialog_manager.switch_to(state=model.GeneratePublicationStates.preview)
@@ -591,7 +591,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             dialog_manager=dialog_manager
         )
 
-        await self._publication_manager.send_to_moderation(
+        await self.publication_manager.send_to_moderation(
             state=state,
             category_id=category_id,
             text_reference=text_reference,
@@ -621,7 +621,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             dialog_manager: DialogManager
     ) -> None:
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
-        self._publication_manager.toggle_social_network(checkbox=checkbox, dialog_manager=dialog_manager)
+        self.publication_manager.toggle_social_network(checkbox=checkbox, dialog_manager=dialog_manager)
         await callback.answer()
 
     @auto_log()
@@ -638,7 +638,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         selected_networks = dialog_manager.dialog_data.get("selected_social_networks", {})
 
-        if not self._validation.validate_selected_networks(selected_networks):
+        if not self.validation.validate_selected_networks(selected_networks):
             self.logger.info("Не выбрана ни одна соцсеть")
             await callback.answer(
                 "Выберите хотя бы одну социальную сеть",
@@ -654,7 +654,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             dialog_manager=dialog_manager
         )
 
-        await self._publication_manager.publish_now(
+        await self.publication_manager.publish_now(
             dialog_manager=dialog_manager,
             state=state,
             category_id=category_id,
@@ -683,7 +683,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             dialog_manager: DialogManager
     ) -> None:
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
-        self._publication_manager.remove_photo_from_long_text(dialog_manager=dialog_manager)
+        self.publication_manager.remove_photo_from_long_text(dialog_manager=dialog_manager)
         await callback.answer("Изображение удалено", show_alert=True)
         await dialog_manager.switch_to(state=model.GeneratePublicationStates.preview)
 
@@ -813,7 +813,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         self.dialog_data_helper.clear_combine_uploaddialog_data_helper(dialog_manager=dialog_manager)
 
-        if not self._validation.validate_image_content_type(
+        if not self.validation.validate_image_content_type(
                 message=message,
                 dialog_manager=dialog_manager,
                 error_flag="has_invalid_combine_image_type"
@@ -822,7 +822,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         combine_images_list = dialog_manager.dialog_data.get("combine_images_list", [])
 
-        if not self._validation.validate_combine_images_count(
+        if not self.validation.validate_combine_images_count(
                 combine_images_list=combine_images_list,
                 dialog_manager=dialog_manager,
                 check_min=False,
@@ -833,7 +833,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         if message.photo:
             photo = message.photo[-1]
 
-            if not self._validation.validate_image_size(
+            if not self.validation.validate_image_size(
                     photo=photo,
                     dialog_manager=dialog_manager,
                     error_flag="has_big_combine_image_size"
@@ -925,7 +925,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         state = await self.state_manager.get_state(dialog_manager=dialog_manager)
 
-        if not self._validation.validate_content_type(message=message, dialog_manager=dialog_manager):
+        if not self.validation.validate_content_type(message=message, dialog_manager=dialog_manager):
             return
 
         prompt = await self.message_extractor.process_voice_or_text_input(
@@ -934,12 +934,12 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             organization_id=state.organization_id
         )
 
-        if not self._validation.validate_combine_prompt(prompt=prompt, dialog_manager=dialog_manager):
+        if not self.validation.validate_combine_prompt(prompt=prompt, dialog_manager=dialog_manager):
             return
 
         combine_images_list = dialog_manager.dialog_data.get("combine_images_list", [])
 
-        if not self._validation.validate_combine_images_count(
+        if not self.validation.validate_combine_images_count(
                 combine_images_list=combine_images_list,
                 dialog_manager=dialog_manager,
                 check_min=True,
@@ -976,7 +976,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         combine_images_list = dialog_manager.dialog_data.get("combine_images_list", [])
 
-        if not self._validation.validate_combine_images_count(
+        if not self.validation.validate_combine_images_count(
                 combine_images_list=combine_images_list,
                 dialog_manager=dialog_manager,
                 check_min=True,
@@ -1049,7 +1049,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         state = await self.state_manager.get_state(dialog_manager=dialog_manager)
 
-        if not self._validation.validate_content_type(message=message, dialog_manager=dialog_manager):
+        if not self.validation.validate_content_type(message=message, dialog_manager=dialog_manager):
             return
 
         prompt = await self.message_extractor.process_voice_or_text_input(
@@ -1058,7 +1058,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             organization_id=state.organization_id
         )
 
-        if not self._validation.validate_edit_image_prompt(prompt=prompt, dialog_manager=dialog_manager):
+        if not self.validation.validate_edit_image_prompt(prompt=prompt, dialog_manager=dialog_manager):
             return
 
         dialog_manager.dialog_data["image_edit_prompt"] = prompt
@@ -1098,7 +1098,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         self._image_manager.confirm_new_image(dialog_manager=dialog_manager)
 
-        if await self._text_processor.check_text_length_with_image(dialog_manager=dialog_manager):
+        if await self.text_processor.check_text_length_with_image(dialog_manager=dialog_manager):
             return
 
         await dialog_manager.switch_to(state=model.GeneratePublicationStates.image_menu)
