@@ -2,8 +2,9 @@ from aiogram import Bot
 from aiogram_dialog import DialogManager
 
 from internal import interface, model
-from internal.dialog.content.moderation_publication.helpers import StateRestorer, ImageManager
 from internal.dialog.content.moderation_publication.helpers.dialog_data_helper import DialogDataHelper
+from internal.dialog.content.moderation_publication.helpers.state_restorer import StateRestorer
+from internal.dialog.content.moderation_publication.helpers.image_manager import ImageManager
 
 
 class PublicationManager:
