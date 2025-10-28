@@ -187,16 +187,31 @@ class PublicationManager:
             moderation_comment=reject_comment,
         )
 
-    async def regenerate_text(
+    async def generate_text(
             self,
             dialog_manager: DialogManager,
     ) -> dict:
         self.state_restorer.save_state_before_modification(dialog_manager, include_image=False)
 
         working_pub = self.dialog_data_helper.get_working_publication(dialog_manager)
-        return await self.loom_content_client.generate_publication_text(
+        return await self.loom_content_client.regenerate_publication_text(
             category_id=working_pub["category_id"],
-            text_reference=working_pub["text"],
+            publication_text=working_pub["text"],
+            prompt="Используй тему поста, но сгенерируй пост по-другому как-нибудь не меняя смысл"
+        )
+
+    async def regenerate_text(
+            self,
+            dialog_manager: DialogManager,
+            prompt: str,
+    ) -> dict:
+        self.state_restorer.save_state_before_modification(dialog_manager, include_image=False)
+
+        working_pub = self.dialog_data_helper.get_working_publication(dialog_manager)
+        return await self.loom_content_client.regenerate_publication_text(
+            category_id=working_pub["category_id"],
+            publication_text=working_pub["text"],
+            prompt=prompt,
         )
 
     async def generate_image(

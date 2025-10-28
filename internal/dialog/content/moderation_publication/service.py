@@ -158,7 +158,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         )
 
         async with tg_action(self.bot, callback.message.chat.id):
-            regenerated_data = await self.publication_manager.regenerate_text(
+            regenerated_data = await self.publication_manager.generate_text(
                 dialog_manager=dialog_manager
             )
             self.dialog_data_helper.update_working_text(dialog_manager, regenerated_data["text"])
@@ -187,23 +187,24 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             return
 
         state = await self.state_manager.get_state(dialog_manager)
-        prompt = await self.message_extractor.process_voice_or_text_input(
+        regenerate_text_prompt = await self.message_extractor.process_voice_or_text_input(
             message=message,
             dialog_manager=dialog_manager,
             organization_id=state.organization_id,
             return_html=True
         )
 
-        if not self.validation.validate_regenerate_prompt(prompt=prompt, dialog_manager=dialog_manager):
+        if not self.validation.validate_regenerate_prompt(prompt=regenerate_text_prompt, dialog_manager=dialog_manager):
             return
 
-        self.dialog_data_helper.set_regenerate_text_prompt(dialog_manager, prompt)
+        self.dialog_data_helper.set_regenerate_text_prompt(dialog_manager, regenerate_text_prompt)
         self.dialog_data_helper.set_regenerating_text_flag(dialog_manager, True)
         await dialog_manager.show()
 
         async with tg_action(self.bot, message.chat.id):
             regenerated_data = await self.publication_manager.regenerate_text(
-                dialog_manager=dialog_manager
+                dialog_manager=dialog_manager,
+                prompt=regenerate_text_prompt
             )
             self.dialog_data_helper.update_working_text(dialog_manager, regenerated_data["text"])
 
@@ -250,12 +251,10 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             dialog_manager: DialogManager
     ) -> None:
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
-
         await callback.answer()
-        await callback.message.edit_text(
-            "Генерирую изображение, это может занять время... Не совершайте никаких действий",
-            reply_markup=None
-        )
+
+        self.dialog_data_helper.set_is_generating_image(dialog_manager, True)
+        await dialog_manager.show()
 
         async with tg_action(self.bot, callback.message.chat.id, "upload_photo"):
             images_url = await self.publication_manager.generate_image(
@@ -263,7 +262,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             )
             self.dialog_data_helper.set_generated_images_url(dialog_manager, images_url)
 
-        self.dialog_data_helper.set_generating_image_flag(dialog_manager, False)
+        self.dialog_data_helper.set_is_generating_image(dialog_manager, False)
         await dialog_manager.switch_to(state=model.ModerationPublicationStates.new_image_confirm)
 
     @auto_log()
@@ -286,14 +285,13 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             message=message,
             dialog_manager=dialog_manager,
             organization_id=state.organization_id,
-            return_html=True
         )
 
         if not self.validation.validate_edit_image_prompt(prompt=edit_image_prompt, dialog_manager=dialog_manager):
             return
 
         self.dialog_data_helper.set_edit_image_prompt(dialog_manager, edit_image_prompt)
-        self.dialog_data_helper.set_generating_image_flag(dialog_manager, True)
+        self.dialog_data_helper.set_is_generating_image(dialog_manager, True)
         await dialog_manager.show()
 
         async with tg_action(self.bot, message.chat.id, "upload_photo"):
@@ -304,7 +302,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             )
             self.dialog_data_helper.set_generated_images_url(dialog_manager, images_url)
 
-        self.dialog_data_helper.set_generating_image_flag(dialog_manager, False)
+        self.dialog_data_helper.set_is_generating_image(dialog_manager, False)
         await dialog_manager.switch_to(state=model.ModerationPublicationStates.new_image_confirm)
 
     @auto_log()

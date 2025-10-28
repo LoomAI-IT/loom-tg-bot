@@ -122,7 +122,7 @@ class DialogDataHelper:
         dialog_manager.dialog_data["is_regenerating_text"] = value
 
     @staticmethod
-    def set_generating_image_flag(dialog_manager: DialogManager, value: bool) -> None:
+    def set_is_generating_image(dialog_manager: DialogManager, value: bool) -> None:
         dialog_manager.dialog_data["is_generating_image"] = value
 
     @staticmethod
