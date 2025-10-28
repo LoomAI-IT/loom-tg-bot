@@ -219,6 +219,7 @@ class PublicationManager:
             dialog_manager: DialogManager,
     ) -> list[str]:
         self.state_restorer.save_state_before_modification(dialog_manager, include_image=True)
+        self.image_manager.backup_current_image(dialog_manager)
 
         working_pub = self.dialog_data_helper.get_working_publication(dialog_manager)
         current_image_content, current_image_filename = await self.image_manager.prepare_current_image_for_generation(
@@ -240,6 +241,7 @@ class PublicationManager:
             edit_image_prompt: str
     ) -> list[str]:
         self.state_restorer.save_state_before_modification(dialog_manager, include_image=True)
+        self.image_manager.backup_current_image(dialog_manager)
         current_image_content, current_image_filename = await self.image_manager.prepare_current_image_for_generation(
             dialog_manager
         )
