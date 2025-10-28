@@ -62,7 +62,8 @@ class DialogDataHelper:
 
     @staticmethod
     def get_combine_images_choice_data(dialog_manager: DialogManager) -> dict:
-        has_current_image = dialog_manager.dialog_data.get("has_image", False)
+        working_pub = dialog_manager.dialog_data.get("working_publication", {})
+        has_current_image = working_pub.get("has_image", False)
         return {
             "has_current_image": has_current_image,
         }
