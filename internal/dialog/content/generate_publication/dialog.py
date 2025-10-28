@@ -697,14 +697,14 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                     on_click=self.generate_publication_service.handle_remove_reference_generation_image,
                     when=F["has_reference_generation_image"]
                 ),
-                when=~F["is_generating_custom_image"]
+                when=~F["is_generating_image"]
             ),
 
             Button(
                 Const("◀️ Назад"),
                 id="back_to_mode_select",
                 on_click=self.generate_publication_service.handle_back_from_custom_generation,
-                when=~F["is_generating_custom_image"]
+                when=~F["is_generating_image"]
             ),
 
             state=model.GeneratePublicationStates.reference_image_generation,
