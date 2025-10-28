@@ -181,11 +181,11 @@ class DialogDataHelper:
         return dialog_manager.dialog_data.get("combine_current_index", 0)
 
     # Резервные копии
-    def get_old_image_backup(self, dialog_manager: DialogManager) -> dict | None:
-        return dialog_manager.dialog_data.get("old_image_backup")
+    def get_original_image_backup(self, dialog_manager: DialogManager) -> dict | None:
+        return dialog_manager.dialog_data.get("original_image_backup")
 
-    def get_old_generated_image_backup(self, dialog_manager: DialogManager) -> dict | None:
-        return dialog_manager.dialog_data.get("old_generated_image_backup")
+    def get_previous_generation_backup(self, dialog_manager: DialogManager) -> dict | None:
+        return dialog_manager.dialog_data.get("previous_generation_backup")
 
     def get_showing_old_image(self, dialog_manager: DialogManager) -> bool:
         return dialog_manager.dialog_data.get("showing_old_image", False)
@@ -286,17 +286,17 @@ class DialogDataHelper:
         dialog_manager.dialog_data["is_applying_edits"] = value
 
     # Резервные копии
-    def set_old_image_backup(self, dialog_manager: DialogManager, backup_dict: dict | None) -> None:
+    def set_original_image_backup(self, dialog_manager: DialogManager, backup_dict: dict | None) -> None:
         if backup_dict is None:
-            dialog_manager.dialog_data.pop("old_image_backup", None)
+            dialog_manager.dialog_data.pop("original_image_backup", None)
         else:
-            dialog_manager.dialog_data["old_image_backup"] = backup_dict
+            dialog_manager.dialog_data["original_image_backup"] = backup_dict
 
-    def set_old_generated_image_backup(self, dialog_manager: DialogManager, backup_dict: dict | None) -> None:
+    def set_previous_generation_backup(self, dialog_manager: DialogManager, backup_dict: dict | None) -> None:
         if backup_dict is None:
-            dialog_manager.dialog_data.pop("old_generated_image_backup", None)
+            dialog_manager.dialog_data.pop("previous_generation_backup", None)
         else:
-            dialog_manager.dialog_data["old_generated_image_backup"] = backup_dict
+            dialog_manager.dialog_data["previous_generation_backup"] = backup_dict
 
     def set_showing_old_image(self, dialog_manager: DialogManager, value: bool) -> None:
         dialog_manager.dialog_data["showing_old_image"] = value
@@ -423,8 +423,7 @@ class DialogDataHelper:
             dialog_manager,
             "generated_images_url",
             "combined_image_url",
-            "old_generated_image_backup",
-            "old_image_backup",
+            "previous_generation_backup",
             "edit_image_prompt",
             "combine_images_list",
             "combine_current_index",
