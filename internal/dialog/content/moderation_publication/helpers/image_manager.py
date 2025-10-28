@@ -493,7 +493,7 @@ class ImageManager:
 
         old_generated_image_backup = self.dialog_data_helper.get_old_generated_image_backup(dialog_manager)
         old_image_backup = self.dialog_data_helper.get_old_image_backup(dialog_manager)
-        old_image_backup = old_generated_image_backup or old_image_backup
+        old_image_backup = old_image_backup or old_generated_image_backup
 
         showing_old_image = self.dialog_data_helper.get_showing_old_image(dialog_manager)
 
@@ -584,7 +584,7 @@ class ImageManager:
     def reject_new_image(self, dialog_manager: DialogManager) -> None:
         old_generated_image_backup = self.dialog_data_helper.get_old_generated_image_backup(dialog_manager)
         old_image_backup = self.dialog_data_helper.get_old_image_backup(dialog_manager)
-        backup_dict = old_generated_image_backup or old_image_backup
+        backup_dict = old_image_backup or old_generated_image_backup
 
         self.restore_image_from_backup(
             dialog_manager=dialog_manager,
