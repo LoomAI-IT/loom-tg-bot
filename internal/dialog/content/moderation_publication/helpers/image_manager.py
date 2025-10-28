@@ -16,7 +16,8 @@ class ImageManager:
             logger,
             bot: Bot,
             loom_content_client: interface.ILoomContentClient,
-            loom_domain: str
+            loom_domain: str,
+
     ):
         self.logger = logger
         self.bot = bot
@@ -324,39 +325,6 @@ class ImageManager:
     def init_combine_from_scratch(self, dialog_manager: DialogManager) -> None:
         self.dialog_data_helper.set_combine_images_list(dialog_manager, [], 0)
 
-    async def combine_images(
-            self,
-            dialog_manager: DialogManager,
-            prompt: str,
-            organization_id: int,
-    ) -> str | None:
-        old_image_backup = self.dialog_data_helper.get_old_image_backup(dialog_manager)
-        if not old_image_backup:
-            backup_dict = self.create_image_backup_dict(dialog_manager=dialog_manager)
-            self.dialog_data_helper.set_old_image_backup(dialog_manager, backup_dict)
-
-        images_content = []
-        images_filenames = []
-        combine_images_list = self.dialog_data_helper.get_combine_images_list(dialog_manager)
-        for i, file_id in enumerate(combine_images_list):
-            image_io = await self.bot.download(file_id)
-            content = image_io.read()
-            images_content.append(content)
-            images_filenames.append(f"image_{i}.jpg")
-
-        working_pub = self.dialog_data_helper.get_working_publication(dialog_manager)
-        category_id = working_pub["category_id"]
-
-        combined_images_url = await self.loom_content_client.combine_images(
-            organization_id=organization_id,
-            category_id=category_id,
-            images_content=images_content,
-            images_filenames=images_filenames,
-            prompt=prompt,
-        )
-
-        return combined_images_url[0] if combined_images_url else None
-
     def cleanup_combine_data(self, dialog_manager: DialogManager) -> None:
         self.dialog_data_helper.clear_combine_data(dialog_manager)
 
@@ -570,35 +538,6 @@ class ImageManager:
                 )
         return None
 
-    async def edit_new_image_with_prompt(
-            self,
-            dialog_manager: DialogManager,
-            organization_id: int,
-            prompt: str,
-    ) -> list[str]:
-        generated_images_url = self.dialog_data_helper.get_generated_images_url(dialog_manager)
-        combined_image_result_url = self.dialog_data_helper.get_combined_image_result_url(dialog_manager)
-
-        image_url = None
-        if generated_images_url and len(generated_images_url) > 0:
-            image_url = generated_images_url[0]
-        elif combined_image_result_url:
-            image_url = combined_image_result_url
-
-        current_image_content = None
-        current_image_filename = None
-        if image_url:
-            current_image_content, _ = await self.download_image(image_url)
-            current_image_filename = "current_image.jpg"
-
-        images_url = await self.loom_content_client.edit_image(
-            organization_id=organization_id,
-            prompt=prompt,
-            image_content=current_image_content,
-            image_filename=current_image_filename,
-        )
-
-        return images_url
 
     def update_image_after_edit_from_confirm_new_image(
             self,

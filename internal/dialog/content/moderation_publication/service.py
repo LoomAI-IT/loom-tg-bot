@@ -58,7 +58,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             logger=self.logger,
             bot=self.bot,
             loom_domain=self.loom_domain,
-            loom_content_client=self.loom_content_client
+            loom_content_client=self.loom_content_client,
         )
         self.state_restorer = StateRestorer(
             logger=self.logger,
@@ -707,7 +707,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         await dialog_manager.show()
 
         async with tg_action(self.bot, message.chat.id, "upload_photo"):
-            combined_image_result_url = await self.image_manager.combine_images(
+            combined_image_result_url = await self.publication_manager.combine_images(
                 dialog_manager=dialog_manager,
                 prompt=combine_image_prompt or "Объедини эти фотографии в одну композицию",
                 organization_id=state.organization_id,
@@ -737,7 +737,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         )
 
         async with tg_action(self.bot, callback.message.chat.id, "upload_photo"):
-            combined_image_result_url = await self.image_manager.combine_images(
+            combined_image_result_url = await self.publication_manager.combine_images(
                 dialog_manager=dialog_manager,
                 prompt="Объедини эти фотографии в одну композицию",
                 organization_id=state.organization_id,
@@ -801,7 +801,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         await dialog_manager.show()
 
         async with tg_action(self.bot, message.chat.id, "upload_photo"):
-            images_url = await self.image_manager.edit_new_image_with_prompt(
+            images_url = await self.publication_manager.edit_new_image_with_prompt(
                 dialog_manager=dialog_manager,
                 organization_id=state.organization_id,
                 prompt=edit_image_prompt,
