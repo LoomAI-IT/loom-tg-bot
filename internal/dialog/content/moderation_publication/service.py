@@ -384,6 +384,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             dialog_manager: DialogManager
     ) -> None:
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
+        self.dialog_data_helper.clear_working_publication(dialog_manager)
         await dialog_manager.switch_to(state=model.ModerationPublicationStates.moderation_list)
 
     @auto_log()
