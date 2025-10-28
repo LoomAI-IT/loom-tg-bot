@@ -101,17 +101,17 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             return
 
         state = await self.state_manager.get_state(dialog_manager=dialog_manager)
-        text = await self.message_extractor.process_voice_or_text_input(
+        generate_text_prompt = await self.message_extractor.process_voice_or_text_input(
             message=message,
             dialog_manager=dialog_manager,
             organization_id=state.organization_id
         )
 
-        if not self.validation.validate_generate_text_prompt(text=text, dialog_manager=dialog_manager):
+        if not self.validation.validate_generate_text_prompt(text=generate_text_prompt, dialog_manager=dialog_manager):
             self.logger.info("Неверный размер промпта для генерации текста")
             return
 
-        self.dialog_data_helper.set_generate_text_prompt(dialog_manager, text, True)
+        self.dialog_data_helper.set_generate_text_prompt(dialog_manager, generate_text_prompt, True)
 
         await dialog_manager.switch_to(state=model.GeneratePublicationStates.generation)
 

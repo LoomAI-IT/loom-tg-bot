@@ -81,9 +81,9 @@ class ValidationService:
             self.MIN_TEXT_PROMPT_LENGTH,
             self.MAX_TEXT_PROMPT_LENGTH,
             dialog_manager,
-            "has_void_text_prompt",
-            "has_small_text_prompt",
-            "has_big_text_prompt"
+            "has_void_generate_text_prompt",
+            "has_small_generate_text_prompt",
+            "has_big_generate_text_prompt"
         )
 
     def validate_regenerate_text_prompt(self, text: str, dialog_manager: DialogManager) -> bool:
