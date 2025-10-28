@@ -243,7 +243,7 @@ class PublicationManager:
         working_pub = self.dialog_data_helper.get_working_publication(dialog_manager)
         expected_length = self.dialog_data_helper.get_expected_length(dialog_manager)
 
-        compress_prompt = f"Сожми текст до {expected_length} символов, сохраняя основной смысл и ключевые идеи"
+        compress_prompt = f"Сожми текст до {expected_length} символов, сохраняя основной смысл и ключевые идеи. МАКСИМАЛЬНО ЗАПРЕЩЕНО ДЕЛАТЬ ТЕКСТ ДЛИННЕЕ {expected_length} символов"
         return await self.loom_content_client.regenerate_publication_text(
             category_id=working_pub["category_id"],
             publication_text=working_pub["text"],
