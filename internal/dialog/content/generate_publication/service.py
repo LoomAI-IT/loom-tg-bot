@@ -208,7 +208,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             publication_text = await self.publication_manager.generate_publication_text(dialog_manager)
             self.dialog_data_helper.set_publication_text(dialog_manager, publication_text)
 
-        async with tg_action(self.bot, callback.message.chat.id, "upload_image"):
+        async with tg_action(self.bot, callback.message.chat.id, "upload_photo"):
             images_url = await self.image_manager.generate_new_image(dialog_manager)
             self.dialog_data_helper.set_new_publication_image(dialog_manager, images_url, 0)
 
@@ -376,7 +376,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         self.dialog_data_helper.set_is_generating_image(dialog_manager, True)
         await dialog_manager.show()
 
-        async with tg_action(self.bot, message.chat.id, "upload_image"):
+        async with tg_action(self.bot, message.chat.id, "upload_photo"):
             images_url = await self.image_manager.edit_image_with_prompt(
                 dialog_manager=dialog_manager,
                 organization_id=state.organization_id,
@@ -772,7 +772,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         self.dialog_data_helper.set_is_combining_images(dialog_manager, True)
         await dialog_manager.show()
 
-        async with tg_action(self.bot, message.chat.id, "upload_image"):
+        async with tg_action(self.bot, message.chat.id, "upload_photo"):
             combined_result_url = await self.image_manager.process_combine_with_prompt(
                 dialog_manager=dialog_manager,
                 state=state,
@@ -813,7 +813,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         state = await self.state_manager.get_state(dialog_manager=dialog_manager)
 
-        async with tg_action(self.bot, callback.message.chat.id, "upload_image"):
+        async with tg_action(self.bot, callback.message.chat.id, "upload_photo"):
             combined_result_url = await self.image_manager.process_combine_with_prompt(
                 dialog_manager=dialog_manager,
                 state=state,
@@ -881,7 +881,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         await dialog_manager.show()
 
-        async with tg_action(self.bot, message.chat.id, "upload_image"):
+        async with tg_action(self.bot, message.chat.id, "upload_photo"):
             images_url = await self.image_manager.edit_new_image_with_prompt(
                 dialog_manager=dialog_manager,
                 organization_id=state.organization_id,
@@ -975,7 +975,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             reply_markup=None
         )
 
-        async with tg_action(self.bot, callback.message.chat.id, "upload_image"):
+        async with tg_action(self.bot, callback.message.chat.id, "upload_photo"):
             images_url = await self.image_manager.generate_new_image(
                 dialog_manager=dialog_manager,
             )
@@ -1037,7 +1037,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         self.dialog_data_helper.set_is_generating_image(dialog_manager, True)
         await dialog_manager.show()
 
-        async with tg_action(self.bot, message.chat.id, "upload_image"):
+        async with tg_action(self.bot, message.chat.id, "upload_photo"):
             images_url = await self.image_manager.generate_image_with_reference(
                 dialog_manager=dialog_manager,
                 prompt=reference_generation_image_prompt

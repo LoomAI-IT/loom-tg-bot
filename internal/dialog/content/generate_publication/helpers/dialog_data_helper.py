@@ -46,7 +46,7 @@ class DialogDataHelper:
             "voice_transcribe": dialog_manager.dialog_data.get("voice_transcribe", False),
             # Error flags
             "has_void_edit_image_prompt": dialog_manager.dialog_data.get("has_void_edit_image_prompt", False),
-            "has_small_edit_mage_prompt": dialog_manager.dialog_data.get("has_small_edit_image_prompt", False),
+            "has_small_edit_image_prompt": dialog_manager.dialog_data.get("has_small_edit_image_prompt", False),
             "has_big_edit_image_prompt": dialog_manager.dialog_data.get("has_big_edit_image_prompt", False),
             "has_invalid_content_type": dialog_manager.dialog_data.get("has_invalid_content_type", False),
         }
