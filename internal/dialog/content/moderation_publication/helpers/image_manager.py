@@ -303,6 +303,13 @@ class ImageManager:
                     file_id = await self.download_and_get_file_id(current_url, chat_id)
                     if file_id:
                         combine_images_list.append(file_id)
+            else:
+                # Проверяем оригинальное изображение публикации
+                image_url = working_pub.get("image_url")
+                if image_url:
+                    file_id = await self.download_and_get_file_id(image_url, chat_id)
+                    if file_id:
+                        combine_images_list.append(file_id)
 
         return combine_images_list
 
@@ -443,6 +450,15 @@ class ImageManager:
                 "value": publication_images_url,
                 "index": current_index
             }
+
+        # Проверяем оригинальное изображение публикации
+        image_url = working_pub.get("image_url")
+        if image_url:
+            return {
+                "type": "url",
+                "value": image_url
+            }
+
         return None
 
     def backup_current_image(self, dialog_manager: DialogManager) -> None:
