@@ -280,10 +280,10 @@ class PublicationManager:
         combined_image_result_url = self.dialog_data_helper.get_combined_image_result_url(dialog_manager)
 
         image_url = None
-        if generated_images_url and len(generated_images_url) > 0:
-            image_url = generated_images_url[0]
-        elif combined_image_result_url:
+        if combined_image_result_url:
             image_url = combined_image_result_url
+        elif generated_images_url and len(generated_images_url) > 0:
+            image_url = generated_images_url[0]
 
         current_image_content = None
         current_image_filename = None

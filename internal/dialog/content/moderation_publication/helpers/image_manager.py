@@ -342,10 +342,10 @@ class ImageManager:
         combined_image_result_url = self.dialog_data_helper.get_combined_image_result_url(dialog_manager)
 
         image_url = None
-        if generated_images_url and len(generated_images_url) > 0:
-            image_url = generated_images_url[0]
-        elif combined_image_result_url:
+        if combined_image_result_url:
             image_url = combined_image_result_url
+        elif generated_images_url and len(generated_images_url) > 0:
+            image_url = generated_images_url[0]
 
         combine_images_list = []
         if image_url:
@@ -362,19 +362,19 @@ class ImageManager:
         original_image_backup = self.dialog_data_helper.get_original_image_backup(dialog_manager)
 
         if not previous_generation_backup and not original_image_backup:
-            if generated_images_url:
+            if combined_image_result_url:
+                backup_dict = {
+                    "type": "url",
+                    "value": combined_image_result_url
+                }
+                self.dialog_data_helper.set_original_image_backup(dialog_manager, backup_dict)
+            elif generated_images_url:
                 backup_dict = {
                     "type": "url",
                     "value": generated_images_url,
                     "index": 0
                 }
                 self.dialog_data_helper.set_previous_generation_backup(dialog_manager, backup_dict)
-            elif combined_image_result_url:
-                backup_dict = {
-                    "type": "url",
-                    "value": combined_image_result_url
-                }
-                self.dialog_data_helper.set_original_image_backup(dialog_manager, backup_dict)
 
         return combine_images_list
 
@@ -414,16 +414,16 @@ class ImageManager:
         generated_images_url = self.dialog_data_helper.get_generated_images_url(dialog_manager)
         combined_image_result = self.dialog_data_helper.get_combined_image_result_url(dialog_manager)
 
-        if generated_images_url:
+        if combined_image_result:
+            return {
+                "type": "url",
+                "value": combined_image_result
+            }
+        elif generated_images_url:
             return {
                 "type": "url",
                 "value": generated_images_url,
                 "index": 0
-            }
-        elif combined_image_result:
-            return {
-                "type": "url",
-                "value": combined_image_result
             }
 
         return None
@@ -500,14 +500,14 @@ class ImageManager:
         new_image_media = None
         old_image_media = None
 
-        if generated_images_url and len(generated_images_url) > 0:
-            new_image_media = MediaAttachment(
-                url=generated_images_url[0],
-                type=ContentType.PHOTO
-            )
-        elif combined_image_result_url:
+        if combined_image_result_url:
             new_image_media = MediaAttachment(
                 url=combined_image_result_url,
+                type=ContentType.PHOTO
+            )
+        elif generated_images_url and len(generated_images_url) > 0:
+            new_image_media = MediaAttachment(
+                url=generated_images_url[0],
                 type=ContentType.PHOTO
             )
 
@@ -544,22 +544,22 @@ class ImageManager:
             dialog_manager: DialogManager,
             images_url: list[str]
     ) -> None:
-        generated_images_url = self.dialog_data_helper.get_generated_images_url(dialog_manager)
-        if generated_images_url:
-            self.dialog_data_helper.set_generated_images_url(dialog_manager, images_url)
+        combined_image_result_url = self.dialog_data_helper.get_combined_image_result_url(dialog_manager)
+        if combined_image_result_url:
+            new_url = images_url[0] if images_url else None
+            self.dialog_data_helper.set_combined_image_result_url(dialog_manager, new_url)
         else:
-            combined_image_result_url = self.dialog_data_helper.get_combined_image_result_url(dialog_manager)
-            if combined_image_result_url:
-                new_url = images_url[0] if images_url else None
-                self.dialog_data_helper.set_combined_image_result_url(dialog_manager, new_url)
+            generated_images_url = self.dialog_data_helper.get_generated_images_url(dialog_manager)
+            if generated_images_url:
+                self.dialog_data_helper.set_generated_images_url(dialog_manager, images_url)
 
     def confirm_new_image(self, dialog_manager: DialogManager) -> None:
         """Подтверждение нового изображения"""
         generated_images_url = self.dialog_data_helper.get_generated_images_url(dialog_manager)
         combined_image_result_url = self.dialog_data_helper.get_combined_image_result_url(dialog_manager)
 
-        if generated_images_url:
-            self.dialog_data_helper.set_working_generated_images(dialog_manager, generated_images_url)
+        if combined_image_result_url:
+            self.dialog_data_helper.set_working_generated_images(dialog_manager, [combined_image_result_url])
             self.dialog_data_helper.set_working_image_has_image(dialog_manager, True)
             self.dialog_data_helper.set_working_image_index(dialog_manager, 0)
             self.dialog_data_helper.remove_working_image_fields(
@@ -568,8 +568,8 @@ class ImageManager:
                 "is_custom_image",
                 "image_url"
             )
-        elif combined_image_result_url:
-            self.dialog_data_helper.set_working_generated_images(dialog_manager, [combined_image_result_url])
+        elif generated_images_url:
+            self.dialog_data_helper.set_working_generated_images(dialog_manager, generated_images_url)
             self.dialog_data_helper.set_working_image_has_image(dialog_manager, True)
             self.dialog_data_helper.set_working_image_index(dialog_manager, 0)
             self.dialog_data_helper.remove_working_image_fields(
