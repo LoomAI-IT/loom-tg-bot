@@ -30,6 +30,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             self.get_preview_window(),
             self.get_edit_text_menu_window(),
             self.get_image_menu_window(),
+            self.get_edit_image_input_window(),
             self.get_image_generation_mode_select_window(),
             self.get_reference_generation_image_window(),
             self.get_reference_generation_image_upload_window(),
@@ -505,6 +506,12 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                                                          ShowMode.EDIT),
                 ),
                 Button(
+                    Const("🖇 Внести правки в изображение"),
+                    id="edit_image",
+                    on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.edit_image_input, ShowMode.EDIT),
+                    when="has_image",
+                ),
+                Button(
                     Const("📷 Использовать своё фото"),
                     id="upload_image",
                     on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.upload_image, ShowMode.EDIT),
@@ -531,6 +538,70 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             ),
 
             state=model.GeneratePublicationStates.image_menu,
+            getter=self.generate_publication_getter.get_image_menu_data,
+            parse_mode=SULGUK_PARSE_MODE,
+        )
+
+    def get_edit_image_input_window(self) -> Window:
+        return Window(
+            Multi(
+                Const("🖇 <b>Внести правки в изображение</b><br><br>"),
+                Const("Отправь голосовое сообщение или напиши, какие правки нужно внести<br><br>"),
+                Const("ИИ изменит изображение на основе того, что ты ему напишешь.<br><br>"),
+                Const("<blockquote><b>Например:</b><br>"),
+                Const("Добавь на фото счастливую семью<br>"),
+                Const("Убери людей с фона<br>"),
+                Const("Отзеркаль машину по горизонтали</blockquote>"),
+                Case(
+                    {
+                        True: Const("<br><br>🔄 <b>Распознаю голосовое сообщение...</b>"),
+                        False: Const(""),
+                    },
+                    selector="voice_transcribe"
+                ),
+                Case(
+                    {
+                        True: Const("<br><br>❌ <b>Ошибка:</b> Описание не может быть пустым"),
+                        False: Const(""),
+                    },
+                    selector="has_void_edit_image_prompt"
+                ),
+                Case(
+                    {
+                        True: Const("<br><br>📏 <b>Слишком короткое описание</b><br><i>Минимум 10 символов</i>"),
+                        False: Const(""),
+                    },
+                    selector="has_small_edit_image_prompt"
+                ),
+                Case(
+                    {
+                        True: Const("<br><br>📏 <b>Слишком длинное описание</b><br><i>Максимум 1000 символов</i>"),
+                        False: Const(""),
+                    },
+                    selector="has_big_edit_image_prompt"
+                ),
+                Case(
+                    {
+                        True: Const(
+                            "<br><br>🎤 <b>Неверный формат</b><br><i>Отправьте текст, голосовое сообщение или аудиофайл</i>"),
+                        False: Const(""),
+                    },
+                    selector="has_invalid_content_type"
+                ),
+                sep="",
+            ),
+
+            MessageInput(
+                func=self.generate_publication_service.handle_edit_image_prompt_input,
+            ),
+
+            Button(
+                Const("◀️ Назад"),
+                id="back_to_image_menu",
+                on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.image_menu, ShowMode.EDIT),
+            ),
+
+            state=model.GeneratePublicationStates.edit_image_input,
             getter=self.generate_publication_getter.get_image_menu_data,
             parse_mode=SULGUK_PARSE_MODE,
         )
