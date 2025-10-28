@@ -128,11 +128,11 @@ class DialogDataHelper:
         return {
             "is_applying_edits": dialog_manager.dialog_data.get("is_applying_edits", False),
             "voice_transcribe": dialog_manager.dialog_data.get("voice_transcribe", False),
-            "has_image_edit_prompt": bool(dialog_manager.dialog_data.get("edit_image_prompt")),
+            "has_edit_image_prompt": bool(dialog_manager.dialog_data.get("edit_image_prompt")),
             "edit_image_prompt": dialog_manager.dialog_data.get("edit_image_prompt", ""),
             # Error flags
-            "has_small_edit_prompt": dialog_manager.dialog_data.get("has_small_edit_prompt", False),
-            "has_big_edit_prompt": dialog_manager.dialog_data.get("has_big_edit_prompt", False),
+            "has_small_edit_image_prompt": dialog_manager.dialog_data.get("has_small_edit_image_prompt", False),
+            "has_big_edit_image_prompt": dialog_manager.dialog_data.get("has_big_edit_image_prompt", False),
             "has_invalid_content_type": dialog_manager.dialog_data.get("has_invalid_content_type", False),
         }
 
