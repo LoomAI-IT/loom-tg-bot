@@ -34,6 +34,18 @@ class IModerationPublicationDialog(Protocol):
     def get_upload_image_window(self) -> Window: pass
 
     @abstractmethod
+    def get_edit_image_input_window(self) -> Window: pass
+
+    @abstractmethod
+    def get_image_generation_mode_select_window(self) -> Window: pass
+
+    @abstractmethod
+    def get_reference_generation_image_window(self) -> Window: pass
+
+    @abstractmethod
+    def get_reference_generation_image_upload_window(self) -> Window: pass
+
+    @abstractmethod
     def get_new_image_confirm_window(self) -> Window: pass
 
     @abstractmethod
@@ -350,6 +362,55 @@ class IModerationPublicationService(Protocol):
             dialog_manager: DialogManager
     ) -> None: pass
 
+    # Reference generation handlers
+    @abstractmethod
+    async def handle_auto_generate_image(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
+    @abstractmethod
+    async def handle_reference_generation_image_prompt_input(
+            self,
+            message: Message,
+            widget: MessageInput,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
+    @abstractmethod
+    async def handle_reference_generation_image_upload(
+            self,
+            message: Message,
+            widget: MessageInput,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
+    @abstractmethod
+    async def handle_use_current_image_as_reference(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
+    @abstractmethod
+    async def handle_remove_reference_generation_image(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
+    @abstractmethod
+    async def handle_back_from_custom_generation(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
 
 class IModerationPublicationGetter(Protocol):
     @abstractmethod
@@ -427,6 +488,31 @@ class IModerationPublicationGetter(Protocol):
 
     @abstractmethod
     async def get_combine_images_prompt_data(
+            self,
+            dialog_manager: DialogManager,
+    ) -> dict: pass
+
+    # Reference generation getters
+    @abstractmethod
+    async def get_edit_image_input_data(
+            self,
+            dialog_manager: DialogManager,
+    ) -> dict: pass
+
+    @abstractmethod
+    async def get_image_generation_mode_select_data(
+            self,
+            dialog_manager: DialogManager,
+    ) -> dict: pass
+
+    @abstractmethod
+    async def get_reference_generation_image_data(
+            self,
+            dialog_manager: DialogManager,
+    ) -> dict: pass
+
+    @abstractmethod
+    async def get_reference_generation_image_upload_data(
             self,
             dialog_manager: DialogManager,
     ) -> dict: pass
