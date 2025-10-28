@@ -325,6 +325,7 @@ class ImageManager:
             combine_images_list: list[str],
             prompt: str,
             chat_id: int,
+            organization_id: int,
             loom_content_client
     ) -> list[str]:
         from pkg.tg_action_wrapper import tg_action
@@ -340,7 +341,6 @@ class ImageManager:
 
         working_pub = self.dialog_data_helper.get_working_publication(dialog_manager)
         category_id = working_pub["category_id"]
-        organization_id = working_pub["organization_id"]
 
         async with tg_action(self.bot, chat_id, "upload_photo"):
             combined_images_url = await loom_content_client.combine_images(
@@ -359,6 +359,7 @@ class ImageManager:
             combine_images_list: list[str],
             prompt: str,
             chat_id: int,
+            organization_id: int,
             loom_content_client
     ) -> str | None:
         # Сохраняем backup если его еще нет
@@ -372,6 +373,7 @@ class ImageManager:
             combine_images_list=combine_images_list,
             prompt=prompt,
             chat_id=chat_id,
+            organization_id=organization_id,
             loom_content_client=loom_content_client
         )
 

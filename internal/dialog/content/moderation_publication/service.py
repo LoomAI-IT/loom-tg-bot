@@ -830,7 +830,9 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             combine_images_list=combine_images_list,
             prompt=prompt or "Объедини эти фотографии в одну композицию",
             chat_id=message.chat.id,
-            loom_content_client=self.loom_content_client
+            organization_id=state.organization_id,
+            loom_content_client=self.loom_content_client,
+
         )
 
         self.dialog_data_helper.set_is_combining_images(dialog_manager, False)
@@ -848,6 +850,8 @@ class ModerationPublicationService(interface.IModerationPublicationService):
     ) -> None:
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
 
+        state = await self.state_manager.get_state(dialog_manager=dialog_manager)
+
         combine_images_list = self.dialog_data_helper.get_combine_images_list(dialog_manager)
 
         if len(combine_images_list) < 2:
@@ -863,6 +867,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             combine_images_list=combine_images_list,
             prompt="Объедини эти фотографии в одну композицию",
             chat_id=callback.message.chat.id,
+            organization_id=state.organization_id,
             loom_content_client=self.loom_content_client
         )
 
