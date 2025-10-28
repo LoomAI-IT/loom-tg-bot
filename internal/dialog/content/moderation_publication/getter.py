@@ -246,8 +246,7 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        working_pub = self.dialog_data_helper.get_working_publication_safe(dialog_manager)
-        preview_image_media = self.image_manager.get_edit_preview_image_media(working_pub)
+        preview_image_media = self.image_manager.get_image_menu_media(dialog_manager)
 
         return {
             "preview_image_media": preview_image_media,
@@ -346,4 +345,89 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
             "combine_current_index": combine_current_index + 1,
             "combine_current_image_media": combine_current_image_media,
             **flags_data
+        }
+
+    # ============= ГЕТТЕРЫ ДЛЯ ГЕНЕРАЦИИ С РЕФЕРЕНСАМИ =============
+
+    @auto_log()
+    @traced_method()
+    async def get_edit_image_input_data(
+            self,
+            dialog_manager: DialogManager,
+            **kwargs
+    ) -> dict:
+        return self.dialog_data_helper.get_image_menu_window_data(dialog_manager)
+
+    @auto_log()
+    @traced_method()
+    async def get_image_generation_mode_select_data(
+            self,
+            dialog_manager: DialogManager,
+            **kwargs
+    ) -> dict:
+        working_pub = self.dialog_data_helper.get_working_publication_safe(dialog_manager)
+        has_image = working_pub.get("has_image", False)
+        return {
+            "has_image": has_image,
+        }
+
+    @auto_log()
+    @traced_method()
+    async def get_reference_generation_image_data(
+            self,
+            dialog_manager: DialogManager,
+            **kwargs
+    ) -> dict:
+        from aiogram.types import ContentType
+        from aiogram_dialog.api.entities import MediaAttachment, MediaId
+
+        reference_generation_image_file_id = self.dialog_data_helper.get_reference_generation_image_file_id(
+            dialog_manager)
+        reference_generation_image_media = None
+
+        if reference_generation_image_file_id:
+            reference_generation_image_media = MediaAttachment(
+                file_id=MediaId(reference_generation_image_file_id),
+                type=ContentType.PHOTO
+            )
+        working_pub = self.dialog_data_helper.get_working_publication_safe(dialog_manager)
+        has_image = working_pub.get("has_image", False)
+
+        return {
+            "has_reference_generation_image": self.dialog_data_helper.get_has_reference_generation_image(
+                dialog_manager),
+            "reference_generation_image_media": reference_generation_image_media,
+            "has_image": has_image,
+            "is_generating_image": dialog_manager.dialog_data.get("is_generating_image", False),
+            "voice_transcribe": dialog_manager.dialog_data.get("voice_transcribe", False),
+            # Error flags
+            "has_void_reference_generation_image_prompt": dialog_manager.dialog_data.get(
+                "has_void_reference_generation_image_prompt",
+                False),
+            "has_small_reference_generation_image_prompt": dialog_manager.dialog_data.get(
+                "has_small_reference_generation_image_prompt",
+                False),
+            "has_big_reference_generation_image_prompt": dialog_manager.dialog_data.get(
+                "has_big_reference_generation_image_prompt",
+                False),
+            "has_invalid_content_type": dialog_manager.dialog_data.get("has_invalid_content_type", False),
+            "has_invalid_reference_generation_image_type": dialog_manager.dialog_data.get(
+                "has_invalid_reference_generation_image_type", False),
+            "has_big_reference_generation_image_size": dialog_manager.dialog_data.get(
+                "has_big_reference_generation_image_size", False),
+        }
+
+    @auto_log()
+    @traced_method()
+    async def get_reference_generation_image_upload_data(
+            self,
+            dialog_manager: DialogManager,
+            **kwargs
+    ) -> dict:
+
+        return {
+            "has_invalid_reference_generation_image_type": dialog_manager.dialog_data.get(
+                "has_invalid_reference_generation_image_type", False),
+            "has_big_reference_generation_image_size": dialog_manager.dialog_data.get(
+                "has_big_reference_generation_image_size", False),
         }

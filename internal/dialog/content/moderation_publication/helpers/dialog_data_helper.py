@@ -391,8 +391,8 @@ class DialogDataHelper:
         return dialog_manager.dialog_data.get("combine_image_prompt", "")
 
     @staticmethod
-    def get_combine_result_url(dialog_manager: DialogManager) -> str | None:
-        return dialog_manager.dialog_data.get("combine_result_url")
+    def get_combined_image_result_url(dialog_manager: DialogManager) -> str | None:
+        return dialog_manager.dialog_data.get("combined_image_result_url")
 
     @staticmethod
     def set_combine_images_list(dialog_manager: DialogManager, images: list[str], index: int = 0) -> None:
@@ -436,7 +436,7 @@ class DialogDataHelper:
         dialog_manager.dialog_data.pop("combine_images_list", None)
         dialog_manager.dialog_data.pop("combine_current_index", None)
         dialog_manager.dialog_data.pop("combine_image_prompt", None)
-        dialog_manager.dialog_data.pop("combine_result_url", None)
+        dialog_manager.dialog_data.pop("combined_image_result_url", None)
 
     # ============= МЕТОДЫ ДЛЯ NEW IMAGE CONFIRM =============
 
@@ -499,7 +499,7 @@ class DialogDataHelper:
     @staticmethod
     def clear_temporary_image_data(dialog_manager: DialogManager) -> None:
         dialog_manager.dialog_data.pop("generated_images_url", None)
-        dialog_manager.dialog_data.pop("combine_result_url", None)
+        dialog_manager.dialog_data.pop("combined_image_result_url", None)
         dialog_manager.dialog_data.pop("old_generated_image_backup", None)
         dialog_manager.dialog_data.pop("old_image_backup", None)
         dialog_manager.dialog_data.pop("edit_image_prompt", None)
@@ -507,3 +507,46 @@ class DialogDataHelper:
         dialog_manager.dialog_data.pop("combine_current_index", None)
         dialog_manager.dialog_data.pop("combine_image_prompt", None)
         dialog_manager.dialog_data.pop("showing_old_image", None)
+
+    # ============= МЕТОДЫ ДЛЯ РЕФЕРЕНСНОЙ ГЕНЕРАЦИИ =============
+
+    @staticmethod
+    def get_reference_generation_image_file_id(dialog_manager: DialogManager) -> str | None:
+        return dialog_manager.dialog_data.get("reference_generation_image_file_id")
+
+    @staticmethod
+    def set_reference_generation_image_file_id(dialog_manager: DialogManager, file_id: str) -> None:
+        dialog_manager.dialog_data["reference_generation_image_file_id"] = file_id
+
+    @staticmethod
+    def get_has_reference_generation_image(dialog_manager: DialogManager) -> bool:
+        return bool(dialog_manager.dialog_data.get("reference_generation_image_file_id"))
+
+    @staticmethod
+    def get_reference_generation_image_prompt(dialog_manager: DialogManager) -> str:
+        return dialog_manager.dialog_data.get("reference_generation_image_prompt", "")
+
+    @staticmethod
+    def set_reference_generation_image_prompt(dialog_manager: DialogManager, prompt: str) -> None:
+        dialog_manager.dialog_data["reference_generation_image_prompt"] = prompt
+
+    @staticmethod
+    def remove_reference_generation_image(dialog_manager: DialogManager) -> None:
+        dialog_manager.dialog_data.pop("reference_generation_image_file_id", None)
+
+    @staticmethod
+    def clear_reference_generation_image_data(dialog_manager: DialogManager) -> None:
+        dialog_manager.dialog_data.pop("reference_generation_image_file_id", None)
+        dialog_manager.dialog_data.pop("reference_generation_image_prompt", None)
+
+    @staticmethod
+    def clear_reference_generation_image_errors(dialog_manager: DialogManager) -> None:
+        dialog_manager.dialog_data.pop("has_invalid_reference_generation_image_type", None)
+        dialog_manager.dialog_data.pop("has_big_reference_generation_image_size", None)
+
+    @staticmethod
+    def clear_reference_generation_image_prompt_errors(dialog_manager: DialogManager) -> None:
+        dialog_manager.dialog_data.pop("has_void_reference_generation_image_prompt", None)
+        dialog_manager.dialog_data.pop("has_small_reference_generation_image_prompt", None)
+        dialog_manager.dialog_data.pop("has_big_reference_generation_image_prompt", None)
+        dialog_manager.dialog_data.pop("has_invalid_content_type", None)

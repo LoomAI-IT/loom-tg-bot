@@ -10,7 +10,13 @@ class ModerationPublicationStates(StatesGroup):
     edit_image_menu = State()
 
     edit_text = State()
+    edit_image_input = State()
     upload_image = State()
+
+    # Состояния генерации изображений
+    image_generation_mode_select = State()
+    reference_image_generation = State()
+    reference_image_upload = State()
 
     # Состояния подтверждения нового изображения
     new_image_confirm = State()

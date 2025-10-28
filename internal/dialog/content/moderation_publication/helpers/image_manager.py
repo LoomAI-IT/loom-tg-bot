@@ -129,6 +129,11 @@ class ImageManager:
 
         return None
 
+    def get_image_menu_media(self, dialog_manager: DialogManager) -> MediaAttachment | None:
+        """Получение медиа для меню редактирования изображения"""
+        working_pub = self.dialog_data_helper.get_working_publication_safe(dialog_manager)
+        return self.get_edit_preview_image_media(working_pub)
+
     def build_media_from_url(self, url: str) -> MediaAttachment:
         return MediaAttachment(
             url=url,
@@ -357,8 +362,8 @@ class ImageManager:
 
     def should_return_to_new_image_confirm(self, dialog_manager: DialogManager) -> bool:
         generated_images_url = self.dialog_data_helper.get_generated_images_url(dialog_manager)
-        combine_result_url = self.dialog_data_helper.get_combine_result_url(dialog_manager)
-        return generated_images_url is not None or combine_result_url is not None
+        combined_image_result_url = self.dialog_data_helper.get_combined_image_result_url(dialog_manager)
+        return generated_images_url is not None or combined_image_result_url is not None
 
     async def prepare_combine_image_from_new_image(
             self,
@@ -366,13 +371,13 @@ class ImageManager:
             chat_id: int
     ) -> list[str]:
         generated_images_url = self.dialog_data_helper.get_generated_images_url(dialog_manager)
-        combine_result_url = self.dialog_data_helper.get_combine_result_url(dialog_manager)
+        combined_image_result_url = self.dialog_data_helper.get_combined_image_result_url(dialog_manager)
 
         image_url = None
         if generated_images_url and len(generated_images_url) > 0:
             image_url = generated_images_url[0]
-        elif combine_result_url:
-            image_url = combine_result_url
+        elif combined_image_result_url:
+            image_url = combined_image_result_url
 
         combine_images_list = []
         if image_url:
@@ -396,10 +401,10 @@ class ImageManager:
                     "index": 0
                 }
                 self.dialog_data_helper.set_old_generated_image_backup(dialog_manager, backup_dict)
-            elif combine_result_url:
+            elif combined_image_result_url:
                 backup_dict = {
                     "type": "url",
-                    "value": combine_result_url
+                    "value": combined_image_result_url
                 }
                 self.dialog_data_helper.set_old_image_backup(dialog_manager, backup_dict)
 
@@ -436,9 +441,48 @@ class ImageManager:
 
         return None
 
+    def create_new_image_backup_dict(self, dialog_manager: DialogManager) -> dict | None:
+        """Создает backup из новых сгенерированных изображений в new_image_confirm"""
+        generated_images_url = self.dialog_data_helper.get_generated_images_url(dialog_manager)
+        combine_result_url = self.dialog_data_helper.get_combine_result_url(dialog_manager)
+
+        if generated_images_url:
+            return {
+                "type": "url",
+                "value": generated_images_url,
+                "index": 0
+            }
+        elif combine_result_url:
+            return {
+                "type": "url",
+                "value": combine_result_url
+            }
+
+        return None
+
     def backup_current_image(self, dialog_manager: DialogManager) -> None:
-        old_image_backup = self.create_image_backup_dict(dialog_manager)
-        self.dialog_data_helper.set_old_generated_image_backup(dialog_manager, old_image_backup)
+        """
+        Создает два типа backup:
+        1. old_image_backup - создается только один раз для восстановления при "Отклонить"
+        2. old_generated_image_backup - обновляется при каждой генерации для показа "старой" картинки
+        """
+        # Создаем old_image_backup только если его еще нет (первая генерация)
+        old_backup = self.dialog_data_helper.get_old_image_backup(dialog_manager)
+        if not old_backup:
+            # Это первая генерация - сохраняем текущую картинку публикации
+            old_backup = self.create_image_backup_dict(dialog_manager=dialog_manager)
+            self.dialog_data_helper.set_old_image_backup(dialog_manager, old_backup)
+
+        # Создаем old_generated_image_backup - сохраняем текущее состояние new_image_confirm
+        # Если там есть картинка (это не первая генерация), сохраняем её
+        # Если там пусто (первая генерация), сохраняем текущую картинку публикации
+        new_image_backup = self.create_new_image_backup_dict(dialog_manager)
+        if new_image_backup:
+            self.dialog_data_helper.set_old_generated_image_backup(dialog_manager, new_image_backup)
+        else:
+            # Первая генерация - используем текущую картинку публикации
+            current_backup = self.create_image_backup_dict(dialog_manager=dialog_manager)
+            self.dialog_data_helper.set_old_generated_image_backup(dialog_manager, current_backup)
 
     def restore_image_from_backup(
             self,
@@ -477,7 +521,7 @@ class ImageManager:
             dialog_manager: DialogManager
     ) -> tuple[MediaAttachment | None, MediaAttachment | None, bool]:
         generated_images_url = self.dialog_data_helper.get_generated_images_url(dialog_manager)
-        combine_result_url = self.dialog_data_helper.get_combine_result_url(dialog_manager)
+        combined_image_result_url = self.dialog_data_helper.get_combined_image_result_url(dialog_manager)
 
         old_generated_image_backup = self.dialog_data_helper.get_old_generated_image_backup(dialog_manager)
         old_image_backup = self.dialog_data_helper.get_old_image_backup(dialog_manager)
@@ -493,9 +537,9 @@ class ImageManager:
                 url=generated_images_url[0],
                 type=ContentType.PHOTO
             )
-        elif combine_result_url:
+        elif combined_image_result_url:
             new_image_media = MediaAttachment(
-                url=combine_result_url,
+                url=combined_image_result_url,
                 type=ContentType.PHOTO
             )
 
@@ -533,13 +577,13 @@ class ImageManager:
             prompt: str,
     ) -> list[str]:
         generated_images_url = self.dialog_data_helper.get_generated_images_url(dialog_manager)
-        combine_result_url = self.dialog_data_helper.get_combine_result_url(dialog_manager)
+        combined_image_result_url = self.dialog_data_helper.get_combined_image_result_url(dialog_manager)
 
         image_url = None
         if generated_images_url and len(generated_images_url) > 0:
             image_url = generated_images_url[0]
-        elif combine_result_url:
-            image_url = combine_result_url
+        elif combined_image_result_url:
+            image_url = combined_image_result_url
 
         current_image_content = None
         current_image_filename = None
@@ -565,15 +609,15 @@ class ImageManager:
         if generated_images_url:
             self.dialog_data_helper.set_generated_images_url(dialog_manager, images_url)
         else:
-            combine_result_url = self.dialog_data_helper.get_combine_result_url(dialog_manager)
-            if combine_result_url:
+            combined_image_result_url = self.dialog_data_helper.get_combined_image_result_url(dialog_manager)
+            if combined_image_result_url:
                 new_url = images_url[0] if images_url else None
                 self.dialog_data_helper.set_combined_image_result_url(dialog_manager, new_url)
 
     def confirm_new_image(self, dialog_manager: DialogManager) -> None:
         """Подтверждение нового изображения"""
         generated_images_url = self.dialog_data_helper.get_generated_images_url(dialog_manager)
-        combine_result_url = self.dialog_data_helper.get_combine_result_url(dialog_manager)
+        combined_image_result_url = self.dialog_data_helper.get_combined_image_result_url(dialog_manager)
 
         if generated_images_url:
             self.dialog_data_helper.set_working_generated_images(dialog_manager, generated_images_url)
@@ -585,8 +629,8 @@ class ImageManager:
                 "is_custom_image",
                 "image_url"
             )
-        elif combine_result_url:
-            self.dialog_data_helper.set_working_generated_images(dialog_manager, [combine_result_url])
+        elif combined_image_result_url:
+            self.dialog_data_helper.set_working_generated_images(dialog_manager, [combined_image_result_url])
             self.dialog_data_helper.set_working_image_has_image(dialog_manager, True)
             self.dialog_data_helper.set_working_image_index(dialog_manager, 0)
             self.dialog_data_helper.remove_working_image_fields(
@@ -615,3 +659,73 @@ class ImageManager:
             show_old: bool
     ) -> None:
         self.dialog_data_helper.set_showing_old_image(dialog_manager, show_old)
+
+    # ============= МЕТОДЫ ДЛЯ ГЕНЕРАЦИИ С РЕФЕРЕНСАМИ =============
+
+    async def generate_image_with_reference(
+            self,
+            dialog_manager: DialogManager,
+            prompt: str,
+            organization_id: int,
+    ) -> list[str]:
+        """Генерация изображения с использованием референсного изображения"""
+        self.backup_current_image(dialog_manager)
+
+        working_pub = self.dialog_data_helper.get_working_publication(dialog_manager)
+        category_id = working_pub["category_id"]
+        publication_text = working_pub["text"]
+
+        reference_generation_image_file_id = self.dialog_data_helper.get_reference_generation_image_file_id(
+            dialog_manager
+        )
+
+        image_content = None
+        image_filename = None
+        if reference_generation_image_file_id:
+            image_io = await self.bot.download(reference_generation_image_file_id)
+            image_content = image_io.read()
+            image_filename = f"{reference_generation_image_file_id}.jpg"
+
+        images_url = await self.loom_content_client.generate_publication_image(
+            category_id=category_id,
+            publication_text=publication_text,
+            text_reference="",
+            prompt=prompt,
+            image_content=image_content,
+            image_filename=image_filename,
+        )
+
+        return images_url
+
+    async def use_current_image_as_reference(
+            self,
+            dialog_manager: DialogManager,
+            chat_id: int
+    ) -> str | None:
+        """
+        Использует текущее изображение публикации в качестве референса для генерации.
+        Возвращает file_id изображения или None в случае ошибки.
+        """
+        working_pub = self.dialog_data_helper.get_working_publication_safe(dialog_manager)
+        custom_image_file_id = working_pub.get("custom_image_file_id")
+
+        if custom_image_file_id:
+            # Если есть кастомное изображение, используем его
+            return custom_image_file_id
+        else:
+            # Если изображение сгенерированное, конвертируем URL в file_id
+            publication_images_url = working_pub.get("generated_images_url")
+            if publication_images_url:
+                current_index = working_pub.get("current_image_index", 0)
+                if current_index < len(publication_images_url):
+                    current_url = publication_images_url[current_index]
+
+                    # Загружаем изображение и получаем file_id
+                    file_id = await self.download_and_get_file_id(
+                        image_url=current_url,
+                        chat_id=chat_id
+                    )
+
+                    return file_id
+
+        return None

@@ -870,3 +870,165 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         self.image_manager.reject_new_image(dialog_manager=dialog_manager)
 
         await dialog_manager.switch_to(state=model.ModerationPublicationStates.edit_image_menu)
+
+    # ============= ОБРАБОТЧИКИ ДЛЯ ГЕНЕРАЦИИ С РЕФЕРЕНСАМИ =============
+
+    @auto_log()
+    @traced_method()
+    async def handle_auto_generate_image(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
+
+        await callback.answer()
+        await callback.message.edit_text(
+            "Генерирую изображение, это может занять время... Не совершайте никаких действий",
+            reply_markup=None
+        )
+
+        async with tg_action(self.bot, callback.message.chat.id, "upload_photo"):
+            images_url = await self.publication_manager.generate_image(
+                dialog_manager=dialog_manager
+            )
+
+        self.dialog_data_helper.set_generated_images_url(dialog_manager, images_url)
+
+        await dialog_manager.switch_to(state=model.ModerationPublicationStates.new_image_confirm)
+
+    @auto_log()
+    @traced_method()
+    async def handle_reference_generation_image_prompt_input(
+            self,
+            message: Message,
+            widget: MessageInput,
+            dialog_manager: DialogManager
+    ) -> None:
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
+        await message.delete()
+
+        self.dialog_data_helper.clear_reference_generation_image_prompt_errors(dialog_manager)
+
+        state = await self.state_manager.get_state(dialog_manager=dialog_manager)
+
+        if not self.validation.validate_content_type(message=message, dialog_manager=dialog_manager):
+            return
+
+        reference_generation_image_prompt = await self.message_extractor.process_voice_or_text_input(
+            message=message,
+            dialog_manager=dialog_manager,
+            organization_id=state.organization_id
+        )
+
+        if not self.validation.validate_edit_image_prompt(
+                prompt=reference_generation_image_prompt,
+                dialog_manager=dialog_manager
+        ):
+            return
+
+        self.dialog_data_helper.set_reference_generation_image_prompt(
+            dialog_manager,
+            reference_generation_image_prompt
+        )
+        self.dialog_data_helper.set_is_generating_image(dialog_manager, True)
+        await dialog_manager.show()
+
+        async with tg_action(self.bot, message.chat.id, "upload_photo"):
+            images_url = await self.image_manager.generate_image_with_reference(
+                dialog_manager=dialog_manager,
+                prompt=reference_generation_image_prompt,
+                organization_id=state.organization_id
+            )
+
+        self.dialog_data_helper.set_is_generating_image(dialog_manager, False)
+        self.dialog_data_helper.set_generated_images_url(dialog_manager, images_url)
+        self.dialog_data_helper.clear_reference_generation_image_data(dialog_manager)
+
+        await dialog_manager.switch_to(state=model.ModerationPublicationStates.new_image_confirm)
+
+    @auto_log()
+    @traced_method()
+    async def handle_reference_generation_image_upload(
+            self,
+            message: Message,
+            widget: MessageInput,
+            dialog_manager: DialogManager
+    ) -> None:
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
+        await message.delete()
+
+        self.dialog_data_helper.clear_reference_generation_image_errors(dialog_manager)
+
+        if not self.validation.validate_content_type(
+                message=message,
+                dialog_manager=dialog_manager,
+                allowed_types=[ContentType.PHOTO]
+        ):
+            self.dialog_data_helper.set_validation_flag(
+                dialog_manager,
+                "has_invalid_reference_generation_image_type"
+            )
+            return
+
+        photo = message.photo[-1]
+        if not self.validation.validate_image_size(photo, dialog_manager):
+            self.dialog_data_helper.set_validation_flag(
+                dialog_manager,
+                "has_big_reference_generation_image_size"
+            )
+            return
+
+        self.dialog_data_helper.set_reference_generation_image_file_id(dialog_manager, photo.file_id)
+
+        await dialog_manager.switch_to(state=model.ModerationPublicationStates.reference_image_generation)
+
+    @auto_log()
+    @traced_method()
+    async def handle_use_current_image_as_reference(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
+
+        file_id = await self.image_manager.use_current_image_as_reference(
+            dialog_manager=dialog_manager,
+            chat_id=callback.message.chat.id
+        )
+
+        if file_id:
+            self.dialog_data_helper.set_reference_generation_image_file_id(dialog_manager, file_id)
+            await callback.answer("Текущее изображение установлено как референс")
+            await dialog_manager.switch_to(state=model.ModerationPublicationStates.reference_image_generation)
+        else:
+            await callback.answer("Ошибка при загрузке изображения", show_alert=True)
+
+    @auto_log()
+    @traced_method()
+    async def handle_remove_reference_generation_image(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
+        self.dialog_data_helper.remove_reference_generation_image(dialog_manager)
+        await callback.answer("Изображение удалено")
+
+    @auto_log()
+    @traced_method()
+    async def handle_back_from_custom_generation(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
+
+        self.dialog_data_helper.clear_reference_generation_image_data(dialog_manager)
+
+        await callback.answer()
+        await dialog_manager.switch_to(state=model.ModerationPublicationStates.image_generation_mode_select)
