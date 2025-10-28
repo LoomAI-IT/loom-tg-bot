@@ -218,17 +218,11 @@ class DialogDataHelper:
     def get_category_name(self, dialog_manager: DialogManager) -> str:
         return dialog_manager.dialog_data.get("category_name", "")
 
-    def get_category_hint(self, dialog_manager: DialogManager) -> str:
-        return dialog_manager.dialog_data.get("category_hint", "")
-
     def get_input_text(self, dialog_manager: DialogManager) -> str:
         return dialog_manager.dialog_data.get("input_text", "")
 
     def get_publication_text(self, dialog_manager: DialogManager) -> str:
         return dialog_manager.dialog_data.get("publication_text", "")
-
-    def get_has_input_text(self, dialog_manager: DialogManager) -> bool:
-        return dialog_manager.dialog_data.get("has_input_text", False)
 
     # Данные об изображениях
     def get_has_image(self, dialog_manager: DialogManager) -> bool:
@@ -259,31 +253,6 @@ class DialogDataHelper:
     def get_combine_current_index(self, dialog_manager: DialogManager) -> int:
         return dialog_manager.dialog_data.get("combine_current_index", 0)
 
-    def get_combine_prompt(self, dialog_manager: DialogManager) -> str:
-        return dialog_manager.dialog_data.get("combine_prompt", "")
-
-    # Промпты и флаги
-    def get_regenerate_prompt(self, dialog_manager: DialogManager) -> str:
-        return dialog_manager.dialog_data.get("regenerate_prompt", "")
-
-    def get_image_prompt(self, dialog_manager: DialogManager) -> str:
-        return dialog_manager.dialog_data.get("image_prompt", "")
-
-    def get_image_edit_prompt(self, dialog_manager: DialogManager) -> str:
-        return dialog_manager.dialog_data.get("image_edit_prompt", "")
-
-    def get_is_regenerating_text(self, dialog_manager: DialogManager) -> bool:
-        return dialog_manager.dialog_data.get("is_regenerating_text", False)
-
-    def get_is_generating_image(self, dialog_manager: DialogManager) -> bool:
-        return dialog_manager.dialog_data.get("is_generating_image", False)
-
-    def get_is_combining_images(self, dialog_manager: DialogManager) -> bool:
-        return dialog_manager.dialog_data.get("is_combining_images", False)
-
-    def get_is_applying_edits(self, dialog_manager: DialogManager) -> bool:
-        return dialog_manager.dialog_data.get("is_applying_edits", False)
-
     # Резервные копии
     def get_old_image_backup(self, dialog_manager: DialogManager) -> dict | None:
         return dialog_manager.dialog_data.get("old_image_backup")
@@ -297,9 +266,6 @@ class DialogDataHelper:
     # Соцсети и публикация
     def get_selected_social_networks(self, dialog_manager: DialogManager) -> dict:
         return dialog_manager.dialog_data.get("selected_social_networks", {})
-
-    def get_post_links(self, dialog_manager: DialogManager) -> dict:
-        return dialog_manager.dialog_data.get("post_links", {})
 
     def get_expected_length(self, dialog_manager: DialogManager) -> int | None:
         return dialog_manager.dialog_data.get("expected_length")
@@ -317,9 +283,6 @@ class DialogDataHelper:
         dialog_manager.dialog_data["category_id"] = category_id
         dialog_manager.dialog_data["category_name"] = category_name
         dialog_manager.dialog_data["category_hint"] = category_hint
-
-    def set_category_id(self, dialog_manager: DialogManager, category_id: int) -> None:
-        dialog_manager.dialog_data["category_id"] = category_id
 
     # Текст и промпты
     def set_input_text(self, dialog_manager: DialogManager, text: str, has_input: bool = True) -> None:
@@ -453,22 +416,6 @@ class DialogDataHelper:
             "combine_current_index",
             "combine_prompt",
             "showing_old_image"
-        )
-
-    def clear_category_data(self, dialog_manager: DialogManager) -> None:
-        """Очистка данных категории"""
-        self.clear(
-            dialog_manager,
-            "category_id",
-            "category_name",
-            "category_hint"
-        )
-
-    def clear_generated_image_data(self, dialog_manager: DialogManager) -> None:
-        """Очистка данных о сгенерированных изображениях"""
-        self.clear(
-            dialog_manager,
-            "generated_images_url"
         )
 
     def clear_combine_data(self, dialog_manager: DialogManager) -> None:
