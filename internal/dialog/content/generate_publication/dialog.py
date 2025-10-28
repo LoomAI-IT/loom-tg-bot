@@ -545,13 +545,24 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
     def get_edit_image_input_window(self) -> Window:
         return Window(
             Multi(
-                Const("🖇 <b>Внести правки в изображение</b><br><br>"),
-                Const("Отправь голосовое сообщение или напиши, какие правки нужно внести<br><br>"),
-                Const("ИИ изменит изображение на основе того, что ты ему напишешь.<br><br>"),
-                Const("<blockquote><b>Например:</b><br>"),
-                Const("Добавь на фото счастливую семью<br>"),
-                Const("Убери людей с фона<br>"),
-                Const("Отзеркаль машину по горизонтали</blockquote>"),
+                Case(
+                    {
+                        False: Multi(
+                            Const("🖇 <b>Внести правки в изображение</b><br><br>"),
+                            Const("Отправь голосовое сообщение или напиши, какие правки нужно внести<br><br>"),
+                            Const("ИИ изменит изображение на основе того, что ты ему напишешь.<br><br>"),
+                            Const("<blockquote><b>Например:</b><br>"),
+                            Const("Добавь на фото счастливую семью<br>"),
+                            Const("Убери людей с фона<br>"),
+                            Const("Отзеркаль машину по горизонтали</blockquote>"),
+                        ),
+                        True: Multi(
+                            Const("⏳ <b>Генерирую изображение...</b><br>"),
+                            Const("🕐 <i>Это может занять время. Пожалуйста, подождите.</i>"),
+                        ),
+                    },
+                    selector="is_generating_image"
+                ),
                 Case(
                     {
                         True: Const("<br><br>🔄 <b>Распознаю голосовое сообщение...</b>"),
@@ -599,6 +610,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                 Const("◀️ Назад"),
                 id="back_to_image_menu",
                 on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.image_menu, ShowMode.EDIT),
+                when=~F["is_generating_image"]
             ),
 
             state=model.GeneratePublicationStates.edit_image_input,
