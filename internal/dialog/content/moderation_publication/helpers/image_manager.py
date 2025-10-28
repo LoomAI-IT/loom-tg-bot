@@ -6,6 +6,7 @@ from aiogram.types import ContentType
 from aiogram_dialog.api.entities import MediaId, MediaAttachment
 from aiogram_dialog import DialogManager
 
+from internal import interface
 from internal.dialog.content.moderation_publication.helpers.dialog_data_helper import DialogDataHelper
 
 
@@ -14,10 +15,12 @@ class ImageManager:
             self,
             logger,
             bot: Bot,
+            loom_content_client: interface.ILoomContentClient,
             loom_domain: str
     ):
         self.logger = logger
         self.bot = bot
+        self.loom_content_client = loom_content_client
         self.loom_domain = loom_domain
 
         self.dialog_data_helper = DialogDataHelper()
@@ -316,23 +319,20 @@ class ImageManager:
     def init_combine_from_scratch(self, dialog_manager: DialogManager) -> None:
         self.dialog_data_helper.set_combine_images_list(dialog_manager, [], 0)
 
-    def start_combine_images(self, dialog_manager: DialogManager) -> bool:
-        return self.dialog_data_helper.get_working_image_has_image(dialog_manager)
-
-    async def combine_images_with_prompt(
+    async def combine_images(
             self,
             dialog_manager: DialogManager,
-            combine_images_list: list[str],
             prompt: str,
-            chat_id: int,
             organization_id: int,
-            loom_content_client
-    ) -> list[str]:
-        from pkg.tg_action_wrapper import tg_action
+    ) -> str | None:
+        old_image_backup = self.dialog_data_helper.get_old_image_backup(dialog_manager)
+        if not old_image_backup:
+            backup_dict = self.create_image_backup_dict(dialog_manager=dialog_manager)
+            self.dialog_data_helper.set_old_image_backup(dialog_manager, backup_dict)
 
         images_content = []
         images_filenames = []
-
+        combine_images_list = self.dialog_data_helper.get_combine_images_list(dialog_manager)
         for i, file_id in enumerate(combine_images_list):
             image_io = await self.bot.download(file_id)
             content = image_io.read()
@@ -342,39 +342,12 @@ class ImageManager:
         working_pub = self.dialog_data_helper.get_working_publication(dialog_manager)
         category_id = working_pub["category_id"]
 
-        async with tg_action(self.bot, chat_id, "upload_photo"):
-            combined_images_url = await loom_content_client.combine_images(
-                organization_id=organization_id,
-                category_id=category_id,
-                images_content=images_content,
-                images_filenames=images_filenames,
-                prompt=prompt,
-            )
-
-        return combined_images_url
-
-    async def process_combine_with_prompt(
-            self,
-            dialog_manager: DialogManager,
-            combine_images_list: list[str],
-            prompt: str,
-            chat_id: int,
-            organization_id: int,
-            loom_content_client
-    ) -> str | None:
-        # Сохраняем backup если его еще нет
-        old_image_backup = self.dialog_data_helper.get_old_image_backup(dialog_manager)
-        if not old_image_backup:
-            backup_dict = self.create_image_backup_dict(dialog_manager=dialog_manager)
-            self.dialog_data_helper.set_old_image_backup(dialog_manager, backup_dict)
-
-        combined_images_url = await self.combine_images_with_prompt(
-            dialog_manager=dialog_manager,
-            combine_images_list=combine_images_list,
-            prompt=prompt,
-            chat_id=chat_id,
+        combined_images_url = await self.loom_content_client.combine_images(
             organization_id=organization_id,
-            loom_content_client=loom_content_client
+            category_id=category_id,
+            images_content=images_content,
+            images_filenames=images_filenames,
+            prompt=prompt,
         )
 
         return combined_images_url[0] if combined_images_url else None
@@ -387,7 +360,7 @@ class ImageManager:
         combine_result_url = self.dialog_data_helper.get_combine_result_url(dialog_manager)
         return generated_images_url is not None or combine_result_url is not None
 
-    async def combine_from_new_image(
+    async def prepare_combine_image_from_new_image(
             self,
             dialog_manager: DialogManager,
             chat_id: int
@@ -558,11 +531,7 @@ class ImageManager:
             dialog_manager: DialogManager,
             organization_id: int,
             prompt: str,
-            chat_id: int,
-            loom_content_client
     ) -> list[str]:
-        from pkg.tg_action_wrapper import tg_action
-
         generated_images_url = self.dialog_data_helper.get_generated_images_url(dialog_manager)
         combine_result_url = self.dialog_data_helper.get_combine_result_url(dialog_manager)
 
@@ -578,17 +547,16 @@ class ImageManager:
             current_image_content, _ = await self.download_image(image_url)
             current_image_filename = "current_image.jpg"
 
-        async with tg_action(self.bot, chat_id, "upload_photo"):
-            images_url = await loom_content_client.edit_image(
-                organization_id=organization_id,
-                prompt=prompt,
-                image_content=current_image_content,
-                image_filename=current_image_filename,
-            )
+        images_url = await self.loom_content_client.edit_image(
+            organization_id=organization_id,
+            prompt=prompt,
+            image_content=current_image_content,
+            image_filename=current_image_filename,
+        )
 
         return images_url
 
-    def update_image_after_edit(
+    def update_image_after_edit_from_confirm_new_image(
             self,
             dialog_manager: DialogManager,
             images_url: list[str]
@@ -600,7 +568,7 @@ class ImageManager:
             combine_result_url = self.dialog_data_helper.get_combine_result_url(dialog_manager)
             if combine_result_url:
                 new_url = images_url[0] if images_url else None
-                self.dialog_data_helper.set_combine_result_url(dialog_manager, new_url)
+                self.dialog_data_helper.set_combined_image_result_url(dialog_manager, new_url)
 
     def confirm_new_image(self, dialog_manager: DialogManager) -> None:
         """Подтверждение нового изображения"""

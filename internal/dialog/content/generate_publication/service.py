@@ -325,7 +325,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
     @auto_log()
     @traced_method()
-    async def handle_edit_text(
+    async def handle_edit_publication_text(
             self,
             message: Message,
             widget: Any,

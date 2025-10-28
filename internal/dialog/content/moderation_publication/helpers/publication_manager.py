@@ -2,6 +2,7 @@ from aiogram import Bot
 from aiogram_dialog import DialogManager
 
 from internal import interface, model
+from internal.dialog.content.moderation_publication.helpers import StateRestorer, ImageManager
 from internal.dialog.content.moderation_publication.helpers.dialog_data_helper import DialogDataHelper
 
 
@@ -10,11 +11,15 @@ class PublicationManager:
             self,
             logger,
             bot: Bot,
-            loom_content_client: interface.ILoomContentClient
+            loom_content_client: interface.ILoomContentClient,
+            state_restorer: StateRestorer,
+            image_manager: ImageManager,
     ):
         self.logger = logger
         self.bot = bot
         self.loom_content_client = loom_content_client
+        self.state_restorer = state_restorer
+        self.image_manager = image_manager
         self.dialog_data_helper = DialogDataHelper()
 
     def has_changes(self, dialog_manager: DialogManager) -> bool:
@@ -170,69 +175,76 @@ class PublicationManager:
 
     async def reject_publication(
             self,
-            publication_id: int,
-            moderator_id: int,
-            comment: str
+            dialog_manager: DialogManager,
+            state: model.UserState,
     ) -> None:
+        _, publication_id, reject_comment = self.dialog_data_helper.get_reject_comment_data(dialog_manager)
         await self.loom_content_client.moderate_publication(
             publication_id=publication_id,
-            moderator_id=moderator_id,
+            moderator_id=state.account_id,
             moderation_status="rejected",
-            moderation_comment=comment,
+            moderation_comment=reject_comment,
         )
 
     async def regenerate_text(
             self,
-            category_id: int,
-            text: str,
-            prompt: str | None = None
+            dialog_manager: DialogManager,
     ) -> dict:
-        return await self.loom_content_client.regenerate_publication_text(
-            category_id=category_id,
-            publication_text=text,
-            prompt=prompt
+        self.state_restorer.save_state_before_modification(dialog_manager, include_image=False)
+
+        working_pub = self.dialog_data_helper.get_working_publication(dialog_manager)
+        return await self.loom_content_client.generate_publication_text(
+            category_id=working_pub["category_id"],
+            text_reference=working_pub["text"],
         )
 
     async def generate_image(
             self,
-            category_id: int,
-            publication_text: str,
-            image_content: bytes | None = None,
-            image_filename: str | None = None,
-            prompt: str | None = None
+            dialog_manager: DialogManager,
     ) -> list[str]:
+        self.state_restorer.save_state_before_modification(dialog_manager, include_image=True)
+
+        working_pub = self.dialog_data_helper.get_working_publication(dialog_manager)
+        current_image_content, current_image_filename = await self.image_manager.prepare_current_image_for_generation(
+            dialog_manager
+        )
+
         return await self.loom_content_client.generate_publication_image(
-            category_id=category_id,
-            publication_text=publication_text,
-            text_reference=publication_text[:200],
-            prompt=prompt,
-            image_content=image_content,
-            image_filename=image_filename,
+            category_id=working_pub["category_id"],
+            publication_text=working_pub["text"],
+            text_reference=working_pub["text"][:100],
+            image_content=current_image_content,
+            image_filename=current_image_filename,
         )
 
     async def edit_image(
             self,
+            dialog_manager: DialogManager,
             organization_id: int,
-            image_content: bytes | None = None,
-            image_filename: str | None = None,
-            prompt: str | None = None
+            edit_image_prompt: str
     ) -> list[str]:
+        self.state_restorer.save_state_before_modification(dialog_manager, include_image=True)
+        current_image_content, current_image_filename = await self.image_manager.prepare_current_image_for_generation(
+            dialog_manager
+        )
+
         return await self.loom_content_client.edit_image(
             organization_id=organization_id,
-            prompt=prompt,
-            image_content=image_content,
-            image_filename=image_filename,
+            prompt=edit_image_prompt,
+            image_content=current_image_content,
+            image_filename=current_image_filename,
         )
 
     async def compress_text(
             self,
-            category_id: int,
-            text: str,
-            expected_length: int
+            dialog_manager: DialogManager,
     ) -> dict:
+        working_pub = self.dialog_data_helper.get_working_publication(dialog_manager)
+        expected_length = self.dialog_data_helper.get_expected_length(dialog_manager)
+
         compress_prompt = f"Сожми текст до {expected_length} символов, сохраняя основной смысл и ключевые идеи"
         return await self.loom_content_client.regenerate_publication_text(
-            category_id=category_id,
-            publication_text=text,
+            category_id=working_pub["category_id"],
+            publication_text=working_pub["text"],
             prompt=compress_prompt
         )

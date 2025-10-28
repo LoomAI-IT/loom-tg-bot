@@ -135,7 +135,7 @@ class IGeneratePublicationService(Protocol):
     ) -> None: pass
 
     @abstractmethod
-    async def handle_edit_text(
+    async def handle_edit_publication_text(
             self,
             message: Message,
             widget: Any,

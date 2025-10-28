@@ -1,3 +1,4 @@
+from aiogram.enums import ContentType
 from aiogram.types import Message, PhotoSize
 from aiogram_dialog import DialogManager
 
@@ -78,7 +79,7 @@ class ValidationService:
             big_flag="has_big_regenerate_prompt"
         )
 
-    def validate_image_prompt(
+    def validate_edit_image_prompt(
             self,
             prompt: str,
             dialog_manager: DialogManager
@@ -88,9 +89,9 @@ class ValidationService:
             min_length=self.MIN_IMAGE_PROMPT_LENGTH,
             max_length=self.MAX_IMAGE_PROMPT_LENGTH,
             dialog_manager=dialog_manager,
-            void_flag="has_void_image_prompt",
-            small_flag="has_small_image_prompt",
-            big_flag="has_big_image_prompt"
+            void_flag="has_void_edit_image_prompt",
+            small_flag="has_small_edit_image_prompt",
+            big_flag="has_big_edit_image_prompt"
         )
 
     def validate_combine_image_prompt(
@@ -133,6 +134,20 @@ class ValidationService:
 
         return True
 
+    def validate_content_type(
+            self,
+            message: Message,
+            dialog_manager: DialogManager,
+            allowed_types: list = None
+    ) -> bool:
+        if allowed_types is None:
+            allowed_types = [ContentType.VOICE, ContentType.AUDIO, ContentType.TEXT]
+
+        if message.content_type not in allowed_types:
+            self.dialog_data_helper.set_validation_flag(dialog_manager, "has_invalid_content_type")
+            return False
+        return True
+
     def validate_message_content_type(
             self,
             message: Message,
@@ -141,7 +156,7 @@ class ValidationService:
     ) -> bool:
         if message.content_type not in allowed_types:
             self.logger.info(f"Неверный тип контента: {message.content_type}, ожидается {allowed_types}")
-            self.dialog_data_helper.set_validation_flag(dialog_manager, "has_invalid_content_type")
+
             return False
         return True
 

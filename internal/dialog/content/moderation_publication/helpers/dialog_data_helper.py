@@ -126,18 +126,18 @@ class DialogDataHelper:
         dialog_manager.dialog_data["is_generating_image"] = value
 
     @staticmethod
-    def set_regenerate_prompt(dialog_manager: DialogManager, prompt: str) -> None:
-        dialog_manager.dialog_data["regenerate_prompt"] = prompt
-        dialog_manager.dialog_data["has_regenerate_prompt"] = True
+    def set_regenerate_text_prompt(dialog_manager: DialogManager, prompt: str) -> None:
+        dialog_manager.dialog_data["regenerate_text_prompt"] = prompt
+        dialog_manager.dialog_data["has_regenerate_text_prompt"] = True
 
     @staticmethod
-    def clear_regenerate_prompt(dialog_manager: DialogManager) -> None:
-        dialog_manager.dialog_data.pop("regenerate_prompt", None)
-        dialog_manager.dialog_data["has_regenerate_prompt"] = False
+    def clear_regenerate_text_prompt(dialog_manager: DialogManager) -> None:
+        dialog_manager.dialog_data.pop("regenerate_text_prompt", None)
+        dialog_manager.dialog_data["has_regenerate_text_prompt"] = False
 
     @staticmethod
-    def set_image_prompt(dialog_manager: DialogManager, prompt: str) -> None:
-        dialog_manager.dialog_data["image_prompt"] = prompt
+    def set_edit_image_prompt(dialog_manager: DialogManager, prompt: str) -> None:
+        dialog_manager.dialog_data["edit_image_prompt"] = prompt
 
     @staticmethod
     def set_reject_comment(dialog_manager: DialogManager, comment: str) -> None:
@@ -170,10 +170,10 @@ class DialogDataHelper:
     def get_new_image_confirm_flags(dialog_manager: DialogManager) -> dict:
         return {
             "is_applying_edits": dialog_manager.dialog_data.get("is_applying_edits", False),
-            "has_image_edit_prompt": dialog_manager.dialog_data.get("has_image_edit_prompt", False),
+            "has_edit_image_prompt": dialog_manager.dialog_data.get("has_edit_image_prompt", False),
             "voice_transcribe": dialog_manager.dialog_data.get("voice_transcribe", False),
-            "has_small_edit_prompt": dialog_manager.dialog_data.get("has_small_edit_prompt", False),
-            "has_big_edit_prompt": dialog_manager.dialog_data.get("has_big_edit_prompt", False),
+            "has_small_edit_image_prompt": dialog_manager.dialog_data.get("has_small_edit_image_prompt", False),
+            "has_big_edit_image_prompt": dialog_manager.dialog_data.get("has_big_edit_image_prompt", False),
             "has_invalid_content_type": dialog_manager.dialog_data.get("has_invalid_content_type", False),
         }
 
@@ -215,30 +215,30 @@ class DialogDataHelper:
             "has_big_reject_comment"
         )
 
-    def clear_regenerate_prompt_error_flags(self, dialog_manager: DialogManager) -> None:
+    def clear_regenerate_text_prompt_error_flags(self, dialog_manager: DialogManager) -> None:
         self.clear(
             dialog_manager,
-            "has_void_regenerate_prompt",
-            "has_small_regenerate_prompt",
-            "has_big_regenerate_prompt",
+            "has_void_regenerate_text_prompt",
+            "has_small_regenerate_text_prompt",
+            "has_big_regenerate_text_prompt",
             "has_invalid_content_type"
         )
 
-    def clear_image_prompt_error_flags(self, dialog_manager: DialogManager) -> None:
+    def clear_edit_image_prompt_error_flags(self, dialog_manager: DialogManager) -> None:
         self.clear(
             dialog_manager,
-            "has_void_image_prompt",
-            "has_small_image_prompt",
-            "has_big_image_prompt",
+            "has_void_edit_image_prompt",
+            "has_small_edit_image_prompt",
+            "has_big_edit_image_prompt",
             "has_invalid_content_type"
         )
 
-    def clear_text_edit_error_flags(self, dialog_manager: DialogManager) -> None:
+    def clear_publication_text_edit_error_flags(self, dialog_manager: DialogManager) -> None:
         self.clear(
             dialog_manager,
-            "has_void_text",
-            "has_big_text",
-            "has_small_text"
+            "has_void_publication_text",
+            "has_big_publication_text",
+            "has_small_publication_text"
         )
 
     def clear_image_upload_error_flags(self, dialog_manager: DialogManager) -> None:
@@ -293,21 +293,20 @@ class DialogDataHelper:
 
     @staticmethod
     def get_edit_text_window_data(dialog_manager: DialogManager) -> dict:
-        """Возвращает данные для окна редактирования текста"""
         working_pub = dialog_manager.dialog_data["working_publication"]
         return {
             "publication_text": working_pub["text"],
-            "has_void_text": dialog_manager.dialog_data.get("has_void_text", False),
-            "has_small_text": dialog_manager.dialog_data.get("has_small_text", False),
-            "has_big_text": dialog_manager.dialog_data.get("has_big_text", False),
+            "has_void_publication_text": dialog_manager.dialog_data.get("has_void_publication_text", False),
+            "has_small_publication_text": dialog_manager.dialog_data.get("has_small_publication_text", False),
+            "has_big_publication_text": dialog_manager.dialog_data.get("has_big_publication_text", False),
             "is_regenerating_text": dialog_manager.dialog_data.get("is_regenerating_text", False),
-            "regenerate_prompt": dialog_manager.dialog_data.get("regenerate_prompt", ""),
-            "has_regenerate_prompt": bool(dialog_manager.dialog_data.get("regenerate_prompt", "")),
+            "regenerate_text_prompt": dialog_manager.dialog_data.get("regenerate_text_prompt", ""),
+            "has_regenerate_text_prompt": bool(dialog_manager.dialog_data.get("regenerate_text_prompt", "")),
             "voice_transcribe": dialog_manager.dialog_data.get("voice_transcribe", False),
             "has_invalid_content_type": dialog_manager.dialog_data.get("has_invalid_content_type", False),
-            "has_void_regenerate_prompt": dialog_manager.dialog_data.get("has_void_regenerate_prompt", False),
-            "has_small_regenerate_prompt": dialog_manager.dialog_data.get("has_small_regenerate_prompt", False),
-            "has_big_regenerate_prompt": dialog_manager.dialog_data.get("has_big_regenerate_prompt", False),
+            "has_void_regenerate_text_prompt": dialog_manager.dialog_data.get("has_void_regenerate_text_prompt", False),
+            "has_small_regenerate_text_prompt": dialog_manager.dialog_data.get("has_small_regenerate_text_prompt", False),
+            "has_big_regenerate_text_prompt": dialog_manager.dialog_data.get("has_big_regenerate_text_prompt", False),
         }
 
     @staticmethod
@@ -315,14 +314,14 @@ class DialogDataHelper:
         """Возвращает данные для меню редактирования изображения"""
         working_pub = dialog_manager.dialog_data.get("working_publication", {})
         return {
-            "has_void_image_prompt": dialog_manager.dialog_data.get("has_void_image_prompt", False),
-            "has_small_image_prompt": dialog_manager.dialog_data.get("has_small_image_prompt", False),
-            "has_big_image_prompt": dialog_manager.dialog_data.get("has_big_image_prompt", False),
+            "has_void_edit_image_prompt": dialog_manager.dialog_data.get("has_void_edit_image_prompt", False),
+            "has_small_edit_image_prompt": dialog_manager.dialog_data.get("has_small_edit_image_prompt", False),
+            "has_big_edit_image_prompt": dialog_manager.dialog_data.get("has_big_edit_image_prompt", False),
             "is_generating_image": dialog_manager.dialog_data.get("is_generating_image", False),
             "has_image": working_pub.get("has_image", False),
             "is_custom_image": working_pub.get("is_custom_image", False),
-            "image_prompt": dialog_manager.dialog_data.get("image_prompt", ""),
-            "has_image_prompt": dialog_manager.dialog_data.get("image_prompt", "") != "",
+            "edit_image_prompt": dialog_manager.dialog_data.get("edit_image_prompt", ""),
+            "has_edit_image_prompt": dialog_manager.dialog_data.get("edit_image_prompt", "") != "",
             "voice_transcribe": dialog_manager.dialog_data.get("voice_transcribe", False),
             "has_invalid_content_type": dialog_manager.dialog_data.get("has_invalid_content_type", False),
         }
@@ -409,8 +408,8 @@ class DialogDataHelper:
         dialog_manager.dialog_data["combine_image_prompt"] = prompt
 
     @staticmethod
-    def set_combine_result_url(dialog_manager: DialogManager, url: str) -> None:
-        dialog_manager.dialog_data["combine_result_url"] = url
+    def set_combined_image_result_url(dialog_manager: DialogManager, url: str) -> None:
+        dialog_manager.dialog_data["combined_image_result_url"] = url
 
     @staticmethod
     def set_is_combining_images(dialog_manager: DialogManager, value: bool) -> None:
@@ -427,7 +426,7 @@ class DialogDataHelper:
         dialog_manager.dialog_data.pop("has_invalid_content_type", None)
 
     @staticmethod
-    def clear_combine_upload_error_flags(dialog_manager: DialogManager) -> None:
+    def clear_combine_image_upload_error_flags(dialog_manager: DialogManager) -> None:
         dialog_manager.dialog_data.pop("has_invalid_combine_image_type", None)
         dialog_manager.dialog_data.pop("has_big_combine_image_size", None)
         dialog_manager.dialog_data.pop("combine_images_limit_reached", None)
@@ -480,12 +479,8 @@ class DialogDataHelper:
         dialog_manager.dialog_data["showing_old_image"] = value
 
     @staticmethod
-    def get_image_edit_prompt(dialog_manager: DialogManager) -> str:
+    def get_edit_image_prompt(dialog_manager: DialogManager) -> str:
         return dialog_manager.dialog_data.get("edit_image_prompt", "")
-
-    @staticmethod
-    def set_image_edit_prompt(dialog_manager: DialogManager, prompt: str) -> None:
-        dialog_manager.dialog_data["edit_image_prompt"] = prompt
 
     @staticmethod
     def get_is_applying_edits(dialog_manager: DialogManager) -> bool:
@@ -497,13 +492,12 @@ class DialogDataHelper:
 
     @staticmethod
     def clear_new_image_confirm_error_flags(dialog_manager: DialogManager) -> None:
-        dialog_manager.dialog_data.pop("has_small_edit_prompt", None)
-        dialog_manager.dialog_data.pop("has_big_edit_prompt", None)
+        dialog_manager.dialog_data.pop("has_small_edit_image_prompt", None)
+        dialog_manager.dialog_data.pop("has_big_edit_image_prompt", None)
         dialog_manager.dialog_data.pop("has_invalid_content_type", None)
 
     @staticmethod
     def clear_temporary_image_data(dialog_manager: DialogManager) -> None:
-        """Очистка временных данных об изображениях"""
         dialog_manager.dialog_data.pop("generated_images_url", None)
         dialog_manager.dialog_data.pop("combine_result_url", None)
         dialog_manager.dialog_data.pop("old_generated_image_backup", None)

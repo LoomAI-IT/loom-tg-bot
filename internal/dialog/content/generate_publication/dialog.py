@@ -406,7 +406,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
 
             TextInput(
                 id="text_input",
-                on_success=self.generate_publication_service.handle_edit_text,
+                on_success=self.generate_publication_service.handle_edit_publication_text,
             ),
 
             Button(

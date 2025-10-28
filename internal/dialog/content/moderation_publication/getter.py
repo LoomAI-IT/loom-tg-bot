@@ -8,7 +8,7 @@ from pkg.trace_wrapper import traced_method
 from internal.dialog.helpers import StateManager
 
 from internal.dialog.content.moderation_publication.helpers import (
-    ImageManager, PublicationManager, SocialNetworkManager, DateTimeFormatter, DialogDataHelper
+    ImageManager, PublicationManager, SocialNetworkManager, DateTimeFormatter, DialogDataHelper, StateRestorer
 )
 
 
@@ -34,15 +34,23 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
         self.state_manager = StateManager(
             state_repo=self.state_repo
         )
-        self.publication_manager = PublicationManager(
-            self.logger,
-            self.bot,
-            self.loom_content_client,
-        )
+
         self.image_manager = ImageManager(
             logger=self.logger,
             bot=self.bot,
             loom_domain=self.loom_domain,
+            loom_content_client=self.loom_content_client
+        )
+        self.state_restorer = StateRestorer(
+            logger=self.logger,
+            image_manager=self.image_manager
+        )
+        self.publication_manager = PublicationManager(
+            self.logger,
+            self.bot,
+            self.loom_content_client,
+            self.state_restorer,
+            self.image_manager
         )
         self.social_network_manger = SocialNetworkManager(
             logger=self.logger

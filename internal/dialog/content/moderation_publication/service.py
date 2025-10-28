@@ -57,16 +57,20 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         self.image_manager = ImageManager(
             logger=self.logger,
             bot=self.bot,
-            loom_domain=self.loom_domain
-        )
-        self.publication_manager = PublicationManager(
-            logger=self.logger,
-            bot=self.bot,
+            loom_domain=self.loom_domain,
             loom_content_client=self.loom_content_client
         )
         self.state_restorer = StateRestorer(
             logger=self.logger,
             image_manager=self.image_manager
+        )
+        self.publication_manager = PublicationManager(
+            logger=self.logger,
+            bot=self.bot,
+            loom_content_client=self.loom_content_client,
+            state_restorer=self.state_restorer,
+            image_manager=self.image_manager,
+
         )
         self.navigation_manager = NavigationManager(
             logger=self.logger
@@ -83,10 +87,8 @@ class ModerationPublicationService(interface.IModerationPublicationService):
     ) -> None:
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
 
-        # Определяем направление навигации
         direction = "prev" if button.widget_id == "prev_publication" else "next"
 
-        # Делегируем навигацию в NavigationManager
         _, at_edge = self.navigation_manager.navigate_publications(dialog_manager, direction)
 
         if at_edge:
@@ -109,7 +111,6 @@ class ModerationPublicationService(interface.IModerationPublicationService):
 
         self.dialog_data_helper.clear_reject_comment_error_flags(dialog_manager=dialog_manager)
 
-        # Очищаем и валидируем комментарий
         comment = self.text_processor.strip_text(comment)
 
         if not self.validation.validate_reject_comment(comment=comment, dialog_manager=dialog_manager):
@@ -128,13 +129,10 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
 
         state = await self.state_manager.get_state(dialog_manager)
-        _, publication_id, reject_comment = self.dialog_data_helper.get_reject_comment_data(dialog_manager)
 
-        # API вызов отклонения публикации
         await self.publication_manager.reject_publication(
-            publication_id=publication_id,
-            moderator_id=state.account_id,
-            comment=reject_comment
+            dialog_manager=dialog_manager,
+            state=state
         )
         # TODO сделать вебхук для отклонения публикации
 
@@ -154,27 +152,17 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
 
         await callback.answer()
-        self.dialog_data_helper.set_regenerating_text_flag(dialog_manager, True)
-        await dialog_manager.show()
+        await callback.message.edit_text(
+            "Перегенерирую текст, это может занять время... Не совершайте никаких действий",
+            reply_markup=None
+        )
 
-        working_pub = self.dialog_data_helper.get_working_publication(dialog_manager)
-
-        # Сохраняем предыдущее состояние
-        self.state_restorer.save_state_before_modification(dialog_manager, include_image=False)
-
-        # API вызов регенерации текста
         async with tg_action(self.bot, callback.message.chat.id):
             regenerated_data = await self.publication_manager.regenerate_text(
-                category_id=working_pub["category_id"],
-                text=working_pub["text"],
-                prompt=None
+                dialog_manager=dialog_manager
             )
+            self.dialog_data_helper.update_working_text(dialog_manager, regenerated_data["text"])
 
-        # Обновляем текст
-        self.dialog_data_helper.update_working_text(dialog_manager, regenerated_data["text"])
-        self.dialog_data_helper.set_regenerating_text_flag(dialog_manager, False)
-
-        # Проверяем длину текста с изображением
         if await self.text_processor.check_text_length_with_image(dialog_manager):
             return
 
@@ -189,19 +177,15 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             dialog_manager: DialogManager
     ) -> None:
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
+        self.dialog_data_helper.clear_regenerate_text_prompt_error_flags(dialog_manager=dialog_manager)
         await message.delete()
 
-        self.dialog_data_helper.clear_regenerate_prompt_error_flags(dialog_manager=dialog_manager)
-
-        # Валидация типа контента
-        if not self.validation.validate_message_content_type(
+        if not self.validation.validate_content_type(
                 message,
-                [ContentType.VOICE, ContentType.AUDIO, ContentType.TEXT],
                 dialog_manager
         ):
             return
 
-        # Обработка текста или голоса
         state = await self.state_manager.get_state(dialog_manager)
         prompt = await self.message_extractor.process_voice_or_text_input(
             message=message,
@@ -213,28 +197,19 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         if not self.validation.validate_regenerate_prompt(prompt=prompt, dialog_manager=dialog_manager):
             return
 
-        self.dialog_data_helper.set_regenerate_prompt(dialog_manager, prompt)
+        self.dialog_data_helper.set_regenerate_text_prompt(dialog_manager, prompt)
         self.dialog_data_helper.set_regenerating_text_flag(dialog_manager, True)
         await dialog_manager.show()
 
-        working_pub = self.dialog_data_helper.get_working_publication(dialog_manager)
-
-        # Сохраняем предыдущее состояние
-        self.state_restorer.save_state_before_modification(dialog_manager, include_image=False)
-
-        # API вызов регенерации текста с промптом
         async with tg_action(self.bot, message.chat.id):
             regenerated_data = await self.publication_manager.regenerate_text(
-                category_id=working_pub["category_id"],
-                text=working_pub["text"],
-                prompt=prompt
+                dialog_manager=dialog_manager
             )
+            self.dialog_data_helper.update_working_text(dialog_manager, regenerated_data["text"])
 
-        self.dialog_data_helper.update_working_text(dialog_manager, regenerated_data["text"])
         self.dialog_data_helper.set_regenerating_text_flag(dialog_manager, False)
-        self.dialog_data_helper.clear_regenerate_prompt(dialog_manager)
+        self.dialog_data_helper.clear_regenerate_text_prompt(dialog_manager)
 
-        # Проверяем длину текста с изображением
         if await self.text_processor.check_text_length_with_image(dialog_manager):
             return
 
@@ -242,7 +217,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
 
     @auto_log()
     @traced_method()
-    async def handle_edit_text(
+    async def handle_edit_publication_text(
             self,
             message: Message,
             widget: Any,
@@ -250,23 +225,17 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             text: str
     ) -> None:
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
+        self.dialog_data_helper.clear_publication_text_edit_error_flags(dialog_manager=dialog_manager)
         await message.delete()
 
-        self.dialog_data_helper.clear_text_edit_error_flags(dialog_manager=dialog_manager)
-
-        # Форматируем HTML текст
         new_text = self.text_processor.format_html_text(message.html_text)
 
         if not self.validation.validate_publication_text(text=new_text, dialog_manager=dialog_manager):
             return
 
-        # Сохраняем предыдущее состояние
         self.state_restorer.save_state_before_modification(dialog_manager, include_image=False)
-
-        # Обновляем текст
         self.dialog_data_helper.update_working_text(dialog_manager, new_text)
 
-        # Проверяем длину текста с изображением
         if await self.text_processor.check_text_length_with_image(dialog_manager):
             return
 
@@ -283,96 +252,59 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
 
         await callback.answer()
-        self.dialog_data_helper.set_generating_image_flag(dialog_manager, True)
-        await dialog_manager.show()
-
-        working_pub = self.dialog_data_helper.get_working_publication(dialog_manager)
-
-        # Подготавливаем текущее изображение для генерации
-        current_image_content, current_image_filename = await self.image_manager.prepare_current_image_for_generation(
-            dialog_manager
+        await callback.message.edit_text(
+            "Генерирую изображение, это может занять время... Не совершайте никаких действий",
+            reply_markup=None
         )
 
-        # Сохраняем предыдущее состояние
-        self.state_restorer.save_state_before_modification(dialog_manager, include_image=True)
-
-        # API вызов генерации изображения
         async with tg_action(self.bot, callback.message.chat.id, "upload_photo"):
             images_url = await self.publication_manager.generate_image(
-                category_id=working_pub["category_id"],
-                publication_text=working_pub["text"],
-                image_content=current_image_content,
-                image_filename=current_image_filename
+                dialog_manager=dialog_manager
             )
+            self.dialog_data_helper.set_generated_images_url(dialog_manager, images_url)
 
-        # Сохраняем сгенерированные изображения для подтверждения
-        self.dialog_data_helper.set_generated_images_url(dialog_manager, images_url)
         self.dialog_data_helper.set_generating_image_flag(dialog_manager, False)
-
-        # Переходим к окну подтверждения нового изображения
         await dialog_manager.switch_to(state=model.ModerationPublicationStates.new_image_confirm)
 
     @auto_log()
     @traced_method()
-    async def handle_generate_image_prompt_input(
+    async def handle_edit_image_prompt_input(
             self,
             message: Message,
             widget: MessageInput,
             dialog_manager: DialogManager
     ) -> None:
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
+        self.dialog_data_helper.clear_edit_image_prompt_error_flags(dialog_manager=dialog_manager)
         await message.delete()
 
-        self.dialog_data_helper.clear_image_prompt_error_flags(dialog_manager=dialog_manager)
-
-        # Валидация типа контента
-        if not self.validation.validate_message_content_type(
-                message,
-                [ContentType.VOICE, ContentType.AUDIO, ContentType.TEXT],
-                dialog_manager
-        ):
+        if not self.validation.validate_content_type(message, dialog_manager):
             return
 
-        # Обработка текста или голоса
         state = await self.state_manager.get_state(dialog_manager)
-        prompt = await self.message_extractor.process_voice_or_text_input(
+        edit_image_prompt = await self.message_extractor.process_voice_or_text_input(
             message=message,
             dialog_manager=dialog_manager,
             organization_id=state.organization_id,
             return_html=True
         )
 
-        if not self.validation.validate_image_prompt(prompt=prompt, dialog_manager=dialog_manager):
+        if not self.validation.validate_edit_image_prompt(prompt=edit_image_prompt, dialog_manager=dialog_manager):
             return
 
-        self.dialog_data_helper.set_image_prompt(dialog_manager, prompt)
+        self.dialog_data_helper.set_edit_image_prompt(dialog_manager, edit_image_prompt)
         self.dialog_data_helper.set_generating_image_flag(dialog_manager, True)
         await dialog_manager.show()
 
-        working_pub = self.dialog_data_helper.get_working_publication(dialog_manager)
-
-        # Подготавливаем текущее изображение для генерации
-        current_image_content, current_image_filename = await self.image_manager.prepare_current_image_for_generation(
-            dialog_manager
-        )
-
-        # Сохраняем предыдущее состояние
-        self.state_restorer.save_state_before_modification(dialog_manager, include_image=True)
-
-        # API вызов генерации изображения с промптом
         async with tg_action(self.bot, message.chat.id, "upload_photo"):
             images_url = await self.publication_manager.edit_image(
+                dialog_manager=dialog_manager,
                 organization_id=state.organization_id,
-                image_content=current_image_content,
-                image_filename=current_image_filename,
-                prompt=prompt
+                edit_image_prompt=edit_image_prompt
             )
+            self.dialog_data_helper.set_generated_images_url(dialog_manager, images_url)
 
-        # Сохраняем сгенерированные изображения для подтверждения
-        self.dialog_data_helper.set_generated_images_url(dialog_manager, images_url)
         self.dialog_data_helper.set_generating_image_flag(dialog_manager, False)
-
-        # Переходим к окну подтверждения нового изображения
         await dialog_manager.switch_to(state=model.ModerationPublicationStates.new_image_confirm)
 
     @auto_log()
@@ -388,37 +320,26 @@ class ModerationPublicationService(interface.IModerationPublicationService):
 
         self.dialog_data_helper.clear_image_upload_error_flags(dialog_manager=dialog_manager)
 
-        # Валидация типа контента
-        if not self.validation.validate_message_content_type(
+        if not self.validation.validate_content_type(
                 message,
+                dialog_manager,
                 [ContentType.PHOTO],
-                dialog_manager
         ):
             self.dialog_data_helper.set_validation_flag(dialog_manager, "has_invalid_image_type")
             return
 
-        if message.photo:
-            photo = message.photo[-1]
+        photo = message.photo[-1]
 
-            # Валидация размера изображения
-            if not self.validation.validate_image_size(photo, dialog_manager):
-                return
+        if not self.validation.validate_image_size(photo, dialog_manager):
+            return
 
-            # Сохраняем предыдущее состояние
-            self.state_restorer.save_state_before_modification(dialog_manager, include_image=True)
+        self.state_restorer.save_state_before_modification(dialog_manager, include_image=True)
+        self.image_manager.update_custom_image(dialog_manager, photo.file_id)
 
-            # Обновляем рабочую версию с загруженным изображением
-            self.image_manager.update_custom_image(dialog_manager, photo.file_id)
-            self.logger.info("Изображение загружено")
+        if await self.text_processor.check_text_length_with_image(dialog_manager):
+            return
 
-            # Проверяем длину текста с изображением
-            if await self.text_processor.check_text_length_with_image(dialog_manager):
-                return
-
-            await dialog_manager.switch_to(state=model.ModerationPublicationStates.edit_preview)
-        else:
-            self.logger.info("Ошибка обработки изображения")
-            self.dialog_data_helper.set_validation_flag(dialog_manager, "has_image_processing_error")
+        await dialog_manager.switch_to(state=model.ModerationPublicationStates.edit_preview)
 
     @auto_log()
     @traced_method()
@@ -429,11 +350,9 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             dialog_manager: DialogManager
     ) -> None:
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
-
         self.image_manager.clear_image_data(dialog_manager=dialog_manager)
 
         await callback.answer("Изображение удалено", show_alert=True)
-
         await dialog_manager.switch_to(state=model.ModerationPublicationStates.edit_preview)
 
     @auto_log()
@@ -451,13 +370,8 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             await callback.answer("Нет изменений для сохранения")
             return
 
-        # Сохраняем изменения через API
         await self.publication_manager.save_publication_changes(dialog_manager)
-
-        # Обновляем оригинальную версию из working
         self.dialog_data_helper.update_original_from_working(dialog_manager)
-
-        # Очищаем working_publication
         self.dialog_data_helper.clear_working_publication(dialog_manager)
 
         await callback.answer("Изменения сохранены", show_alert=True)
@@ -506,7 +420,6 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         network_id = checkbox.widget_id
         is_checked = checkbox.is_checked()
 
-        # Сохраняем состояние чекбокса
         self.dialog_data_helper.toggle_social_network_selection(dialog_manager, network_id, is_checked)
 
         await callback.answer()
@@ -574,10 +487,8 @@ class ModerationPublicationService(interface.IModerationPublicationService):
     ) -> None:
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
 
-        # Удаляем изображение из рабочей версии
         self.image_manager.clear_image_data(dialog_manager=dialog_manager)
 
-        self.logger.info("Изображение удалено из-за длинного текста")
         await callback.answer("Изображение удалено", show_alert=True)
         await dialog_manager.switch_to(state=model.ModerationPublicationStates.edit_preview)
 
@@ -597,25 +508,18 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             reply_markup=None
         )
 
-        working_pub = self.dialog_data_helper.get_working_publication(dialog_manager)
-        expected_length = self.dialog_data_helper.get_expected_length(dialog_manager)
-
-        # API вызов сжатия текста
         async with tg_action(self.bot, callback.message.chat.id):
             compressed_data = await self.publication_manager.compress_text(
-                category_id=working_pub["category_id"],
-                text=working_pub["text"],
-                expected_length=expected_length
+                dialog_manager=dialog_manager
             )
 
-        # Обновляем текст
         self.dialog_data_helper.update_working_text(dialog_manager, compressed_data["text"])
 
         await dialog_manager.switch_to(state=model.ModerationPublicationStates.edit_preview)
 
     @auto_log()
     @traced_method()
-    async def handle_restore_previous_text(
+    async def handle_restore_previous_state(
             self,
             callback: CallbackQuery,
             button: Any,
@@ -627,8 +531,6 @@ class ModerationPublicationService(interface.IModerationPublicationService):
 
         await callback.answer("Изменения отменены", show_alert=True)
         await dialog_manager.switch_to(state=model.ModerationPublicationStates.edit_preview)
-
-    # ============= ОБРАБОТЧИКИ ДЛЯ COMBINE IMAGES =============
 
     @auto_log()
     @traced_method()
@@ -642,7 +544,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
 
         await callback.answer()
 
-        if self.image_manager.start_combine_images(dialog_manager=dialog_manager):
+        if self.dialog_data_helper.get_working_image_has_image(dialog_manager):
             await dialog_manager.switch_to(state=model.ModerationPublicationStates.combine_images_choice)
         else:
             self.image_manager.init_combine_from_scratch(dialog_manager=dialog_manager)
@@ -694,35 +596,28 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             dialog_manager: DialogManager
     ) -> None:
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
-
+        self.dialog_data_helper.clear_combine_image_upload_error_flags(dialog_manager=dialog_manager)
         await message.delete()
 
-        self.dialog_data_helper.clear_combine_upload_error_flags(dialog_manager=dialog_manager)
-
-        if not self.validation.validate_message_content_type(
+        if not self.validation.validate_content_type(
                 message,
-                [ContentType.PHOTO],
                 dialog_manager,
+                [ContentType.PHOTO],
         ):
             return
 
         combine_images_list = self.dialog_data_helper.get_combine_images_list(dialog_manager)
 
-        # Проверка максимального количества (пусть будет 5)
-        if len(combine_images_list) >= 5:
+        if len(combine_images_list) >= 3:
             self.dialog_data_helper.set_validation_flag(dialog_manager, "combine_images_limit_reached")
             return
 
-        if message.photo:
-            photo = message.photo[-1]
+        photo = message.photo[-1]
 
-            if not self.validation.validate_image_size(
-                    photo,
-                    dialog_manager,
-            ):
-                return
+        if not self.validation.validate_image_size(photo, dialog_manager):
+            return
 
-            self.image_manager.upload_combine_image(photo=photo, dialog_manager=dialog_manager)
+        self.image_manager.upload_combine_image(photo=photo, dialog_manager=dialog_manager)
 
     @auto_log()
     @traced_method()
@@ -793,50 +688,35 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             dialog_manager: DialogManager
     ) -> None:
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
+        self.dialog_data_helper.clear_combine_image_prompt_error_flags(dialog_manager=dialog_manager)
         await message.delete()
 
-        self.dialog_data_helper.clear_combine_image_prompt_error_flags(dialog_manager=dialog_manager)
-
-        state = await self.state_manager.get_state(dialog_manager=dialog_manager)
-
-        if not self.validation.validate_message_content_type(
-                message,
-                [ContentType.VOICE, ContentType.AUDIO, ContentType.TEXT],
-                dialog_manager
-        ):
+        if not self.validation.validate_content_type(message, dialog_manager):
             return
 
-        prompt = await self.message_extractor.process_voice_or_text_input(
+        state = await self.state_manager.get_state(dialog_manager=dialog_manager)
+        combine_image_prompt = await self.message_extractor.process_voice_or_text_input(
             message=message,
             dialog_manager=dialog_manager,
             organization_id=state.organization_id
         )
 
-        if not self.validation.validate_combine_image_prompt(prompt=prompt, dialog_manager=dialog_manager):
+        if not self.validation.validate_combine_image_prompt(combine_image_prompt, dialog_manager):
             return
 
-        combine_images_list = self.dialog_data_helper.get_combine_images_list(dialog_manager)
-
-        if len(combine_images_list) < 2:
-            self.dialog_data_helper.set_validation_flag(dialog_manager, "not_enough_combine_images")
-            return
-
-        self.dialog_data_helper.set_combine_image_prompt(dialog_manager, prompt)
+        self.dialog_data_helper.set_combine_image_prompt(dialog_manager, combine_image_prompt)
         self.dialog_data_helper.set_is_combining_images(dialog_manager, True)
         await dialog_manager.show()
 
-        combined_result_url = await self.image_manager.process_combine_with_prompt(
-            dialog_manager=dialog_manager,
-            combine_images_list=combine_images_list,
-            prompt=prompt or "Объедини эти фотографии в одну композицию",
-            chat_id=message.chat.id,
-            organization_id=state.organization_id,
-            loom_content_client=self.loom_content_client,
-
-        )
+        async with tg_action(self.bot, message.chat.id, "upload_photo"):
+            combined_image_result_url = await self.image_manager.combine_images(
+                dialog_manager=dialog_manager,
+                prompt=combine_image_prompt or "Объедини эти фотографии в одну композицию",
+                organization_id=state.organization_id,
+            )
 
         self.dialog_data_helper.set_is_combining_images(dialog_manager, False)
-        self.dialog_data_helper.set_combine_result_url(dialog_manager, combined_result_url)
+        self.dialog_data_helper.set_combined_image_result_url(dialog_manager, combined_image_result_url)
 
         await dialog_manager.switch_to(state=model.ModerationPublicationStates.new_image_confirm)
 
@@ -852,27 +732,20 @@ class ModerationPublicationService(interface.IModerationPublicationService):
 
         state = await self.state_manager.get_state(dialog_manager=dialog_manager)
 
-        combine_images_list = self.dialog_data_helper.get_combine_images_list(dialog_manager)
-
-        if len(combine_images_list) < 2:
-            await callback.answer("Нужно минимум 2 изображения", show_alert=True)
-            return
-
         await callback.answer()
-        self.dialog_data_helper.set_is_combining_images(dialog_manager, True)
-        await dialog_manager.show()
-
-        combined_result_url = await self.image_manager.process_combine_with_prompt(
-            dialog_manager=dialog_manager,
-            combine_images_list=combine_images_list,
-            prompt="Объедини эти фотографии в одну композицию",
-            chat_id=callback.message.chat.id,
-            organization_id=state.organization_id,
-            loom_content_client=self.loom_content_client
+        await callback.message.edit_text(
+            "Объединяю изображения, это может занять время... Не совершайте никаких действий",
+            reply_markup=None
         )
 
-        self.dialog_data_helper.set_is_combining_images(dialog_manager, False)
-        self.dialog_data_helper.set_combine_result_url(dialog_manager, combined_result_url)
+        async with tg_action(self.bot, callback.message.chat.id, "upload_photo"):
+            combined_image_result_url = await self.image_manager.combine_images(
+                dialog_manager=dialog_manager,
+                prompt="Объедини эти фотографии в одну композицию",
+                organization_id=state.organization_id,
+            )
+
+        self.dialog_data_helper.set_combined_image_result_url(dialog_manager, combined_image_result_url)
 
         await dialog_manager.switch_to(state=model.ModerationPublicationStates.new_image_confirm)
 
@@ -886,7 +759,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
     ) -> None:
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
 
-        combine_images_list = await self.image_manager.combine_from_new_image(
+        combine_images_list = await self.image_manager.prepare_combine_image_from_new_image(
             dialog_manager=dialog_manager,
             chat_id=callback.message.chat.id
         )
@@ -900,8 +773,6 @@ class ModerationPublicationService(interface.IModerationPublicationService):
 
         await dialog_manager.switch_to(state=model.ModerationPublicationStates.combine_images_upload)
 
-    # ============= ОБРАБОТЧИКИ ДЛЯ NEW IMAGE CONFIRM =============
-
     @auto_log()
     @traced_method()
     async def handle_edit_image_prompt_input_from_confirm_new_image(
@@ -911,56 +782,39 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             dialog_manager: DialogManager
     ) -> None:
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
+        self.dialog_data_helper.clear_new_image_confirm_error_flags(dialog_manager=dialog_manager)
         await message.delete()
 
-        self.dialog_data_helper.clear_new_image_confirm_error_flags(dialog_manager=dialog_manager)
-
-        state = await self.state_manager.get_state(dialog_manager=dialog_manager)
-
-        if not self.validation.validate_message_content_type(
-                message,
-                [ContentType.VOICE, ContentType.AUDIO, ContentType.TEXT],
-                dialog_manager
-        ):
+        if not self.validation.validate_content_type(message, dialog_manager):
             return
 
-        prompt = await self.message_extractor.process_voice_or_text_input(
+        state = await self.state_manager.get_state(dialog_manager=dialog_manager)
+        edit_image_prompt = await self.message_extractor.process_voice_or_text_input(
             message=message,
             dialog_manager=dialog_manager,
             organization_id=state.organization_id
         )
 
-        # Валидация промпта (min 10, max 1000)
-        if len(prompt) < 10:
-            self.dialog_data_helper.set_validation_flag(dialog_manager, "has_small_edit_prompt")
-            return
-        if len(prompt) > 1000:
-            self.dialog_data_helper.set_validation_flag(dialog_manager, "has_big_edit_prompt")
+        if not self.validation.validate_edit_image_prompt(edit_image_prompt, dialog_manager):
             return
 
-        self.dialog_data_helper.set_image_edit_prompt(dialog_manager, prompt)
+        self.dialog_data_helper.set_edit_image_prompt(dialog_manager, edit_image_prompt)
         self.dialog_data_helper.set_is_applying_edits(dialog_manager, True)
-
         await dialog_manager.show()
 
-        images_url = await self.image_manager.edit_new_image_with_prompt(
-            dialog_manager=dialog_manager,
-            organization_id=state.organization_id,
-            prompt=prompt,
-            chat_id=message.chat.id,
-            loom_content_client=self.loom_content_client
-        )
+        async with tg_action(self.bot, message.chat.id, "upload_photo"):
+            images_url = await self.image_manager.edit_new_image_with_prompt(
+                dialog_manager=dialog_manager,
+                organization_id=state.organization_id,
+                prompt=edit_image_prompt,
+            )
 
-        self.dialog_data_helper.set_is_applying_edits(dialog_manager, False)
-
-        self.image_manager.update_image_after_edit(
+        self.image_manager.update_image_after_edit_from_confirm_new_image(
             dialog_manager=dialog_manager,
             images_url=images_url
         )
-
-        self.dialog_data_helper.set_image_edit_prompt(dialog_manager, "")
-
-        await dialog_manager.show()
+        self.dialog_data_helper.set_is_applying_edits(dialog_manager, False)
+        self.dialog_data_helper.set_edit_image_prompt(dialog_manager, "")
 
     @auto_log()
     @traced_method()
@@ -971,7 +825,6 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             dialog_manager: DialogManager
     ) -> None:
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
-
         await callback.answer("Изображение применено")
 
         self.image_manager.confirm_new_image(dialog_manager=dialog_manager)
@@ -1014,7 +867,6 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             dialog_manager: DialogManager
     ) -> None:
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
-
         await callback.answer("Изображение отклонено")
 
         self.image_manager.reject_new_image(dialog_manager=dialog_manager)

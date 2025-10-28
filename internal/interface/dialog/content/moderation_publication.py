@@ -131,7 +131,7 @@ class IModerationPublicationService(Protocol):
     ) -> None: pass
 
     @abstractmethod
-    async def handle_edit_text(
+    async def handle_edit_publication_text(
             self,
             message: Message,
             widget: Any,
@@ -148,7 +148,7 @@ class IModerationPublicationService(Protocol):
     ) -> None: pass
 
     @abstractmethod
-    async def handle_generate_image_prompt_input(
+    async def handle_edit_image_prompt_input(
             self,
             message: Message,
             widget: Any,
@@ -204,7 +204,7 @@ class IModerationPublicationService(Protocol):
     ) -> None: pass
 
     @abstractmethod
-    async def handle_restore_previous_text(
+    async def handle_restore_previous_state(
             self,
             callback: CallbackQuery,
             button: Any,

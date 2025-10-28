@@ -272,7 +272,7 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
                         True: Case(
                             {
                                 True: Multi(
-                                    Format("📝 <b>Ваши указания:</b><br><code>{regenerate_prompt}</code><br>"),
+                                    Format("📝 <b>Ваши указания:</b><br><code>{regenerate_text_prompt}</code><br>"),
                                     Const("⏳ <b>Перегенерирую текст...</b><br>"),
                                     Const("🕐 <i>Это может занять время. Пожалуйста, подождите.</i>"),
                                 ),
@@ -281,7 +281,7 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
                                     Const("🕐 <i>Это может занять время. Пожалуйста, подождите.</i>"),
                                 ),
                             },
-                            selector="has_regenerate_prompt"
+                            selector="has_regenerate_text_prompt"
                         )
                     },
                     selector="is_regenerating_text"
@@ -300,21 +300,21 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
                         True: Const("<br>❌ <b>Ошибка:</b> Указания не могут быть пустыми"),
                         False: Const(""),
                     },
-                    selector="has_void_regenerate_prompt"
+                    selector="has_void_regenerate_text_prompt"
                 ),
                 Case(
                     {
                         True: Const("<br>📏 <b>Слишком короткие указания</b><br><i>Минимум 10 символов</i>"),
                         False: Const(""),
                     },
-                    selector="has_small_regenerate_prompt"
+                    selector="has_small_regenerate_text_prompt"
                 ),
                 Case(
                     {
                         True: Const("<br>📏 <b>Слишком длинные указания</b><br><i>Максимум 1000 символов</i>"),
                         False: Const(""),
                     },
-                    selector="has_big_regenerate_prompt"
+                    selector="has_big_regenerate_text_prompt"
                 ),
                 Case(
                     {
@@ -369,28 +369,28 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
                         True: Const("<br><br>❌ <b>Ошибка:</b> Текст не может быть пустым"),
                         False: Const(""),
                     },
-                    selector="has_void_text"
+                    selector="has_void_publication_text"
                 ),
                 Case(
                     {
                         True: Const("<br><br>📏 <b>Слишком короткий текст</b><br><i>Минимум 50 символов</i>"),
                         False: Const(""),
                     },
-                    selector="has_small_text"
+                    selector="has_small_publication_text"
                 ),
                 Case(
                     {
                         True: Const("<br><br>📏 <b>Слишком длинный текст</b><br><i>Максимум 4000 символов</i>"),
                         False: Const(""),
                     },
-                    selector="has_big_text"
+                    selector="has_big_publication_text"
                 ),
                 sep="",
             ),
 
             TextInput(
                 id="text_input",
-                on_success=self.moderation_publication_service.handle_edit_text,
+                on_success=self.moderation_publication_service.handle_edit_publication_text,
             ),
 
             Button(
@@ -467,21 +467,21 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
                         True: Const("<br><br>❌ <b>Ошибка:</b> Описание не может быть пустым"),
                         False: Const(""),
                     },
-                    selector="has_void_image_prompt"
+                    selector="has_void_edit_image_prompt"
                 ),
                 Case(
                     {
                         True: Const("<br><br>📏 <b>Слишком короткое описание</b><br><i>Минимум 10 символов</i>"),
                         False: Const(""),
                     },
-                    selector="has_small_image_prompt"
+                    selector="has_small_edit_image_prompt"
                 ),
                 Case(
                     {
                         True: Const("<br><br>📏 <b>Слишком длинное описание</b><br><i>Максимум 1000 символов</i>"),
                         False: Const(""),
                     },
-                    selector="has_big_image_prompt"
+                    selector="has_big_edit_image_prompt"
                 ),
                 Case(
                     {
@@ -495,7 +495,7 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
             ),
 
             MessageInput(
-                func=self.moderation_publication_service.handle_generate_image_prompt_input,
+                func=self.moderation_publication_service.handle_edit_image_prompt_input,
             ),
 
             Column(
@@ -665,7 +665,7 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
                 Button(
                     Const("↩️ Вернуть предыдущий текст"),
                     id="restore_previous",
-                    on_click=self.moderation_publication_service.handle_restore_previous_text,
+                    on_click=self.moderation_publication_service.handle_restore_previous_state,
                     when="has_previous_text",
                 ),
             ),
@@ -758,7 +758,7 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
                         True: Format("<br><br>📝 <b>Ваши правки:</b><br><i>{edit_image_prompt}</i>"),
                         False: Const(""),
                     },
-                    selector="has_image_edit_prompt"
+                    selector="has_edit_image_prompt"
                 ),
                 Case(
                     {
@@ -772,14 +772,14 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
                         True: Const("<br><br>📏 <b>Слишком короткое описание правок</b><br><i>Минимум 10 символов</i>"),
                         False: Const(""),
                     },
-                    selector="has_small_edit_prompt"
+                    selector="has_small_edit_image_prompt"
                 ),
                 Case(
                     {
                         True: Const("<br><br>📏 <b>Слишком длинное описание правок</b><br><i>Максимум 1000 символов</i>"),
                         False: Const(""),
                     },
-                    selector="has_big_edit_prompt"
+                    selector="has_big_edit_image_prompt"
                 ),
                 Case(
                     {
