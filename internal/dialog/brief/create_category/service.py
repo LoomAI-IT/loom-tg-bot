@@ -90,6 +90,12 @@ class CreateCategoryService(interface.ICreateCategoryService):
             if llm_response_json.get("telegram_channel_username_list"):
                 telegram_channel_username_list = llm_response_json["telegram_channel_username_list"]
 
+                # Сохраняем промежуточный ответ ассистента для правильного кэширования
+                await self.llm_chat_manager.save_llm_response(
+                    chat_id=chat_id,
+                    llm_response_json=llm_response_json,
+                )
+
                 async with tg_action(self.bot, message.chat.id):
                     llm_response_json = await self.llm_chat_manager.process_telegram_channels(
                         dialog_manager=dialog_manager,
@@ -101,6 +107,12 @@ class CreateCategoryService(interface.ICreateCategoryService):
             if llm_response_json.get("test_category") and llm_response_json.get("user_text_reference"):
                 test_category_data = llm_response_json["test_category"]
                 user_text_reference = llm_response_json["user_text_reference"]
+
+                # Сохраняем промежуточный ответ ассистента для правильного кэширования
+                await self.llm_chat_manager.save_llm_response(
+                    chat_id=chat_id,
+                    llm_response_json=llm_response_json,
+                )
 
                 async with tg_action(self.bot, message.chat.id):
                     llm_response_json, test_publication_text = await self.llm_chat_manager.process_test_generate_publication(

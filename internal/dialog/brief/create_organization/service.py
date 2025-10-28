@@ -91,6 +91,12 @@ class CreateOrganizationService(interface.ICreateOrganizationService):
             if llm_response_json.get("telegram_channel_username"):
                 telegram_channel_username = llm_response_json["telegram_channel_username"]
 
+                # Сохраняем промежуточный ответ ассистента для правильного кэширования
+                await self.llm_chat_manager.save_llm_response(
+                    chat_id=chat_id,
+                    llm_response_json=llm_response_json
+                )
+
                 async with tg_action(self.bot, message.chat.id):
                     llm_response_json = await self.llm_chat_manager.process_telegram_channel(
                         dialog_manager=dialog_manager,
