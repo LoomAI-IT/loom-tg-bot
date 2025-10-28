@@ -149,13 +149,11 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, send=True)
 
         await callback.answer()
-        await callback.message.edit_text(
-            "Перегенерирую текст, это может занять время... Не совершайте никаких действий",
-            reply_markup=None
-        )
+        self.dialog_data_helper.set_regenerating_text_flag(dialog_manager, True)
+        await dialog_manager.show()
 
         async with tg_action(self.bot, callback.message.chat.id):
             regenerated_data = await self.publication_manager.generate_text(
@@ -165,6 +163,8 @@ class ModerationPublicationService(interface.IModerationPublicationService):
 
         if await self.text_processor.check_text_length_with_image(dialog_manager):
             return
+
+        self.dialog_data_helper.set_regenerating_text_flag(dialog_manager, False)
 
         await dialog_manager.switch_to(state=model.ModerationPublicationStates.edit_preview)
 
@@ -176,7 +176,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             widget: MessageInput,
             dialog_manager: DialogManager
     ) -> None:
-        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, send=True)
         self.dialog_data_helper.clear_regenerate_text_prompt_error_flags(dialog_manager=dialog_manager)
         await message.delete()
 
@@ -225,7 +225,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             dialog_manager: DialogManager,
             text: str
     ) -> None:
-        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, send=True)
         self.dialog_data_helper.clear_publication_text_edit_error_flags(dialog_manager=dialog_manager)
         await message.delete()
 
@@ -250,7 +250,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, send=True)
         await callback.answer()
 
         self.dialog_data_helper.set_is_generating_image(dialog_manager, True)
@@ -273,7 +273,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             widget: MessageInput,
             dialog_manager: DialogManager
     ) -> None:
-        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, send=True)
         self.dialog_data_helper.clear_edit_image_prompt_error_flags(dialog_manager=dialog_manager)
         await message.delete()
 
@@ -313,7 +313,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             widget: MessageInput,
             dialog_manager: DialogManager
     ) -> None:
-        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, send=True)
         await message.delete()
 
         self.dialog_data_helper.clear_image_upload_error_flags(dialog_manager=dialog_manager)
@@ -347,7 +347,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, send=True)
         self.image_manager.clear_image_data(dialog_manager=dialog_manager)
 
         await callback.answer("Изображение удалено", show_alert=True)
@@ -416,6 +416,8 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             checkbox: ManagedCheckbox,
             dialog_manager: DialogManager
     ) -> None:
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
+
         network_id = checkbox.widget_id
         is_checked = checkbox.is_checked()
 
@@ -431,6 +433,8 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
+
         self.image_manager.navigate_images(
             dialog_manager=dialog_manager,
             direction="prev"
@@ -445,6 +449,8 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
+
         self.image_manager.navigate_images(
             dialog_manager=dialog_manager,
             direction="next"
@@ -459,6 +465,8 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
+
         if not self.validation.validate_selected_networks(dialog_manager):
             await callback.answer(
                 "Выберите хотя бы одну социальную сеть",
@@ -539,7 +547,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, send=True)
 
         await callback.answer()
 
@@ -686,7 +694,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             widget: MessageInput,
             dialog_manager: DialogManager
     ) -> None:
-        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, send=True)
         self.dialog_data_helper.clear_combine_image_prompt_error_flags(dialog_manager=dialog_manager)
         await message.delete()
 
@@ -727,7 +735,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, send=True)
 
         state = await self.state_manager.get_state(dialog_manager=dialog_manager)
 

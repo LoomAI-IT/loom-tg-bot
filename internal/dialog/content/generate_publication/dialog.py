@@ -363,7 +363,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             ),
             Button(
                 Const("◀️ Назад"),
-                id="preview",
+                id="back_to_preview_from_text_menu",
                 on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.preview, ShowMode.EDIT),
                 when=~F["is_regenerating_text"]
             ),
@@ -412,7 +412,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
 
             Button(
                 Const("◀️ Назад"),
-                id="edit_text_menu",
+                id="back_to_edit_text_menu",
                 on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.edit_text_menu, ShowMode.EDIT),
             ),
 
@@ -503,7 +503,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                     Const("🎨 Сгенерировать картинку"),
                     id="generate_image",
                     on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.image_generation_mode_select,
-                                                         ShowMode.EDIT),
+                                                         ShowMode.SEND),
                 ),
                 Button(
                     Const("🖇 Внести правки в изображение"),
@@ -532,7 +532,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
 
             Button(
                 Const("◀️ Назад"),
-                id="preview",
+                id="back_to_preview_from_image_menu",
                 on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.preview, ShowMode.EDIT),
                 when=~F["is_generating_image"]
             ),
@@ -613,7 +613,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
 
             Button(
                 Const("◀️ Назад"),
-                id="back_to_image_menu",
+                id="back_to_image_menu_from_edit_input",
                 on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.image_menu, ShowMode.EDIT),
                 when=~F["is_generating_image"]
             ),
@@ -648,7 +648,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
 
             Button(
                 Const("◀️ Назад"),
-                id="back_to_image_menu",
+                id="back_to_image_menu_from_mode_select",
                 on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.image_menu, ShowMode.EDIT),
             ),
 
@@ -947,7 +947,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
 
             Button(
                 Const("📋 К меню контента"),
-                id="go_to_content_menu",
+                id="go_to_content_menu_from_alert",
                 on_click=self.generate_publication_service.handle_go_to_content_menu,
             ),
 
@@ -980,7 +980,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
 
             Button(
                 Const("◀️ Назад"),
-                id="back_to_image_menu",
+                id="back_to_image_menu_from_combine_choice",
                 on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.image_menu, ShowMode.EDIT),
             ),
 
@@ -1169,13 +1169,13 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             Row(
                 Button(
                     Const("⬅️ Предыдущая"),
-                    id="prev_combine_image_prompt",
+                    id="prev_combine_image_in_prompt",
                     on_click=self.generate_publication_service.handle_prev_combine_image,
                     when="has_multiple_combine_images",
                 ),
                 Button(
                     Const("➡️ Следующая"),
-                    id="next_combine_image_prompt",
+                    id="next_combine_image_in_prompt",
                     on_click=self.generate_publication_service.handle_next_combine_image,
                     when="has_multiple_combine_images",
                 ),
@@ -1368,7 +1368,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
 
             Button(
                 Const("📋 К меню контента"),
-                id="go_to_content_menu",
+                id="go_to_content_menu_from_success",
                 on_click=self.generate_publication_service.handle_go_to_content_menu,
             ),
 

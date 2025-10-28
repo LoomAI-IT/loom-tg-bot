@@ -489,7 +489,7 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
                     Const("🎨 Сгенерировать картинку"),
                     id="generate_image",
                     on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.image_generation_mode_select,
-                                                         ShowMode.EDIT),
+                                                         ShowMode.SEND),
                 ),
                 Button(
                     Const("🖇 Внести правки в изображение"),

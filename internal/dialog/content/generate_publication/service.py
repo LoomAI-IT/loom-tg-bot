@@ -965,7 +965,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.state_manager.set_show_mode(dialog_manager=dialog_manager, send=True)
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
 
         await callback.answer()
         # TODO сделать через  show()
@@ -1004,7 +1004,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             widget: MessageInput,
             dialog_manager: DialogManager
     ) -> None:
-        self.state_manager.set_show_mode(dialog_manager=dialog_manager, send=True)
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
         await message.delete()
 
         self.dialog_data_helper.clear_reference_generation_image_prompt_errors(dialog_manager)
