@@ -577,14 +577,14 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                             Const("Отправь голосовое сообщение или напиши, какую картинку нужно создать<br><br>"),
                             Const("ИИ сгенерирует изображение на основе того, что ты ему напишешь.<br><br>"),
                             Const("<blockquote><b>Например:</b><br>"),
-                            Const("Счастливая семья стоит в центе новой квартиры в Питере<br>"),
-                            Const("Над замершим озером в лесу пролетает самолет</blockquote><br>"),
-                            Const("📌 <b>Ты можешь добавить свое фото</b><br><br>"),
+                            Const("· Счастливая семья стоит в центе новой квартиры в Питере<br>"),
+                            Const("· Над замершим озером в лесу пролетает самолет</blockquote><br><br>"),
+                            Const("📌 <b>Ты можешь добавить свое фото</b><br>"),
                             Const("В этом случае ИИ сгенерирует изображение на основе картинки, которую ты отправишь, и на основе того, что ты ему напишешь.<br><br>"),
                             Const("<blockquote><b>Например:</b><br>"),
-                            Const("Добавь на фото счастливую семью<br>"),
-                            Const("Убери людей с фона<br>"),
-                            Const("Отзеркаль машину по горизонтали</blockquote>"),
+                            Const("· Добавь на фото счастливую семью<br>"),
+                            Const("· Убери людей с фона<br>"),
+                            Const("· Отзеркаль машину по горизонтали</blockquote>"),
                         ),
                         True: Multi(
                             Const("⏳ <b>Генерирую изображение...</b><br>"),
@@ -657,6 +657,12 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
 
             Column(
                 Button(
+                    Const("🖼️ Использовать текущее изображение"),
+                    id="use_current_image",
+                    on_click=self.generate_publication_service.handle_use_current_image_as_reference,
+                    when=F["has_image"] & ~F["has_reference_generation_image"]
+                ),
+                Button(
                     Const("🌅 Добавить своё фото"),
                     id="add_custom_photo",
                     on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.reference_image_upload,
@@ -708,13 +714,6 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
 
             MessageInput(
                 func=self.generate_publication_service.handle_reference_generation_image_upload,
-            ),
-
-            Button(
-                Const("🖼️ Использовать текущее изображение"),
-                id="use_current_image",
-                on_click=self.generate_publication_service.handle_use_current_image_as_reference,
-                when="has_image",
             ),
 
             Button(

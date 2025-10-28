@@ -279,11 +279,13 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
                 file_id=MediaId(reference_generation_image_file_id),
                 type=ContentType.PHOTO
             )
+        has_image = self.dialog_data_helper.get_has_image(dialog_manager=dialog_manager)
 
         return {
             "has_reference_generation_image": self.dialog_data_helper.get_has_reference_generation_image(
                 dialog_manager),
             "reference_generation_image_media": reference_generation_image_media,
+            "has_image": has_image,
             "is_generating_image": dialog_manager.dialog_data.get("is_generating_image", False),
             "voice_transcribe": dialog_manager.dialog_data.get("voice_transcribe", False),
             # Error flags
@@ -310,15 +312,10 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        # Проверяем есть ли текущее изображение в публикации
-        custom_image_file_id = self.dialog_data_helper.get_custom_image_file_id(dialog_manager)
-        publication_images_url = self.dialog_data_helper.get_publication_images_url(dialog_manager)
-        has_image = bool(custom_image_file_id or publication_images_url)
 
         return {
             "has_invalid_reference_generation_image_type": dialog_manager.dialog_data.get(
                 "has_invalid_reference_generation_image_type", False),
             "has_big_reference_generation_image_size": dialog_manager.dialog_data.get(
                 "has_big_reference_generation_image_size", False),
-            "has_image": has_image,
         }
