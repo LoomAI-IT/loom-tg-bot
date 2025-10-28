@@ -30,6 +30,10 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
             self.get_edit_text_menu_window(),
             self.get_edit_text_window(),
             self.get_edit_image_menu_window(),
+            self.get_edit_image_input_window(),
+            self.get_image_generation_mode_select_window(),
+            self.get_reference_generation_image_window(),
+            self.get_reference_generation_image_upload_window(),
             self.get_upload_image_window(),
             self.get_new_image_confirm_window(),
             self.get_combine_images_choice_window(),
@@ -429,28 +433,10 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
                 Case(
                     {
                         True: Multi(
-                            Const("🎯 <b>ЧТО МОЖНО СДЕЛАТЬ:</b><br><br>"),
-                            Const("💬 <b>Написать текст или 🎤 записать голосовое</b><br>"),
-                            Const("<i>Картинка изменится с учётом ваших указаний</i><br>"),
-                            Const("🔘 <b>Нажать кнопку \"🎨 Сгенерировать картинку\"</b><br>"),
-                            Const("<i>ИИ создаст новый вариант на основе текста публикации</i><br><br>"),
-                            Const("📝 <b>Что можно указать в описании:</b><br>"),
-                            Const("• Изменения цветов и освещения<br>"),
-                            Const("• Добавление или удаление объектов<br>"),
-                            Const("• Изменение стиля или настроения<br>"),
-                            Const("• Правки композиции и фона"),
+                            Const("<b>Что сделать с этой картинкой?</b>"),
                         ),
                         False: Multi(
-                            Const("🎯 <b>ЧТО МОЖНО СДЕЛАТЬ:</b><br><br>"),
-                            Const("🔘 <b>Нажать кнопку \"🎨 Сгенерировать картинку\"</b><br>"),
-                            Const("<i>ИИ создаст картинку на основе текста публикации</i><br><br>"),
-                            Const("💬 <b>Написать текст или 🎤 записать голосовое</b><br>"),
-                            Const("<i>Картинка создастся с учётом вашего описания</i><br>"),
-                            Const("📝 <b>Что можно указать в описании:</b><br>"),
-                            Const("• 👥 Объекты и персонажи<br>"),
-                            Const("• 🎭 Стиль и настроение<br>"),
-                            Const("• 🌍 Фон и окружение<br>"),
-                            Const("• ✨ Детали и освещение"),
+                            Const("<b>Давай добавим картинку к этому посту</b>"),
                         ),
                     },
                     selector="has_image"
@@ -502,7 +488,14 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
                 Button(
                     Const("🎨 Сгенерировать картинку"),
                     id="generate_image",
-                    on_click=self.moderation_publication_service.handle_generate_new_image,
+                    on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.image_generation_mode_select,
+                                                         ShowMode.EDIT),
+                ),
+                Button(
+                    Const("🖇 Внести правки в изображение"),
+                    id="edit_image",
+                    on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.edit_image_input, ShowMode.EDIT),
+                    when="has_image",
                 ),
                 Button(
                     Const("📷 Использовать своё фото"),
@@ -580,6 +573,281 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
 
             state=model.ModerationPublicationStates.upload_image,
             getter=self.moderation_publication_getter.get_upload_image_data,
+            parse_mode=SULGUK_PARSE_MODE,
+        )
+
+    def get_edit_image_input_window(self) -> Window:
+        return Window(
+            Multi(
+                Case(
+                    {
+                        False: Multi(
+                            Const("🖇 <b>Внести правки в изображение</b><br><br>"),
+                            Const("Отправь голосовое сообщение или напиши, какие правки нужно внести<br><br>"),
+                            Const("ИИ изменит изображение на основе того, что ты ему напишешь.<br><br>"),
+                            Const("<blockquote><b>Например:</b><br>"),
+                            Const("Добавь на фото счастливую семью<br>"),
+                            Const("Убери людей с фона<br>"),
+                            Const("Отзеркаль машину по горизонтали</blockquote>"),
+                        ),
+                        True: Multi(
+                            Const("⏳ <b>Генерирую изображение...</b><br>"),
+                            Const("🕐 <i>Это может занять время. Пожалуйста, подождите.</i>"),
+                        ),
+                    },
+                    selector="is_generating_image"
+                ),
+                Case(
+                    {
+                        True: Const("<br><br>🔄 <b>Распознаю голосовое сообщение...</b>"),
+                        False: Const(""),
+                    },
+                    selector="voice_transcribe"
+                ),
+                Case(
+                    {
+                        True: Const("<br><br>❌ <b>Ошибка:</b> Описание не может быть пустым"),
+                        False: Const(""),
+                    },
+                    selector="has_void_edit_image_prompt"
+                ),
+                Case(
+                    {
+                        True: Const("<br><br>📏 <b>Слишком короткое описание</b><br><i>Минимум 10 символов</i>"),
+                        False: Const(""),
+                    },
+                    selector="has_small_edit_image_prompt"
+                ),
+                Case(
+                    {
+                        True: Const("<br><br>📏 <b>Слишком длинное описание</b><br><i>Максимум 1000 символов</i>"),
+                        False: Const(""),
+                    },
+                    selector="has_big_edit_image_prompt"
+                ),
+                Case(
+                    {
+                        True: Const(
+                            "<br><br>🎤 <b>Неверный формат</b><br><i>Отправьте текст, голосовое сообщение или аудиофайл</i>"),
+                        False: Const(""),
+                    },
+                    selector="has_invalid_content_type"
+                ),
+                sep="",
+            ),
+
+            DynamicMedia(
+                selector="preview_image_media",
+                when="has_image",
+            ),
+
+            MessageInput(
+                func=self.moderation_publication_service.handle_edit_image_prompt_input,
+            ),
+
+            Button(
+                Const("◀️ Назад"),
+                id="back_to_image_menu",
+                on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.edit_image_menu, ShowMode.EDIT),
+                when=~F["is_generating_image"]
+            ),
+
+            state=model.ModerationPublicationStates.edit_image_input,
+            getter=self.moderation_publication_getter.get_edit_image_input_data,
+            parse_mode=SULGUK_PARSE_MODE,
+        )
+
+    def get_image_generation_mode_select_window(self) -> Window:
+        return Window(
+            Multi(
+                Const("<b>Что сделать с этой картинкой?</b><br><br>"),
+                Const("📌 <b>Сгенерировать автоматически</b> — ИИ сгенерирует изображение автоматически, изучив текст поста.<br><br>"),
+                Const("📌 <b>Сгенерировать по моему запросу</b> — ИИ сгенерирует изображение на основе того, что ты ему напишешь."),
+                sep="",
+            ),
+
+            Column(
+                Button(
+                    Const("🎨 Сгенерировать автоматически"),
+                    id="auto_generate",
+                    on_click=self.moderation_publication_service.handle_auto_generate_image,
+                ),
+                Button(
+                    Const("🖍 По моему запросу"),
+                    id="custom_generate",
+                    on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.reference_image_generation,
+                                                         ShowMode.EDIT),
+                ),
+            ),
+
+            Button(
+                Const("◀️ Назад"),
+                id="back_to_image_menu",
+                on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.edit_image_menu, ShowMode.EDIT),
+            ),
+
+            state=model.ModerationPublicationStates.image_generation_mode_select,
+            getter=self.moderation_publication_getter.get_image_generation_mode_select_data,
+            parse_mode=SULGUK_PARSE_MODE,
+        )
+
+    def get_reference_generation_image_window(self) -> Window:
+        return Window(
+            Multi(
+                Case(
+                    {
+                        False: Multi(
+                            Const("Отправь голосовое сообщение или напиши, какую картинку нужно создать<br><br>"),
+                            Const("ИИ сгенерирует изображение на основе того, что ты ему напишешь.<br><br>"),
+                            Const("<blockquote><b>Например:</b><br>"),
+                            Const("· Счастливая семья стоит в центе новой квартиры в Питере<br>"),
+                            Const("· Над замершим озером в лесу пролетает самолет</blockquote><br><br>"),
+                            Const("📌 <b>Ты можешь добавить свое фото</b><br>"),
+                            Const("В этом случае ИИ сгенерирует изображение на основе картинки, которую ты отправишь, и на основе того, что ты ему напишешь.<br><br>"),
+                            Const("<blockquote><b>Например:</b><br>"),
+                            Const("· Добавь на фото счастливую семью<br>"),
+                            Const("· Убери людей с фона<br>"),
+                            Const("· Отзеркаль машину по горизонтали</blockquote>"),
+                        ),
+                        True: Multi(
+                            Const("⏳ <b>Генерирую изображение...</b><br>"),
+                            Const("🕐 <i>Это может занять время. Пожалуйста, подождите.</i>"),
+                        ),
+                    },
+                    selector="is_generating_image"
+                ),
+                Case(
+                    {
+                        True: Const("<br><br>🔄 <b>Распознаю голосовое сообщение...</b>"),
+                        False: Const(""),
+                    },
+                    selector="voice_transcribe"
+                ),
+                Case(
+                    {
+                        True: Const("<br><br>❌ <b>Ошибка:</b> Промпт не может быть пустым"),
+                        False: Const(""),
+                    },
+                    selector="has_void_reference_generation_image_prompt"
+                ),
+                Case(
+                    {
+                        True: Const("<br><br>📏 <b>Слишком короткий промпт</b><br><i>Минимум 10 символов</i>"),
+                        False: Const(""),
+                    },
+                    selector="has_small_reference_generation_image_prompt"
+                ),
+                Case(
+                    {
+                        True: Const("<br><br>📏 <b>Слишком длинный промпт</b><br><i>Максимум 1000 символов</i>"),
+                        False: Const(""),
+                    },
+                    selector="has_big_reference_generation_image_prompt"
+                ),
+                Case(
+                    {
+                        True: Const(
+                            "<br><br>🎤 <b>Неверный формат</b><br><i>Отправьте текст, голосовое сообщение или аудиофайл</i>"),
+                        False: Const(""),
+                    },
+                    selector="has_invalid_content_type"
+                ),
+                Case(
+                    {
+                        True: Const("<br><br>❌ <b>Неверный формат файла</b><br><i>Отправьте изображение</i>"),
+                        False: Const(""),
+                    },
+                    selector="has_invalid_reference_generation_image_type"
+                ),
+                Case(
+                    {
+                        True: Const("<br><br>📁 <b>Файл слишком большой</b><br><i>Максимум 10 МБ</i>"),
+                        False: Const(""),
+                    },
+                    selector="has_big_reference_generation_image_size"
+                ),
+                sep="",
+            ),
+
+            DynamicMedia(
+                selector="reference_generation_image_media",
+                when="has_reference_generation_image",
+            ),
+
+            MessageInput(
+                func=self.moderation_publication_service.handle_reference_generation_image_prompt_input,
+            ),
+
+            Column(
+                Button(
+                    Const("🖼️ Использовать текущее изображение"),
+                    id="use_current_image",
+                    on_click=self.moderation_publication_service.handle_use_current_image_as_reference,
+                    when=F["has_image"] & ~F["has_reference_generation_image"]
+                ),
+                Button(
+                    Const("🌅 Добавить своё фото"),
+                    id="add_custom_photo",
+                    on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.reference_image_upload,
+                                                         ShowMode.EDIT),
+                    when=~F["has_reference_generation_image"]
+                ),
+                Button(
+                    Const("🗑️ Удалить фото"),
+                    id="remove_custom_photo",
+                    on_click=self.moderation_publication_service.handle_remove_reference_generation_image,
+                    when=F["has_reference_generation_image"]
+                ),
+                when=~F["is_generating_image"]
+            ),
+
+            Button(
+                Const("◀️ Назад"),
+                id="back_to_mode_select",
+                on_click=self.moderation_publication_service.handle_back_from_custom_generation,
+                when=~F["is_generating_image"]
+            ),
+
+            state=model.ModerationPublicationStates.reference_image_generation,
+            getter=self.moderation_publication_getter.get_reference_generation_image_data,
+            parse_mode=SULGUK_PARSE_MODE,
+        )
+
+    def get_reference_generation_image_upload_window(self) -> Window:
+        return Window(
+            Multi(
+                Const("📷 <b>Загрузка фото для генерации</b><br><br>"),
+                Const("📤 <i>Отправьте своё изображение</i>"),
+                Case(
+                    {
+                        True: Const("<br><br>❌ <b>Неверный формат файла</b><br><i>Отправьте изображение</i>"),
+                        False: Const(""),
+                    },
+                    selector="has_invalid_reference_generation_image_type"
+                ),
+                Case(
+                    {
+                        True: Const("<br><br>📁 <b>Файл слишком большой</b><br><i>Максимум 10 МБ</i>"),
+                        False: Const(""),
+                    },
+                    selector="has_big_reference_generation_image_size"
+                ),
+                sep="",
+            ),
+
+            MessageInput(
+                func=self.moderation_publication_service.handle_reference_generation_image_upload,
+            ),
+
+            Button(
+                Const("◀️ Назад"),
+                id="back_to_custom_generation",
+                on_click=lambda c, b, d: d.switch_to(model.ModerationPublicationStates.reference_image_generation,
+                                                     ShowMode.EDIT),
+            ),
+
+            state=model.ModerationPublicationStates.reference_image_upload,
+            getter=self.moderation_publication_getter.get_reference_generation_image_upload_data,
             parse_mode=SULGUK_PARSE_MODE,
         )
 
