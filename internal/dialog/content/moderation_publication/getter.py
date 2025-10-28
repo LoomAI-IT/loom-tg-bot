@@ -356,7 +356,12 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        return self.dialog_data_helper.get_image_menu_window_data(dialog_manager)
+        preview_image_media = self.image_manager.get_image_menu_media(dialog_manager)
+
+        return {
+            "preview_image_media": preview_image_media,
+            **self.dialog_data_helper.get_image_menu_window_data(dialog_manager)
+        }
 
     @auto_log()
     @traced_method()
