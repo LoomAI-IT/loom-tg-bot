@@ -264,7 +264,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         self.dialog_data_helper.set_is_regenerating_text(dialog_manager, True)
         await dialog_manager.show()
-        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, delete_and_send=True)
 
         async with tg_action(self.bot, callback.message.chat.id):
             publication_text = await self.publication_manager.generate_publication_text(dialog_manager)
@@ -308,6 +308,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         self.dialog_data_helper.set_regenerate_text_prompt(dialog_manager, regenerate_text_prompt, True)
         self.dialog_data_helper.set_is_regenerating_text(dialog_manager, True)
         await dialog_manager.show()
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, delete_and_send=True)
 
         async with tg_action(self.bot, message.chat.id):
             new_publication_text = await self.publication_manager.regenerate_publication_text(
@@ -333,7 +334,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             dialog_manager: DialogManager,
             text: str
     ) -> None:
-        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, send=True)
         self.dialog_data_helper.clear_text_edit(dialog_manager=dialog_manager)
         await message.delete()
 
@@ -376,6 +377,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         self.dialog_data_helper.set_edit_image_prompt(dialog_manager, edit_image_prompt)
         self.dialog_data_helper.set_is_generating_image(dialog_manager, True)
         await dialog_manager.show()
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, delete_and_send=True)
 
         async with tg_action(self.bot, message.chat.id, "upload_photo"):
             images_url = await self.image_manager.edit_image_with_prompt(
@@ -397,7 +399,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             widget: MessageInput,
             dialog_manager: DialogManager
     ) -> None:
-        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, send=True)
         self.dialog_data_helper.clear_image_upload(dialog_manager=dialog_manager)
         await message.delete()
 
@@ -424,7 +426,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, send=True)
 
         self.dialog_data_helper.clear_all_image_data(dialog_manager)
 
@@ -580,7 +582,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, send=True)
         await callback.answer()
 
         if self.dialog_data_helper.get_has_image(dialog_manager):
@@ -971,6 +973,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, send=True)
 
         await callback.answer()
+        # TODO сделать через  show()
         await callback.message.edit_text(
             "Генерирую изображение, это может занять время... Не совершайте никаких действий",
             reply_markup=None
