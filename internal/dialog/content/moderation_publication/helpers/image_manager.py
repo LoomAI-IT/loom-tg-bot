@@ -582,13 +582,12 @@ class ImageManager:
         self.dialog_data_helper.clear_temporary_image_data(dialog_manager)
 
     def reject_new_image(self, dialog_manager: DialogManager) -> None:
-        previous_generation_backup = self.dialog_data_helper.get_previous_generation_backup(dialog_manager)
+        # При отклонении всегда возвращаемся к самой первой картинке
         original_image_backup = self.dialog_data_helper.get_original_image_backup(dialog_manager)
-        backup_dict = previous_generation_backup or original_image_backup
 
         self.restore_image_from_backup(
             dialog_manager=dialog_manager,
-            backup_dict=backup_dict
+            backup_dict=original_image_backup
         )
         # Очищаем данные текущей итерации, но сохраняем original_image_backup
         self.dialog_data_helper.clear_new_image_confirm_data(dialog_manager)
