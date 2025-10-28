@@ -6,6 +6,8 @@ from pkg.log_wrapper import auto_log
 from pkg.trace_wrapper import traced_method
 
 from internal.dialog.helpers import StateManager
+from aiogram.types import ContentType
+from aiogram_dialog.api.entities import MediaAttachment, MediaId
 
 from internal.dialog.content.generate_publication.helpers import ImageManager, DialogDataHelper, SocialNetworkManager
 
@@ -260,4 +262,47 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
             "showing_old_image": showing_old_image,
             "showing_new_image": not showing_old_image,
             **flags_data
+        }
+
+    @auto_log()
+    @traced_method()
+    async def get_custom_image_generation_data(
+            self,
+            dialog_manager: DialogManager,
+            **kwargs
+    ) -> dict:
+
+        custom_generation_image_file_id = self.dialog_data_helper.get_custom_generation_image_file_id(dialog_manager)
+        custom_generation_image_media = None
+
+        if custom_generation_image_file_id:
+            custom_generation_image_media = MediaAttachment(
+                file_id=MediaId(custom_generation_image_file_id),
+                type=ContentType.PHOTO
+            )
+
+        return {
+            "has_custom_generation_image": self.dialog_data_helper.get_has_custom_generation_image(dialog_manager),
+            "custom_generation_image_media": custom_generation_image_media,
+            "is_generating_custom_image": dialog_manager.dialog_data.get("is_generating_custom_image", False),
+            "voice_transcribe": dialog_manager.dialog_data.get("voice_transcribe", False),
+            # Error flags
+            "has_void_custom_generation_prompt": dialog_manager.dialog_data.get("has_void_custom_generation_prompt", False),
+            "has_small_custom_generation_prompt": dialog_manager.dialog_data.get("has_small_custom_generation_prompt", False),
+            "has_big_custom_generation_prompt": dialog_manager.dialog_data.get("has_big_custom_generation_prompt", False),
+            "has_invalid_content_type": dialog_manager.dialog_data.get("has_invalid_content_type", False),
+            "has_invalid_custom_image_type": dialog_manager.dialog_data.get("has_invalid_custom_image_type", False),
+            "has_big_custom_image_size": dialog_manager.dialog_data.get("has_big_custom_image_size", False),
+        }
+
+    @auto_log()
+    @traced_method()
+    async def get_custom_image_upload_data(
+            self,
+            dialog_manager: DialogManager,
+            **kwargs
+    ) -> dict:
+        return {
+            "has_invalid_custom_image_type": dialog_manager.dialog_data.get("has_invalid_custom_image_type", False),
+            "has_big_custom_image_size": dialog_manager.dialog_data.get("has_big_custom_image_size", False),
         }

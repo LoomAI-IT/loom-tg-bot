@@ -55,6 +55,15 @@ class IGeneratePublicationDialog(Protocol):
     @abstractmethod
     def get_new_image_confirm_window(self) -> Window: pass
 
+    @abstractmethod
+    def get_image_generation_mode_select_window(self) -> Window: pass
+
+    @abstractmethod
+    def get_custom_image_generation_window(self) -> Window: pass
+
+    @abstractmethod
+    def get_custom_image_upload_window(self) -> Window: pass
+
 
 class IGeneratePublicationService(Protocol):
 
@@ -359,6 +368,46 @@ class IGeneratePublicationService(Protocol):
             dialog_manager: DialogManager
     ) -> None: pass
 
+    @abstractmethod
+    async def handle_auto_generate_image(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
+    @abstractmethod
+    async def handle_custom_generation_input(
+            self,
+            message: Message,
+            widget: MessageInput,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
+    @abstractmethod
+    async def handle_custom_image_upload(
+            self,
+            message: Message,
+            widget: MessageInput,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
+    @abstractmethod
+    async def handle_back_from_custom_generation(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
+    @abstractmethod
+    async def handle_remove_custom_photo(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
 
 class IGeneratePublicationGetter(Protocol):
 
@@ -437,6 +486,18 @@ class IGeneratePublicationGetter(Protocol):
 
     @abstractmethod
     async def get_new_image_confirm_data(
+            self,
+            dialog_manager: DialogManager,
+    ) -> dict: pass
+
+    @abstractmethod
+    async def get_custom_image_generation_data(
+            self,
+            dialog_manager: DialogManager,
+    ) -> dict: pass
+
+    @abstractmethod
+    async def get_custom_image_upload_data(
             self,
             dialog_manager: DialogManager,
     ) -> dict: pass

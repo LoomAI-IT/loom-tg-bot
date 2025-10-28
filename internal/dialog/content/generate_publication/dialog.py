@@ -30,6 +30,9 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             self.get_preview_window(),
             self.get_edit_text_menu_window(),
             self.get_image_menu_window(),
+            self.get_image_generation_mode_select_window(),
+            self.get_custom_image_generation_window(),
+            self.get_custom_image_upload_window(),
             self.get_edit_text_window(),
             self.get_upload_image_window(),
             self.get_new_image_confirm_window(),
@@ -519,7 +522,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                 Button(
                     Const("🎨 Сгенерировать картинку"),
                     id="generate_image",
-                    on_click=self.generate_publication_service.handle_generate_new_image,
+                    on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.image_generation_mode_select, ShowMode.EDIT),
                 ),
                 Button(
                     Const("📷 Использовать своё фото"),
@@ -549,6 +552,198 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
 
             state=model.GeneratePublicationStates.image_menu,
             getter=self.generate_publication_getter.get_image_menu_data,
+            parse_mode=SULGUK_PARSE_MODE,
+        )
+
+    def get_image_generation_mode_select_window(self) -> Window:
+        return Window(
+            Multi(
+                Const("🎨 <b>Выбор режима генерации изображения</b><br><br>"),
+                Const("💡 <b>Выберите режим генерации:</b>"),
+                sep="",
+            ),
+
+            Column(
+                Button(
+                    Const("🎨 Сгенерировать автоматически"),
+                    id="auto_generate",
+                    on_click=self.generate_publication_service.handle_auto_generate_image,
+                ),
+                Button(
+                    Const("🖍 Сгенерировать картинку по моему запросу"),
+                    id="custom_generate",
+                    on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.custom_image_generation, ShowMode.EDIT),
+                ),
+            ),
+
+            Button(
+                Const("◀️ Назад"),
+                id="back_to_image_menu",
+                on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.image_menu, ShowMode.EDIT),
+            ),
+
+            state=model.GeneratePublicationStates.image_generation_mode_select,
+            parse_mode=SULGUK_PARSE_MODE,
+        )
+
+    def get_custom_image_generation_window(self) -> Window:
+        return Window(
+            Multi(
+                Case(
+                    {
+                        False: Multi(
+                            Const("🖍 <b>Генерация изображения по вашему запросу</b><br><br>"),
+                            Case(
+                                {
+                                    True: Multi(
+                                        Const("📸 <b>Загруженное фото:</b><br>"),
+                                        Const("💬 <i>Теперь напишите промпт для генерации или нажмите \"Сгенерировать\"</i><br><br>"),
+                                    ),
+                                    False: Multi(
+                                        Const("💡 <b>Что можно сделать:</b><br>"),
+                                        Const("• Загрузить своё фото через кнопку \"🌅 Добавить своё фото\"<br>"),
+                                        Const("• Написать промпт для генерации<br>"),
+                                        Const("• Или сделать и то, и другое<br><br>"),
+                                    ),
+                                },
+                                selector="has_custom_generation_image"
+                            ),
+                            Const("📝 <b>Что можно указать в промпте:</b><br>"),
+                            Const("• 👥 Объекты и персонажи<br>"),
+                            Const("• 🎭 Стиль и настроение<br>"),
+                            Const("• 🌍 Фон и окружение<br>"),
+                            Const("• ✨ Детали и освещение"),
+                        ),
+                        True: Multi(
+                            Const("⏳ <b>Генерирую изображение...</b><br>"),
+                            Const("🕐 <i>Это может занять время. Пожалуйста, подождите.</i>"),
+                        ),
+                    },
+                    selector="is_generating_custom_image"
+                ),
+                Case(
+                    {
+                        True: Const("<br><br>🔄 <b>Распознаю голосовое сообщение...</b>"),
+                        False: Const(""),
+                    },
+                    selector="voice_transcribe"
+                ),
+                Case(
+                    {
+                        True: Const("<br><br>❌ <b>Ошибка:</b> Промпт не может быть пустым"),
+                        False: Const(""),
+                    },
+                    selector="has_void_custom_generation_prompt"
+                ),
+                Case(
+                    {
+                        True: Const("<br><br>📏 <b>Слишком короткий промпт</b><br><i>Минимум 10 символов</i>"),
+                        False: Const(""),
+                    },
+                    selector="has_small_custom_generation_prompt"
+                ),
+                Case(
+                    {
+                        True: Const("<br><br>📏 <b>Слишком длинный промпт</b><br><i>Максимум 1000 символов</i>"),
+                        False: Const(""),
+                    },
+                    selector="has_big_custom_generation_prompt"
+                ),
+                Case(
+                    {
+                        True: Const("<br><br>🎤 <b>Неверный формат</b><br><i>Отправьте текст, голосовое сообщение или аудиофайл</i>"),
+                        False: Const(""),
+                    },
+                    selector="has_invalid_content_type"
+                ),
+                Case(
+                    {
+                        True: Const("<br><br>❌ <b>Неверный формат файла</b><br><i>Отправьте изображение</i>"),
+                        False: Const(""),
+                    },
+                    selector="has_invalid_custom_image_type"
+                ),
+                Case(
+                    {
+                        True: Const("<br><br>📁 <b>Файл слишком большой</b><br><i>Максимум 10 МБ</i>"),
+                        False: Const(""),
+                    },
+                    selector="has_big_custom_image_size"
+                ),
+                sep="",
+            ),
+
+            DynamicMedia(
+                selector="custom_generation_image_media",
+                when="has_custom_generation_image",
+            ),
+
+            MessageInput(
+                func=self.generate_publication_service.handle_custom_generation_input,
+            ),
+
+            Column(
+                Button(
+                    Const("🌅 Добавить своё фото"),
+                    id="add_custom_photo",
+                    on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.custom_image_upload, ShowMode.EDIT),
+                    when=~F["has_custom_generation_image"]
+                ),
+                Button(
+                    Const("🗑️ Удалить фото"),
+                    id="remove_custom_photo",
+                    on_click=self.generate_publication_service.handle_remove_custom_photo,
+                    when=F["has_custom_generation_image"]
+                ),
+                when=~F["is_generating_custom_image"]
+            ),
+
+            Button(
+                Const("◀️ Назад"),
+                id="back_to_mode_select",
+                on_click=self.generate_publication_service.handle_back_from_custom_generation,
+                when=~F["is_generating_custom_image"]
+            ),
+
+            state=model.GeneratePublicationStates.custom_image_generation,
+            getter=self.generate_publication_getter.get_custom_image_generation_data,
+            parse_mode=SULGUK_PARSE_MODE,
+        )
+
+    def get_custom_image_upload_window(self) -> Window:
+        return Window(
+            Multi(
+                Const("📷 <b>Загрузка фото для генерации</b><br><br>"),
+                Const("📤 <i>Отправьте своё изображение</i>"),
+                Case(
+                    {
+                        True: Const("<br><br>❌ <b>Неверный формат файла</b><br><i>Отправьте изображение</i>"),
+                        False: Const(""),
+                    },
+                    selector="has_invalid_custom_image_type"
+                ),
+                Case(
+                    {
+                        True: Const("<br><br>📁 <b>Файл слишком большой</b><br><i>Максимум 10 МБ</i>"),
+                        False: Const(""),
+                    },
+                    selector="has_big_custom_image_size"
+                ),
+                sep="",
+            ),
+
+            MessageInput(
+                func=self.generate_publication_service.handle_custom_image_upload,
+            ),
+
+            Button(
+                Const("◀️ Назад"),
+                id="back_to_custom_generation",
+                on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.custom_image_generation, ShowMode.EDIT),
+            ),
+
+            state=model.GeneratePublicationStates.custom_image_upload,
+            getter=self.generate_publication_getter.get_custom_image_upload_data,
             parse_mode=SULGUK_PARSE_MODE,
         )
 

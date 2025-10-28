@@ -426,3 +426,67 @@ class DialogDataHelper:
             "combine_current_index",
             "combine_prompt"
         )
+
+    def clear_custom_generation_data(self, dialog_manager: DialogManager) -> None:
+        """Очистка данных кастомной генерации изображений"""
+        self.clear(
+            dialog_manager,
+            "custom_generation_prompt",
+            "custom_generation_image_file_id",
+            "has_custom_generation_image",
+            "has_custom_generation_prompt",
+            "has_void_custom_generation_prompt",
+            "has_small_custom_generation_prompt",
+            "has_big_custom_generation_prompt",
+            "has_invalid_custom_image_type",
+            "has_big_custom_image_size",
+            "is_generating_custom_image"
+        )
+
+    # ============= МЕТОДЫ ДЛЯ КАСТОМНОЙ ГЕНЕРАЦИИ =============
+
+    def get_custom_generation_prompt(self, dialog_manager: DialogManager) -> str:
+        return dialog_manager.dialog_data.get("custom_generation_prompt", "")
+
+    def get_custom_generation_image_file_id(self, dialog_manager: DialogManager) -> str | None:
+        return dialog_manager.dialog_data.get("custom_generation_image_file_id")
+
+    def get_has_custom_generation_image(self, dialog_manager: DialogManager) -> bool:
+        return dialog_manager.dialog_data.get("has_custom_generation_image", False)
+
+    def get_has_custom_generation_prompt(self, dialog_manager: DialogManager) -> bool:
+        return bool(dialog_manager.dialog_data.get("custom_generation_prompt", ""))
+
+    def set_custom_generation_prompt(self, dialog_manager: DialogManager, prompt: str) -> None:
+        dialog_manager.dialog_data["custom_generation_prompt"] = prompt
+
+    def set_custom_generation_image_file_id(self, dialog_manager: DialogManager, file_id: str) -> None:
+        dialog_manager.dialog_data["custom_generation_image_file_id"] = file_id
+        dialog_manager.dialog_data["has_custom_generation_image"] = True
+
+    def set_is_generating_custom_image(self, dialog_manager: DialogManager, value: bool) -> None:
+        dialog_manager.dialog_data["is_generating_custom_image"] = value
+
+    def remove_custom_generation_image(self, dialog_manager: DialogManager) -> None:
+        self.clear(
+            dialog_manager,
+            "custom_generation_image_file_id",
+            "has_custom_generation_image"
+        )
+
+    def clear_custom_generation_prompt_errors(self, dialog_manager: DialogManager) -> None:
+        self.clear(
+            dialog_manager,
+            "has_void_custom_generation_prompt",
+            "has_small_custom_generation_prompt",
+            "has_big_custom_generation_prompt",
+            "has_invalid_content_type",
+            "voice_transcribe"
+        )
+
+    def clear_custom_generation_image_errors(self, dialog_manager: DialogManager) -> None:
+        self.clear(
+            dialog_manager,
+            "has_invalid_custom_image_type",
+            "has_big_custom_image_size"
+        )

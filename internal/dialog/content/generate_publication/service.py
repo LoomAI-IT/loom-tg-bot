@@ -1139,3 +1139,182 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         self.image_manager.reject_new_image(dialog_manager=dialog_manager)
 
         await dialog_manager.switch_to(state=model.GeneratePublicationStates.image_menu)
+
+    # ============= PUBLIC HANDLERS: CUSTOM IMAGE GENERATION =============
+
+    @auto_log()
+    @traced_method()
+    async def handle_auto_generate_image(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        """Автоматическая генерация изображения (текущая логика handle_generate_new_image)"""
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, send=True)
+
+        await callback.answer()
+        self.dialog_data_helper.set_is_generating_image(dialog_manager, True)
+        await dialog_manager.show()
+
+        category_id = self.dialog_data_helper.get_category_id(dialog_manager)
+        publication_text = self.dialog_data_helper.get_publication_text(dialog_manager)
+        text_reference = self.dialog_data_helper.get_input_text(dialog_manager)
+
+        images_url = await self.image_manager.generate_new_image(
+            dialog_manager=dialog_manager,
+            category_id=category_id,
+            publication_text=publication_text,
+            text_reference=text_reference,
+            chat_id=callback.message.chat.id
+        )
+
+        self.dialog_data_helper.set_is_generating_image(dialog_manager, False)
+        self.dialog_data_helper.set_generated_images_url(dialog_manager, images_url)
+
+        await dialog_manager.switch_to(state=model.GeneratePublicationStates.new_image_confirm)
+
+    @auto_log()
+    @traced_method()
+    async def handle_remove_custom_photo(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        """Удаление загруженного фото"""
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
+        self.dialog_data_helper.remove_custom_generation_image(dialog_manager)
+        await callback.answer("Фото удалено")
+
+    @auto_log()
+    @traced_method()
+    async def handle_custom_generation_input(
+            self,
+            message: Message,
+            widget: MessageInput,
+            dialog_manager: DialogManager
+    ) -> None:
+        """Обработка ввода промпта для генерации (текст или голосовое) и автоматический запуск генерации"""
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, send=True)
+        await message.delete()
+
+        self.dialog_data_helper.clear_custom_generation_prompt_errors(dialog_manager)
+
+        state = await self.state_manager.get_state(dialog_manager=dialog_manager)
+
+        # Обрабатываем только текст и голосовые
+        if not self.validation.validate_content_type(message=message, dialog_manager=dialog_manager):
+            return
+
+        prompt = await self.message_extractor.process_voice_or_text_input(
+            message=message,
+            dialog_manager=dialog_manager,
+            organization_id=state.organization_id
+        )
+
+        if not self.validation.validate_prompt(
+                text=prompt,
+                dialog_manager=dialog_manager,
+                void_flag="has_void_custom_generation_prompt",
+                small_flag="has_small_custom_generation_prompt",
+                big_flag="has_big_custom_generation_prompt"
+        ):
+            return
+
+        self.dialog_data_helper.set_custom_generation_prompt(dialog_manager, prompt)
+
+        # Сразу запускаем генерацию
+        custom_image_file_id = self.dialog_data_helper.get_custom_generation_image_file_id(dialog_manager)
+
+        self.dialog_data_helper.set_is_generating_custom_image(dialog_manager, True)
+        await dialog_manager.show()
+
+        category_id = self.dialog_data_helper.get_category_id(dialog_manager)
+        publication_text = self.dialog_data_helper.get_publication_text(dialog_manager)
+        text_reference = self.dialog_data_helper.get_input_text(dialog_manager)
+
+        # Получаем содержимое изображения если оно есть
+        image_content = None
+        image_filename = None
+        if custom_image_file_id:
+            image_io = await self.bot.download(custom_image_file_id)
+            image_content = image_io.read()
+            image_filename = f"{custom_image_file_id}.jpg"
+
+        # Генерируем изображение
+        async with tg_action(self.bot, message.chat.id, "upload_photo"):
+            images_url = await self.loom_content_client.generate_publication_image(
+                category_id=category_id,
+                publication_text=publication_text,
+                text_reference=text_reference,
+                prompt=prompt,
+                image_content=image_content,
+                image_filename=image_filename,
+            )
+
+        self.dialog_data_helper.set_is_generating_custom_image(dialog_manager, False)
+        self.dialog_data_helper.set_generated_images_url(dialog_manager, images_url)
+
+        # Очищаем данные кастомной генерации
+        self.dialog_data_helper.clear_custom_generation_data(dialog_manager)
+
+        await dialog_manager.switch_to(state=model.GeneratePublicationStates.new_image_confirm)
+
+    @auto_log()
+    @traced_method()
+    async def handle_custom_image_upload(
+            self,
+            message: Message,
+            widget: MessageInput,
+            dialog_manager: DialogManager
+    ) -> None:
+        """Обработка загрузки фото в отдельном окне"""
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
+        await message.delete()
+
+        self.dialog_data_helper.clear_custom_generation_image_errors(dialog_manager)
+
+        # Проверяем, что это фото
+        if not self.validation.validate_image_content_type(
+                message=message,
+                dialog_manager=dialog_manager,
+                error_flag="has_invalid_custom_image_type"
+        ):
+            return
+
+        if not message.photo:
+            self.dialog_data_helper.set_error_flag(dialog_manager, "has_invalid_custom_image_type")
+            return
+
+        photo = message.photo[-1]
+        if not self.validation.validate_image_size(
+                photo=photo,
+                dialog_manager=dialog_manager,
+                error_flag="has_big_custom_image_size"
+        ):
+            return
+
+        # Сохраняем file_id фото
+        self.dialog_data_helper.set_custom_generation_image_file_id(dialog_manager, photo.file_id)
+        self.logger.info(f"Загружено фото для кастомной генерации: {photo.file_id}")
+
+        # Возвращаемся обратно в окно custom_image_generation
+        await dialog_manager.switch_to(state=model.GeneratePublicationStates.custom_image_generation)
+
+    @auto_log()
+    @traced_method()
+    async def handle_back_from_custom_generation(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        """Возврат из окна кастомной генерации"""
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
+
+        # Очищаем данные кастомной генерации
+        self.dialog_data_helper.clear_custom_generation_data(dialog_manager)
+
+        await callback.answer()
+        await dialog_manager.switch_to(state=model.GeneratePublicationStates.image_generation_mode_select)
