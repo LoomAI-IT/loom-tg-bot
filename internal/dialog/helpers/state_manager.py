@@ -16,13 +16,13 @@ class StateManager:
             no_update: bool = False,
     ) -> None:
         if edit:
-            dialog_manager.show_edit = ShowMode.EDIT
+            dialog_manager.show_mode = ShowMode.EDIT
         elif delete_and_send:
-            dialog_manager.show_edit = ShowMode.DELETE_AND_SEND
+            dialog_manager.show_mode = ShowMode.DELETE_AND_SEND
         elif send:
-            dialog_manager.show_edit = ShowMode.SEND
+            dialog_manager.show_mode = ShowMode.SEND
         elif no_update:
-            dialog_manager.show_edit = ShowMode.NO_UPDATE
+            dialog_manager.show_mode = ShowMode.NO_UPDATE
 
     async def get_state(self, dialog_manager: DialogManager) -> model.UserState:
         if hasattr(dialog_manager.event, 'message') and dialog_manager.event.message:
