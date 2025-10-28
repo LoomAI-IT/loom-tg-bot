@@ -446,7 +446,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                 Case(
                     {
                         True: Multi(
-                            Const("<b>Что сделать с этой картинкой? :</b>"),
+                            Const("<b>Что сделать с этой картинкой?</b>"),
                         ),
                         False: Multi(
                             Const("<b>Давай добавим картинку к этому посту</b>"),
@@ -600,6 +600,11 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                     selector="has_invalid_content_type"
                 ),
                 sep="",
+            ),
+
+            DynamicMedia(
+                selector="preview_image_media",
+                when="has_image",
             ),
 
             MessageInput(
