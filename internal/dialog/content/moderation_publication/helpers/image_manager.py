@@ -444,7 +444,7 @@ class ImageManager:
     def create_new_image_backup_dict(self, dialog_manager: DialogManager) -> dict | None:
         """Создает backup из новых сгенерированных изображений в new_image_confirm"""
         generated_images_url = self.dialog_data_helper.get_generated_images_url(dialog_manager)
-        combine_result_url = self.dialog_data_helper.get_combine_result_url(dialog_manager)
+        combined_image_result = self.dialog_data_helper.get_combined_image_result_url(dialog_manager)
 
         if generated_images_url:
             return {
@@ -452,10 +452,10 @@ class ImageManager:
                 "value": generated_images_url,
                 "index": 0
             }
-        elif combine_result_url:
+        elif combined_image_result:
             return {
                 "type": "url",
-                "value": combine_result_url
+                "value": combined_image_result
             }
 
         return None
