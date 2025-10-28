@@ -358,23 +358,23 @@ class ImageManager:
                 self.logger.info(f"Новая картинка добавлена в список для объединения: {file_id}")
 
         # Сохраняем backup
-        old_generated_image_backup = self.dialog_data_helper.get_old_generated_image_backup(dialog_manager)
-        old_image_backup = self.dialog_data_helper.get_old_image_backup(dialog_manager)
+        previous_generation_backup = self.dialog_data_helper.get_previous_generation_backup(dialog_manager)
+        original_image_backup = self.dialog_data_helper.get_original_image_backup(dialog_manager)
 
-        if not old_generated_image_backup and not old_image_backup:
+        if not previous_generation_backup and not original_image_backup:
             if generated_images_url:
                 backup_dict = {
                     "type": "url",
                     "value": generated_images_url,
                     "index": 0
                 }
-                self.dialog_data_helper.set_old_generated_image_backup(dialog_manager, backup_dict)
+                self.dialog_data_helper.set_previous_generation_backup(dialog_manager, backup_dict)
             elif combined_image_result_url:
                 backup_dict = {
                     "type": "url",
                     "value": combined_image_result_url
                 }
-                self.dialog_data_helper.set_old_image_backup(dialog_manager, backup_dict)
+                self.dialog_data_helper.set_original_image_backup(dialog_manager, backup_dict)
 
         return combine_images_list
 
@@ -431,26 +431,26 @@ class ImageManager:
     def backup_current_image(self, dialog_manager: DialogManager) -> None:
         """
         Создает два типа backup:
-        1. old_image_backup - создается только один раз для восстановления при "Отклонить"
-        2. old_generated_image_backup - обновляется при каждой генерации для показа "старой" картинки
+        1. original_image_backup - создается только один раз для восстановления при "Отклонить"
+        2. previous_generation_backup - обновляется при каждой генерации для показа "старой" картинки
         """
-        # Создаем old_image_backup только если его еще нет (первая генерация)
-        old_backup = self.dialog_data_helper.get_old_image_backup(dialog_manager)
-        if not old_backup:
+        # Создаем original_image_backup только если его еще нет (первая генерация)
+        original_backup = self.dialog_data_helper.get_original_image_backup(dialog_manager)
+        if not original_backup:
             # Это первая генерация - сохраняем текущую картинку публикации
-            old_backup = self.create_image_backup_dict(dialog_manager=dialog_manager)
-            self.dialog_data_helper.set_old_image_backup(dialog_manager, old_backup)
+            original_backup = self.create_image_backup_dict(dialog_manager=dialog_manager)
+            self.dialog_data_helper.set_original_image_backup(dialog_manager, original_backup)
 
-        # Создаем old_generated_image_backup - сохраняем текущее состояние new_image_confirm
+        # Создаем previous_generation_backup - сохраняем текущее состояние new_image_confirm
         # Если там есть картинка (это не первая генерация), сохраняем её
         # Если там пусто (первая генерация), сохраняем текущую картинку публикации
         new_image_backup = self.create_new_image_backup_dict(dialog_manager)
         if new_image_backup:
-            self.dialog_data_helper.set_old_generated_image_backup(dialog_manager, new_image_backup)
+            self.dialog_data_helper.set_previous_generation_backup(dialog_manager, new_image_backup)
         else:
             # Первая генерация - используем текущую картинку публикации
             current_backup = self.create_image_backup_dict(dialog_manager=dialog_manager)
-            self.dialog_data_helper.set_old_generated_image_backup(dialog_manager, current_backup)
+            self.dialog_data_helper.set_previous_generation_backup(dialog_manager, current_backup)
 
     def restore_image_from_backup(
             self,
@@ -491,9 +491,9 @@ class ImageManager:
         generated_images_url = self.dialog_data_helper.get_generated_images_url(dialog_manager)
         combined_image_result_url = self.dialog_data_helper.get_combined_image_result_url(dialog_manager)
 
-        old_generated_image_backup = self.dialog_data_helper.get_old_generated_image_backup(dialog_manager)
-        old_image_backup = self.dialog_data_helper.get_old_image_backup(dialog_manager)
-        old_image_backup = old_image_backup or old_generated_image_backup
+        previous_generation_backup = self.dialog_data_helper.get_previous_generation_backup(dialog_manager)
+        original_image_backup = self.dialog_data_helper.get_original_image_backup(dialog_manager)
+        old_image_backup = previous_generation_backup or original_image_backup
 
         showing_old_image = self.dialog_data_helper.get_showing_old_image(dialog_manager)
 
@@ -582,15 +582,16 @@ class ImageManager:
         self.dialog_data_helper.clear_temporary_image_data(dialog_manager)
 
     def reject_new_image(self, dialog_manager: DialogManager) -> None:
-        old_generated_image_backup = self.dialog_data_helper.get_old_generated_image_backup(dialog_manager)
-        old_image_backup = self.dialog_data_helper.get_old_image_backup(dialog_manager)
-        backup_dict = old_image_backup or old_generated_image_backup
+        previous_generation_backup = self.dialog_data_helper.get_previous_generation_backup(dialog_manager)
+        original_image_backup = self.dialog_data_helper.get_original_image_backup(dialog_manager)
+        backup_dict = previous_generation_backup or original_image_backup
 
         self.restore_image_from_backup(
             dialog_manager=dialog_manager,
             backup_dict=backup_dict
         )
-        self.dialog_data_helper.clear_temporary_image_data(dialog_manager)
+        # Очищаем данные текущей итерации, но сохраняем original_image_backup
+        self.dialog_data_helper.clear_new_image_confirm_data(dialog_manager)
 
     def toggle_showing_old_image(
             self,

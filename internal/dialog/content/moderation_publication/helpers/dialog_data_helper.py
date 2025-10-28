@@ -449,26 +449,26 @@ class DialogDataHelper:
         dialog_manager.dialog_data["generated_images_url"] = urls
 
     @staticmethod
-    def get_old_image_backup(dialog_manager: DialogManager) -> dict | None:
-        return dialog_manager.dialog_data.get("old_image_backup")
+    def get_original_image_backup(dialog_manager: DialogManager) -> dict | None:
+        return dialog_manager.dialog_data.get("original_image_backup")
 
     @staticmethod
-    def get_old_generated_image_backup(dialog_manager: DialogManager) -> dict | None:
-        return dialog_manager.dialog_data.get("old_generated_image_backup")
+    def get_previous_generation_backup(dialog_manager: DialogManager) -> dict | None:
+        return dialog_manager.dialog_data.get("previous_generation_backup")
 
     @staticmethod
-    def set_old_image_backup(dialog_manager: DialogManager, backup_dict: dict | None) -> None:
+    def set_original_image_backup(dialog_manager: DialogManager, backup_dict: dict | None) -> None:
         if backup_dict is None:
-            dialog_manager.dialog_data.pop("old_image_backup", None)
+            dialog_manager.dialog_data.pop("original_image_backup", None)
         else:
-            dialog_manager.dialog_data["old_image_backup"] = backup_dict
+            dialog_manager.dialog_data["original_image_backup"] = backup_dict
 
     @staticmethod
-    def set_old_generated_image_backup(dialog_manager: DialogManager, backup_dict: dict | None) -> None:
+    def set_previous_generation_backup(dialog_manager: DialogManager, backup_dict: dict | None) -> None:
         if backup_dict is None:
-            dialog_manager.dialog_data.pop("old_generated_image_backup", None)
+            dialog_manager.dialog_data.pop("previous_generation_backup", None)
         else:
-            dialog_manager.dialog_data["old_generated_image_backup"] = backup_dict
+            dialog_manager.dialog_data["previous_generation_backup"] = backup_dict
 
     @staticmethod
     def get_showing_old_image(dialog_manager: DialogManager) -> bool:
@@ -497,11 +497,24 @@ class DialogDataHelper:
         dialog_manager.dialog_data.pop("has_invalid_content_type", None)
 
     @staticmethod
-    def clear_temporary_image_data(dialog_manager: DialogManager) -> None:
+    def clear_new_image_confirm_data(dialog_manager: DialogManager) -> None:
+        """Очищает данные текущей итерации генерации, но сохраняет original_image_backup"""
         dialog_manager.dialog_data.pop("generated_images_url", None)
         dialog_manager.dialog_data.pop("combined_image_result_url", None)
-        dialog_manager.dialog_data.pop("old_generated_image_backup", None)
-        dialog_manager.dialog_data.pop("old_image_backup", None)
+        dialog_manager.dialog_data.pop("previous_generation_backup", None)
+        dialog_manager.dialog_data.pop("edit_image_prompt", None)
+        dialog_manager.dialog_data.pop("combine_images_list", None)
+        dialog_manager.dialog_data.pop("combine_current_index", None)
+        dialog_manager.dialog_data.pop("combine_image_prompt", None)
+        dialog_manager.dialog_data.pop("showing_old_image", None)
+
+    @staticmethod
+    def clear_temporary_image_data(dialog_manager: DialogManager) -> None:
+        """Полная очистка всех временных данных изображений, включая original_image_backup"""
+        dialog_manager.dialog_data.pop("generated_images_url", None)
+        dialog_manager.dialog_data.pop("combined_image_result_url", None)
+        dialog_manager.dialog_data.pop("previous_generation_backup", None)
+        dialog_manager.dialog_data.pop("original_image_backup", None)
         dialog_manager.dialog_data.pop("edit_image_prompt", None)
         dialog_manager.dialog_data.pop("combine_images_list", None)
         dialog_manager.dialog_data.pop("combine_current_index", None)
