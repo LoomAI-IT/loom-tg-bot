@@ -8,7 +8,7 @@ from internal.dialog.content.moderation_publication.helpers.dialog_data_helper i
 
 class TextProcessor:
     MAX_TEXT_WITH_IMAGE = 1024
-    RECOMMENDED_TEXT_WITH_IMAGE = 900
+    RECOMMENDED_TEXT_WITH_IMAGE = 800
     MAX_TEXT_WITHOUT_IMAGE = 4096
     RECOMMENDED_TEXT_WITHOUT_IMAGE = 3600
 

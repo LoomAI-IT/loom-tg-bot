@@ -540,7 +540,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             Multi(
                 Const("<b>Что сделать с этой картинкой?</b><br><br>"),
                 Const("📌 <b>Сгенерировать автоматически</b> — ИИ сгенерирует изображение автоматически, изучив текст поста.<br><br>"),
-                Const("📌 <b>Сгенерировать картинку по моему запросу</b> — ИИ сгенерирует изображение на основе того, что ты ему напишешь."),
+                Const("📌 <b>Сгенерировать по моему запросу</b> — ИИ сгенерирует изображение на основе того, что ты ему напишешь."),
                 sep="",
             ),
 
@@ -551,7 +551,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                     on_click=self.generate_publication_service.handle_auto_generate_image,
                 ),
                 Button(
-                    Const("🖍 Сгенерировать картинку по моему запросу"),
+                    Const("🖍 По моему запросу"),
                     id="custom_generate",
                     on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.reference_image_generation,
                                                          ShowMode.EDIT),
