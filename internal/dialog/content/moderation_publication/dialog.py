@@ -352,7 +352,7 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
             ),
 
             state=model.ModerationPublicationStates.edit_text_menu,
-            getter=self.moderation_publication_getter.get_edit_text_data,
+            getter=self.moderation_publication_getter.get_edit_publication_text_data,
             parse_mode=SULGUK_PARSE_MODE,
         )
 
@@ -400,7 +400,7 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
             ),
 
             state=model.ModerationPublicationStates.edit_text,
-            getter=self.moderation_publication_getter.get_edit_text_data,
+            getter=self.moderation_publication_getter.get_edit_publication_text_data,
             parse_mode=SULGUK_PARSE_MODE,
         )
 
@@ -755,7 +755,7 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
                 ),
                 Case(
                     {
-                        True: Format("<br><br>📝 <b>Ваши правки:</b><br><i>{image_edit_prompt}</i>"),
+                        True: Format("<br><br>📝 <b>Ваши правки:</b><br><i>{edit_image_prompt}</i>"),
                         False: Const(""),
                     },
                     selector="has_image_edit_prompt"
@@ -812,14 +812,14 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
             ),
 
             MessageInput(
-                func=self.moderation_publication_service.handle_new_image_confirm_input,
+                func=self.moderation_publication_service.handle_edit_image_prompt_input_from_confirm_new_image,
             ),
 
             Column(
                 Button(
                     Const("📐 Объединить с другими фото"),
                     id="combine_from_new_image",
-                    on_click=self.moderation_publication_service.handle_combine_from_new_image,
+                    on_click=self.moderation_publication_service.handle_combine_image_from_new_image,
                     when=~F["is_applying_edits"]
                 ),
                 Row(
@@ -857,7 +857,7 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
                             Const("📤 <i>Загрузите от 2 до 3 изображений для объединения</i>"),
                         ),
                     },
-                    selector="has_current_image"
+                    selector="has_image"
                 ),
                 sep="",
             ),
@@ -866,14 +866,14 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
                 Button(
                     Const("➕ Объединить с текущим"),
                     id="combine_with_current",
-                    on_click=self.moderation_publication_service.handle_combine_with_current,
-                    when="has_current_image",
+                    on_click=self.moderation_publication_service.handle_combine_with_current_image,
+                    when="has_image",
                 ),
                 Button(
                     Const("🔄 Начать с новых"),
                     id="combine_from_scratch",
-                    on_click=self.moderation_publication_service.handle_combine_from_scratch,
-                    when="has_current_image",
+                    on_click=self.moderation_publication_service.handle_combine_image_from_scratch,
+                    when="has_image",
                 ),
             ),
 
@@ -984,7 +984,7 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
             Button(
                 Const("◀️ Назад"),
                 id="back_from_combine_upload",
-                on_click=self.moderation_publication_service.handle_back_from_combine_upload,
+                on_click=self.moderation_publication_service.handle_back_from_combine_image_upload,
             ),
 
             state=model.ModerationPublicationStates.combine_images_upload,
@@ -1037,14 +1037,14 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
                         True: Const("<br><br>📏 <b>Слишком короткое описание</b><br><i>Минимум 10 символов</i>"),
                         False: Const(""),
                     },
-                    selector="has_small_combine_prompt"
+                    selector="has_small_combine_image_prompt"
                 ),
                 Case(
                     {
                         True: Const("<br><br>📏 <b>Слишком длинное описание</b><br><i>Максимум 1000 символов</i>"),
                         False: Const(""),
                     },
-                    selector="has_big_combine_prompt"
+                    selector="has_big_combine_image_prompt"
                 ),
                 Case(
                     {
@@ -1078,13 +1078,13 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
             ),
 
             MessageInput(
-                func=self.moderation_publication_service.handle_combine_prompt_input,
+                func=self.moderation_publication_service.handle_combine_image_prompt_input,
             ),
 
             Button(
                 Const("⏭️ Пропустить"),
                 id="skip_prompt",
-                on_click=self.moderation_publication_service.handle_skip_combine_prompt,
+                on_click=self.moderation_publication_service.handle_skip_combine_image_prompt,
                 when=~F["is_combining_images"]
             ),
 

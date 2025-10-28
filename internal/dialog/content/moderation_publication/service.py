@@ -650,7 +650,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
 
     @auto_log()
     @traced_method()
-    async def handle_combine_with_current(
+    async def handle_combine_with_current_image(
             self,
             callback: CallbackQuery,
             button: Any,
@@ -671,7 +671,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
 
     @auto_log()
     @traced_method()
-    async def handle_combine_from_scratch(
+    async def handle_combine_image_from_scratch(
             self,
             callback: CallbackQuery,
             button: Any,
@@ -756,7 +756,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
 
     @auto_log()
     @traced_method()
-    async def handle_back_from_combine_upload(
+    async def handle_back_from_combine_image_upload(
             self,
             callback: CallbackQuery,
             button: Any,
@@ -786,7 +786,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
 
     @auto_log()
     @traced_method()
-    async def handle_combine_prompt_input(
+    async def handle_combine_image_prompt_input(
             self,
             message: Message,
             widget: MessageInput,
@@ -795,7 +795,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
         await message.delete()
 
-        self.dialog_data_helper.clear_combine_prompt_error_flags(dialog_manager=dialog_manager)
+        self.dialog_data_helper.clear_combine_image_prompt_error_flags(dialog_manager=dialog_manager)
 
         state = await self.state_manager.get_state(dialog_manager=dialog_manager)
 
@@ -812,7 +812,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             organization_id=state.organization_id
         )
 
-        if not self.validation.validate_combine_prompt(prompt=prompt, dialog_manager=dialog_manager):
+        if not self.validation.validate_combine_image_prompt(prompt=prompt, dialog_manager=dialog_manager):
             return
 
         combine_images_list = self.dialog_data_helper.get_combine_images_list(dialog_manager)
@@ -821,7 +821,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             self.dialog_data_helper.set_validation_flag(dialog_manager, "not_enough_combine_images")
             return
 
-        self.dialog_data_helper.set_combine_prompt(dialog_manager, prompt)
+        self.dialog_data_helper.set_combine_image_prompt(dialog_manager, prompt)
         self.dialog_data_helper.set_is_combining_images(dialog_manager, True)
         await dialog_manager.show()
 
@@ -842,7 +842,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
 
     @auto_log()
     @traced_method()
-    async def handle_skip_combine_prompt(
+    async def handle_skip_combine_image_prompt(
             self,
             callback: CallbackQuery,
             button: Any,
@@ -878,7 +878,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
 
     @auto_log()
     @traced_method()
-    async def handle_combine_from_new_image(
+    async def handle_combine_image_from_new_image(
             self,
             callback: CallbackQuery,
             button: Any,
@@ -904,7 +904,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
 
     @auto_log()
     @traced_method()
-    async def handle_new_image_confirm_input(
+    async def handle_edit_image_prompt_input_from_confirm_new_image(
             self,
             message: Message,
             widget: MessageInput,

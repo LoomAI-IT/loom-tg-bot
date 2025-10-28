@@ -27,7 +27,6 @@ class TextProcessor:
         is_valid, expected_length = self.validation.validate_publication_text_length(
             text=publication_text,
             has_image=has_image,
-            dialog_manager=dialog_manager
         )
 
         if not is_valid:

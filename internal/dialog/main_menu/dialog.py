@@ -46,21 +46,21 @@ class MainMenuDialog(interface.IMainMenuDialog):
                                 True: Const("<br><br>❌ <b>Ошибка:</b> Текст не может быть пустым"),
                                 False: Const(""),
                             },
-                            selector="has_void_input_text"
+                            selector="has_void_text_prompt"
                         ),
                         Case(
                             {
                                 True: Const("<br><br>📏 <b>Слишком короткий текст</b><br/><i>Минимум 10 символов</i>"),
                                 False: Const(""),
                             },
-                            selector="has_small_input_text"
+                            selector="has_small_text_prompt"
                         ),
                         Case(
                             {
                                 True: Const("<br><br>📏 <b>Слишком длинный текст</b><br/><i>Максимум 2000 символов</i>"),
                                 False: Const(""),
                             },
-                            selector="has_big_input_text"
+                            selector="has_big_text_prompt"
                         ),
                         # Voice input error messages
                         Case(
@@ -113,7 +113,7 @@ class MainMenuDialog(interface.IMainMenuDialog):
             ),
 
             MessageInput(
-                func=self.main_menu_service.handle_generate_publication_prompt_input,
+                func=self.main_menu_service.handle_text_prompt_input,
             ),
 
             state=model.MainMenuStates.main_menu,

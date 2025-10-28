@@ -44,17 +44,14 @@ class ValidationService:
             big_flag: str
     ) -> bool:
         if not text:
-            self.logger.info(f"Пустой текст: {void_flag}")
             self.dialog_data_helper.set_error_flag(dialog_manager, void_flag)
             return False
 
         if len(text) < min_length:
-            self.logger.info(f"Слишком короткий текст: {small_flag}")
             self.dialog_data_helper.set_error_flag(dialog_manager, small_flag)
             return False
 
         if len(text) > max_length:
-            self.logger.info(f"Слишком длинный текст: {big_flag}")
             self.dialog_data_helper.set_error_flag(dialog_manager, big_flag)
             return False
 
@@ -78,15 +75,37 @@ class ValidationService:
             big_flag
         )
 
-    def validate_input_text(self, text: str, dialog_manager: DialogManager) -> bool:
+    def validate_generate_text_prompt(self, text: str, dialog_manager: DialogManager) -> bool:
         return self.validate_text_with_limits(
             text,
             self.MIN_TEXT_PROMPT_LENGTH,
             self.MAX_TEXT_PROMPT_LENGTH,
             dialog_manager,
-            "has_void_input_text",
-            "has_small_input_text",
-            "has_big_input_text"
+            "has_void_text_prompt",
+            "has_small_text_prompt",
+            "has_big_text_prompt"
+        )
+
+    def validate_regenerate_text_prompt(self, text: str, dialog_manager: DialogManager) -> bool:
+        return self.validate_text_with_limits(
+            text,
+            self.MIN_TEXT_PROMPT_LENGTH,
+            self.MAX_TEXT_PROMPT_LENGTH,
+            dialog_manager,
+            "has_void_regenerate_text_prompt",
+            "has_small_regenerate_text_prompt",
+            "has_big_regenerate_text_prompt"
+        )
+
+    def validate_edit_image_prompt(self, text: str, dialog_manager: DialogManager) -> bool:
+        return self.validate_text_with_limits(
+            text,
+            self.MIN_TEXT_PROMPT_LENGTH,
+            self.MAX_TEXT_PROMPT_LENGTH,
+            dialog_manager,
+            "has_void_edit_image_prompt",
+            "has_small_edit_image_prompt",
+            "has_big_edit_image_prompt"
         )
 
     def validate_edited_text(self, text: str, dialog_manager: DialogManager) -> bool:
@@ -95,30 +114,25 @@ class ValidationService:
             self.MIN_EDITED_TEXT_LENGTH,
             self.MAX_EDITED_TEXT_LENGTH,
             dialog_manager,
-            "has_void_text",
-            "has_small_text",
-            "has_big_text"
+            "has_void_publication_text",
+            "has_small_publication_text",
+            "has_big_publication_text"
         )
 
-    def validate_combine_prompt(
+    def validate_combine_image_prompt(
             self,
             prompt: str | None,
             dialog_manager: DialogManager
     ) -> bool:
-        if not prompt:
-            return True
-
-        if len(prompt) < self.MIN_IMAGE_PROMPT_LENGTH:
-            self.logger.info("Слишком короткий промпт для объединения")
-            self.dialog_data_helper.set_error_flag(dialog_manager, "has_small_combine_prompt")
-            return False
-
-        if len(prompt) > self.MAX_IMAGE_PROMPT_LENGTH:
-            self.logger.info("Слишком длинный промпт для объединения")
-            self.dialog_data_helper.set_error_flag(dialog_manager, "has_big_combine_prompt")
-            return False
-
-        return True
+        return self.validate_text_with_limits(
+            prompt,
+            self.MIN_IMAGE_PROMPT_LENGTH,
+            self.MAX_IMAGE_PROMPT_LENGTH,
+            dialog_manager,
+            "has_void_combine_image_prompt",
+            "has_small_combine_image_prompt",
+            "has_big_combine_image_prompt"
+        )
 
     def validate_content_type(
             self,
@@ -130,7 +144,6 @@ class ValidationService:
             allowed_types = [ContentType.VOICE, ContentType.AUDIO, ContentType.TEXT]
 
         if message.content_type not in allowed_types:
-            self.logger.info(f"Неверный тип контента: {message.content_type}")
             self.dialog_data_helper.set_error_flag(dialog_manager, "has_invalid_content_type")
             return False
         return True
@@ -184,38 +197,11 @@ class ValidationService:
 
         return True
 
-    def validate_edit_image_prompt(
-            self,
-            prompt: str,
-            dialog_manager: DialogManager
-    ) -> bool:
-        if not prompt or len(prompt) < self.MIN_EDIT_IMAGE_PROMPT_LENGTH:
-            self.logger.info("Слишком короткий промпт для редактирования")
-            self.dialog_data_helper.set_error_flag(dialog_manager, "has_small_edit_prompt")
-            return False
-
-        if len(prompt) > self.MAX_EDIT_IMAGE_PROMPT_LENGTH:
-            self.logger.info("Слишком длинный промпт для редактирования")
-            self.dialog_data_helper.set_error_flag(dialog_manager, "has_big_edit_prompt")
-            return False
-
-        return True
-
-    def validate_category_permission(self, employee) -> bool:
-        return employee.setting_category_permission
-
     def validate_publication_text_length(
             self,
             text: str,
             has_image: bool,
-            dialog_manager: DialogManager
     ) -> tuple[bool, int | None]:
-        """
-        Валидирует длину публикационного текста в зависимости от наличия изображения.
-        Возвращает (is_valid, expected_length).
-        Если is_valid=False, то expected_length содержит рекомендуемую длину.
-        """
-        # Удаляем HTML-теги для подсчета реальной длины
         text_without_tags = re.sub(r'<[^>]+>', '', text)
         text_length = len(text_without_tags)
 
@@ -228,33 +214,3 @@ class ValidationService:
             return False, self.RECOMMENDED_TEXT_WITHOUT_IMAGE
 
         return True, None
-
-    def validate_message_has_photo(
-            self,
-            message: Message,
-            dialog_manager: DialogManager
-    ) -> bool:
-        """
-        Проверяет наличие фото в сообщении.
-        Устанавливает флаг has_image_processing_error при ошибке.
-        """
-        if not message.photo:
-            self.logger.info("В сообщении отсутствует фото")
-            self.dialog_data_helper.set_error_flag(dialog_manager, "has_image_processing_error")
-            return False
-        return True
-
-    def validate_combine_images_list_not_empty(
-            self,
-            combine_images_list: list,
-            dialog_manager: DialogManager
-    ) -> bool:
-        """
-        Проверяет, что список изображений для комбинирования не пустой.
-        Устанавливает флаг has_empty_combine_images_list при ошибке.
-        """
-        if not combine_images_list:
-            self.logger.info("Список изображений для комбинирования пуст")
-            self.dialog_data_helper.set_error_flag(dialog_manager, "has_empty_combine_images_list")
-            return False
-        return True

@@ -230,7 +230,7 @@ class IModerationPublicationService(Protocol):
     ) -> None: pass
 
     @abstractmethod
-    async def handle_combine_with_current(
+    async def handle_combine_with_current_image(
             self,
             callback: CallbackQuery,
             button: Any,
@@ -238,7 +238,7 @@ class IModerationPublicationService(Protocol):
     ) -> None: pass
 
     @abstractmethod
-    async def handle_combine_from_scratch(
+    async def handle_combine_image_from_scratch(
             self,
             callback: CallbackQuery,
             button: Any,
@@ -270,7 +270,7 @@ class IModerationPublicationService(Protocol):
     ) -> None: pass
 
     @abstractmethod
-    async def handle_back_from_combine_upload(
+    async def handle_back_from_combine_image_upload(
             self,
             callback: CallbackQuery,
             button: Any,
@@ -286,7 +286,7 @@ class IModerationPublicationService(Protocol):
     ) -> None: pass
 
     @abstractmethod
-    async def handle_combine_prompt_input(
+    async def handle_combine_image_prompt_input(
             self,
             message: Message,
             widget: MessageInput,
@@ -294,7 +294,7 @@ class IModerationPublicationService(Protocol):
     ) -> None: pass
 
     @abstractmethod
-    async def handle_skip_combine_prompt(
+    async def handle_skip_combine_image_prompt(
             self,
             callback: CallbackQuery,
             button: Any,
@@ -302,7 +302,7 @@ class IModerationPublicationService(Protocol):
     ) -> None: pass
 
     @abstractmethod
-    async def handle_combine_from_new_image(
+    async def handle_combine_image_from_new_image(
             self,
             callback: CallbackQuery,
             button: Any,
@@ -311,7 +311,7 @@ class IModerationPublicationService(Protocol):
 
     # New image confirm handlers
     @abstractmethod
-    async def handle_new_image_confirm_input(
+    async def handle_edit_image_prompt_input_from_confirm_new_image(
             self,
             message: Message,
             widget: MessageInput,
@@ -377,7 +377,7 @@ class IModerationPublicationGetter(Protocol):
     ) -> dict: pass
 
     @abstractmethod
-    async def get_edit_text_data(
+    async def get_edit_publication_text_data(
             self,
             dialog_manager: DialogManager,
     ) -> dict: pass

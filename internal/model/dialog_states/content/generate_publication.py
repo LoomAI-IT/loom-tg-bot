@@ -5,7 +5,7 @@ from aiogram.fsm.state import State, StatesGroup
 class GeneratePublicationStates(StatesGroup):
     # Основные состояния
     select_category = State()
-    input_text = State()
+    generate_text_prompt_input = State()
     generation = State()
     preview = State()
 
@@ -18,8 +18,8 @@ class GeneratePublicationStates(StatesGroup):
     image_menu = State()
     generate_image = State()
     image_generation_mode_select = State()
-    custom_image_generation = State()
-    custom_image_upload = State()
+    reference_image_generation = State()
+    reference_image_upload = State()
     new_image_confirm = State()
     upload_image = State()
 

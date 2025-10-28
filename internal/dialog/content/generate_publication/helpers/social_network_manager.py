@@ -83,3 +83,17 @@ class SocialNetworkManager:
             "no_connected_networks": not telegram_connected and not vkontakte_connected,
             "has_available_networks": telegram_connected or vkontakte_connected,
         }
+
+    def toggle_social_network(
+            self,
+            checkbox: ManagedCheckbox,
+            dialog_manager: DialogManager
+    ) -> None:
+        network_id = checkbox.widget_id
+        is_checked = checkbox.is_checked()
+
+        self.dialog_data_helper.toggle_social_network(
+            dialog_manager=dialog_manager,
+            network_id=network_id,
+            is_checked=is_checked
+        )

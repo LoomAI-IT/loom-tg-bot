@@ -36,18 +36,17 @@ class CategoryManager:
 
         return category.id, category.name, category.hint
 
-    def has_start_text(self, dialog_manager: DialogManager) -> bool:
+    def has_start_generate_text_prompt(self, dialog_manager: DialogManager) -> bool:
         if dialog_manager.start_data:
-            return dialog_manager.start_data.get("has_input_text", False)
+            return dialog_manager.start_data.get("has_generate_text_prompt", False)
         return False
 
-    def set_start_text(self, dialog_manager: DialogManager) -> None:
-        if dialog_manager.start_data and dialog_manager.start_data.get("has_input_text"):
-            self.logger.info("Есть стартовый текст")
-            self.dialog_data_helper.set_input_text(
+    def set_start_generate_text_prompt(self, dialog_manager: DialogManager) -> None:
+        if dialog_manager.start_data and dialog_manager.start_data.get("has_generate_text_prompt"):
+            self.dialog_data_helper.set_generate_text_prompt(
                 dialog_manager=dialog_manager,
-                text=dialog_manager.start_data["input_text"],
-                has_input=True
+                text=dialog_manager.start_data["generate_text_prompt"],
+                has_text_prompt=True
             )
 
     async def check_category_permission(

@@ -49,7 +49,7 @@ class MainMenuService(interface.IMainMenuService):
 
     @auto_log()
     @traced_method()
-    async def handle_generate_publication_prompt_input(
+    async def handle_text_prompt_input(
             self,
             message: Message,
             widget: MessageInput,
@@ -68,17 +68,17 @@ class MainMenuService(interface.IMainMenuService):
             dialog_manager.dialog_data["has_invalid_content_type"] = True
             return
 
-        text = await self.message_extractor.process_voice_or_text_input(
+        generate_text_prompt = await self.message_extractor.process_voice_or_text_input(
             message=message,
             dialog_manager=dialog_manager,
             organization_id=state.organization_id
         )
 
-        if not self.validation.validate_input_text(text=text, dialog_manager=dialog_manager):
+        if not self.validation.validate_generate_text_prompt(text=generate_text_prompt, dialog_manager=dialog_manager):
             return
 
-        dialog_manager.dialog_data["input_text"] = text
-        dialog_manager.dialog_data["has_input_text"] = True
+        dialog_manager.dialog_data["generate_text_prompt"] = generate_text_prompt
+        dialog_manager.dialog_data["has_generate_text_prompt"] = True
 
         await dialog_manager.start(
             state=model.GeneratePublicationStates.select_category,

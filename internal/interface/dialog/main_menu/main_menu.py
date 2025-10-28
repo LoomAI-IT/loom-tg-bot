@@ -26,7 +26,7 @@ class IMainMenuService(Protocol):
         pass
 
     @abstractmethod
-    async def handle_generate_publication_prompt_input(
+    async def handle_text_prompt_input(
             self,
             message: Message,
             widget: MessageInput,

@@ -25,14 +25,14 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
     def get_dialog(self) -> Dialog:
         return Dialog(
             self.get_select_category_window(),
-            self.get_input_text_window(),
+            self.get_generate_text_prompt_input_window(),
             self.get_generation_window(),
             self.get_preview_window(),
             self.get_edit_text_menu_window(),
             self.get_image_menu_window(),
             self.get_image_generation_mode_select_window(),
-            self.get_custom_image_generation_window(),
-            self.get_custom_image_upload_window(),
+            self.get_reference_generation_image_window(),
+            self.get_reference_generation_image_upload_window(),
             self.get_edit_text_window(),
             self.get_upload_image_window(),
             self.get_new_image_confirm_window(),
@@ -89,7 +89,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             parse_mode=SULGUK_PARSE_MODE,
         )
 
-    def get_input_text_window(self) -> Window:
+    def get_generate_text_prompt_input_window(self) -> Window:
         return Window(
             Case(
                 {
@@ -99,10 +99,10 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                         Const("💬 <i>Отправьте текст или голосовое сообщение — я превращу их в готовый контент</i>"),
                         Case(
                             {
-                                True: Format("<br>📄 <b>Ваш текст:</b><br><i>{input_text}</i>"),
+                                True: Format("<br>📄 <b>Ваш текст:</b><br><i>{text_prompt}</i>"),
                                 False: Const(""),
                             },
-                            selector="has_input_text"
+                            selector="has_generate_text_prompt"
                         ),
                         # Text input error messages
                         Case(
@@ -110,21 +110,21 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                                 True: Const("<br>❌ <b>Ошибка:</b> Текст не может быть пустым"),
                                 False: Const(""),
                             },
-                            selector="has_void_input_text"
+                            selector="has_void_generate_text_prompt"
                         ),
                         Case(
                             {
                                 True: Const("<br>📏 <b>Слишком короткий текст</b><br><i>Минимум 10 символов</i>"),
                                 False: Const(""),
                             },
-                            selector="has_small_input_text"
+                            selector="has_small_generate_text_prompt"
                         ),
                         Case(
                             {
                                 True: Const("<br>📏 <b>Слишком длинный текст</b><br><i>Максимум 2000 символов</i>"),
                                 False: Const(""),
                             },
-                            selector="has_big_input_text"
+                            selector="has_big_generate_text_prompt"
                         ),
                         # Voice input error messages
                         Case(
@@ -143,19 +143,15 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             ),
 
             MessageInput(
-                func=self.generate_publication_service.handle_generate_publication_prompt_input,
+                func=self.generate_publication_service.handle_generate_text_prompt_input,
             ),
 
             Row(
-                # Next(
-                #     Const("▶️ Далее"),
-                #     when="has_input_text"
-                # ),
                 Back(Const("◀️ Назад")),
             ),
 
-            state=model.GeneratePublicationStates.input_text,
-            getter=self.generate_publication_getter.get_input_text_data,
+            state=model.GeneratePublicationStates.generate_text_prompt_input,
+            getter=self.generate_publication_getter.get_generate_text_prompt_input_data,
             parse_mode=SULGUK_PARSE_MODE,
         )
 
@@ -171,19 +167,18 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                 Button(
                     Const("📝 Только текст"),
                     id="text_only",
-                    on_click=self.generate_publication_service.handle_generate_text,
+                    on_click=self.generate_publication_service.handle_generate_publication_text,
                 ),
                 Button(
                     Const("🖼️ С картинкой"),
                     id="with_image",
-                    on_click=self.generate_publication_service.handle_generate_text_with_image,
+                    on_click=self.generate_publication_service.handle_generate_publication_text_with_image,
                 ),
             ),
 
             Back(Const("◀️ Назад")),
 
             state=model.GeneratePublicationStates.generation,
-            getter=self.generate_publication_getter.get_input_text_data,
             parse_mode=SULGUK_PARSE_MODE,
         )
 
@@ -301,7 +296,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                                     Const("🕐 <i>Это может занять время. Пожалуйста, подождите.</i>"),
                                 ),
                             },
-                            selector="has_regenerate_prompt"
+                            selector="has_regenerate_text_prompt"
                         )
                     },
                     selector="is_regenerating_text"
@@ -320,25 +315,26 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                         True: Const("<br>❌ <b>Ошибка:</b> Указания не могут быть пустыми"),
                         False: Const(""),
                     },
-                    selector="has_void_regenerate_prompt"
+                    selector="has_void_regenerate_text_prompt"
                 ),
                 Case(
                     {
                         True: Const("<br>📏 <b>Слишком короткие указания</b><br><i>Минимум 10 символов</i>"),
                         False: Const(""),
                     },
-                    selector="has_small_regenerate_prompt"
+                    selector="has_small_regenerate_text_prompt"
                 ),
                 Case(
                     {
                         True: Const("<br>📏 <b>Слишком длинные указания</b><br><i>Максимум 1000 символов</i>"),
                         False: Const(""),
                     },
-                    selector="has_big_regenerate_prompt"
+                    selector="has_big_regenerate_text_prompt"
                 ),
                 Case(
                     {
-                        True: Const("<br>🎤 <b>Неверный формат</b><br><i>Отправьте текст, голосовое сообщение или аудиофайл</i>"),
+                        True: Const(
+                            "<br>🎤 <b>Неверный формат</b><br><i>Отправьте текст, голосовое сообщение или аудиофайл</i>"),
                         False: Const(""),
                     },
                     selector="has_invalid_content_type"
@@ -372,7 +368,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             ),
 
             state=model.GeneratePublicationStates.edit_text_menu,
-            getter=self.generate_publication_getter.get_edit_text_data,
+            getter=self.generate_publication_getter.get_edit_publication_text_data,
             parse_mode=SULGUK_PARSE_MODE,
         )
 
@@ -389,21 +385,21 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                         True: Const("<br><br>❌ <b>Ошибка:</b> Текст не может быть пустым"),
                         False: Const(""),
                     },
-                    selector="has_void_text"
+                    selector="has_void_publication_text"
                 ),
                 Case(
                     {
                         True: Const("<br><br>📏 <b>Слишком короткий текст</b><br><i>Минимум 50 символов</i>"),
                         False: Const(""),
                     },
-                    selector="has_small_text"
+                    selector="has_small_publication_text"
                 ),
                 Case(
                     {
                         True: Const("<br><br>📏 <b>Слишком длинный текст</b><br><i>Максимум 4000 символов</i>"),
                         False: Const(""),
                     },
-                    selector="has_big_text"
+                    selector="has_big_publication_text"
                 ),
                 sep="",
             ),
@@ -420,7 +416,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             ),
 
             state=model.GeneratePublicationStates.edit_text,
-            getter=self.generate_publication_getter.get_edit_text_data,
+            getter=self.generate_publication_getter.get_edit_publication_text_data,
             parse_mode=SULGUK_PARSE_MODE,
         )
 
@@ -487,25 +483,26 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                         True: Const("<br><br>❌ <b>Ошибка:</b> Описание не может быть пустым"),
                         False: Const(""),
                     },
-                    selector="has_void_image_prompt"
+                    selector="has_void_edit_image_prompt"
                 ),
                 Case(
                     {
                         True: Const("<br><br>📏 <b>Слишком короткое описание</b><br><i>Минимум 10 символов</i>"),
                         False: Const(""),
                     },
-                    selector="has_small_image_prompt"
+                    selector="has_small_edit_image_prompt"
                 ),
                 Case(
                     {
                         True: Const("<br><br>📏 <b>Слишком длинное описание</b><br><i>Максимум 1000 символов</i>"),
                         False: Const(""),
                     },
-                    selector="has_big_image_prompt"
+                    selector="has_big_edit_image_prompt"
                 ),
                 Case(
                     {
-                        True: Const("<br><br>🎤 <b>Неверный формат</b><br><i>Отправьте текст, голосовое сообщение или аудиофайл</i>"),
+                        True: Const(
+                            "<br><br>🎤 <b>Неверный формат</b><br><i>Отправьте текст, голосовое сообщение или аудиофайл</i>"),
                         False: Const(""),
                     },
                     selector="has_invalid_content_type"
@@ -522,7 +519,8 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                 Button(
                     Const("🎨 Сгенерировать картинку"),
                     id="generate_image",
-                    on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.image_generation_mode_select, ShowMode.EDIT),
+                    on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.image_generation_mode_select,
+                                                         ShowMode.EDIT),
                 ),
                 Button(
                     Const("📷 Использовать своё фото"),
@@ -572,7 +570,8 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                 Button(
                     Const("🖍 Сгенерировать картинку по моему запросу"),
                     id="custom_generate",
-                    on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.custom_image_generation, ShowMode.EDIT),
+                    on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.reference_image_generation,
+                                                         ShowMode.EDIT),
                 ),
             ),
 
@@ -586,7 +585,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             parse_mode=SULGUK_PARSE_MODE,
         )
 
-    def get_custom_image_generation_window(self) -> Window:
+    def get_reference_generation_image_window(self) -> Window:
         return Window(
             Multi(
                 Case(
@@ -597,7 +596,8 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                                 {
                                     True: Multi(
                                         Const("📸 <b>Загруженное фото:</b><br>"),
-                                        Const("💬 <i>Теперь напишите промпт для генерации или нажмите \"Сгенерировать\"</i><br><br>"),
+                                        Const(
+                                            "💬 <i>Теперь напишите промпт для генерации или нажмите \"Сгенерировать\"</i><br><br>"),
                                     ),
                                     False: Multi(
                                         Const("💡 <b>Что можно сделать:</b><br>"),
@@ -606,7 +606,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                                         Const("• Или сделать и то, и другое<br><br>"),
                                     ),
                                 },
-                                selector="has_custom_generation_image"
+                                selector="has_reference_generation_image"
                             ),
                             Const("📝 <b>Что можно указать в промпте:</b><br>"),
                             Const("• 👥 Объекты и персонажи<br>"),
@@ -619,7 +619,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                             Const("🕐 <i>Это может занять время. Пожалуйста, подождите.</i>"),
                         ),
                     },
-                    selector="is_generating_custom_image"
+                    selector="is_generating_image"
                 ),
                 Case(
                     {
@@ -633,25 +633,26 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                         True: Const("<br><br>❌ <b>Ошибка:</b> Промпт не может быть пустым"),
                         False: Const(""),
                     },
-                    selector="has_void_custom_generation_prompt"
+                    selector="has_void_reference_generation_image_prompt"
                 ),
                 Case(
                     {
                         True: Const("<br><br>📏 <b>Слишком короткий промпт</b><br><i>Минимум 10 символов</i>"),
                         False: Const(""),
                     },
-                    selector="has_small_custom_generation_prompt"
+                    selector="has_small_reference_generation_image_prompt"
                 ),
                 Case(
                     {
                         True: Const("<br><br>📏 <b>Слишком длинный промпт</b><br><i>Максимум 1000 символов</i>"),
                         False: Const(""),
                     },
-                    selector="has_big_custom_generation_prompt"
+                    selector="has_big_reference_generation_image_prompt"
                 ),
                 Case(
                     {
-                        True: Const("<br><br>🎤 <b>Неверный формат</b><br><i>Отправьте текст, голосовое сообщение или аудиофайл</i>"),
+                        True: Const(
+                            "<br><br>🎤 <b>Неверный формат</b><br><i>Отправьте текст, голосовое сообщение или аудиофайл</i>"),
                         False: Const(""),
                     },
                     selector="has_invalid_content_type"
@@ -661,39 +662,40 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                         True: Const("<br><br>❌ <b>Неверный формат файла</b><br><i>Отправьте изображение</i>"),
                         False: Const(""),
                     },
-                    selector="has_invalid_custom_image_type"
+                    selector="has_invalid_reference_generation_image_type"
                 ),
                 Case(
                     {
                         True: Const("<br><br>📁 <b>Файл слишком большой</b><br><i>Максимум 10 МБ</i>"),
                         False: Const(""),
                     },
-                    selector="has_big_custom_image_size"
+                    selector="has_big_reference_generation_image_size"
                 ),
                 sep="",
             ),
 
             DynamicMedia(
-                selector="custom_generation_image_media",
-                when="has_custom_generation_image",
+                selector="reference_generation_image_media",
+                when="has_reference_generation_image",
             ),
 
             MessageInput(
-                func=self.generate_publication_service.handle_custom_generation_input,
+                func=self.generate_publication_service.handle_reference_generation_image_prompt_input,
             ),
 
             Column(
                 Button(
                     Const("🌅 Добавить своё фото"),
                     id="add_custom_photo",
-                    on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.custom_image_upload, ShowMode.EDIT),
-                    when=~F["has_custom_generation_image"]
+                    on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.reference_image_upload,
+                                                         ShowMode.EDIT),
+                    when=~F["has_reference_generation_image"]
                 ),
                 Button(
                     Const("🗑️ Удалить фото"),
                     id="remove_custom_photo",
-                    on_click=self.generate_publication_service.handle_remove_custom_photo,
-                    when=F["has_custom_generation_image"]
+                    on_click=self.generate_publication_service.handle_remove_reference_generation_image,
+                    when=F["has_reference_generation_image"]
                 ),
                 when=~F["is_generating_custom_image"]
             ),
@@ -705,12 +707,12 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                 when=~F["is_generating_custom_image"]
             ),
 
-            state=model.GeneratePublicationStates.custom_image_generation,
-            getter=self.generate_publication_getter.get_custom_image_generation_data,
+            state=model.GeneratePublicationStates.reference_image_generation,
+            getter=self.generate_publication_getter.get_reference_generation_image_data,
             parse_mode=SULGUK_PARSE_MODE,
         )
 
-    def get_custom_image_upload_window(self) -> Window:
+    def get_reference_generation_image_upload_window(self) -> Window:
         return Window(
             Multi(
                 Const("📷 <b>Загрузка фото для генерации</b><br><br>"),
@@ -720,30 +722,31 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                         True: Const("<br><br>❌ <b>Неверный формат файла</b><br><i>Отправьте изображение</i>"),
                         False: Const(""),
                     },
-                    selector="has_invalid_custom_image_type"
+                    selector="has_invalid_reference_generation_image_type"
                 ),
                 Case(
                     {
                         True: Const("<br><br>📁 <b>Файл слишком большой</b><br><i>Максимум 10 МБ</i>"),
                         False: Const(""),
                     },
-                    selector="has_big_custom_image_size"
+                    selector="has_big_reference_generation_image_size"
                 ),
                 sep="",
             ),
 
             MessageInput(
-                func=self.generate_publication_service.handle_custom_image_upload,
+                func=self.generate_publication_service.handle_reference_generation_image_upload,
             ),
 
             Button(
                 Const("◀️ Назад"),
                 id="back_to_custom_generation",
-                on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.custom_image_generation, ShowMode.EDIT),
+                on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.reference_image_generation,
+                                                     ShowMode.EDIT),
             ),
 
-            state=model.GeneratePublicationStates.custom_image_upload,
-            getter=self.generate_publication_getter.get_custom_image_upload_data,
+            state=model.GeneratePublicationStates.reference_image_upload,
+            getter=self.generate_publication_getter.get_reference_generation_image_upload_data,
             parse_mode=SULGUK_PARSE_MODE,
         )
 
@@ -891,33 +894,21 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
         return Window(
             Multi(
                 Const("📐 <b>Объединение изображений</b><br><br>"),
-                Case(
-                    {
-                        True: Multi(
-                            Const("🖼️ <i>У вас уже есть изображение в публикации</i><br><br>"),
-                            Const("💡 <b>Выберите действие:</b>"),
-                        ),
-                        False: Multi(
-                            Const("📤 <i>Загрузите от 2 до 3 изображений для объединения</i>"),
-                        ),
-                    },
-                    selector="has_current_image"
-                ),
-                sep="",
+                Const("🖼️ <i>У вас уже есть изображение в публикации</i><br><br>"),
+                Const("💡 <b>Выберите действие:</b>"),
+
             ),
 
             Column(
                 Button(
                     Const("➕ Объединить с текущим"),
                     id="combine_with_current",
-                    on_click=self.generate_publication_service.handle_combine_with_current,
-                    when="has_current_image",
+                    on_click=self.generate_publication_service.handle_combine_with_current_image,
                 ),
                 Button(
                     Const("🔄 Начать с новых"),
                     id="combine_from_scratch",
-                    on_click=self.generate_publication_service.handle_combine_from_scratch,
-                    when="has_current_image",
+                    on_click=self.generate_publication_service.handle_combine_image_from_scratch,
                 ),
             ),
 
@@ -945,7 +936,8 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                 ),
                 Case(
                     {
-                        True: Format("<br>📍 <b>Сейчас показано:</b> изображение {combine_current_index} из {combine_images_count}"),
+                        True: Format(
+                            "<br>📍 <b>Сейчас показано:</b> изображение {combine_current_index} из {combine_images_count}"),
                         False: Const(""),
                     },
                     selector="has_multiple_combine_images"
@@ -977,7 +969,8 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                 ),
                 Case(
                     {
-                        True: Const("<br><br>⚠️ <b>Минимум 2 изображения</b><br><i>Загрузите хотя бы 2 изображения</i>"),
+                        True: Const(
+                            "<br><br>⚠️ <b>Минимум 2 изображения</b><br><i>Загрузите хотя бы 2 изображения</i>"),
                         False: Const(""),
                     },
                     selector="not_enough_combine_images"
@@ -1020,7 +1013,8 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                 Button(
                     Const("▶️ Далее"),
                     id="next_to_prompt",
-                    on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.combine_images_prompt, ShowMode.EDIT),
+                    on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.combine_images_prompt,
+                                                         ShowMode.EDIT),
                     when="has_enough_combine_images",
                 ),
             ),
@@ -1028,7 +1022,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             Button(
                 Const("◀️ Назад"),
                 id="back_from_combine_upload",
-                on_click=self.generate_publication_service.handle_back_from_combine_upload,
+                on_click=self.generate_publication_service.handle_back_from_combine_image_upload,
             ),
 
             state=model.GeneratePublicationStates.combine_images_upload,
@@ -1081,18 +1075,19 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                         True: Const("<br><br>📏 <b>Слишком короткое описание</b><br><i>Минимум 10 символов</i>"),
                         False: Const(""),
                     },
-                    selector="has_small_combine_prompt"
+                    selector="has_small_combine_image_prompt"
                 ),
                 Case(
                     {
                         True: Const("<br><br>📏 <b>Слишком длинное описание</b><br><i>Максимум 1000 символов</i>"),
                         False: Const(""),
                     },
-                    selector="has_big_combine_prompt"
+                    selector="has_big_combine_image_prompt"
                 ),
                 Case(
                     {
-                        True: Const("<br><br>🎤 <b>Неверный формат</b><br><i>Отправьте текст, голосовое сообщение или аудиофайл</i>"),
+                        True: Const(
+                            "<br><br>🎤 <b>Неверный формат</b><br><i>Отправьте текст, голосовое сообщение или аудиофайл</i>"),
                         False: Const(""),
                     },
                     selector="has_invalid_content_type"
@@ -1122,20 +1117,21 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             ),
 
             MessageInput(
-                func=self.generate_publication_service.handle_combine_prompt_input,
+                func=self.generate_publication_service.handle_combine_image_prompt_input,
             ),
 
             Button(
                 Const("⏭️ Пропустить"),
                 id="skip_prompt",
-                on_click=self.generate_publication_service.handle_skip_combine_prompt,
+                on_click=self.generate_publication_service.handle_skip_combine_image_prompt,
                 when=~F["is_combining_images"]
             ),
 
             Button(
                 Const("◀️ Назад"),
                 id="back_to_upload",
-                on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.combine_images_upload, ShowMode.EDIT),
+                on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.combine_images_upload,
+                                                     ShowMode.EDIT),
                 when=~F["is_combining_images"]
             ),
 
@@ -1169,7 +1165,8 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                             Const("💡 <b>Что хотите сделать?</b><br>"),
                             Const("• Принять изображение как есть<br>"),
                             Const("• Написать или записать правки для улучшения<br><br>"),
-                            Const("💬 <i>Отправьте текст или голосовое сообщение с правками, и изображение будет отредактировано</i>"),
+                            Const(
+                                "💬 <i>Отправьте текст или голосовое сообщение с правками, и изображение будет отредактировано</i>"),
                         ),
                         True: Multi(
                             Const("⏳ <b>Применяю правки к изображению...</b><br>"),
@@ -1180,10 +1177,10 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                 ),
                 Case(
                     {
-                        True: Format("<br><br>📝 <b>Ваши правки:</b><br><i>{image_edit_prompt}</i>"),
+                        True: Format("<br><br>📝 <b>Ваши правки:</b><br><i>{edit_image_prompt}</i>"),
                         False: Const(""),
                     },
-                    selector="has_image_edit_prompt"
+                    selector="has_edit_image_prompt"
                 ),
                 Case(
                     {
@@ -1197,18 +1194,20 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                         True: Const("<br><br>📏 <b>Слишком короткое описание правок</b><br><i>Минимум 10 символов</i>"),
                         False: Const(""),
                     },
-                    selector="has_small_edit_prompt"
+                    selector="has_small_edit_image_prompt"
                 ),
                 Case(
                     {
-                        True: Const("<br><br>📏 <b>Слишком длинное описание правок</b><br><i>Максимум 1000 символов</i>"),
+                        True: Const(
+                            "<br><br>📏 <b>Слишком длинное описание правок</b><br><i>Максимум 1000 символов</i>"),
                         False: Const(""),
                     },
-                    selector="has_big_edit_prompt"
+                    selector="has_big_edit_image_prompt"
                 ),
                 Case(
                     {
-                        True: Const("<br><br>🎤 <b>Неверный формат</b><br><i>Отправьте текст, голосовое сообщение или аудиофайл</i>"),
+                        True: Const(
+                            "<br><br>🎤 <b>Неверный формат</b><br><i>Отправьте текст, голосовое сообщение или аудиофайл</i>"),
                         False: Const(""),
                     },
                     selector="has_invalid_content_type"
@@ -1237,14 +1236,14 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             ),
 
             MessageInput(
-                func=self.generate_publication_service.handle_new_image_confirm_input,
+                func=self.generate_publication_service.handle_edit_image_prompt_input_from_confirm_new_image,
             ),
 
             Column(
                 Button(
                     Const("📐 Объединить с другими фото"),
                     id="combine_from_new_image",
-                    on_click=self.generate_publication_service.handle_combine_from_new_image,
+                    on_click=self.generate_publication_service.handle_combine_image_from_new_image,
                     when=~F["is_applying_edits"]
                 ),
                 Row(

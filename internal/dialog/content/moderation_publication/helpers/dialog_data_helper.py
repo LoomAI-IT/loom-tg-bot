@@ -63,9 +63,9 @@ class DialogDataHelper:
     @staticmethod
     def get_combine_images_choice_data(dialog_manager: DialogManager) -> dict:
         working_pub = dialog_manager.dialog_data.get("working_publication", {})
-        has_current_image = working_pub.get("has_image", False)
+        has_image = working_pub.get("has_image", False)
         return {
-            "has_current_image": has_current_image,
+            "has_image": has_image,
         }
 
     @staticmethod
@@ -93,15 +93,15 @@ class DialogDataHelper:
         return {
             "is_combining_images": dialog_manager.dialog_data.get("is_combining_images", False),
             "voice_transcribe": dialog_manager.dialog_data.get("voice_transcribe", False),
-            "has_combine_prompt": bool(dialog_manager.dialog_data.get("combine_prompt")),
-            "combine_prompt": dialog_manager.dialog_data.get("combine_prompt", ""),
+            "has_combine_image_prompt": bool(dialog_manager.dialog_data.get("combine_image_prompt")),
+            "combine_image_prompt": dialog_manager.dialog_data.get("combine_image_prompt", ""),
             # Image data for navigation
             "has_combine_images": combine_images_count > 0,
             "combine_images_count": combine_images_count,
             "has_multiple_combine_images": combine_images_count > 1,
             # Error flags
-            "has_small_combine_prompt": dialog_manager.dialog_data.get("has_small_combine_prompt", False),
-            "has_big_combine_prompt": dialog_manager.dialog_data.get("has_big_combine_prompt", False),
+            "has_small_combine_image_prompt": dialog_manager.dialog_data.get("has_small_combine_image_prompt", False),
+            "has_big_combine_image_prompt": dialog_manager.dialog_data.get("has_big_combine_image_prompt", False),
             "has_invalid_content_type": dialog_manager.dialog_data.get("has_invalid_content_type", False),
         }
 
@@ -388,8 +388,8 @@ class DialogDataHelper:
         return dialog_manager.dialog_data.get("combine_current_index", 0)
 
     @staticmethod
-    def get_combine_prompt(dialog_manager: DialogManager) -> str:
-        return dialog_manager.dialog_data.get("combine_prompt", "")
+    def get_combine_image_prompt(dialog_manager: DialogManager) -> str:
+        return dialog_manager.dialog_data.get("combine_image_prompt", "")
 
     @staticmethod
     def get_combine_result_url(dialog_manager: DialogManager) -> str | None:
@@ -405,8 +405,8 @@ class DialogDataHelper:
         dialog_manager.dialog_data["combine_current_index"] = index
 
     @staticmethod
-    def set_combine_prompt(dialog_manager: DialogManager, prompt: str) -> None:
-        dialog_manager.dialog_data["combine_prompt"] = prompt
+    def set_combine_image_prompt(dialog_manager: DialogManager, prompt: str) -> None:
+        dialog_manager.dialog_data["combine_image_prompt"] = prompt
 
     @staticmethod
     def set_combine_result_url(dialog_manager: DialogManager, url: str) -> None:
@@ -421,9 +421,9 @@ class DialogDataHelper:
         return dialog_manager.dialog_data.get("is_combining_images", False)
 
     @staticmethod
-    def clear_combine_prompt_error_flags(dialog_manager: DialogManager) -> None:
-        dialog_manager.dialog_data.pop("has_small_combine_prompt", None)
-        dialog_manager.dialog_data.pop("has_big_combine_prompt", None)
+    def clear_combine_image_prompt_error_flags(dialog_manager: DialogManager) -> None:
+        dialog_manager.dialog_data.pop("has_small_combine_image_prompt", None)
+        dialog_manager.dialog_data.pop("has_big_combine_image_prompt", None)
         dialog_manager.dialog_data.pop("has_invalid_content_type", None)
 
     @staticmethod
@@ -436,7 +436,7 @@ class DialogDataHelper:
     def clear_combine_data(dialog_manager: DialogManager) -> None:
         dialog_manager.dialog_data.pop("combine_images_list", None)
         dialog_manager.dialog_data.pop("combine_current_index", None)
-        dialog_manager.dialog_data.pop("combine_prompt", None)
+        dialog_manager.dialog_data.pop("combine_image_prompt", None)
         dialog_manager.dialog_data.pop("combine_result_url", None)
 
     # ============= МЕТОДЫ ДЛЯ NEW IMAGE CONFIRM =============
@@ -481,11 +481,11 @@ class DialogDataHelper:
 
     @staticmethod
     def get_image_edit_prompt(dialog_manager: DialogManager) -> str:
-        return dialog_manager.dialog_data.get("image_edit_prompt", "")
+        return dialog_manager.dialog_data.get("edit_image_prompt", "")
 
     @staticmethod
     def set_image_edit_prompt(dialog_manager: DialogManager, prompt: str) -> None:
-        dialog_manager.dialog_data["image_edit_prompt"] = prompt
+        dialog_manager.dialog_data["edit_image_prompt"] = prompt
 
     @staticmethod
     def get_is_applying_edits(dialog_manager: DialogManager) -> bool:
@@ -508,8 +508,8 @@ class DialogDataHelper:
         dialog_manager.dialog_data.pop("combine_result_url", None)
         dialog_manager.dialog_data.pop("old_generated_image_backup", None)
         dialog_manager.dialog_data.pop("old_image_backup", None)
-        dialog_manager.dialog_data.pop("image_edit_prompt", None)
+        dialog_manager.dialog_data.pop("edit_image_prompt", None)
         dialog_manager.dialog_data.pop("combine_images_list", None)
         dialog_manager.dialog_data.pop("combine_current_index", None)
-        dialog_manager.dialog_data.pop("combine_prompt", None)
+        dialog_manager.dialog_data.pop("combine_image_prompt", None)
         dialog_manager.dialog_data.pop("showing_old_image", None)

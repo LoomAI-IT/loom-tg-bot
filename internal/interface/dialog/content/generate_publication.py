@@ -14,7 +14,7 @@ class IGeneratePublicationDialog(Protocol):
     def get_select_category_window(self) -> Window: pass
 
     @abstractmethod
-    def get_input_text_window(self) -> Window: pass
+    def get_generate_text_prompt_input_window(self) -> Window: pass
 
     @abstractmethod
     def get_generation_window(self) -> Window: pass
@@ -59,10 +59,10 @@ class IGeneratePublicationDialog(Protocol):
     def get_image_generation_mode_select_window(self) -> Window: pass
 
     @abstractmethod
-    def get_custom_image_generation_window(self) -> Window: pass
+    def get_reference_generation_image_window(self) -> Window: pass
 
     @abstractmethod
-    def get_custom_image_upload_window(self) -> Window: pass
+    def get_reference_generation_image_upload_window(self) -> Window: pass
 
 
 class IGeneratePublicationService(Protocol):
@@ -86,7 +86,7 @@ class IGeneratePublicationService(Protocol):
 
 
     @abstractmethod
-    async def handle_generate_publication_prompt_input(
+    async def handle_generate_text_prompt_input(
             self,
             message: Message,
             widget: MessageInput,
@@ -94,7 +94,7 @@ class IGeneratePublicationService(Protocol):
     ) -> None: pass
 
     @abstractmethod
-    async def handle_generate_text_with_image(
+    async def handle_generate_publication_text_with_image(
             self,
             callback: CallbackQuery,
             button: Any,
@@ -102,7 +102,7 @@ class IGeneratePublicationService(Protocol):
     ) -> None: pass
 
     @abstractmethod
-    async def handle_generate_text(
+    async def handle_generate_publication_text(
             self,
             callback: CallbackQuery,
             button: Any,
@@ -141,14 +141,6 @@ class IGeneratePublicationService(Protocol):
             widget: Any,
             dialog_manager: DialogManager,
             text: str
-    ) -> None: pass
-
-    @abstractmethod
-    async def handle_generate_new_image(
-            self,
-            callback: CallbackQuery,
-            button: Any,
-            dialog_manager: DialogManager
     ) -> None: pass
 
     @abstractmethod
@@ -249,7 +241,7 @@ class IGeneratePublicationService(Protocol):
     ) -> None: pass
 
     @abstractmethod
-    async def handle_combine_with_current(
+    async def handle_combine_with_current_image(
             self,
             callback: CallbackQuery,
             button: Any,
@@ -257,7 +249,7 @@ class IGeneratePublicationService(Protocol):
     ) -> None: pass
 
     @abstractmethod
-    async def handle_combine_from_scratch(
+    async def handle_combine_image_from_scratch(
             self,
             callback: CallbackQuery,
             button: Any,
@@ -297,7 +289,7 @@ class IGeneratePublicationService(Protocol):
     ) -> None: pass
 
     @abstractmethod
-    async def handle_back_from_combine_upload(
+    async def handle_back_from_combine_image_upload(
             self,
             callback: CallbackQuery,
             button: Any,
@@ -305,7 +297,7 @@ class IGeneratePublicationService(Protocol):
     ) -> None: pass
 
     @abstractmethod
-    async def handle_combine_prompt_input(
+    async def handle_combine_image_prompt_input(
             self,
             message: Message,
             widget: MessageInput,
@@ -313,7 +305,7 @@ class IGeneratePublicationService(Protocol):
     ) -> None: pass
 
     @abstractmethod
-    async def handle_skip_combine_prompt(
+    async def handle_skip_combine_image_prompt(
             self,
             callback: CallbackQuery,
             button: Any,
@@ -321,7 +313,7 @@ class IGeneratePublicationService(Protocol):
     ) -> None: pass
 
     @abstractmethod
-    async def handle_new_image_confirm_input(
+    async def handle_edit_image_prompt_input_from_confirm_new_image(
             self,
             message: Message,
             widget: MessageInput,
@@ -329,7 +321,7 @@ class IGeneratePublicationService(Protocol):
     ) -> None: pass
 
     @abstractmethod
-    async def handle_combine_from_new_image(
+    async def handle_combine_image_from_new_image(
             self,
             callback: CallbackQuery,
             button: Any,
@@ -377,7 +369,7 @@ class IGeneratePublicationService(Protocol):
     ) -> None: pass
 
     @abstractmethod
-    async def handle_custom_generation_input(
+    async def handle_reference_generation_image_prompt_input(
             self,
             message: Message,
             widget: MessageInput,
@@ -385,7 +377,7 @@ class IGeneratePublicationService(Protocol):
     ) -> None: pass
 
     @abstractmethod
-    async def handle_custom_image_upload(
+    async def handle_reference_generation_image_upload(
             self,
             message: Message,
             widget: MessageInput,
@@ -401,7 +393,7 @@ class IGeneratePublicationService(Protocol):
     ) -> None: pass
 
     @abstractmethod
-    async def handle_remove_custom_photo(
+    async def handle_remove_reference_generation_image(
             self,
             callback: CallbackQuery,
             button: Any,
@@ -424,7 +416,7 @@ class IGeneratePublicationGetter(Protocol):
     ) -> dict: pass
 
     @abstractmethod
-    async def get_input_text_data(
+    async def get_generate_text_prompt_input_data(
             self,
             dialog_manager: DialogManager,
     ) -> dict: pass
@@ -437,7 +429,7 @@ class IGeneratePublicationGetter(Protocol):
 
 
     @abstractmethod
-    async def get_edit_text_data(
+    async def get_edit_publication_text_data(
             self,
             dialog_manager: DialogManager,
     ) -> dict: pass
@@ -491,13 +483,13 @@ class IGeneratePublicationGetter(Protocol):
     ) -> dict: pass
 
     @abstractmethod
-    async def get_custom_image_generation_data(
+    async def get_reference_generation_image_data(
             self,
             dialog_manager: DialogManager,
     ) -> dict: pass
 
     @abstractmethod
-    async def get_custom_image_upload_data(
+    async def get_reference_generation_image_upload_data(
             self,
             dialog_manager: DialogManager,
     ) -> dict: pass

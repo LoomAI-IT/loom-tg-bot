@@ -1,7 +1,7 @@
 from aiogram_dialog import DialogManager
-from aiogram_dialog.widgets.kbd import ManagedCheckbox
 
 from internal import interface, model
+from internal.dialog.content.generate_publication.helpers import ImageManager
 from internal.dialog.content.generate_publication.helpers.dialog_data_helper import DialogDataHelper
 
 
@@ -10,27 +10,69 @@ class PublicationManager:
             self,
             logger,
             loom_content_client: interface.ILoomContentClient,
+            image_manager: ImageManager,
     ):
         self.logger = logger
         self.loom_content_client = loom_content_client
+        self.image_manager = image_manager
         self.dialog_data_helper = DialogDataHelper(self.logger)
+
+    async def generate_publication_text(self, dialog_manager: DialogManager) -> str:
+        category_id = self.dialog_data_helper.get_category_id(dialog_manager)
+        generate_text_prompt = self.dialog_data_helper.get_generate_text_prompt(dialog_manager)
+
+        publication_data = await self.loom_content_client.generate_publication_text(
+            category_id=category_id,
+            text_reference=generate_text_prompt,
+        )
+
+        return publication_data["text"]
+
+    async def regenerate_publication_text(self, dialog_manager: DialogManager, regenerate_text_prompt: str) -> str:
+        category_id = self.dialog_data_helper.get_category_id(dialog_manager)
+        publication_text = self.dialog_data_helper.get_publication_text(dialog_manager)
+
+        regenerated_data = await self.loom_content_client.regenerate_publication_text(
+            category_id=category_id,
+            publication_text=publication_text,
+            prompt=regenerate_text_prompt
+        )
+
+        return regenerated_data["text"]
+
+    async def compress_publication_text(self, dialog_manager: DialogManager) -> str:
+        category_id = self.dialog_data_helper.get_category_id(dialog_manager)
+        publication_text = self.dialog_data_helper.get_publication_text(dialog_manager)
+        expected_length = self.dialog_data_helper.get_expected_length(dialog_manager)
+        compress_prompt = f"Сожми текст до {expected_length} символов, сохраняя основной смысл и ключевые идеи. МАКСИМАЛЬНО ЗАПРЕЩЕНО ДЕЛАТЬ ТЕКСТ ДЛИННЕЕ {expected_length} символов"
+
+        compressed_data = await self.loom_content_client.regenerate_publication_text(
+            category_id=category_id,
+            publication_text=publication_text,
+            prompt=compress_prompt
+        )
+
+        return compressed_data["text"]
 
     async def send_to_moderation(
             self,
+            dialog_manager: DialogManager,
             state: model.UserState,
-            category_id: int,
-            text_reference: str,
-            text: str,
-            image_url: str | None,
-            image_content: bytes | None,
-            image_filename: str | None,
-            selected_networks: dict
     ) -> dict:
+        text = self.dialog_data_helper.get_publication_text(dialog_manager)
+        category_id = self.dialog_data_helper.get_category_id(dialog_manager)
+        selected_networks = self.dialog_data_helper.get_selected_social_networks(dialog_manager)
+        generate_text_prompt = self.dialog_data_helper.get_generate_text_prompt(dialog_manager)
+
+        image_url, image_content, image_filename = await self.image_manager.get_selected_image_data(
+            dialog_manager=dialog_manager
+        )
+
         publication_data = await self.loom_content_client.create_publication(
             organization_id=state.organization_id,
             category_id=category_id,
             creator_id=state.account_id,
-            text_reference=text_reference,
+            text_reference=generate_text_prompt,
             text=text,
             moderation_status="moderation",
             image_url=image_url,
@@ -55,20 +97,21 @@ class PublicationManager:
             self,
             dialog_manager: DialogManager,
             state: model.UserState,
-            category_id: int,
-            text_reference: str,
-            text: str,
-            image_url: str | None,
-            image_content: bytes | None,
-            image_filename: str | None,
-            selected_networks: dict
     ) -> dict:
-        # Создаем публикацию со статусом draft
+        text = self.dialog_data_helper.get_publication_text(dialog_manager)
+        category_id = self.dialog_data_helper.get_category_id(dialog_manager)
+        generate_text_prompt = self.dialog_data_helper.get_generate_text_prompt(dialog_manager)
+        selected_networks = self.dialog_data_helper.get_selected_social_networks(dialog_manager)
+
+        image_url, image_content, image_filename = await self.image_manager.get_selected_image_data(
+            dialog_manager=dialog_manager
+        )
+
         publication_data = await self.loom_content_client.create_publication(
             organization_id=state.organization_id,
             category_id=category_id,
             creator_id=state.account_id,
-            text_reference=text_reference,
+            text_reference=generate_text_prompt,
             text=text,
             moderation_status="draft",
             image_url=image_url,
@@ -76,7 +119,6 @@ class PublicationManager:
             image_filename=image_filename,
         )
 
-        # Устанавливаем выбранные соцсети
         tg_source = selected_networks.get("telegram_checkbox", False)
         vk_source = selected_networks.get("vkontakte_checkbox", False)
 
@@ -86,7 +128,6 @@ class PublicationManager:
             vk_source=vk_source,
         )
 
-        # Модерируем публикацию (одобряем)
         post_links = await self.loom_content_client.moderate_publication(
             publication_id=publication_data["publication_id"],
             moderator_id=state.account_id,
@@ -132,21 +173,3 @@ class PublicationManager:
             )
 
         return publication_data
-
-    def toggle_social_network(
-            self,
-            checkbox: ManagedCheckbox,
-            dialog_manager: DialogManager
-    ) -> None:
-        network_id = checkbox.widget_id
-        is_checked = checkbox.is_checked()
-
-        self.dialog_data_helper.toggle_social_network(
-            dialog_manager=dialog_manager,
-            network_id=network_id,
-            is_checked=is_checked
-        )
-
-    def remove_photo_from_long_text(self, dialog_manager: DialogManager) -> None:
-        self.dialog_data_helper.clear_all_image_data(dialog_manager=dialog_manager)
-        self.logger.info("Изображение удалено из-за длинного текста")

@@ -224,7 +224,7 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
 
     @auto_log()
     @traced_method()
-    async def get_edit_text_data(
+    async def get_edit_publication_text_data(
             self,
             dialog_manager: DialogManager,
             **kwargs

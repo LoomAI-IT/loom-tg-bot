@@ -10,20 +10,20 @@ class ValidationService:
     def __init__(self, logger):
         self.logger = logger
 
-    def validate_input_text(self, text: str, dialog_manager: DialogManager) -> bool:
+    def validate_generate_text_prompt(self, text: str, dialog_manager: DialogManager) -> bool:
         if not text:
             self.logger.info("Пустой текст")
-            dialog_manager.dialog_data["has_void_input_text"] = True
+            dialog_manager.dialog_data["has_void_generate_text_prompt"] = True
             return False
 
         if len(text) < self.MIN_TEXT_LENGTH:
             self.logger.info("Слишком короткий текст")
-            dialog_manager.dialog_data["has_small_input_text"] = True
+            dialog_manager.dialog_data["has_small_generate_text_prompt"] = True
             return False
 
         if len(text) > self.MAX_TEXT_LENGTH:
             self.logger.info("Слишком длинный текст")
-            dialog_manager.dialog_data["has_big_input_text"] = True
+            dialog_manager.dialog_data["has_big_generate_text_prompt"] = True
             return False
 
         return True
