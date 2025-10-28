@@ -723,7 +723,6 @@ class ModerationPublicationService(interface.IModerationPublicationService):
                 return
 
             self.image_manager.upload_combine_image(photo=photo, dialog_manager=dialog_manager)
-            await dialog_manager.show()
 
     @auto_log()
     @traced_method()
