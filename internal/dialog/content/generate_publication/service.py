@@ -149,7 +149,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             dialog_manager: DialogManager
     ) -> None:
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
-
+        await callback.answer()
         state = await self.state_manager.get_state(dialog_manager=dialog_manager)
 
         if not await self.category_manager.navigate_to_create_category(
@@ -159,7 +159,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             await callback.answer("У вас нет прав создавать рубрики", show_alert=True)
             return
 
-        await callback.answer()
+
 
     # ============= PUBLIC HANDLERS: TEXT GENERATION =============
 
