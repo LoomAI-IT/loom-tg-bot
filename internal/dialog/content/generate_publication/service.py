@@ -260,16 +260,17 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             dialog_manager: DialogManager
     ) -> None:
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, send=True)
-
         await callback.answer()
-        await callback.message.edit_text(
-            "Перегенерию текст, это может занять минуту. Не совершайте никаких действий...",
-            reply_markup=None
-        )
+
+        self.dialog_data_helper.set_is_regenerating_text(dialog_manager, True)
+        await dialog_manager.show()
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
 
         async with tg_action(self.bot, callback.message.chat.id):
             publication_text = await self.publication_manager.generate_publication_text(dialog_manager)
             self.dialog_data_helper.set_publication_text(dialog_manager, publication_text)
+
+        self.dialog_data_helper.set_is_regenerating_text(dialog_manager, False)
 
         if await self.text_processor.check_text_length_with_image(dialog_manager=dialog_manager):
             return
