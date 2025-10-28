@@ -287,7 +287,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                         True: Case(
                             {
                                 True: Multi(
-                                    Format("📝 <b>Ваши указания:</b><br><code>{regenerate_prompt}</code><br>"),
+                                    Format("📝 <b>Ваши указания:</b><br><code>{regenerate_text_prompt}</code><br>"),
                                     Const("⏳ <b>Перегенерирую текст...</b><br>"),
                                     Const("🕐 <i>Это может занять время. Пожалуйста, подождите.</i>"),
                                 ),
