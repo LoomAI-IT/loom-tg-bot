@@ -50,12 +50,12 @@ class CreateCategoryGetter(interface.ICreateCategoryGetter):
             await self.llm_chat_repo.create_message(
                 chat_id=chat_id,
                 role="user",
-                text=f'{{"message_to_llm": {user_text} }}'
+                text=f'{{"message_to_llm": {user_text}}}'
             )
             history = [
                 {
                     "role": "user",
-                    "content": user_text,
+                    "content": f'{{"message_to_llm": {user_text}}}',
                 }
             ]
 
@@ -66,6 +66,7 @@ class CreateCategoryGetter(interface.ICreateCategoryGetter):
                     system_prompt=system_prompt,
                     enable_web_search=False,
                     temperature=1,
+                    llm_model="claude-sonnet-4-5"
                 )
 
             message_to_user = llm_response_json["message_to_user"]
