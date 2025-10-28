@@ -739,6 +739,13 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             ),
 
             Button(
+                Const("🖼️ Использовать текущее изображение"),
+                id="use_current_image",
+                on_click=self.generate_publication_service.handle_use_current_image_as_reference,
+                when="has_image",
+            ),
+
+            Button(
                 Const("◀️ Назад"),
                 id="back_to_custom_generation",
                 on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.reference_image_generation,

@@ -1095,3 +1095,25 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         await callback.answer()
         await dialog_manager.switch_to(state=model.GeneratePublicationStates.image_generation_mode_select)
+
+    @auto_log()
+    @traced_method()
+    async def handle_use_current_image_as_reference(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
+
+        file_id = await self.image_manager.use_current_image_as_reference(
+            dialog_manager=dialog_manager,
+            chat_id=callback.message.chat.id
+        )
+
+        if file_id:
+            self.dialog_data_helper.set_reference_generation_image_file_id(dialog_manager, file_id)
+            await callback.answer("Текущее изображение установлено как референс")
+            await dialog_manager.switch_to(state=model.GeneratePublicationStates.reference_image_generation)
+        else:
+            await callback.answer("Ошибка при загрузке изображения", show_alert=True)

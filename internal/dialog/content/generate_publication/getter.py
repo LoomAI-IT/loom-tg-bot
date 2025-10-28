@@ -310,9 +310,15 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
+        # Проверяем есть ли текущее изображение в публикации
+        custom_image_file_id = self.dialog_data_helper.get_custom_image_file_id(dialog_manager)
+        publication_images_url = self.dialog_data_helper.get_publication_images_url(dialog_manager)
+        has_image = bool(custom_image_file_id or publication_images_url)
+
         return {
             "has_invalid_reference_generation_image_type": dialog_manager.dialog_data.get(
                 "has_invalid_reference_generation_image_type", False),
             "has_big_reference_generation_image_size": dialog_manager.dialog_data.get(
                 "has_big_reference_generation_image_size", False),
+            "has_image": has_image,
         }

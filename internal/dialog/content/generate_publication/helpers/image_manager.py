@@ -598,3 +598,35 @@ class ImageManager:
             backup_dict=backup_dict
         )
         self.dialog_data_helper.clear_temporary_image_data(dialog_manager)
+
+    async def use_current_image_as_reference(
+            self,
+            dialog_manager: DialogManager,
+            chat_id: int
+    ) -> str | None:
+        """
+        Использует текущее изображение публикации в качестве референса для генерации.
+        Возвращает file_id изображения или None в случае ошибки.
+        """
+        custom_image_file_id = self.dialog_data_helper.get_custom_image_file_id(dialog_manager)
+
+        if custom_image_file_id:
+            # Если есть кастомное изображение, используем его
+            return custom_image_file_id
+        else:
+            # Если изображение сгенерированное, конвертируем URL в file_id
+            publication_images_url = self.dialog_data_helper.get_publication_images_url(dialog_manager)
+            if publication_images_url:
+                current_index = self.dialog_data_helper.get_current_image_index(dialog_manager)
+                if current_index < len(publication_images_url):
+                    current_url = publication_images_url[current_index]
+
+                    # Загружаем изображение и получаем file_id
+                    file_id = await self.download_and_get_file_id(
+                        image_url=current_url,
+                        chat_id=chat_id
+                    )
+
+                    return file_id
+
+        return None

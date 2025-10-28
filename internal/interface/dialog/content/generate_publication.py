@@ -400,6 +400,14 @@ class IGeneratePublicationService(Protocol):
             dialog_manager: DialogManager
     ) -> None: pass
 
+    @abstractmethod
+    async def handle_use_current_image_as_reference(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
 
 class IGeneratePublicationGetter(Protocol):
 
