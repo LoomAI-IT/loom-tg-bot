@@ -915,14 +915,14 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
                             "<br><br>❌ <b>Неверный формат файла</b><br><i>Отправьте изображение (не другой тип файла)</i>"),
                         False: Const(""),
                     },
-                    selector="has_invalid_content_type"
+                    selector="has_invalid_combine_image_type"
                 ),
                 Case(
                     {
                         True: Const("<br><br>📁 <b>Файл слишком большой</b><br><i>Максимум 10 МБ</i>"),
                         False: Const(""),
                     },
-                    selector="has_big_image_size"
+                    selector="has_big_combine_image_size"
                 ),
                 Case(
                     {
