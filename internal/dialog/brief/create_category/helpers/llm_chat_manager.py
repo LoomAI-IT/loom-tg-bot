@@ -122,7 +122,7 @@ HTML разметка должны быть валидной, если есть 
 </system>
 
 <user>
-Расскажи что узнал
+Предложи рубрики
 </user>
             """
         await self.llm_chat_repo.create_message(
