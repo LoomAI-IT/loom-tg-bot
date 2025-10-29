@@ -9,6 +9,7 @@ from aiogram_dialog.widgets.kbd import Button
 from sulguk import SULGUK_PARSE_MODE
 
 from internal import interface, model
+from pkg.html_validator import validate_html
 from pkg.log_wrapper import auto_log
 from pkg.tg_action_wrapper import tg_action
 from pkg.trace_wrapper import traced_method
@@ -153,11 +154,14 @@ class UpdateCategoryService(interface.IUpdateCategoryService):
                 await dialog_manager.switch_to(state=model.UpdateCategoryStates.category_updated)
                 return
 
+            message_to_user = llm_response_json["message_to_user"]
+            validate_html(message_to_user)
+            dialog_manager.dialog_data["message_to_user"] = message_to_user
+
             await self.llm_chat_manager.save_llm_response(
                 chat_id=chat_id,
                 llm_response_json=llm_response_json,
             )
-            dialog_manager.dialog_data["message_to_user"] = llm_response_json["message_to_user"]
 
         except Exception as e:
             await self.bot.send_message(

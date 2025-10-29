@@ -11,10 +11,12 @@ from internal import interface, model
 from pkg.log_wrapper import auto_log
 from pkg.tg_action_wrapper import tg_action
 from pkg.trace_wrapper import traced_method
+from pkg.html_validator import validate_html
 
 from internal.dialog.helpers import StateManager
 from internal.dialog.brief.helpers import LLMContextManager
-from internal.dialog.brief.create_category.helpers import CategoryManager, LLMChatManager
+from internal.dialog.brief.create_category.helpers import CategoryManager, LLMChatManager, validate_and_fix_html
+
 
 
 class CreateCategoryService(interface.ICreateCategoryService):
@@ -169,11 +171,15 @@ class CreateCategoryService(interface.ICreateCategoryService):
                 await dialog_manager.switch_to(state=model.CreateCategoryStates.category_created)
                 return
 
+            message_to_user = llm_response_json["message_to_user"]
+            validate_html(message_to_user)
+            dialog_manager.dialog_data["message_to_user"] = message_to_user
+
             await self.llm_chat_manager.save_llm_response(
                 chat_id=chat_id,
                 llm_response_json=llm_response_json,
             )
-            dialog_manager.dialog_data["message_to_user"] = llm_response_json["message_to_user"]
+
 
         except Exception as e:
             await self.bot.send_message(

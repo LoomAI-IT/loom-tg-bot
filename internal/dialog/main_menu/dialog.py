@@ -87,7 +87,7 @@ class MainMenuDialog(interface.IMainMenuDialog):
                         ),
                         Case(
                             {
-                                True: Const("<br>💰 <b>Недостаточно средств</b><br/><i>Пополните баланс организациио</i>"),
+                                True: Const("<br>💰 <b>Недостаточно средств</b><br/><i>Пополните баланс организации</i>"),
                                 False: Const(""),
                             },
                             selector="has_insufficient_balance"
