@@ -142,7 +142,10 @@ class CreateCategoryService(interface.ICreateCategoryService):
                     category_data=category_data
                 )
 
-                await self.llm_chat_manager.clear_chat_history(chat_id=chat_id)
+                await self.llm_chat_manager.clear_chat_history(
+                    dialog_manager=dialog_manager,
+                    chat_id=chat_id
+                )
 
                 llm_response_json = await self.llm_chat_manager.process_user_message(
                     dialog_manager=dialog_manager,

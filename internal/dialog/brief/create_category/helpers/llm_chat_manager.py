@@ -187,7 +187,8 @@ HTML разметка должны быть валидной, если есть 
 
         return llm_response_json, test_publication_text
 
-    async def clear_chat_history(self, chat_id: int) -> None:
+    async def clear_chat_history(self, dialog_manager: DialogManager, chat_id: int) -> None:
+        dialog_manager.dialog_data["total_tokens"] = 0
         await self.llm_chat_repo.delete_all_messages(chat_id=chat_id)
 
     async def get_llm_response(
