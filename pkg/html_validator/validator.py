@@ -2,7 +2,7 @@ from html5lib import HTMLParser
 
 
 def validate_html(html_string: str):
-    parser = HTMLParser(strict=True, namespaceHTMLElements=False)
+    parser = HTMLParser(strict=False, namespaceHTMLElements=False)
     try:
         document = parser.parse(html_string)
         if document is None:
