@@ -56,10 +56,12 @@ class CreateCategoryPromptGenerator(interface.ICreateCategoryPromptGenerator):
 </allowed_tags>
 
 <forbidden_tags>
-❌ <p> - используй <span> с 
+❌ <p> - используй <span>
+❌ <cite>
 ❌ <table> - используй списки или blockquote
 ❌ <ul> - только <ol>
 ❌ <a> - не оборачивай ссылки, телефоны, email в теги
+❌ Запрещено писать стили тэгах и что либо, просто ЧИСТЫЕ тэги
 </forbidden_tags>
 
 <formatting_rules>
