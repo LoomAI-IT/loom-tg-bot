@@ -92,6 +92,7 @@ class CreateCategoryGetter(interface.ICreateCategoryGetter):
         message_to_user = message_to_user.replace("</span><br>", "</span>")
         message_to_user = message_to_user.replace("</span>", "</span><br><br>")
         message_to_user = message_to_user.replace("</span><br><br><details>", "</span><br><details>")
+        message_to_user = message_to_user.replace("</span><br><br></details>", "</span>")
         message_to_user = message_to_user.replace("</span><br><br><blockquote>", "</span><br><blockquote>")
 
         message_to_user = message_to_user.replace("</details><br><br>", "</details>")

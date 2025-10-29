@@ -94,7 +94,7 @@ class CreateCategoryService(interface.ICreateCategoryService):
             next_stage = llm_response_json.get("next_stage")
             current_stage = llm_response_json.get("current_stage")
 
-            if llm_response_json.get("telegram_channel_username_list") and next_stage == "3":
+            if llm_response_json.get("telegram_channel_username_list") and current_stage == "3":
                 telegram_channel_username_list = llm_response_json["telegram_channel_username_list"]
 
                 await self.llm_chat_manager.save_llm_response(
