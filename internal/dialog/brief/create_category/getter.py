@@ -85,24 +85,11 @@ class CreateCategoryGetter(interface.ICreateCategoryGetter):
         return data
 
     def _format_message(self, message_to_user: str) -> str:
-        message_to_user = message_to_user.replace("</summary>", "</span>")
-        message_to_user = message_to_user.replace("<summary>", "<span>")
-
-        message_to_user = message_to_user.replace("</span><br><br>", "</span>")
-        message_to_user = message_to_user.replace("</span><br>", "</span>")
-        message_to_user = message_to_user.replace("</span>", "</span><br><br>")
-        message_to_user = message_to_user.replace("</span><br><br><details>", "</span><br><details>")
-        message_to_user = message_to_user.replace("</span><br><br></details>", "</span></details>")
-        message_to_user = message_to_user.replace("</span><br><br><blockquote>", "</span><br><blockquote>")
-
-        message_to_user = message_to_user.replace("</details><br><br>", "</details>")
-        message_to_user = message_to_user.replace("</details><br>", "</details>")
-        message_to_user = message_to_user.replace("</details>", "</details><br>")
-        message_to_user = message_to_user.replace("<details><span>", "<details><br><span>")
+        message_to_user = message_to_user.replace("</summary><br>", "</summary>")
 
         message_to_user = message_to_user.replace("</blockquote><br><br>", "</blockquote>")
         message_to_user = message_to_user.replace("</blockquote><br>", "</blockquote>")
-        message_to_user = message_to_user.replace("</blockquote>", "</blockquote><br>")
+        message_to_user = message_to_user.replace("</blockquote>", "</blockquote><br><br>")
 
         return message_to_user
 
