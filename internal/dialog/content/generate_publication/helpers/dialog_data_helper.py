@@ -28,6 +28,7 @@ class DialogDataHelper:
             "has_regenerate_text_prompt": bool(dialog_manager.dialog_data.get("has_regenerate_text_prompt", "")),
             "is_regenerating_text": dialog_manager.dialog_data.get("is_regenerating_text", False),
             "voice_transcribe": dialog_manager.dialog_data.get("voice_transcribe", False),
+            "has_insufficient_balance": dialog_manager.dialog_data.get("has_insufficient_balance", False),
             # Error flags for text editing
             "has_void_publication_text": dialog_manager.dialog_data.get("has_void_publication_text", False),
             "has_small_publication_text": dialog_manager.dialog_data.get("has_small_publication_text", False),
@@ -353,7 +354,8 @@ class DialogDataHelper:
             "has_void_regenerate_text_prompt",
             "has_small_regenerate_text_prompt",
             "has_big_regenerate_text_prompt",
-            "has_invalid_content_type"
+            "has_invalid_content_type",
+            "has_insufficient_balance"
         )
 
     def clear_edit_image_prompt(self, dialog_manager: DialogManager) -> None:
@@ -364,7 +366,8 @@ class DialogDataHelper:
             "has_big_edit_image_prompt",
             "has_invalid_content_type",
             "has_empty_voice_text",
-            "has_no_image_edit_result"
+            "has_no_image_edit_result",
+            "has_insufficient_balance"
         )
 
     def clear_text_edit(self, dialog_manager: DialogManager) -> None:
@@ -388,7 +391,8 @@ class DialogDataHelper:
             "has_small_combine_image_prompt",
             "has_big_combine_image_prompt",
             "has_invalid_content_type",
-            "has_no_combine_image_result"
+            "has_no_combine_image_result",
+            "has_insufficient_balance"
         )
 
     def clear_combine_image_upload(self, dialog_manager: DialogManager) -> None:
@@ -432,7 +436,8 @@ class DialogDataHelper:
             "has_small_edit_image_prompt",
             "has_big_edit_image_prompt",
             "has_invalid_content_type",
-            "has_no_image_edit_result"
+            "has_no_image_edit_result",
+            "has_insufficient_balance"
         )
 
     def clear_temporary_image_data(self, dialog_manager: DialogManager) -> None:
@@ -501,7 +506,8 @@ class DialogDataHelper:
             "has_small_reference_generation_image_prompt",
             "has_big_reference_generation_image_prompt",
             "has_invalid_content_type",
-            "voice_transcribe"
+            "voice_transcribe",
+            "has_insufficient_balance"
         )
 
     def clear_reference_generation_image_errors(self, dialog_manager: DialogManager) -> None:

@@ -164,8 +164,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             await callback.answer("У вас нет прав создавать рубрики", show_alert=True)
             return
 
-
-
     # ============= PUBLIC HANDLERS: TEXT GENERATION =============
 
     @auto_log()
@@ -311,10 +309,15 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         self.dialog_data_helper.clear_regenerate_text_prompt(dialog_manager=dialog_manager)
         await message.delete()
 
-        if not self.validation.validate_content_type(message=message, dialog_manager=dialog_manager):
+        state = await self.state_manager.get_state(dialog_manager=dialog_manager)
+
+        if await self.balance_manager.check_balance_for_operation(state.organization_id, "generate_text"):
+            dialog_manager.dialog_data["has_insufficient_balance"] = True
+            await dialog_manager.show()
             return
 
-        state = await self.state_manager.get_state(dialog_manager=dialog_manager)
+        if not self.validation.validate_content_type(message=message, dialog_manager=dialog_manager):
+            return
         regenerate_text_prompt = await self.message_extractor.process_voice_or_text_input(
             message=message,
             dialog_manager=dialog_manager,
@@ -379,10 +382,15 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         self.dialog_data_helper.clear_edit_image_prompt(dialog_manager=dialog_manager)
         await message.delete()
 
-        if not self.validation.validate_content_type(message=message, dialog_manager=dialog_manager):
+        state = await self.state_manager.get_state(dialog_manager=dialog_manager)
+
+        if await self.balance_manager.check_balance_for_operation(state.organization_id, "edit_image"):
+            dialog_manager.dialog_data["has_insufficient_balance"] = True
+            await dialog_manager.show()
             return
 
-        state = await self.state_manager.get_state(dialog_manager=dialog_manager)
+        if not self.validation.validate_content_type(message=message, dialog_manager=dialog_manager):
+            return
         edit_image_prompt = await self.message_extractor.process_voice_or_text_input(
             message=message,
             dialog_manager=dialog_manager,
@@ -772,6 +780,11 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         state = await self.state_manager.get_state(dialog_manager=dialog_manager)
 
+        if await self.balance_manager.check_balance_for_operation(state.organization_id, "generate_image"):
+            dialog_manager.dialog_data["has_insufficient_balance"] = True
+            await dialog_manager.show()
+            return
+
         if not self.validation.validate_content_type(message=message, dialog_manager=dialog_manager):
             return
 
@@ -781,8 +794,10 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             organization_id=state.organization_id
         )
 
-        if not self.validation.validate_combine_image_prompt(prompt=combine_image_prompt,
-                                                             dialog_manager=dialog_manager):
+        if not self.validation.validate_combine_image_prompt(
+                prompt=combine_image_prompt,
+                dialog_manager=dialog_manager
+        ):
             return
 
         combine_images_list = self.dialog_data_helper.get_combine_images_list(dialog_manager)
@@ -810,9 +825,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         self.dialog_data_helper.set_is_combining_images(dialog_manager, False)
 
-        # Проверяем, был ли результат объединения
         if self.dialog_data_helper.get_has_no_combine_image_result(dialog_manager):
-            # Нейросеть не стала объединять изображения, остаемся в текущем окне
             await dialog_manager.show()
             return
 
@@ -858,9 +871,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         self.dialog_data_helper.set_is_combining_images(dialog_manager, False)
 
-        # Проверяем, был ли результат объединения
         if self.dialog_data_helper.get_has_no_combine_image_result(dialog_manager):
-            # Нейросеть не стала объединять изображения, остаемся в текущем окне
             await dialog_manager.show()
             return
 
@@ -904,10 +915,15 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         self.dialog_data_helper.clear_edit_image_prompt_error_flags(dialog_manager=dialog_manager)
         await message.delete()
 
-        if not self.validation.validate_content_type(message=message, dialog_manager=dialog_manager):
+        state = await self.state_manager.get_state(dialog_manager=dialog_manager)
+
+        if await self.balance_manager.check_balance_for_operation(state.organization_id, "edit_image"):
+            dialog_manager.dialog_data["has_insufficient_balance"] = True
+            await dialog_manager.show()
             return
 
-        state = await self.state_manager.get_state(dialog_manager=dialog_manager)
+        if not self.validation.validate_content_type(message=message, dialog_manager=dialog_manager):
+            return
         edit_image_prompt = await self.message_extractor.process_voice_or_text_input(
             message=message,
             dialog_manager=dialog_manager,
@@ -932,9 +948,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         self.dialog_data_helper.set_is_applying_edits(dialog_manager, False)
 
-        # Проверяем, был ли результат редактирования
         if self.dialog_data_helper.get_has_no_image_edit_result(dialog_manager):
-            # Нейросеть не стала редактировать изображение, остаемся в текущем окне
             self.dialog_data_helper.set_edit_image_prompt(dialog_manager, "")
             await dialog_manager.show()
             return
@@ -1019,7 +1033,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         state = await self.state_manager.get_state(dialog_manager=dialog_manager)
 
-        # Проверка баланса перед генерацией изображения
         if await self.balance_manager.check_balance_for_operation(state.organization_id, "generate_image"):
             await callback.answer("💰 Недостаточно средств. Пополните баланс организации", show_alert=True)
             return
@@ -1067,6 +1080,11 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         self.dialog_data_helper.clear_reference_generation_image_prompt_errors(dialog_manager)
 
         state = await self.state_manager.get_state(dialog_manager=dialog_manager)
+
+        if await self.balance_manager.check_balance_for_operation(state.organization_id, "generate_image"):
+            dialog_manager.dialog_data["has_insufficient_balance"] = True
+            await dialog_manager.show()
+            return
 
         if not self.validation.validate_content_type(message=message, dialog_manager=dialog_manager):
             return

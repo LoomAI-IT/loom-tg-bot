@@ -3,7 +3,7 @@ from typing import Any
 from aiogram import Bot
 from aiogram.enums import ContentType
 from aiogram.types import CallbackQuery, Message
-from aiogram_dialog import DialogManager
+from aiogram_dialog import DialogManager, StartMode
 from aiogram_dialog.widgets.input import MessageInput
 
 from internal import interface, model
@@ -83,6 +83,7 @@ class MainMenuService(interface.IMainMenuService):
         await dialog_manager.start(
             state=model.GeneratePublicationStates.select_category,
             data=dialog_manager.dialog_data,
+            mode=StartMode.RESET_STACK
         )
 
     @auto_log()

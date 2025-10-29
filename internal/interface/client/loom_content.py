@@ -170,7 +170,6 @@ class ILoomContentClient(Protocol):
             prompt_for_image_style: str
     ) -> str: pass
 
-
     @abstractmethod
     async def update_category(
             self,
@@ -199,7 +198,6 @@ class ILoomContentClient(Protocol):
 
     @abstractmethod
     async def get_categories_by_organization(self, organization_id: int) -> list[model.Category]: pass
-
 
     # НАРЕЗКА
     @abstractmethod
@@ -267,4 +265,4 @@ class ILoomContentClient(Protocol):
             images_content: list[bytes],
             images_filenames: list[str],
             prompt: str,
-    ) -> list[str]: pass
+    ) -> tuple[list[str] | None, bool]: pass

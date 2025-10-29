@@ -145,7 +145,7 @@ class OrganizationMenuService(interface.IOrganizationMenuService):
             dialog_manager: DialogManager
     ) -> None:
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
-        await dialog_manager.start(state=model.AddSocialNetworkStates.select_network)
+        await dialog_manager.start(state=model.AddSocialNetworkStates.select_network, mode=StartMode.RESET_STACK)
 
     @auto_log()
     @traced_method()

@@ -148,7 +148,8 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        return self.dialog_data_helper.get_edit_publication_text_data(dialog_manager)
+        data = self.dialog_data_helper.get_edit_publication_text_data(dialog_manager)
+        return data
 
     @auto_log()
     @traced_method()
@@ -165,6 +166,7 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
         return {
             "has_image": has_image,
             "preview_image_media": preview_image_media,
+            "has_insufficient_balance": dialog_manager.dialog_data.get("has_insufficient_balance", False),
             **flags_data
         }
 
@@ -237,6 +239,7 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
         return {
             "combine_current_index": combine_current_index + 1,
             "combine_current_image_media": combine_current_image_media,
+            "has_insufficient_balance": dialog_manager.dialog_data.get("has_insufficient_balance", False),
             **flags_data
         }
 
@@ -259,6 +262,7 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
             "has_old_image": old_image_media is not None,
             "showing_old_image": showing_old_image,
             "showing_new_image": not showing_old_image,
+            "has_insufficient_balance": dialog_manager.dialog_data.get("has_insufficient_balance", False),
             **flags_data
         }
 
@@ -303,6 +307,7 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
                 "has_invalid_reference_generation_image_type", False),
             "has_big_reference_generation_image_size": dialog_manager.dialog_data.get(
                 "has_big_reference_generation_image_size", False),
+            "has_insufficient_balance": dialog_manager.dialog_data.get("has_insufficient_balance", False),
         }
 
     @auto_log()
