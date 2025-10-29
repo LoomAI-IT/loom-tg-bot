@@ -762,7 +762,7 @@ working_category накапливает все утверждённые пара
     "cta_type": str,
     "cta_strategy": dict,
     "additional_info": list[dict],
-    "prompt_for_image_style": str
+    "prompt_for_image_style": str  // версия на английском
   }}
 }}
 </json_output>
