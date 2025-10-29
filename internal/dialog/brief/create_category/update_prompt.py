@@ -125,6 +125,7 @@ class TrainCategoryPromptGenerator(interface.ITrainCategoryPromptGenerator):
 <objective>
 Создать 1 эталонный пост с паттернами успеха и антипаттернами.
 На КАЖДОЙ генерации извлекать знания о качестве контента.
+ВАЖНО: могут менять не только good_samples и bad_samples, но и любые парметры у рубрики
 </objective>
 
 <key_principles>
