@@ -1,8 +1,11 @@
-from bs4 import BeautifulSoup
+from html5lib import HTMLParser
 
 
 def validate_html(html_string: str):
+    parser = HTMLParser(strict=True, namespaceHTMLElements=False)
     try:
-        soup = BeautifulSoup(html_string, 'lxml')
+        document = parser.parse(html_string)
+        if document is None:
+            raise ValueError("Failed to parse HTML: document is None")
     except Exception as e:
-        raise
+        raise ValueError(f"Invalid HTML: {str(e)}") from e
