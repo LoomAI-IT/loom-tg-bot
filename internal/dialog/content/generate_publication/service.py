@@ -809,6 +809,13 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             )
 
         self.dialog_data_helper.set_is_combining_images(dialog_manager, False)
+
+        # Проверяем, был ли результат объединения
+        if self.dialog_data_helper.get_has_no_combine_image_result(dialog_manager):
+            # Нейросеть не стала объединять изображения, остаемся в текущем окне
+            await dialog_manager.show()
+            return
+
         self.dialog_data_helper.set_combine_image_url(dialog_manager, combined_result_url)
 
         await dialog_manager.switch_to(state=model.GeneratePublicationStates.new_image_confirm)
@@ -850,6 +857,13 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             )
 
         self.dialog_data_helper.set_is_combining_images(dialog_manager, False)
+
+        # Проверяем, был ли результат объединения
+        if self.dialog_data_helper.get_has_no_combine_image_result(dialog_manager):
+            # Нейросеть не стала объединять изображения, остаемся в текущем окне
+            await dialog_manager.show()
+            return
+
         self.dialog_data_helper.set_combine_image_url(dialog_manager, combined_result_url)
 
         await dialog_manager.switch_to(state=model.GeneratePublicationStates.new_image_confirm)

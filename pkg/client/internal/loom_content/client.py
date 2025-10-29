@@ -665,7 +665,7 @@ class LoomContentClient(interface.ILoomContentClient):
             images_content: list[bytes],
             images_filenames: list[str],
             prompt: str,
-    ) -> list[str]:
+    ) -> tuple[list[str] | None, bool]:
         data: dict = {"organization_id": organization_id, "category_id": category_id}
 
         if prompt is not None:
@@ -691,4 +691,8 @@ class LoomContentClient(interface.ILoomContentClient):
             raise
         json_response = response.json()
 
-        return json_response["images_url"]
+        # Проверяем, вернул ли бэкенд флаг no_image_data
+        if "no_image_data" in json_response and json_response["no_image_data"]:
+            return None, True
+
+        return json_response["images_url"], False

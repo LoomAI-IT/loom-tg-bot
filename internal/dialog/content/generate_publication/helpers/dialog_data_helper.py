@@ -123,6 +123,7 @@ class DialogDataHelper:
             "has_small_combine_image_prompt": dialog_manager.dialog_data.get("has_small_combine_image_prompt", False),
             "has_big_combine_image_prompt": dialog_manager.dialog_data.get("has_big_combine_image_prompt", False),
             "has_invalid_content_type": dialog_manager.dialog_data.get("has_invalid_content_type", False),
+            "has_no_combine_image_result": dialog_manager.dialog_data.get("has_no_combine_image_result", False),
         }
 
     def get_new_image_confirm_flags(self, dialog_manager: DialogManager) -> dict:
@@ -194,6 +195,9 @@ class DialogDataHelper:
 
     def get_has_no_image_edit_result(self, dialog_manager: DialogManager) -> bool:
         return dialog_manager.dialog_data.get("has_no_image_edit_result", False)
+
+    def get_has_no_combine_image_result(self, dialog_manager: DialogManager) -> bool:
+        return dialog_manager.dialog_data.get("has_no_combine_image_result", False)
 
     # Соцсети и публикация
     def get_selected_social_networks(self, dialog_manager: DialogManager) -> dict:
@@ -309,6 +313,9 @@ class DialogDataHelper:
     def set_has_no_image_edit_result(self, dialog_manager: DialogManager, value: bool) -> None:
         dialog_manager.dialog_data["has_no_image_edit_result"] = value
 
+    def set_has_no_combine_image_result(self, dialog_manager: DialogManager, value: bool) -> None:
+        dialog_manager.dialog_data["has_no_combine_image_result"] = value
+
     # Соцсети и публикация
     def set_selected_social_networks(self, dialog_manager: DialogManager, networks: dict) -> None:
         dialog_manager.dialog_data["selected_social_networks"] = networks
@@ -380,7 +387,8 @@ class DialogDataHelper:
             dialog_manager,
             "has_small_combine_image_prompt",
             "has_big_combine_image_prompt",
-            "has_invalid_content_type"
+            "has_invalid_content_type",
+            "has_no_combine_image_result"
         )
 
     def clear_combine_image_upload(self, dialog_manager: DialogManager) -> None:

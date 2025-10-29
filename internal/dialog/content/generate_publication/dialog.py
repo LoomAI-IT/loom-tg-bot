@@ -100,7 +100,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                         Const("💬 <i>Отправьте текст или голосовое сообщение — я превращу их в готовый контент</i>"),
                         Case(
                             {
-                                True: Format("<br>📄 <b>Ваш текст:</b><br><i>{text_prompt}</i>"),
+                                True: Format("<br>📄 <b>Ваш текст:</b><br><i>{generate_text_prompt}</i>"),
                                 False: Const(""),
                             },
                             selector="has_generate_text_prompt"
@@ -224,13 +224,13 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                 Row(
                     Button(
                         Const("✏️ Текст"),
-                        id="edit_text_menu",
+                        id="goto_edit_text_menu",
                         on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.edit_text_menu,
                                                              ShowMode.EDIT),
                     ),
                     Button(
                         Const("🎨 Картинка"),
-                        id="edit_image_menu",
+                        id="goto_edit_image_menu",
                         on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.image_menu, ShowMode.EDIT),
                     ),
                 ),
@@ -510,24 +510,24 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             Column(
                 Button(
                     Const("🎨 Сгенерировать картинку"),
-                    id="generate_image",
+                    id="goto_generate_image",
                     on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.image_generation_mode_select,
                                                          ShowMode.SEND),
                 ),
                 Button(
                     Const("🖇 Внести правки в изображение"),
-                    id="edit_image",
+                    id="goto_edit_image",
                     on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.edit_image_input, ShowMode.EDIT),
                     when="has_image",
                 ),
                 Button(
                     Const("📷 Использовать своё фото"),
-                    id="upload_image",
+                    id="goto_upload_image",
                     on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.upload_image, ShowMode.EDIT),
                 ),
                 Button(
                     Const("📐 Объединить изображения"),
-                    id="combine_images",
+                    id="goto_combine_images",
                     on_click=self.generate_publication_service.handle_combine_images_start,
                 ),
                 Button(
@@ -872,7 +872,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
 
             Button(
                 Const("◀️ Назад"),
-                id="image_menu",
+                id="back_to_image_menu_from_upload",
                 on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.image_menu, ShowMode.EDIT),
             ),
 
@@ -1175,6 +1175,15 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                         False: Const(""),
                     },
                     selector="has_invalid_content_type"
+                ),
+                Case(
+                    {
+                        True: Const(
+                            "<br><br>⚠️ <b>Нейросеть отказалась объединять изображения.</b><br>"
+                            "💡 <i>Попробуйте другие изображения или измените описание.</i>"),
+                        False: Const(""),
+                    },
+                    selector="has_no_combine_image_result"
                 ),
                 sep="",
             ),

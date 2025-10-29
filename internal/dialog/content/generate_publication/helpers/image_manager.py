@@ -188,7 +188,7 @@ class ImageManager:
             combine_images_list: list[str],
             prompt: str,
             chat_id: int
-    ) -> list[str] | None:
+    ) -> tuple[list[str] | None, bool]:
         images_content = []
         images_filenames = []
 
@@ -201,7 +201,7 @@ class ImageManager:
         category_id = self.dialog_data_helper.get_category_id(dialog_manager)
 
         async with tg_action(self.bot, chat_id, "upload_photo"):
-            combined_images_url = await self.loom_content_client.combine_images(
+            combined_images_url, has_no_data = await self.loom_content_client.combine_images(
                 organization_id=state.organization_id,
                 category_id=category_id,
                 images_content=images_content,
@@ -209,7 +209,7 @@ class ImageManager:
                 prompt=prompt,
             )
 
-        return combined_images_url
+        return combined_images_url, has_no_data
 
     def restore_image_from_backup(
             self,
@@ -503,13 +503,18 @@ class ImageManager:
         # Сохраняем backups как при обычной генерации
         self.backup_current_image(dialog_manager)
 
-        combined_images_url = await self.combine_images_with_prompt(
+        combined_images_url, has_no_data = await self.combine_images_with_prompt(
             dialog_manager=dialog_manager,
             state=state,
             combine_images_list=combine_images_list,
             prompt=prompt,
             chat_id=chat_id
         )
+
+        # Если нейросеть не стала объединять изображения
+        if has_no_data:
+            self.dialog_data_helper.set_has_no_combine_image_result(dialog_manager, True)
+            return None
 
         return combined_images_url[0] if combined_images_url else None
 
