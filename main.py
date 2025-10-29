@@ -149,8 +149,13 @@ loom_account_client = LoomAccountClient(tel, cfg.loom_account_host, cfg.loom_acc
 loom_authorization_client = LoomAuthorizationClient(tel, cfg.loom_authorization_host,
                                                     cfg.loom_authorization_port, log_context)
 loom_employee_client = LoomEmployeeClient(tel, cfg.loom_employee_host, cfg.loom_employee_port, log_context)
-loom_organization_client = LoomOrganizationClient(tel, cfg.loom_organization_host, cfg.loom_organization_port,
-                                                  log_context)
+loom_organization_client = LoomOrganizationClient(
+    tel,
+    cfg.loom_organization_host,
+    cfg.loom_organization_port,
+    cfg.interserver_secret_key,
+    log_context
+)
 loom_content_client = LoomContentClient(tel, cfg.loom_content_host, cfg.loom_content_port, log_context)
 anthropic_client = AnthropicClient(
     tel,

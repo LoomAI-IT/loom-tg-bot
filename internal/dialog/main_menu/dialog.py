@@ -85,6 +85,13 @@ class MainMenuDialog(interface.IMainMenuDialog):
                             },
                             selector="has_invalid_youtube_url"
                         ),
+                        Case(
+                            {
+                                True: Const("<br><br>💰 <b>Недостаточно средств</b><br/><i>Пополните баланс организации для транскрибации аудио</i>"),
+                                False: Const(""),
+                            },
+                            selector="has_insufficient_balance"
+                        ),
                     ),
                     True: Const("🔄 Распознавание речи...")
                 },

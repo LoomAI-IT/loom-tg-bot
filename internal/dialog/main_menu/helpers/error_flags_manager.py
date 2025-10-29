@@ -14,5 +14,6 @@ class ErrorFlagsManager:
             "has_void_input_text",
             "has_small_input_text",
             "has_big_input_text",
-            "has_invalid_content_type"
+            "has_invalid_content_type",
+            "has_insufficient_balance"
         )

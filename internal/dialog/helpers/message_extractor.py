@@ -3,7 +3,7 @@ from aiogram.enums import ContentType
 from aiogram.types import Message
 from aiogram_dialog import DialogManager
 
-from internal import interface
+from internal import interface, common
 
 
 class MessageExtractor:
@@ -106,10 +106,17 @@ class MessageExtractor:
         file = await self.bot.get_file(file_id)
         file_data = await self.bot.download_file(file.file_path)
 
-        text = await self.loom_content_client.transcribe_audio(
-            organization_id=organization_id,
-            audio_content=file_data.read(),
-            audio_filename="audio.mp3",
-        )
+        try:
+            text = await self.loom_content_client.transcribe_audio(
+                organization_id=organization_id,
+                audio_content=file_data.read(),
+                audio_filename="audio.mp3",
+            )
+        except common.ErrInsufficientBalance:
+            self.logger.warning(f"Insufficient balance for transcription, organization_id={organization_id}")
+            dialog_manager.dialog_data["voice_transcribe"] = False
+            dialog_manager.dialog_data["has_insufficient_balance"] = True
+            return ""
+
         dialog_manager.dialog_data["voice_transcribe"] = False
         return text

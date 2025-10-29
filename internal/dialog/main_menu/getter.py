@@ -41,6 +41,7 @@ class MainMenuGetter(interface.IMainMenuGetter):
             "has_invalid_content_type": dialog_manager.dialog_data.get("has_invalid_content_type", False),
             "has_long_voice_duration": dialog_manager.dialog_data.get("has_long_voice_duration", False),
             "has_invalid_youtube_url": dialog_manager.dialog_data.get("has_invalid_youtube_url", False),
+            "has_insufficient_balance": dialog_manager.dialog_data.get("has_insufficient_balance", False),
         }
 
         await self.state_repo.change_user_state(

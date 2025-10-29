@@ -32,4 +32,7 @@ class ILoomOrganizationClient(Protocol):
     async def top_up_balance(self, organization_id: int, amount_rub: int) -> None: pass
 
     @abstractmethod
-    async def debit_balance(self, organization_id: int, amount_rub: int) -> None: pass
+    async def debit_balance(self, organization_id: int, amount_rub: str) -> None: pass
+
+    @abstractmethod
+    async def get_cost_multiplier(self, organization_id: int) -> model.CostMultiplier: pass
