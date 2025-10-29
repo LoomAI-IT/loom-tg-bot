@@ -92,6 +92,7 @@ class CreateCategoryService(interface.ICreateCategoryService):
                     use_train_prompt=use_train_prompt
                 )
             next_stage = llm_response_json.get("next_stage")
+            current_stage = llm_response_json.get("current_stage")
 
             if llm_response_json.get("telegram_channel_username_list") and next_stage == "3":
                 telegram_channel_username_list = llm_response_json["telegram_channel_username_list"]

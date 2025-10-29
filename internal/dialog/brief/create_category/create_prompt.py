@@ -471,9 +471,9 @@ CTA (Call-to-Action) — это короткая фраза в конце пос
 // Когда пользователь подтвердил готовность ИЛИ достигнут лимит 3 каналов:
 // ⚠️ ПОКАЗЫВАЕМ СРАЗУ СООБЩЕНИЕ ИЗ STAGE 3!
 {{
-    "current_stage": "2",  // ⚠️ СРАЗУ STAGE 3!
+    "current_stage": "3",  // ⚠️ СРАЗУ STAGE 3!
     "prev_stage": "2",
-    "next_stage": "3", 
+    "next_stage": "4", 
     "telegram_channel_username_list": [  // если каналы были собраны
         "@username1",
         "@username2"
