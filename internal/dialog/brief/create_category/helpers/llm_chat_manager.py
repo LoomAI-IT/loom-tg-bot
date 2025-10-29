@@ -59,16 +59,13 @@ class LLMChatManager:
             custom_user_text: str = None,
     ) -> dict:
         if custom_user_text:
-            user_text = await self.message_extractor.extract_text_from_message(
-                dialog_manager=dialog_manager,
-                message=message,
-                organization_id=organization_id
-            )
+            user_text = custom_user_text
         else:
             user_text = await self.message_extractor.extract_text_from_message(
                 dialog_manager=dialog_manager,
                 message=message,
-                organization_id=organization_id
+                organization_id=organization_id,
+                show_is_transcribe=False
             )
 
         message_to_llm = f"""

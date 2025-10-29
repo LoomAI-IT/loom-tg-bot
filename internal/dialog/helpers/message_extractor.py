@@ -38,6 +38,7 @@ class MessageExtractor:
             dialog_manager: DialogManager,
             message: Message,
             organization_id: int,
+            show_is_transcribe: bool = True,
     ) -> str:
         text_parts = []
 
@@ -45,7 +46,8 @@ class MessageExtractor:
             audio_text = await self.speech_to_text(
                 message=message,
                 dialog_manager=dialog_manager,
-                organization_id=organization_id
+                organization_id=organization_id,
+                show_is_transcribe=show_is_transcribe,
             )
             text_parts.append(audio_text)
 
@@ -63,7 +65,8 @@ class MessageExtractor:
                 forwarded_text = await self.extract_text_from_message(
                     dialog_manager=dialog_manager,
                     message=message.forward_from_message,
-                    organization_id=organization_id
+                    organization_id=organization_id,
+                    show_is_transcribe=show_is_transcribe
                 )
                 if forwarded_text:
                     text_parts.append(f"[Пересланное сообщение]: {forwarded_text}")
@@ -88,7 +91,8 @@ class MessageExtractor:
             self,
             message: Message,
             dialog_manager: DialogManager,
-            organization_id: int
+            organization_id: int,
+            show_is_transcribe: bool = True,
     ) -> str:
         if message.voice:
             file_id = message.voice.file_id
@@ -96,7 +100,8 @@ class MessageExtractor:
             file_id = message.audio.file_id
 
         dialog_manager.dialog_data["voice_transcribe"] = True
-        await dialog_manager.show()
+        if show_is_transcribe:
+            await dialog_manager.show()
 
         file = await self.bot.get_file(file_id)
         file_data = await self.bot.download_file(file.file_path)

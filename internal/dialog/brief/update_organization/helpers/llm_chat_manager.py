@@ -47,7 +47,8 @@ class LLMChatManager:
         user_text = await self.message_extractor.extract_text_from_message(
             dialog_manager=dialog_manager,
             message=message,
-            organization_id=organization_id
+            organization_id=organization_id,
+            show_is_transcribe=False
         )
 
         message_to_llm = f"""

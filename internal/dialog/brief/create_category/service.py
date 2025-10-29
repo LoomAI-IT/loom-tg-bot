@@ -91,7 +91,6 @@ class CreateCategoryService(interface.ICreateCategoryService):
                     organization_id=state.organization_id,
                     use_train_prompt=use_train_prompt
                 )
-            next_stage = llm_response_json.get("next_stage")
             current_stage = llm_response_json.get("current_stage")
 
             if llm_response_json.get("telegram_channel_username_list") and current_stage == "3":
@@ -132,7 +131,7 @@ class CreateCategoryService(interface.ICreateCategoryService):
 
                 await self.bot.send_message(
                     chat_id=state.tg_chat_id,
-                    text="Ваша публикация:<br><br>" + test_publication_text,
+                    text="<b>Ваша публикация:</b><br><br>" + test_publication_text,
                     parse_mode=SULGUK_PARSE_MODE
                 )
 
