@@ -1,9 +1,10 @@
 from contextvars import ContextVar
 from datetime import datetime
 
+import httpx
 from opentelemetry.trace import SpanKind
 
-from internal import model
+from internal import model, common
 from internal import interface
 from pkg.client.client import AsyncHTTPClient
 from pkg.trace_wrapper import traced_method
@@ -78,7 +79,17 @@ class LoomContentClient(interface.ILoomContentClient):
             "category_id": category_id,
             "text_reference": text_reference,
         }
-        response = await self.client.post("/publication/text/generate", json=body)
+        try:
+            response = await self.client.post("/publication/text/generate", json=body)
+        except httpx.HTTPStatusError as err:
+            if err.response.status_code == 400:
+                try:
+                    response_data = err.response.json()
+                    if response_data.get("insufficient_balance"):
+                        raise common.ErrInsufficientBalance()
+                except Exception:
+                    pass
+            raise
         json_response = response.json()
 
         return json_response
@@ -95,7 +106,17 @@ class LoomContentClient(interface.ILoomContentClient):
             "publication_text": publication_text,
             "prompt": prompt,
         }
-        response = await self.client.post("/publication/text/regenerate", json=body)
+        try:
+            response = await self.client.post("/publication/text/regenerate", json=body)
+        except httpx.HTTPStatusError as err:
+            if err.response.status_code == 400:
+                try:
+                    response_data = err.response.json()
+                    if response_data.get("insufficient_balance"):
+                        raise common.ErrInsufficientBalance()
+                except Exception:
+                    pass
+            raise
         json_response = response.json()
 
         return json_response
@@ -130,10 +151,20 @@ class LoomContentClient(interface.ILoomContentClient):
             )
 
         # Отправляем запрос
-        if files:
-            response = await self.client.post("/publication/image/generate", data=data, files=files)
-        else:
-            response = await self.client.post("/publication/image/generate", data=data)
+        try:
+            if files:
+                response = await self.client.post("/publication/image/generate", data=data, files=files)
+            else:
+                response = await self.client.post("/publication/image/generate", data=data)
+        except httpx.HTTPStatusError as err:
+            if err.response.status_code == 400:
+                try:
+                    response_data = err.response.json()
+                    if response_data.get("insufficient_balance"):
+                        raise common.ErrInsufficientBalance()
+                except Exception:
+                    pass
+            raise
         json_response = response.json()
         return json_response
 
@@ -476,8 +507,17 @@ class LoomContentClient(interface.ILoomContentClient):
             "creator_id": creator_id,
             "youtube_video_reference": youtube_video_reference
         }
-
-        await self.client.post("/video-cut/vizard/generate", json=body)
+        try:
+            await self.client.post("/video-cut/vizard/generate", json=body)
+        except httpx.HTTPStatusError as err:
+            if err.response.status_code == 400:
+                try:
+                    response_data = err.response.json()
+                    if response_data.get("insufficient_balance"):
+                        raise common.ErrInsufficientBalance()
+                except Exception:
+                    pass
+            raise
 
     @traced_method(SpanKind.CLIENT)
     async def change_video_cut(
@@ -560,7 +600,17 @@ class LoomContentClient(interface.ILoomContentClient):
                 "audio/mp4"
             )
         }
-        response = await self.client.get("/publication/audio/transcribe", data=data, files=files)
+        try:
+            response = await self.client.get("/publication/audio/transcribe", data=data, files=files)
+        except httpx.HTTPStatusError as err:
+            if err.response.status_code == 400:
+                try:
+                    response_data = err.response.json()
+                    if response_data.get("insufficient_balance"):
+                        raise common.ErrInsufficientBalance()
+                except Exception:
+                    pass
+            raise
 
         json_response = response.json()
 
@@ -581,8 +631,17 @@ class LoomContentClient(interface.ILoomContentClient):
             image_content,
             "image/png"
         )}
-
-        response = await self.client.post("/image/edit", data=data, files=files)
+        try:
+            response = await self.client.post("/image/edit", data=data, files=files)
+        except httpx.HTTPStatusError as err:
+            if err.response.status_code == 400:
+                try:
+                    response_data = err.response.json()
+                    if response_data.get("insufficient_balance"):
+                        raise common.ErrInsufficientBalance()
+                except Exception:
+                    pass
+            raise
         json_response = response.json()
 
         # Проверяем, вернул ли бэкенд флаг no_image_data
@@ -611,8 +670,17 @@ class LoomContentClient(interface.ILoomContentClient):
                 "images_files",
                 (filename, content, "image/png")
             ))
-
-        response = await self.client.post("/image/combine", data=data, files=files)
+        try:
+            response = await self.client.post("/image/combine", data=data, files=files)
+        except httpx.HTTPStatusError as err:
+            if err.response.status_code == 400:
+                try:
+                    response_data = err.response.json()
+                    if response_data.get("insufficient_balance"):
+                        raise common.ErrInsufficientBalance()
+                except Exception:
+                    pass
+            raise
         json_response = response.json()
 
         return json_response["images_url"]
