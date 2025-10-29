@@ -115,7 +115,7 @@ class UpdateCategoryService(interface.IUpdateCategoryService):
                 telegram_channel_username_list = llm_response_json["telegram_channel_username_list"]
 
                 async with tg_action(self.bot, message.chat.id):
-                    llm_response_json, generate_cost = await self.llm_chat_manager.process_telegram_channels(
+                    llm_response_json = await self.llm_chat_manager.process_telegram_channels(
                         dialog_manager=dialog_manager,
                         chat_id=chat_id,
                         category_id=category_id,

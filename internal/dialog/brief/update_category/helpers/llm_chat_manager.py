@@ -76,7 +76,7 @@ ultrathink
             text=f'{{"message_to_llm": {message_to_llm}}}'
         )
 
-        llm_response_json, generate_cost = await self.get_llm_response(
+        llm_response_json = await self.get_llm_response(
             dialog_manager=dialog_manager,
             chat_id=chat_id,
             category_id=category_id,
