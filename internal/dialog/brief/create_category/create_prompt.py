@@ -19,8 +19,6 @@ class CreateCategoryPromptGenerator(interface.ICreateCategoryPromptGenerator):
 <!-- КРИТИЧЕСКИЕ ПРАВИЛА -->
 <!-- ═══════════════════════════════════════════════════════════════════════════════ -->
 
-<critical_rules>
-<output_rule priority="CRITICAL">
 
 <core_principles>
 1. Если есть вопросы/правки - обработай, помоги, потом продолжай процесс
@@ -31,9 +29,6 @@ class CreateCategoryPromptGenerator(interface.ICreateCategoryPromptGenerator):
 6. Используй здравый смысл при формулировках
 7. Будь конкретной, избегай общих фраз
 </core_principles>
-</message_formatting>
-
-</critical_rules>
 
 <!-- ═══════════════════════════════════════════════════════════════════════════════ -->
 <!-- ДАННЫЕ ОРГАНИЗАЦИИ -->
