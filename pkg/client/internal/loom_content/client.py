@@ -1,5 +1,6 @@
 from contextvars import ContextVar
 from datetime import datetime
+import json
 
 import httpx
 from opentelemetry.trace import SpanKind
@@ -85,10 +86,11 @@ class LoomContentClient(interface.ILoomContentClient):
             if err.response.status_code == 400:
                 try:
                     response_data = err.response.json()
-                    if response_data.get("insufficient_balance"):
-                        raise common.ErrInsufficientBalance()
-                except Exception:
-                    pass
+                except (json.JSONDecodeError, ValueError):
+                    raise
+
+                if response_data.get("insufficient_balance"):
+                    raise common.ErrInsufficientBalance()
             raise
         json_response = response.json()
 
@@ -112,10 +114,11 @@ class LoomContentClient(interface.ILoomContentClient):
             if err.response.status_code == 400:
                 try:
                     response_data = err.response.json()
-                    if response_data.get("insufficient_balance"):
-                        raise common.ErrInsufficientBalance()
-                except Exception:
-                    pass
+                except (json.JSONDecodeError, ValueError):
+                    raise
+
+                if response_data.get("insufficient_balance"):
+                    raise common.ErrInsufficientBalance()
             raise
         json_response = response.json()
 
@@ -160,10 +163,11 @@ class LoomContentClient(interface.ILoomContentClient):
             if err.response.status_code == 400:
                 try:
                     response_data = err.response.json()
-                    if response_data.get("insufficient_balance"):
-                        raise common.ErrInsufficientBalance()
-                except Exception:
-                    pass
+                except (json.JSONDecodeError, ValueError):
+                    raise
+
+                if response_data.get("insufficient_balance"):
+                    raise common.ErrInsufficientBalance()
             raise
         json_response = response.json()
         return json_response
@@ -513,10 +517,11 @@ class LoomContentClient(interface.ILoomContentClient):
             if err.response.status_code == 400:
                 try:
                     response_data = err.response.json()
-                    if response_data.get("insufficient_balance"):
-                        raise common.ErrInsufficientBalance()
-                except Exception:
-                    pass
+                except (json.JSONDecodeError, ValueError):
+                    raise
+
+                if response_data.get("insufficient_balance"):
+                    raise common.ErrInsufficientBalance()
             raise
 
     @traced_method(SpanKind.CLIENT)
@@ -606,10 +611,11 @@ class LoomContentClient(interface.ILoomContentClient):
             if err.response.status_code == 400:
                 try:
                     response_data = err.response.json()
-                    if response_data.get("insufficient_balance"):
-                        raise common.ErrInsufficientBalance()
-                except Exception:
-                    pass
+                except (json.JSONDecodeError, ValueError):
+                    raise
+
+                if response_data.get("insufficient_balance"):
+                    raise common.ErrInsufficientBalance()
             raise
 
         json_response = response.json()
@@ -637,10 +643,11 @@ class LoomContentClient(interface.ILoomContentClient):
             if err.response.status_code == 400:
                 try:
                     response_data = err.response.json()
-                    if response_data.get("insufficient_balance"):
-                        raise common.ErrInsufficientBalance()
-                except Exception:
-                    pass
+                except (json.JSONDecodeError, ValueError):
+                    raise
+
+                if response_data.get("insufficient_balance"):
+                    raise common.ErrInsufficientBalance()
             raise
         json_response = response.json()
 
@@ -676,10 +683,11 @@ class LoomContentClient(interface.ILoomContentClient):
             if err.response.status_code == 400:
                 try:
                     response_data = err.response.json()
-                    if response_data.get("insufficient_balance"):
-                        raise common.ErrInsufficientBalance()
-                except Exception:
-                    pass
+                except (json.JSONDecodeError, ValueError):
+                    raise
+
+                if response_data.get("insufficient_balance"):
+                    raise common.ErrInsufficientBalance()
             raise
         json_response = response.json()
 
