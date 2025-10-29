@@ -382,8 +382,12 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             )
 
         self.dialog_data_helper.set_is_generating_image(dialog_manager, False)
-        self.dialog_data_helper.set_generated_images_url(dialog_manager, images_url)
 
+        if self.dialog_data_helper.get_has_no_image_edit_result(dialog_manager):
+            await dialog_manager.switch_to(state=model.GeneratePublicationStates.image_menu)
+            return
+
+        self.dialog_data_helper.set_generated_images_url(dialog_manager, images_url)
         await dialog_manager.switch_to(state=model.GeneratePublicationStates.new_image_confirm)
 
     @auto_log()
@@ -888,6 +892,13 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             )
 
         self.dialog_data_helper.set_is_applying_edits(dialog_manager, False)
+
+        # Проверяем, был ли результат редактирования
+        if self.dialog_data_helper.get_has_no_image_edit_result(dialog_manager):
+            # Нейросеть не стала редактировать изображение, остаемся в текущем окне
+            self.dialog_data_helper.set_edit_image_prompt(dialog_manager, "")
+            await dialog_manager.show()
+            return
 
         self.image_manager.update_image_after_edit_from_confirm_new_image(
             dialog_manager=dialog_manager,

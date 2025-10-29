@@ -257,7 +257,7 @@ class ILoomContentClient(Protocol):
             image_content: bytes,
             image_filename: str,
             prompt: str,
-    ) -> list[str]: pass
+    ) -> tuple[list[str] | None, bool]: pass
 
     @abstractmethod
     async def combine_images(

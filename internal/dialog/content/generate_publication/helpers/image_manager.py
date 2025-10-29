@@ -418,12 +418,17 @@ class ImageManager:
                 dialog_manager=dialog_manager
             )
 
-        images_url = await self.loom_content_client.edit_image(
+        images_url, has_no_data = await self.loom_content_client.edit_image(
             organization_id=organization_id,
             prompt=prompt,
             image_content=current_image_content,
             image_filename=current_image_filename,
         )
+
+        # Если нейросеть не стала редактировать изображение
+        if has_no_data:
+            self.dialog_data_helper.set_has_no_image_edit_result(dialog_manager, True)
+            return []
 
         return images_url
 
@@ -565,12 +570,17 @@ class ImageManager:
             current_image_filename = "current_image.jpg"
 
         async with tg_action(self.bot, chat_id, "upload_photo"):
-            images_url = await self.loom_content_client.edit_image(
+            images_url, has_no_data = await self.loom_content_client.edit_image(
                 organization_id=organization_id,
                 prompt=prompt,
                 image_content=current_image_content,
                 image_filename=current_image_filename,
             )
+
+        # Если нейросеть не стала редактировать изображение
+        if has_no_data:
+            self.dialog_data_helper.set_has_no_image_edit_result(dialog_manager, True)
+            return []
 
         return images_url
 

@@ -49,6 +49,7 @@ class DialogDataHelper:
             "has_small_edit_image_prompt": dialog_manager.dialog_data.get("has_small_edit_image_prompt", False),
             "has_big_edit_image_prompt": dialog_manager.dialog_data.get("has_big_edit_image_prompt", False),
             "has_invalid_content_type": dialog_manager.dialog_data.get("has_invalid_content_type", False),
+            "has_no_image_edit_result": dialog_manager.dialog_data.get("has_no_image_edit_result", False),
         }
 
     def get_upload_imagedialog_data_helper(self, dialog_manager: DialogManager) -> dict:
@@ -134,6 +135,7 @@ class DialogDataHelper:
             "has_small_edit_image_prompt": dialog_manager.dialog_data.get("has_small_edit_image_prompt", False),
             "has_big_edit_image_prompt": dialog_manager.dialog_data.get("has_big_edit_image_prompt", False),
             "has_invalid_content_type": dialog_manager.dialog_data.get("has_invalid_content_type", False),
+            "has_no_image_edit_result": dialog_manager.dialog_data.get("has_no_image_edit_result", False),
         }
 
     # ============= ГЕТТЕРЫ ДЛЯ ЧТЕНИЯ ДАННЫХ =============
@@ -189,6 +191,9 @@ class DialogDataHelper:
 
     def get_showing_old_image(self, dialog_manager: DialogManager) -> bool:
         return dialog_manager.dialog_data.get("showing_old_image", False)
+
+    def get_has_no_image_edit_result(self, dialog_manager: DialogManager) -> bool:
+        return dialog_manager.dialog_data.get("has_no_image_edit_result", False)
 
     # Соцсети и публикация
     def get_selected_social_networks(self, dialog_manager: DialogManager) -> dict:
@@ -301,6 +306,9 @@ class DialogDataHelper:
     def set_showing_old_image(self, dialog_manager: DialogManager, value: bool) -> None:
         dialog_manager.dialog_data["showing_old_image"] = value
 
+    def set_has_no_image_edit_result(self, dialog_manager: DialogManager, value: bool) -> None:
+        dialog_manager.dialog_data["has_no_image_edit_result"] = value
+
     # Соцсети и публикация
     def set_selected_social_networks(self, dialog_manager: DialogManager, networks: dict) -> None:
         dialog_manager.dialog_data["selected_social_networks"] = networks
@@ -348,7 +356,8 @@ class DialogDataHelper:
             "has_small_edit_image_prompt",
             "has_big_edit_image_prompt",
             "has_invalid_content_type",
-            "has_empty_voice_text"
+            "has_empty_voice_text",
+            "has_no_image_edit_result"
         )
 
     def clear_text_edit(self, dialog_manager: DialogManager) -> None:
@@ -414,7 +423,8 @@ class DialogDataHelper:
             dialog_manager,
             "has_small_edit_image_prompt",
             "has_big_edit_image_prompt",
-            "has_invalid_content_type"
+            "has_invalid_content_type",
+            "has_no_image_edit_result"
         )
 
     def clear_temporary_image_data(self, dialog_manager: DialogManager) -> None:

@@ -573,7 +573,7 @@ class LoomContentClient(interface.ILoomContentClient):
             image_content: bytes,
             image_filename: str,
             prompt: str,
-    ) -> list[str]:
+    ) -> tuple[list[str] | None, bool]:
         data: dict = {"organization_id": organization_id, "prompt": prompt}
 
         files = {"image_file": (
@@ -585,7 +585,11 @@ class LoomContentClient(interface.ILoomContentClient):
         response = await self.client.post("/image/edit", data=data, files=files)
         json_response = response.json()
 
-        return json_response["images_url"]
+        # Проверяем, вернул ли бэкенд флаг no_image_data
+        if "no_image_data" in json_response and json_response["no_image_data"]:
+            return None, True
+
+        return json_response["images_url"], False
 
     @traced_method(SpanKind.CLIENT)
     async def combine_images(

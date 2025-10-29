@@ -463,6 +463,15 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                 ),
                 Case(
                     {
+                        True: Const(
+                            "<br><br>⚠️ <b>Нейросеть отказалась редактировать изображение.</b><br>"
+                            "💡 <i>Она не очень любит людей редактировать и реализм, но вы можете попробовать еще раз, может повезет.</i>"),
+                        False: Const(""),
+                    },
+                    selector="has_no_image_edit_result"
+                ),
+                Case(
+                    {
                         True: Const("<br><br>❌ <b>Ошибка:</b> Описание не может быть пустым"),
                         False: Const(""),
                     },
@@ -598,6 +607,15 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                         False: Const(""),
                     },
                     selector="has_invalid_content_type"
+                ),
+                Case(
+                    {
+                        True: Const(
+                            "<br><br>⚠️ <b>Нейросеть отказалась редактировать изображение.</b><br>"
+                            "💡 <i>Она не очень любит людей редактировать и реализм, но вы можете попробовать еще раз, может повезет.</i>"),
+                        False: Const(""),
+                    },
+                    selector="has_no_image_edit_result"
                 ),
                 sep="",
             ),
@@ -1277,6 +1295,15 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                         False: Const(""),
                     },
                     selector="has_invalid_content_type"
+                ),
+                Case(
+                    {
+                        True: Const(
+                            "<br><br>⚠️ <b>Нейросеть отказалась редактировать изображение.</b><br>"
+                            "💡 <i>Она не очень любит людей редактировать и реализм, но вы можете попробовать еще раз, может повезет.</i>"),
+                        False: Const(""),
+                    },
+                    selector="has_no_image_edit_result"
                 ),
                 sep="",
             ),
