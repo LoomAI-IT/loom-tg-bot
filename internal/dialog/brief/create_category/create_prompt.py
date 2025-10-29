@@ -791,6 +791,9 @@ working_category накапливает все утверждённые пара
 - HTML в hint: экранировать кавычки \" и проверить закрытие тегов
 - Проверить: все {{ закрыты }}, все [ закрыты ]
 
+ВАЖНО - валидация category_data:
+- ВСЕ поля должны присуствовать в JSON
+- ВСЕ поля должны СТРОГО соответсвовать типу
 {{
   "category_data": {{
     "name": str,
@@ -806,7 +809,7 @@ working_category накапливает все утверждённые пара
     "n_hashtags_max": int,
     "cta_type": str,
     "cta_strategy": dict,
-    "additional_info": list[dict],
+    "additional_info": list[dict], // ключи "type" и "value", но так же могут быть и произвольные ключи
     "prompt_for_image_style": str  // версия на английском
   }}
 }}

@@ -678,7 +678,9 @@ Action: АВТОМАТИЧЕСКИЙ переход к Stage 2
 - HTML в hint: экранировать кавычки \" и проверить закрытие тегов
 - Проверить: все {{ закрыты }}, все [ закрыты ]
 
-Когда пользователь подтвердит сохранение:
+ВАЖНО - валидация category_data:
+- ВСЕ поля должны присуствовать в JSON
+- ВСЕ поля должны СТРОГО соответсвовать типу
 
 {{
   "final_category": {{
@@ -697,7 +699,7 @@ Action: АВТОМАТИЧЕСКИЙ переход к Stage 2
     "cta_strategy": dict,
     "good_samples": list[dict],  // ВСЕ собранные good samples (минимум 1 эталон + паттерны)
     "bad_samples": list[dict],   // ВСЕ собранные bad samples
-    "additional_info": list[str],
+    "additional_info": list[dict], // ключи "type" и "value", но так же могут быть и произвольные ключи
     "prompt_for_image_style": str
   }}
 }}
