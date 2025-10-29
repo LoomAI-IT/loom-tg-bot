@@ -82,6 +82,30 @@ class Category:
 
     created_at: str
 
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "organization_id": self.organization_id,
+            "name": self.name,
+            "hint": self.hint,
+            "goal": self.goal,
+            "tone_of_voice": self.tone_of_voice,
+            "brand_rules": self.brand_rules,
+            "creativity_level": self.creativity_level,
+            "audience_segment": self.audience_segment,
+            "len_min": self.len_min,
+            "len_max": self.len_max,
+            "n_hashtags_min": self.n_hashtags_min,
+            "n_hashtags_max": self.n_hashtags_max,
+            "cta_type": self.cta_type,
+            "cta_strategy": self.cta_strategy,
+            "good_samples": self.good_samples,
+            "bad_samples": self.bad_samples,
+            "additional_info": self.additional_info,
+            "prompt_for_image_style": self.prompt_for_image_style,
+            "created_at": self.created_at,
+        }
+
 @dataclass
 class Autoposting:
     id: int

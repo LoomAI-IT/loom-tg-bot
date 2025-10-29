@@ -129,16 +129,13 @@ class CreateCategoryService(interface.ICreateCategoryService):
                     parse_mode=SULGUK_PARSE_MODE
                 )
 
-            if llm_response_json.get("final_category"):
-                category_data = llm_response_json["final_category"]
-                category_id = await self.category_manager.create_category(
+            if llm_response_json.get("category_data"):
+                category_data = llm_response_json["category_data"]
+                await self.category_manager.save_category(
+                    dialog_manager=dialog_manager,
                     organization_id=state.organization_id,
                     category_data=category_data
                 )
-
-                dialog_manager.dialog_data["category_id"] = category_id
-                await dialog_manager.switch_to(state=model.CreateCategoryStates.category_created)
-                return
 
             await self.llm_chat_manager.save_llm_response(
                 chat_id=chat_id,
