@@ -15,7 +15,7 @@ from pkg.html_validator import validate_html
 
 from internal.dialog.helpers import StateManager
 from internal.dialog.brief.helpers import LLMContextManager
-from internal.dialog.brief.create_category.helpers import CategoryManager, LLMChatManager, validate_and_fix_html
+from internal.dialog.brief.create_category.helpers import CategoryManager, LLMChatManager
 
 
 
