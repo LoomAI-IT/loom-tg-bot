@@ -69,3 +69,8 @@ class ICreateCategoryPromptGenerator(Protocol):
     @abstractmethod
     async def get_create_category_system_prompt(self, organization: model.Organization) -> str:
         pass
+
+class ITrainCategoryPromptGenerator(Protocol):
+    @abstractmethod
+    async def get_train_category_system_prompt(self, organization: model.Organization, category: model.Category) -> str:
+        pass

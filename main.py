@@ -85,7 +85,7 @@ from internal.dialog.brief.create_organization.getter import CreateOrganizationG
 from internal.dialog.brief.update_category.getter import UpdateCategoryGetter
 from internal.dialog.brief.update_organization.getter import UpdateOrganizationGetter
 
-from internal.dialog.brief.create_category.prompt import CreateCategoryPromptGenerator
+from internal.dialog.brief.create_category.create_prompt import CreateCategoryPromptGenerator
 from internal.dialog.brief.create_organization.prompt import CreateOrganizationPromptGenerator
 from internal.dialog.brief.update_category.prompt import UpdateCategoryPromptGenerator
 from internal.dialog.brief.update_organization.prompt import UpdateOrganizationPromptGenerator
