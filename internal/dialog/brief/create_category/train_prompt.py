@@ -52,11 +52,9 @@ class TrainCategoryPromptGenerator(interface.ITrainCategoryPromptGenerator):
 
 <message_formatting>
 <allowed_tags>
-✅ <b>, <i>, <u>, <s> - текстовое форматирование
-✅  - переносы строк (используй активно!)
+✅ <b>, <i>, <u>, <s>, <code> - текстовое форматирование
+✅ <br> - переносы строк (используй активно!)
 ✅ <span> - обертка текста
-✅ <blockquote> - цитаты и выделенные блоки
-✅ <details> и <summary> - сворачиваемые блоки
 ✅ <ol> и <li> - нумерованные списки
 </allowed_tags>
 

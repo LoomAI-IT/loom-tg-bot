@@ -79,7 +79,7 @@ class CreateCategoryGetter(interface.ICreateCategoryGetter):
             message_to_user = dialog_manager.dialog_data.get("message_to_user")
 
         data = {
-            "message_to_user": self._format_message(message_to_user),
+            "message_to_user": message_to_user,
         }
 
         return data
