@@ -12,7 +12,7 @@ from pkg.log_wrapper import auto_log
 from pkg.tg_action_wrapper import tg_action
 from pkg.trace_wrapper import traced_method
 
-from internal.dialog.helpers import StateManager, AlertsManager, MessageExtractor
+from internal.dialog.helpers import StateManager, AlertsManager, MessageExtractor, BalanceManager
 
 from internal.dialog.content.generate_publication.helpers import (
     ImageManager, TextProcessor, ValidationService,
@@ -31,6 +31,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             llm_chat_repo: interface.ILLMChatRepo,
             loom_content_client: interface.ILoomContentClient,
             loom_employee_client: interface.ILoomEmployeeClient,
+            loom_organization_client: interface.ILoomOrganizationClient,
     ):
         self.tracer = tel.tracer()
         self.logger = tel.logger()
@@ -39,6 +40,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         self.llm_chat_repo = llm_chat_repo
         self.loom_content_client = loom_content_client
         self.loom_employee_client = loom_employee_client
+        self.loom_organization_client = loom_organization_client
 
         # Инициализация приватных сервисов
         self.state_manager = StateManager(
@@ -57,6 +59,9 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         )
         self.alerts_manager = AlertsManager(
             self.state_repo
+        )
+        self.balance_manager = BalanceManager(
+            loom_organization_client=self.loom_organization_client
         )
         self.image_manager = ImageManager(
             logger=self.logger,
@@ -172,6 +177,12 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             dialog_manager: DialogManager
     ) -> None:
 
+        state = await self.state_manager.get_state(dialog_manager=dialog_manager)
+
+        if await self.balance_manager.check_balance_for_operation(state.organization_id, "generate_text"):
+            await callback.answer("💰 Недостаточно средств. Пополните баланс организации", show_alert=True)
+            return
+
         await callback.answer()
         await callback.message.edit_text(
             "Генерирую текст, это может занять время... Не совершайте никаких действий",
@@ -195,6 +206,12 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
+
+        state = await self.state_manager.get_state(dialog_manager=dialog_manager)
+
+        if await self.balance_manager.check_balance_for_operation(state.organization_id, "generate_image"):
+            await callback.answer("💰 Недостаточно средств. Пополните баланс организации", show_alert=True)
+            return
 
         await callback.answer()
         await callback.message.edit_text(
@@ -258,6 +275,14 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             dialog_manager: DialogManager
     ) -> None:
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, send=True)
+
+        state = await self.state_manager.get_state(dialog_manager=dialog_manager)
+
+        # Проверка баланса перед регенерацией текста
+        if await self.balance_manager.check_balance_for_operation(state.organization_id, "generate_text"):
+            await callback.answer("💰 Недостаточно средств. Пополните баланс организации", show_alert=True)
+            return
+
         await callback.answer()
 
         self.dialog_data_helper.set_is_regenerating_text(dialog_manager, True)
@@ -977,6 +1002,13 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             dialog_manager: DialogManager
     ) -> None:
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
+
+        state = await self.state_manager.get_state(dialog_manager=dialog_manager)
+
+        # Проверка баланса перед генерацией изображения
+        if await self.balance_manager.check_balance_for_operation(state.organization_id, "generate_image"):
+            await callback.answer("💰 Недостаточно средств. Пополните баланс организации", show_alert=True)
+            return
 
         await callback.answer()
         # TODO сделать через  show()
