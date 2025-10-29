@@ -66,7 +66,7 @@ class CreateCategoryGetter(interface.ICreateCategoryGetter):
                     system_prompt=system_prompt,
                     enable_web_search=False,
                     temperature=1,
-                    llm_model="claude-sonnet-4-5"
+                    llm_model="claude-haiku-4-5"
                 )
 
             message_to_user = llm_response_json["message_to_user"]

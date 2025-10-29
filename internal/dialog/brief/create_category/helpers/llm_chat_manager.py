@@ -4,6 +4,7 @@ from aiogram_dialog import DialogManager
 
 from internal import interface
 from internal.dialog.helpers import MessageExtractor
+from internal import model
 
 from internal.dialog.brief.helpers import LLMContextManager, TelegramPostFormatter
 from internal.dialog.brief.create_category.helpers import CategoryManager
@@ -19,6 +20,7 @@ class LLMChatManager:
             loom_organization_client: interface.ILoomOrganizationClient,
             loom_content_client: interface.ILoomContentClient,
             create_category_prompt_generator: interface.ICreateCategoryPromptGenerator,
+            train_category_prompt_generator: interface.ITrainCategoryPromptGenerator,
             llm_chat_repo: interface.ILLMChatRepo,
     ):
         self.logger = logger
@@ -28,6 +30,7 @@ class LLMChatManager:
         self.loom_organization_client = loom_organization_client
         self.loom_content_client = loom_content_client
         self.create_category_prompt_generator = create_category_prompt_generator
+        self.train_category_prompt_generator = train_category_prompt_generator
         self.llm_chat_repo = llm_chat_repo
 
         # Приватные классы
@@ -52,12 +55,21 @@ class LLMChatManager:
             message: Message,
             chat_id: int,
             organization_id: int,
+            use_train_prompt: bool = False,
+            custom_user_text: str = None,
     ) -> dict:
-        user_text = await self.message_extractor.extract_text_from_message(
-            dialog_manager=dialog_manager,
-            message=message,
-            organization_id=organization_id
-        )
+        if custom_user_text:
+            user_text = await self.message_extractor.extract_text_from_message(
+                dialog_manager=dialog_manager,
+                message=message,
+                organization_id=organization_id
+            )
+        else:
+            user_text = await self.message_extractor.extract_text_from_message(
+                dialog_manager=dialog_manager,
+                message=message,
+                organization_id=organization_id
+            )
 
         message_to_llm = f"""
 <system>
@@ -80,6 +92,7 @@ ultrathink
             dialog_manager=dialog_manager,
             chat_id=chat_id,
             organization_id=organization_id,
+            use_train_prompt=use_train_prompt
         )
 
         return llm_response_json
@@ -89,13 +102,14 @@ ultrathink
             dialog_manager: DialogManager,
             chat_id: int,
             organization_id: int,
-            telegram_channel_username_list: str
+            telegram_channel_username_list: str,
+            use_train_prompt: bool = False
     ) -> dict:
         all_telegram_posts = ""
         for telegram_channel_username in telegram_channel_username_list:
             telegram_posts = await self.telegram_client.get_channel_posts(
                 channel_id=telegram_channel_username,
-                limit=50
+                limit=20
             )
 
             posts_text = self.telegram_post_formatter.format_telegram_posts(posts=telegram_posts)
@@ -121,7 +135,8 @@ HTML разметка должны быть валидной, если есть 
             dialog_manager=dialog_manager,
             chat_id=chat_id,
             organization_id=organization_id,
-            enable_web_search=False
+            enable_web_search=False,
+            use_train_prompt=use_train_prompt
         )
 
         return llm_response_json
@@ -133,6 +148,7 @@ HTML разметка должны быть валидной, если есть 
             organization_id: int,
             test_category_data: dict,
             user_text_reference: str,
+            use_train_prompt: bool = False
     ) -> tuple[dict, str]:
         test_publication_text = await self.category_manager.test_category_generation(
             test_category_data=test_category_data,
@@ -166,9 +182,13 @@ HTML разметка должны быть валидной, если есть 
             dialog_manager=dialog_manager,
             chat_id=chat_id,
             organization_id=organization_id,
+            use_train_prompt=use_train_prompt
         )
 
         return llm_response_json, test_publication_text
+
+    async def clear_chat_history(self, chat_id: int) -> None:
+        await self.llm_chat_repo.delete_all_messages(chat_id=chat_id)
 
     async def get_llm_response(
             self,
@@ -177,7 +197,8 @@ HTML разметка должны быть валидной, если есть 
             organization_id: int,
             max_tokens: int = 15000,
             thinking_tokens: int = 10000,
-            enable_web_search: bool = True
+            enable_web_search: bool = True,
+            use_train_prompt: bool = False
     ) -> dict:
         organization = await self.loom_organization_client.get_organization_by_id(
             organization_id=organization_id
@@ -191,9 +212,20 @@ HTML разметка должны быть валидной, если есть 
                 "content": msg.text
             })
 
-        system_prompt = await self.create_category_prompt_generator.get_create_category_system_prompt(
-            organization=organization,
-        )
+        if use_train_prompt:
+            category_data = dialog_manager.dialog_data.get("category_data")
+            if not category_data:
+                raise ValueError("category_data not found in dialog_data")
+
+            category = model.Category(**category_data)
+            system_prompt = await self.train_category_prompt_generator.get_train_category_system_prompt(
+                organization=organization,
+                category=category
+            )
+        else:
+            system_prompt = await self.create_category_prompt_generator.get_create_category_system_prompt(
+                organization=organization,
+            )
 
         await self.llm_context_manager.check_and_handle_context_overflow(
             dialog_manager=dialog_manager,
@@ -207,7 +239,7 @@ HTML разметка должны быть валидной, если есть 
             max_tokens=max_tokens,
             thinking_tokens=thinking_tokens,
             enable_web_search=enable_web_search,
-            llm_model="claude-sonnet-4-5"
+            llm_model="claude-haiku-4-5"
         )
         self.llm_context_manager.track_tokens(
             dialog_manager=dialog_manager,

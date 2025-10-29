@@ -86,6 +86,7 @@ from internal.dialog.brief.update_category.getter import UpdateCategoryGetter
 from internal.dialog.brief.update_organization.getter import UpdateOrganizationGetter
 
 from internal.dialog.brief.create_category.create_prompt import CreateCategoryPromptGenerator
+from internal.dialog.brief.create_category.update_prompt import TrainCategoryPromptGenerator
 from internal.dialog.brief.create_organization.prompt import CreateOrganizationPromptGenerator
 from internal.dialog.brief.update_category.prompt import UpdateCategoryPromptGenerator
 from internal.dialog.brief.update_organization.prompt import UpdateOrganizationPromptGenerator
@@ -273,6 +274,7 @@ alerts_getter = AlertsGetter(
 
 # Инициализация промпт генераторов
 create_category_prompt_generator = CreateCategoryPromptGenerator()
+train_category_prompt_generator = TrainCategoryPromptGenerator()
 create_organization_prompt_generator = CreateOrganizationPromptGenerator()
 update_category_prompt_generator = UpdateCategoryPromptGenerator()
 update_organization_prompt_generator = UpdateOrganizationPromptGenerator()
@@ -421,6 +423,7 @@ create_category_service = CreateCategoryService(
     anthropic_client,
     telegram_client,
     create_category_prompt_generator,
+    train_category_prompt_generator,
     llm_chat_repo,
     state_repo,
     loom_organization_client,

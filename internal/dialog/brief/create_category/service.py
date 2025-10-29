@@ -2,7 +2,7 @@ import traceback
 
 from aiogram import Bot
 from aiogram.types import CallbackQuery, Message
-from aiogram_dialog import DialogManager, StartMode, ShowMode
+from aiogram_dialog import DialogManager, StartMode
 from aiogram_dialog.widgets.input import MessageInput
 from aiogram_dialog.widgets.kbd import Button
 from sulguk import SULGUK_PARSE_MODE
@@ -25,6 +25,7 @@ class CreateCategoryService(interface.ICreateCategoryService):
             anthropic_client: interface.IAnthropicClient,
             telegram_client: interface.ITelegramClient,
             create_category_prompt_generator: interface.ICreateCategoryPromptGenerator,
+            train_category_prompt_generator: interface.ITrainCategoryPromptGenerator,
             llm_chat_repo: interface.ILLMChatRepo,
             state_repo: interface.IStateRepo,
             loom_organization_client: interface.ILoomOrganizationClient,
@@ -36,6 +37,7 @@ class CreateCategoryService(interface.ICreateCategoryService):
         self.anthropic_client = anthropic_client
         self.telegram_client = telegram_client
         self.create_category_prompt_generator = create_category_prompt_generator
+        self.train_category_prompt_generator = train_category_prompt_generator
         self.llm_chat_repo = llm_chat_repo
         self.state_repo = state_repo
         self.loom_organization_client = loom_organization_client
@@ -62,6 +64,7 @@ class CreateCategoryService(interface.ICreateCategoryService):
             self.loom_organization_client,
             self.loom_content_client,
             self.create_category_prompt_generator,
+            self.train_category_prompt_generator,
             self.llm_chat_repo,
         )
 
@@ -78,6 +81,7 @@ class CreateCategoryService(interface.ICreateCategoryService):
             self.state_manager.set_show_mode(dialog_manager, send=True)
 
             chat_id = dialog_manager.dialog_data.get("chat_id")
+            use_train_prompt = dialog_manager.dialog_data.get("category_data") is not None
 
             async with tg_action(self.bot, message.chat.id):
                 llm_response_json = await self.llm_chat_manager.process_user_message(
@@ -85,12 +89,12 @@ class CreateCategoryService(interface.ICreateCategoryService):
                     message=message,
                     chat_id=chat_id,
                     organization_id=state.organization_id,
+                    use_train_prompt=use_train_prompt
                 )
 
             if llm_response_json.get("telegram_channel_username_list"):
                 telegram_channel_username_list = llm_response_json["telegram_channel_username_list"]
 
-                # Сохраняем промежуточный ответ ассистента для правильного кэширования
                 await self.llm_chat_manager.save_llm_response(
                     chat_id=chat_id,
                     llm_response_json=llm_response_json,
@@ -102,13 +106,13 @@ class CreateCategoryService(interface.ICreateCategoryService):
                         chat_id=chat_id,
                         organization_id=state.organization_id,
                         telegram_channel_username_list=telegram_channel_username_list,
+                        use_train_prompt=use_train_prompt
                     )
 
             if llm_response_json.get("test_category") and llm_response_json.get("user_text_reference"):
                 test_category_data = llm_response_json["test_category"]
                 user_text_reference = llm_response_json["user_text_reference"]
 
-                # Сохраняем промежуточный ответ ассистента для правильного кэширования
                 await self.llm_chat_manager.save_llm_response(
                     chat_id=chat_id,
                     llm_response_json=llm_response_json,
@@ -121,6 +125,7 @@ class CreateCategoryService(interface.ICreateCategoryService):
                         organization_id=state.organization_id,
                         test_category_data=test_category_data,
                         user_text_reference=user_text_reference,
+                        use_train_prompt=use_train_prompt
                     )
 
                 await self.bot.send_message(
@@ -136,6 +141,29 @@ class CreateCategoryService(interface.ICreateCategoryService):
                     organization_id=state.organization_id,
                     category_data=category_data
                 )
+
+                await self.llm_chat_manager.clear_chat_history(chat_id=chat_id)
+
+                llm_response_json = await self.llm_chat_manager.process_user_message(
+                    dialog_manager=dialog_manager,
+                    message=message,
+                    chat_id=chat_id,
+                    organization_id=state.organization_id,
+                    use_train_prompt=use_train_prompt,
+                    custom_user_text="<system>Финальный этап -- обучение</system>"
+                )
+
+            if llm_response_json.get("final_category"):
+                final_category = llm_response_json["final_category"]
+
+                category_id = await self.category_manager.create_category(
+                    organization_id=state.organization_id,
+                    category_data=final_category
+                )
+
+                dialog_manager.dialog_data["category_id"] = category_id
+                await dialog_manager.switch_to(state=model.CreateCategoryStates.category_created)
+                return
 
             await self.llm_chat_manager.save_llm_response(
                 chat_id=chat_id,
