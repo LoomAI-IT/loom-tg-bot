@@ -240,7 +240,7 @@ HTML разметка должны быть валидной, если есть 
             max_tokens=max_tokens,
             thinking_tokens=thinking_tokens,
             enable_web_search=enable_web_search,
-            llm_model="claude-haiku-4-5"
+            llm_model="claude-haiku-4-5-20251001"
         )
         self.llm_context_manager.track_tokens(
             dialog_manager=dialog_manager,
