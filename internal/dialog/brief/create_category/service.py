@@ -152,7 +152,7 @@ class CreateCategoryService(interface.ICreateCategoryService):
                     message=message,
                     chat_id=chat_id,
                     organization_id=state.organization_id,
-                    use_train_prompt=use_train_prompt,
+                    use_train_prompt=True,
                     custom_user_text="<system>Финальный этап -- обучение</system>"
                 )
 
