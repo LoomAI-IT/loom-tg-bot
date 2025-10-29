@@ -79,22 +79,14 @@ class CreateCategoryGetter(interface.ICreateCategoryGetter):
             message_to_user = dialog_manager.dialog_data.get("message_to_user")
 
         data = {
-            "message_to_user": message_to_user,
+            "message_to_user": self._format_message(message_to_user)
         }
 
         return data
 
     def _format_message(self, message_to_user: str) -> str:
-        message_to_user = message_to_user.replace("</details>\n\n", "</details>")
-        message_to_user = message_to_user.replace("</details>\n", "</details>")
-        message_to_user = message_to_user.replace("</details><br><br>", "</details>")
-        message_to_user = message_to_user.replace("</details><br>", "</details>")
-        message_to_user = message_to_user.replace("<details>\n", "<details>")
-        message_to_user = message_to_user.replace("<details><br>", "<details>")
-        message_to_user = message_to_user.replace("</details>", "</details><br><br>")
-        message_to_user = message_to_user.replace("</li>\n", "</li>")
-        message_to_user = message_to_user.replace("<li>\n", "</li>")
-        message_to_user = message_to_user.replace("\n", "<br>")
+        message_to_user = message_to_user.replace("</summary>", "</span>")
+        message_to_user = message_to_user.replace("<summary>", "<span>")
         return message_to_user
 
     async def _get_state(self, dialog_manager: DialogManager) -> model.UserState:
