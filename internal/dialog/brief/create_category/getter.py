@@ -79,7 +79,7 @@ class CreateCategoryGetter(interface.ICreateCategoryGetter):
             message_to_user = dialog_manager.dialog_data.get("message_to_user")
 
         data = {
-            "message_to_user": self._format_message(message_to_user)
+            "message_to_user": message_to_user
         }
 
         return data
@@ -92,7 +92,7 @@ class CreateCategoryGetter(interface.ICreateCategoryGetter):
         message_to_user = message_to_user.replace("</span><br>", "</span>")
         message_to_user = message_to_user.replace("</span>", "</span><br><br>")
         message_to_user = message_to_user.replace("</span><br><br><details>", "</span><br><details>")
-        message_to_user = message_to_user.replace("</span><br><br></details>", "</span>")
+        message_to_user = message_to_user.replace("</span><br><br></details>", "</span></details>")
         message_to_user = message_to_user.replace("</span><br><br><blockquote>", "</span><br><blockquote>")
 
         message_to_user = message_to_user.replace("</details><br><br>", "</details>")
