@@ -2,9 +2,9 @@ from html5lib import HTMLParser
 
 
 def validate_html(html_string: str):
-    parser = HTMLParser(strict=False, namespaceHTMLElements=False)
+    parser = HTMLParser(strict=True, namespaceHTMLElements=False)
     try:
-        document = parser.parse(html_string)
+        document = parser.parseFragment(html_string)
         if document is None:
             raise ValueError("Failed to parse HTML: document is None")
     except Exception as e:
