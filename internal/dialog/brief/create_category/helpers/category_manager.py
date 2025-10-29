@@ -49,6 +49,7 @@ class CategoryManager:
     ):
         category = model.Category(
             **category_data,
+            id=0,
             organization_id=organization_id,
             good_samples=[],
             bad_samples=[],
