@@ -70,7 +70,7 @@ class TrainCategoryPromptGenerator(interface.ITrainCategoryPromptGenerator):
 - Открывающий тег → ОБЯЗАТЕЛЬНО закрывающий тег (валидный HTML!)
 - Используй <b> для ключевых моментов, но не злоупотребляй
 - Не слипай блоки - визуальное разделение важно
-- Используй  между крупными блоками
+- ВАЖНО: четко следуй тэгам из message_to_user
 </formatting_rules>
 </message_formatting>
 
