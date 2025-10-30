@@ -311,7 +311,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         state = await self.state_manager.get_state(dialog_manager=dialog_manager)
 
         if await self.balance_manager.check_balance_for_operation(state.organization_id, "generate_text"):
-            dialog_manager.dialog_data["has_insufficient_balance"] = True
+            self.dialog_data_helper.set_has_insufficient_balance(dialog_manager, True)
             await dialog_manager.show()
             return
 
@@ -385,7 +385,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         state = await self.state_manager.get_state(dialog_manager=dialog_manager)
 
         if await self.balance_manager.check_balance_for_operation(state.organization_id, "edit_image"):
-            dialog_manager.dialog_data["has_insufficient_balance"] = True
+            self.dialog_data_helper.set_has_insufficient_balance(dialog_manager, True)
             await dialog_manager.show()
             return
 
@@ -781,7 +781,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         state = await self.state_manager.get_state(dialog_manager=dialog_manager)
 
         if await self.balance_manager.check_balance_for_operation(state.organization_id, "generate_image"):
-            dialog_manager.dialog_data["has_insufficient_balance"] = True
+            self.dialog_data_helper.set_has_insufficient_balance(dialog_manager, True)
             await dialog_manager.show()
             return
 
@@ -918,7 +918,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         state = await self.state_manager.get_state(dialog_manager=dialog_manager)
 
         if await self.balance_manager.check_balance_for_operation(state.organization_id, "edit_image"):
-            dialog_manager.dialog_data["has_insufficient_balance"] = True
+            self.dialog_data_helper.set_has_insufficient_balance(dialog_manager, True)
             await dialog_manager.show()
             return
 
@@ -1082,7 +1082,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         state = await self.state_manager.get_state(dialog_manager=dialog_manager)
 
         if await self.balance_manager.check_balance_for_operation(state.organization_id, "generate_image"):
-            dialog_manager.dialog_data["has_insufficient_balance"] = True
+            self.dialog_data_helper.set_has_insufficient_balance(dialog_manager, True)
             await dialog_manager.show()
             return
 

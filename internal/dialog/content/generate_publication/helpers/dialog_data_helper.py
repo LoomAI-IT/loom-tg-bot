@@ -208,6 +208,35 @@ class DialogDataHelper:
     def get_expected_length(self, dialog_manager: DialogManager) -> int | None:
         return dialog_manager.dialog_data.get("expected_length")
 
+    # Флаги состояния
+    def get_voice_transcribe(self, dialog_manager: DialogManager) -> bool:
+        return dialog_manager.dialog_data.get("voice_transcribe", False)
+
+    def get_has_insufficient_balance(self, dialog_manager: DialogManager) -> bool:
+        return dialog_manager.dialog_data.get("has_insufficient_balance", False)
+
+    def get_is_generating_image(self, dialog_manager: DialogManager) -> bool:
+        return dialog_manager.dialog_data.get("is_generating_image", False)
+
+    # Флаги ошибок для reference generation image
+    def get_has_void_reference_generation_image_prompt(self, dialog_manager: DialogManager) -> bool:
+        return dialog_manager.dialog_data.get("has_void_reference_generation_image_prompt", False)
+
+    def get_has_small_reference_generation_image_prompt(self, dialog_manager: DialogManager) -> bool:
+        return dialog_manager.dialog_data.get("has_small_reference_generation_image_prompt", False)
+
+    def get_has_big_reference_generation_image_prompt(self, dialog_manager: DialogManager) -> bool:
+        return dialog_manager.dialog_data.get("has_big_reference_generation_image_prompt", False)
+
+    def get_has_invalid_content_type(self, dialog_manager: DialogManager) -> bool:
+        return dialog_manager.dialog_data.get("has_invalid_content_type", False)
+
+    def get_has_invalid_reference_generation_image_type(self, dialog_manager: DialogManager) -> bool:
+        return dialog_manager.dialog_data.get("has_invalid_reference_generation_image_type", False)
+
+    def get_has_big_reference_generation_image_size(self, dialog_manager: DialogManager) -> bool:
+        return dialog_manager.dialog_data.get("has_big_reference_generation_image_size", False)
+
     # ============= СЕТТЕРЫ ДЛЯ ЗАПИСИ ДАННЫХ =============
 
     # Категория
@@ -332,6 +361,13 @@ class DialogDataHelper:
         if "selected_social_networks" not in dialog_manager.dialog_data:
             dialog_manager.dialog_data["selected_social_networks"] = {}
         dialog_manager.dialog_data["selected_social_networks"][network_id] = is_checked
+
+    # Флаги состояния
+    def set_voice_transcribe(self, dialog_manager: DialogManager, value: bool) -> None:
+        dialog_manager.dialog_data["voice_transcribe"] = value
+
+    def set_has_insufficient_balance(self, dialog_manager: DialogManager, value: bool) -> None:
+        dialog_manager.dialog_data["has_insufficient_balance"] = value
 
     # ============= МЕТОДЫ ОЧИСТКИ ДАННЫХ =============
 

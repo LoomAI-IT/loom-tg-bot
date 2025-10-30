@@ -166,7 +166,7 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
         return {
             "has_image": has_image,
             "preview_image_media": preview_image_media,
-            "has_insufficient_balance": dialog_manager.dialog_data.get("has_insufficient_balance", False),
+            "has_insufficient_balance": self.dialog_data_helper.get_has_insufficient_balance(dialog_manager),
             **flags_data
         }
 
@@ -239,7 +239,7 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
         return {
             "combine_current_index": combine_current_index + 1,
             "combine_current_image_media": combine_current_image_media,
-            "has_insufficient_balance": dialog_manager.dialog_data.get("has_insufficient_balance", False),
+            "has_insufficient_balance": self.dialog_data_helper.get_has_insufficient_balance(dialog_manager),
             **flags_data
         }
 
@@ -262,7 +262,7 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
             "has_old_image": old_image_media is not None,
             "showing_old_image": showing_old_image,
             "showing_new_image": not showing_old_image,
-            "has_insufficient_balance": dialog_manager.dialog_data.get("has_insufficient_balance", False),
+            "has_insufficient_balance": self.dialog_data_helper.get_has_insufficient_balance(dialog_manager),
             **flags_data
         }
 
@@ -290,24 +290,16 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
                 dialog_manager),
             "reference_generation_image_media": reference_generation_image_media,
             "has_image": has_image,
-            "is_generating_image": dialog_manager.dialog_data.get("is_generating_image", False),
-            "voice_transcribe": dialog_manager.dialog_data.get("voice_transcribe", False),
+            "is_generating_image": self.dialog_data_helper.get_is_generating_image(dialog_manager),
+            "voice_transcribe": self.dialog_data_helper.get_voice_transcribe(dialog_manager),
             # Error flags
-            "has_void_reference_generation_image_prompt": dialog_manager.dialog_data.get(
-                "has_void_reference_generation_image_prompt",
-                False),
-            "has_small_reference_generation_image_prompt": dialog_manager.dialog_data.get(
-                "has_small_reference_generation_image_prompt",
-                False),
-            "has_big_reference_generation_image_prompt": dialog_manager.dialog_data.get(
-                "has_big_reference_generation_image_prompt",
-                False),
-            "has_invalid_content_type": dialog_manager.dialog_data.get("has_invalid_content_type", False),
-            "has_invalid_reference_generation_image_type": dialog_manager.dialog_data.get(
-                "has_invalid_reference_generation_image_type", False),
-            "has_big_reference_generation_image_size": dialog_manager.dialog_data.get(
-                "has_big_reference_generation_image_size", False),
-            "has_insufficient_balance": dialog_manager.dialog_data.get("has_insufficient_balance", False),
+            "has_void_reference_generation_image_prompt": self.dialog_data_helper.get_has_void_reference_generation_image_prompt(dialog_manager),
+            "has_small_reference_generation_image_prompt": self.dialog_data_helper.get_has_small_reference_generation_image_prompt(dialog_manager),
+            "has_big_reference_generation_image_prompt": self.dialog_data_helper.get_has_big_reference_generation_image_prompt(dialog_manager),
+            "has_invalid_content_type": self.dialog_data_helper.get_has_invalid_content_type(dialog_manager),
+            "has_invalid_reference_generation_image_type": self.dialog_data_helper.get_has_invalid_reference_generation_image_type(dialog_manager),
+            "has_big_reference_generation_image_size": self.dialog_data_helper.get_has_big_reference_generation_image_size(dialog_manager),
+            "has_insufficient_balance": self.dialog_data_helper.get_has_insufficient_balance(dialog_manager),
         }
 
     @auto_log()
@@ -319,8 +311,6 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
     ) -> dict:
 
         return {
-            "has_invalid_reference_generation_image_type": dialog_manager.dialog_data.get(
-                "has_invalid_reference_generation_image_type", False),
-            "has_big_reference_generation_image_size": dialog_manager.dialog_data.get(
-                "has_big_reference_generation_image_size", False),
+            "has_invalid_reference_generation_image_type": self.dialog_data_helper.get_has_invalid_reference_generation_image_type(dialog_manager),
+            "has_big_reference_generation_image_size": self.dialog_data_helper.get_has_big_reference_generation_image_size(dialog_manager),
         }
