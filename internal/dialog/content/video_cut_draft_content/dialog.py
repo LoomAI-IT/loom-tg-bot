@@ -157,12 +157,12 @@ class VideoCutsDraftDialog(interface.IVideoCutsDraftDialog):
                 Format("📅 <b>Создано:</b> <code>{created_at}</code><br>"),
                 Case(
                     {
-                        True: Const("<br><br>⚠️ <b><i>Есть несохраненные изменения!</i></b>"),
+                        True: Const("<br>⚠️ <b><i>Есть несохраненные изменения!</i></b><br>"),
                         False: Const(""),
                     },
                     selector="has_changes"
                 ),
-                Const("<br><br>📌 <b>Что будем изменять?</b>"),
+                Const("<br>📌 <b>Что будем изменять?</b>"),
                 sep="",
             ),
 

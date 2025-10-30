@@ -143,19 +143,19 @@ class DraftPublicationDialog(interface.IDraftPublicationDialog):
                 Format("📅 <b>Создано:</b> <code>{created_at}</code><br>"),
                 Case(
                     {
-                        True: Format("<br>🖼️ <b>Изображение {current_image_index} из {total_images}</b>"),
+                        True: Format("<br>🖼️ <b>Изображение {current_image_index} из {total_images}</b><br>"),
                         False: Const(""),
                     },
                     selector="has_multiple_images"
                 ),
                 Case(
                     {
-                        True: Const("<br><br>⚠️ <b><i>Есть несохраненные изменения!</i></b>"),
+                        True: Const("<br>⚠️ <b><i>Есть несохраненные изменения!</i></b><br>"),
                         False: Const(""),
                     },
                     selector="has_changes"
                 ),
-                Const("<br><br>📌 <b>Что будем изменять?</b>"),
+                Const("<br>📌 <b>Что будем изменять?</b>"),
                 sep="",
             ),
 
