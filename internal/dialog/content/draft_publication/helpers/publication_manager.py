@@ -23,6 +23,17 @@ class PublicationManager:
         self.image_manager = image_manager
         self.dialog_data_helper = DialogDataHelper()
 
+    async def send_to_moderation(
+            self,
+            dialog_manager: DialogManager,
+    ) -> None:
+        original_pub = self.dialog_data_helper.get_original_publication(dialog_manager)
+        publication_id = original_pub["id"]
+
+        await self.loom_content_client.send_publication_to_moderation(
+            publication_id=publication_id,
+        )
+
     def has_changes(self, dialog_manager: DialogManager) -> bool:
         original = self.dialog_data_helper.get_original_publication_safe(dialog_manager)
         working = self.dialog_data_helper.get_working_publication_safe(dialog_manager)
@@ -142,19 +153,6 @@ class PublicationManager:
             # Сбрасываем рабочие данные
             self.dialog_data_helper.clear_working_publication_from_data(dialog_manager)
             self.dialog_data_helper.clear_selected_networks(dialog_manager)
-
-    async def reject_publication(
-            self,
-            dialog_manager: DialogManager,
-            state: model.UserState,
-    ) -> None:
-        _, publication_id, reject_comment = self.dialog_data_helper.get_reject_comment_data(dialog_manager)
-        await self.loom_content_client.moderate_publication(
-            publication_id=publication_id,
-            moderator_id=state.account_id,
-            moderation_status="rejected",
-            moderation_comment=reject_comment,
-        )
 
     async def generate_text(
             self,

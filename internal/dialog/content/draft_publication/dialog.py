@@ -1,7 +1,7 @@
 from aiogram import F
 from aiogram_dialog import Window, Dialog, ShowMode
 from aiogram_dialog.widgets.text import Const, Format, Multi, Case
-from aiogram_dialog.widgets.kbd import Button, Column, Row
+from aiogram_dialog.widgets.kbd import Button, Column, Row, Checkbox
 from aiogram_dialog.widgets.input import TextInput, MessageInput
 from aiogram_dialog.widgets.media import DynamicMedia
 from sulguk import SULGUK_PARSE_MODE
@@ -96,6 +96,25 @@ class DraftPublicationDialog(interface.IDraftPublicationDialog):
                         id="edit",
                         on_click=lambda c, b, d: d.switch_to(model.DraftPublicationStates.edit_preview),
                     ),
+                ),
+                Button(
+                    Const("👁️‍🗨️ Отправить на модерацию"),
+                    id="send_moderation",
+                    on_click=self.draft_publication_service.handle_send_to_moderation,
+                    when="requires_moderation",
+                ),
+                Button(
+                    Const("🌐 Выбрать место публикации"),
+                    id="select_social_network",
+                    on_click=lambda c, b, d: d.switch_to(model.DraftPublicationStates.social_network_select,
+                                                         ShowMode.EDIT),
+                    when="can_publish_directly",
+                ),
+                Button(
+                    Const("🚀 Опубликовать"),
+                    id="publish_now",
+                    on_click=self.draft_publication_service.handle_publish_now,
+                    when="can_publish_directly",
                 ),
                 when="has_publications",
             ),
@@ -1241,5 +1260,106 @@ class DraftPublicationDialog(interface.IDraftPublicationDialog):
 
             state=model.DraftPublicationStates.combine_images_prompt,
             getter=self.draft_publication_getter.get_combine_images_prompt_data,
+            parse_mode=SULGUK_PARSE_MODE,
+        )
+
+    def get_social_network_select_window(self) -> Window:
+        return Window(
+            Multi(
+                Const("🌐 <b>Выбор платформы для публикации</b><br>"),
+                Case(
+                    {
+                        True: Multi(
+                            Const("⚠️ <b>Социальные сети не подключены</b><br>"),
+                            Const(
+                                "🔗 <i>Для публикации необходимо подключить хотя бы одну социальную сеть в настройках организации</i><br>"),
+                            Const("💡 <b>Обратитесь к администратору для настройки подключений</b>"),
+                        ),
+                        False: Multi(
+                            Const("📱 <b>Выберите платформы для публикации:</b><br>"),
+                            Const("💡 <i>Можно выбрать несколько вариантов</i>"),
+                        ),
+                    },
+                    selector="no_connected_networks"
+                ),
+                sep="",
+            ),
+
+            # Чекбоксы для выбора платформ (только для подключенных)
+            Column(
+                Checkbox(
+                    Const("✅ 📱 Telegram"),
+                    Const("⬜ 📱 Telegram"),
+                    id="telegram_checkbox",
+                    default=False,
+                    on_state_changed=self.draft_publication_service.handle_toggle_social_network,
+                    when="telegram_connected",
+                ),
+                Checkbox(
+                    Const("✅ 🔵 ВКонтакте"),
+                    Const("⬜ 🔵 ВКонтакте"),
+                    id="vkontakte_checkbox",
+                    default=False,
+                    on_state_changed=self.draft_publication_service.handle_toggle_social_network,
+                    when="vkontakte_connected",
+                ),
+                when="has_available_networks",
+            ),
+
+            # Кнопки действий
+            Row(
+                Button(
+                    Const("◀️ Назад"),
+                    id="back_to_preview",
+                    on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.preview, ShowMode.EDIT),
+                ),
+            ),
+
+            state=model.GeneratePublicationStates.social_network_select,
+            getter=self.draft_publication_service.get_social_network_select_data,
+            parse_mode=SULGUK_PARSE_MODE,
+        )
+
+    def get_publication_success_window(self) -> Window:
+        return Window(
+            Multi(
+                Const("🎉 <b>Публикация успешно размещена!</b><br>"),
+                Case(
+                    {
+                        True: Multi(
+                            Const("🔗 <b>Ссылки на ваши посты:</b><br>"),
+                            Case(
+                                {
+                                    True: Format(
+                                        "📱 <b>Telegram:</b> <a href='{telegram_link}'>Перейти к посту</a><br>"),
+                                    False: Const(""),
+                                },
+                                selector="has_telegram_link"
+                            ),
+                            Case(
+                                {
+                                    True: Format(
+                                        "🔵 <b>ВКонтакте:</b> <a href='{vkontakte_link}'>Перейти к посту</a><br>"),
+                                    False: Const(""),
+                                },
+                                selector="has_vkontakte_link"
+                            ),
+                            Const("<br>💡 <i>Ссылки сохранены и доступны в разделе \"Мои публикации\"</i>"),
+                        ),
+                        False: Const("📝 <i>Публикация размещена, но ссылки пока недоступны</i>"),
+                    },
+                    selector="has_post_links"
+                ),
+                sep="",
+            ),
+
+            Button(
+                Const("📋 К меню контента"),
+                id="go_to_content_menu_from_success",
+                on_click=self.draft_publication_service.handle_go_to_content_menu,
+            ),
+
+            state=model.GeneratePublicationStates.publication_success,
+            getter=self.draft_publication_service.get_publication_success_data,
             parse_mode=SULGUK_PARSE_MODE,
         )

@@ -14,7 +14,7 @@ from pkg.trace_wrapper import traced_method
 
 from internal.dialog.helpers import StateManager, AlertsManager, MessageExtractor, BalanceManager
 
-from internal.dialog.content.moderation_publication.helpers import (
+from internal.dialog.content.draft_publication.helpers import (
     ValidationService, TextProcessor, ImageManager, PublicationManager, StateRestorer,
     NavigationManager, DialogDataHelper
 )
@@ -433,6 +433,31 @@ class DraftPublicationService(interface.IDraftPublicationService):
             direction="next"
         )
         await callback.answer()
+
+    @auto_log()
+    @traced_method()
+    async def handle_send_to_moderation(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
+
+        await self.publication_manager.send_to_moderation(
+            dialog_manager=dialog_manager,
+        )
+
+        state = await self.state_manager.get_state(dialog_manager=dialog_manager)
+        if await self.alerts_manager.check_alerts(dialog_manager=dialog_manager, state=state):
+            return
+
+        await callback.answer("Публикация отправлена на модерацию", show_alert=True)
+
+        await dialog_manager.start(
+            state=model.ContentMenuStates.content_menu,
+            mode=StartMode.RESET_STACK
+        )
 
     @auto_log()
     @traced_method()

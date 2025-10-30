@@ -93,6 +93,14 @@ class IDraftPublicationService(Protocol):
     ) -> None: pass
 
     @abstractmethod
+    async def handle_send_to_moderation(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
+    @abstractmethod
     async def handle_regenerate_text(
             self,
             callback: CallbackQuery,
