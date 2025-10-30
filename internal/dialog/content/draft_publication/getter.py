@@ -66,6 +66,9 @@ class DraftPublicationGetter(interface.IDraftPublicationGetter):
             **kwargs
     ) -> dict:
         state = await self.state_manager.get_state(dialog_manager)
+        employee = await self.loom_employee_client.get_employee_by_account_id(
+            state.account_id
+        )
 
         publications = await self.loom_content_client.get_publications_by_organization(
             organization_id=state.organization_id
@@ -99,8 +102,13 @@ class DraftPublicationGetter(interface.IDraftPublicationGetter):
             image_fid=current_pub.image_fid
         )
 
+        requires_moderation = employee.required_moderation
+        can_publish_directly = not requires_moderation
+
         data = {
             "has_publications": True,
+            "requires_moderation": requires_moderation,
+            "can_publish_directly": can_publish_directly,
             "creator_name": creator.name,
             "category_name": category.name,
             "created_at": self._datetime_formatter.format_datetime(current_pub.created_at),

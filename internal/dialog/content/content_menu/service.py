@@ -84,7 +84,6 @@ class ContentMenuService(interface.IContentMenuService):
             state=model.DraftPublicationStates.draft_list,
             mode=StartMode.RESET_STACK
         )
-        await callback.answer("Функция черновиков публикаций находится в разработке", show_alert=True)
 
     @auto_log()
     @traced_method()
