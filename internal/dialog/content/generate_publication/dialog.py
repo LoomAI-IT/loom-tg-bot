@@ -108,13 +108,6 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                         # Text input error messages
                         Case(
                             {
-                                True: Const("<br>❌ <b>Ошибка:</b> Текст не может быть пустым"),
-                                False: Const(""),
-                            },
-                            selector="has_void_generate_text_prompt"
-                        ),
-                        Case(
-                            {
                                 True: Const("<br>📏 <b>Слишком короткий текст</b><br><i>Минимум 10 символов</i>"),
                                 False: Const(""),
                             },
