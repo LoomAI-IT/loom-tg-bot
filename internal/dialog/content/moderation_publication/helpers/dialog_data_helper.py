@@ -103,6 +103,7 @@ class DialogDataHelper:
             "has_small_combine_image_prompt": dialog_manager.dialog_data.get("has_small_combine_image_prompt", False),
             "has_big_combine_image_prompt": dialog_manager.dialog_data.get("has_big_combine_image_prompt", False),
             "has_invalid_content_type": dialog_manager.dialog_data.get("has_invalid_content_type", False),
+            "has_insufficient_balance": dialog_manager.dialog_data.get("has_insufficient_balance", False),
         }
 
     @staticmethod
@@ -175,6 +176,7 @@ class DialogDataHelper:
             "has_small_edit_image_prompt": dialog_manager.dialog_data.get("has_small_edit_image_prompt", False),
             "has_big_edit_image_prompt": dialog_manager.dialog_data.get("has_big_edit_image_prompt", False),
             "has_invalid_content_type": dialog_manager.dialog_data.get("has_invalid_content_type", False),
+            "has_insufficient_balance": dialog_manager.dialog_data.get("has_insufficient_balance", False),
         }
 
     @staticmethod
@@ -203,6 +205,14 @@ class DialogDataHelper:
         dialog_manager.dialog_data[flag_name] = value
 
     @staticmethod
+    def set_has_insufficient_balance(dialog_manager: DialogManager, value: bool) -> None:
+        dialog_manager.dialog_data["has_insufficient_balance"] = value
+
+    @staticmethod
+    def get_has_insufficient_balance(dialog_manager: DialogManager) -> bool:
+        return dialog_manager.dialog_data.get("has_insufficient_balance", False)
+
+    @staticmethod
     def clear(dialog_manager: DialogManager, *flags: str) -> None:
         for flag in flags:
             dialog_manager.dialog_data.pop(flag, None)
@@ -221,7 +231,8 @@ class DialogDataHelper:
             "has_void_regenerate_text_prompt",
             "has_small_regenerate_text_prompt",
             "has_big_regenerate_text_prompt",
-            "has_invalid_content_type"
+            "has_invalid_content_type",
+            "has_insufficient_balance"
         )
 
     def clear_edit_image_prompt_error_flags(self, dialog_manager: DialogManager) -> None:
@@ -230,7 +241,8 @@ class DialogDataHelper:
             "has_void_edit_image_prompt",
             "has_small_edit_image_prompt",
             "has_big_edit_image_prompt",
-            "has_invalid_content_type"
+            "has_invalid_content_type",
+            "has_insufficient_balance"
         )
 
     def clear_publication_text_edit_error_flags(self, dialog_manager: DialogManager) -> None:
@@ -307,6 +319,7 @@ class DialogDataHelper:
             "has_void_regenerate_text_prompt": dialog_manager.dialog_data.get("has_void_regenerate_text_prompt", False),
             "has_small_regenerate_text_prompt": dialog_manager.dialog_data.get("has_small_regenerate_text_prompt", False),
             "has_big_regenerate_text_prompt": dialog_manager.dialog_data.get("has_big_regenerate_text_prompt", False),
+            "has_insufficient_balance": dialog_manager.dialog_data.get("has_insufficient_balance", False),
         }
 
     @staticmethod
@@ -324,6 +337,7 @@ class DialogDataHelper:
             "has_edit_image_prompt": dialog_manager.dialog_data.get("edit_image_prompt", "") != "",
             "voice_transcribe": dialog_manager.dialog_data.get("voice_transcribe", False),
             "has_invalid_content_type": dialog_manager.dialog_data.get("has_invalid_content_type", False),
+            "has_insufficient_balance": dialog_manager.dialog_data.get("has_insufficient_balance", False),
         }
 
     @staticmethod
@@ -424,6 +438,7 @@ class DialogDataHelper:
         dialog_manager.dialog_data.pop("has_small_combine_image_prompt", None)
         dialog_manager.dialog_data.pop("has_big_combine_image_prompt", None)
         dialog_manager.dialog_data.pop("has_invalid_content_type", None)
+        dialog_manager.dialog_data.pop("has_insufficient_balance", None)
 
     @staticmethod
     def clear_combine_image_upload_error_flags(dialog_manager: DialogManager) -> None:
@@ -495,6 +510,7 @@ class DialogDataHelper:
         dialog_manager.dialog_data.pop("has_small_edit_image_prompt", None)
         dialog_manager.dialog_data.pop("has_big_edit_image_prompt", None)
         dialog_manager.dialog_data.pop("has_invalid_content_type", None)
+        dialog_manager.dialog_data.pop("has_insufficient_balance", None)
 
     @staticmethod
     def clear_new_image_confirm_data(dialog_manager: DialogManager) -> None:
@@ -563,3 +579,34 @@ class DialogDataHelper:
         dialog_manager.dialog_data.pop("has_small_reference_generation_image_prompt", None)
         dialog_manager.dialog_data.pop("has_big_reference_generation_image_prompt", None)
         dialog_manager.dialog_data.pop("has_invalid_content_type", None)
+        dialog_manager.dialog_data.pop("has_insufficient_balance", None)
+
+    @staticmethod
+    def get_reference_generation_image_window_data(dialog_manager: DialogManager) -> dict:
+        """Возвращает данные для окна референсной генерации изображения"""
+        return {
+            "is_generating_image": dialog_manager.dialog_data.get("is_generating_image", False),
+            "voice_transcribe": dialog_manager.dialog_data.get("voice_transcribe", False),
+            "has_void_reference_generation_image_prompt": dialog_manager.dialog_data.get(
+                "has_void_reference_generation_image_prompt", False),
+            "has_small_reference_generation_image_prompt": dialog_manager.dialog_data.get(
+                "has_small_reference_generation_image_prompt", False),
+            "has_big_reference_generation_image_prompt": dialog_manager.dialog_data.get(
+                "has_big_reference_generation_image_prompt", False),
+            "has_invalid_content_type": dialog_manager.dialog_data.get("has_invalid_content_type", False),
+            "has_invalid_reference_generation_image_type": dialog_manager.dialog_data.get(
+                "has_invalid_reference_generation_image_type", False),
+            "has_big_reference_generation_image_size": dialog_manager.dialog_data.get(
+                "has_big_reference_generation_image_size", False),
+            "has_insufficient_balance": dialog_manager.dialog_data.get("has_insufficient_balance", False),
+        }
+
+    @staticmethod
+    def get_reference_generation_image_upload_window_data(dialog_manager: DialogManager) -> dict:
+        """Возвращает данные для окна загрузки референсного изображения"""
+        return {
+            "has_invalid_reference_generation_image_type": dialog_manager.dialog_data.get(
+                "has_invalid_reference_generation_image_type", False),
+            "has_big_reference_generation_image_size": dialog_manager.dialog_data.get(
+                "has_big_reference_generation_image_size", False),
+        }

@@ -569,6 +569,12 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
     ) -> None:
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
 
+        state = await self.state_manager.get_state(dialog_manager=dialog_manager)
+
+        if await self.balance_manager.check_balance_for_operation(state.organization_id, "generate_text"):
+            await callback.answer("💰 Недостаточно средств. Пополните баланс организации", show_alert=True)
+            return
+
         await callback.answer()
         await callback.message.edit_text(
             "Сжимаю текст, это может занять время... Не совершайте никаких действий",

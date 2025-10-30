@@ -12,7 +12,7 @@ from pkg.log_wrapper import auto_log
 from pkg.tg_action_wrapper import tg_action
 from pkg.trace_wrapper import traced_method
 
-from internal.dialog.helpers import StateManager, AlertsManager, MessageExtractor
+from internal.dialog.helpers import StateManager, AlertsManager, MessageExtractor, BalanceManager
 
 from internal.dialog.content.moderation_publication.helpers import (
     ValidationService, TextProcessor, ImageManager, PublicationManager, StateRestorer,
@@ -27,6 +27,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
             bot: Bot,
             state_repo: interface.IStateRepo,
             loom_content_client: interface.ILoomContentClient,
+            loom_organization_client: interface.ILoomOrganizationClient,
             loom_domain: str
     ):
         self.tracer = tel.tracer()
@@ -34,6 +35,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         self.bot = bot
         self.state_repo = state_repo
         self.loom_content_client = loom_content_client
+        self.loom_organization_client = loom_organization_client
         self.loom_domain = loom_domain
 
         # Инициализация приватных сервисов
@@ -53,6 +55,9 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         )
         self.alerts_manager = AlertsManager(
             self.state_repo
+        )
+        self.balance_manager = BalanceManager(
+            loom_organization_client=self.loom_organization_client
         )
         self.image_manager = ImageManager(
             logger=self.logger,
@@ -151,6 +156,12 @@ class ModerationPublicationService(interface.IModerationPublicationService):
     ) -> None:
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, send=True)
 
+        state = await self.state_manager.get_state(dialog_manager)
+
+        if await self.balance_manager.check_balance_for_operation(state.organization_id, "generate_text"):
+            await callback.answer("💰 Недостаточно средств. Пополните баланс организации", show_alert=True)
+            return
+
         await callback.answer()
         self.dialog_data_helper.set_regenerating_text_flag(dialog_manager, True)
         await dialog_manager.show()
@@ -180,13 +191,18 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         self.dialog_data_helper.clear_regenerate_text_prompt_error_flags(dialog_manager=dialog_manager)
         await message.delete()
 
+        state = await self.state_manager.get_state(dialog_manager)
+
+        if await self.balance_manager.check_balance_for_operation(state.organization_id, "generate_text"):
+            self.dialog_data_helper.set_has_insufficient_balance(dialog_manager, True)
+            return
+
         if not self.validation.validate_content_type(
                 message,
                 dialog_manager
         ):
             return
 
-        state = await self.state_manager.get_state(dialog_manager)
         regenerate_text_prompt = await self.message_extractor.process_voice_or_text_input(
             message=message,
             dialog_manager=dialog_manager,
@@ -277,10 +293,15 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         self.dialog_data_helper.clear_edit_image_prompt_error_flags(dialog_manager=dialog_manager)
         await message.delete()
 
+        state = await self.state_manager.get_state(dialog_manager)
+
+        if await self.balance_manager.check_balance_for_operation(state.organization_id, "edit_image"):
+            self.dialog_data_helper.set_has_insufficient_balance(dialog_manager, True)
+            return
+
         if not self.validation.validate_content_type(message, dialog_manager):
             return
 
-        state = await self.state_manager.get_state(dialog_manager)
         edit_image_prompt = await self.message_extractor.process_voice_or_text_input(
             message=message,
             dialog_manager=dialog_manager,
@@ -509,6 +530,12 @@ class ModerationPublicationService(interface.IModerationPublicationService):
     ) -> None:
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
 
+        state = await self.state_manager.get_state(dialog_manager)
+
+        if await self.balance_manager.check_balance_for_operation(state.organization_id, "generate_text"):
+            await callback.answer("💰 Недостаточно средств. Пополните баланс организации", show_alert=True)
+            return
+
         await callback.answer()
         await callback.message.edit_text(
             "Сжимаю текст, это может занять время... Не совершайте никаких действий",
@@ -698,10 +725,15 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         self.dialog_data_helper.clear_combine_image_prompt_error_flags(dialog_manager=dialog_manager)
         await message.delete()
 
+        state = await self.state_manager.get_state(dialog_manager=dialog_manager)
+
+        if await self.balance_manager.check_balance_for_operation(state.organization_id, "generate_image"):
+            self.dialog_data_helper.set_has_insufficient_balance(dialog_manager, True)
+            return
+
         if not self.validation.validate_content_type(message, dialog_manager):
             return
 
-        state = await self.state_manager.get_state(dialog_manager=dialog_manager)
         combine_image_prompt = await self.message_extractor.process_voice_or_text_input(
             message=message,
             dialog_manager=dialog_manager,
@@ -738,6 +770,10 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, send=True)
 
         state = await self.state_manager.get_state(dialog_manager=dialog_manager)
+
+        if await self.balance_manager.check_balance_for_operation(state.organization_id, "generate_image"):
+            await callback.answer("💰 Недостаточно средств. Пополните баланс организации", show_alert=True)
+            return
 
         await callback.answer()
         await callback.message.edit_text(
@@ -792,10 +828,14 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         self.dialog_data_helper.clear_new_image_confirm_error_flags(dialog_manager=dialog_manager)
         await message.delete()
 
+        state = await self.state_manager.get_state(dialog_manager=dialog_manager)
+        if await self.balance_manager.check_balance_for_operation(state.organization_id, "edit_image"):
+            self.dialog_data_helper.set_has_insufficient_balance(dialog_manager, True)
+            return
+
         if not self.validation.validate_content_type(message, dialog_manager):
             return
 
-        state = await self.state_manager.get_state(dialog_manager=dialog_manager)
         edit_image_prompt = await self.message_extractor.process_voice_or_text_input(
             message=message,
             dialog_manager=dialog_manager,
@@ -892,6 +932,12 @@ class ModerationPublicationService(interface.IModerationPublicationService):
     ) -> None:
         self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
 
+        state = await self.state_manager.get_state(dialog_manager)
+
+        if await self.balance_manager.check_balance_for_operation(state.organization_id, "generate_image"):
+            await callback.answer("💰 Недостаточно средств. Пополните баланс организации", show_alert=True)
+            return
+
         await callback.answer()
         await callback.message.edit_text(
             "Генерирую изображение, это может занять время... Не совершайте никаких действий",
@@ -921,6 +967,10 @@ class ModerationPublicationService(interface.IModerationPublicationService):
         self.dialog_data_helper.clear_reference_generation_image_prompt_errors(dialog_manager)
 
         state = await self.state_manager.get_state(dialog_manager=dialog_manager)
+
+        if await self.balance_manager.check_balance_for_operation(state.organization_id, "generate_image"):
+            self.dialog_data_helper.set_has_insufficient_balance(dialog_manager, True)
+            return
 
         if not self.validation.validate_content_type(message=message, dialog_manager=dialog_manager):
             return

@@ -344,6 +344,7 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
         return {
             "combine_current_index": combine_current_index + 1,
             "combine_current_image_media": combine_current_image_media,
+            "combine_images_count": combine_images_count,
             **flags_data
         }
 
@@ -398,28 +399,14 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
         working_pub = self.dialog_data_helper.get_working_publication_safe(dialog_manager)
         has_image = working_pub.get("has_image", False)
 
+        flags_data = self.dialog_data_helper.get_reference_generation_image_window_data(dialog_manager)
+
         return {
             "has_reference_generation_image": self.dialog_data_helper.get_has_reference_generation_image(
                 dialog_manager),
             "reference_generation_image_media": reference_generation_image_media,
             "has_image": has_image,
-            "is_generating_image": dialog_manager.dialog_data.get("is_generating_image", False),
-            "voice_transcribe": dialog_manager.dialog_data.get("voice_transcribe", False),
-            # Error flags
-            "has_void_reference_generation_image_prompt": dialog_manager.dialog_data.get(
-                "has_void_reference_generation_image_prompt",
-                False),
-            "has_small_reference_generation_image_prompt": dialog_manager.dialog_data.get(
-                "has_small_reference_generation_image_prompt",
-                False),
-            "has_big_reference_generation_image_prompt": dialog_manager.dialog_data.get(
-                "has_big_reference_generation_image_prompt",
-                False),
-            "has_invalid_content_type": dialog_manager.dialog_data.get("has_invalid_content_type", False),
-            "has_invalid_reference_generation_image_type": dialog_manager.dialog_data.get(
-                "has_invalid_reference_generation_image_type", False),
-            "has_big_reference_generation_image_size": dialog_manager.dialog_data.get(
-                "has_big_reference_generation_image_size", False),
+            **flags_data
         }
 
     @auto_log()
@@ -429,10 +416,4 @@ class ModerationPublicationGetter(interface.IModerationPublicationGetter):
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-
-        return {
-            "has_invalid_reference_generation_image_type": dialog_manager.dialog_data.get(
-                "has_invalid_reference_generation_image_type", False),
-            "has_big_reference_generation_image_size": dialog_manager.dialog_data.get(
-                "has_big_reference_generation_image_size", False),
-        }
+        return self.dialog_data_helper.get_reference_generation_image_upload_window_data(dialog_manager)
