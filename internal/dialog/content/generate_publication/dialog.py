@@ -136,6 +136,13 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                             },
                             selector="has_invalid_content_type"
                         ),
+                        Case(
+                            {
+                                True: Const("<br>💰 <b>Недостаточно средств</b><br><i>Пополните баланс организации</i>"),
+                                False: Const(""),
+                            },
+                            selector="has_insufficient_balance"
+                        ),
                         sep="",
                     ),
                     True: Const("🔄 Распознавание речи...")

@@ -19,6 +19,7 @@ class DialogDataHelper:
             # Voice input error flags
             "has_invalid_content_type": dialog_manager.dialog_data.get("has_invalid_content_type", False),
             "has_long_voice_duration": dialog_manager.dialog_data.get("has_long_voice_duration", False),
+            "has_insufficient_balance": dialog_manager.dialog_data.get("has_insufficient_balance", False),
         }
 
     def get_edit_publication_text_data(self, dialog_manager: DialogManager) -> dict:
@@ -345,7 +346,8 @@ class DialogDataHelper:
             "has_void_generate_text_prompt",
             "has_small_generate_text_prompt",
             "has_big_generate_text_prompt",
-            "has_invalid_content_type"
+            "has_invalid_content_type",
+            "has_insufficient_balance"
         )
 
     def clear_regenerate_text_prompt(self, dialog_manager: DialogManager) -> None:

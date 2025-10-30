@@ -924,6 +924,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         if not self.validation.validate_content_type(message=message, dialog_manager=dialog_manager):
             return
+
         edit_image_prompt = await self.message_extractor.process_voice_or_text_input(
             message=message,
             dialog_manager=dialog_manager,
