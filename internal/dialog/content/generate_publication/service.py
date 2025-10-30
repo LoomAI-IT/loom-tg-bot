@@ -312,7 +312,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         if await self.balance_manager.check_balance_for_operation(state.organization_id, "generate_text"):
             self.dialog_data_helper.set_has_insufficient_balance(dialog_manager, True)
-            await dialog_manager.show()
             return
 
         if not self.validation.validate_content_type(message=message, dialog_manager=dialog_manager):
@@ -386,7 +385,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         if await self.balance_manager.check_balance_for_operation(state.organization_id, "edit_image"):
             self.dialog_data_helper.set_has_insufficient_balance(dialog_manager, True)
-            await dialog_manager.show()
             return
 
         if not self.validation.validate_content_type(message=message, dialog_manager=dialog_manager):
@@ -782,7 +780,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         if await self.balance_manager.check_balance_for_operation(state.organization_id, "generate_image"):
             self.dialog_data_helper.set_has_insufficient_balance(dialog_manager, True)
-            await dialog_manager.show()
             return
 
         if not self.validation.validate_content_type(message=message, dialog_manager=dialog_manager):
@@ -919,7 +916,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         if await self.balance_manager.check_balance_for_operation(state.organization_id, "edit_image"):
             self.dialog_data_helper.set_has_insufficient_balance(dialog_manager, True)
-            await dialog_manager.show()
             return
 
         if not self.validation.validate_content_type(message=message, dialog_manager=dialog_manager):
@@ -1083,7 +1079,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         if await self.balance_manager.check_balance_for_operation(state.organization_id, "generate_image"):
             self.dialog_data_helper.set_has_insufficient_balance(dialog_manager, True)
-            await dialog_manager.show()
             return
 
         if not self.validation.validate_content_type(message=message, dialog_manager=dialog_manager):
