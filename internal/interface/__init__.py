@@ -16,7 +16,7 @@ from internal.interface.dialog.organization.add_social_network import *
 from internal.interface.dialog.content.content_menu import *
 from internal.interface.dialog.content.generate_publication import *
 from internal.interface.dialog.content.generate_video_cut import *
-from internal.interface.dialog.content.publication_draft_content import *
+from internal.interface.dialog.content.draft_publication import *
 from internal.interface.dialog.content.video_cut_draft_content import *
 from internal.interface.dialog.content.moderation_publication import *
 from internal.interface.dialog.content.moderation_video_cut import *

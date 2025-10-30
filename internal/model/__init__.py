@@ -16,7 +16,7 @@ from internal.model.dialog_states.organization.add_social_network import *
 from internal.model.dialog_states.content.content_menu import *
 from internal.model.dialog_states.content.generate_publication import *
 from internal.model.dialog_states.content.generate_video_cut import *
-from internal.model.dialog_states.content.publication_draft_content import *
+from internal.model.dialog_states.content.draft_publication import *
 from internal.model.dialog_states.content.video_cut_draft_content import *
 from internal.model.dialog_states.content.moderation_publication import *
 from internal.model.dialog_states.content.moderation_video_cut import *
