@@ -142,19 +142,22 @@ class PublicationManager:
             self,
             dialog_manager: DialogManager,
             state: model.UserState,
-            category_id: int,
-            text_reference: str,
-            text: str,
-            image_url: str | None,
-            image_content: bytes | None,
-            image_filename: str | None,
-            selected_networks: dict
     ) -> dict:
+
+        text = self.dialog_data_helper.get_publication_text(dialog_manager)
+        category_id = self.dialog_data_helper.get_category_id(dialog_manager)
+        generate_text_prompt = self.dialog_data_helper.get_generate_text_prompt(dialog_manager)
+        selected_networks = self.dialog_data_helper.get_selected_social_networks(dialog_manager)
+
+        image_url, image_content, image_filename = await self.image_manager.get_selected_image_data(
+            dialog_manager=dialog_manager
+        )
+
         publication_data = await self.loom_content_client.create_publication(
             organization_id=state.organization_id,
             category_id=category_id,
             creator_id=state.account_id,
-            text_reference=text_reference,
+            text_reference=generate_text_prompt,
             text=text,
             moderation_status="draft",
             image_url=image_url,

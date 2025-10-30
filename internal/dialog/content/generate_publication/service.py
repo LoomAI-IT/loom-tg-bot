@@ -472,8 +472,24 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        await callback.answer("Черновики публикации в разработке", show_alert=True)
-        return
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
+
+        state = await self.state_manager.get_state(dialog_manager=dialog_manager)
+
+        await self.publication_manager.add_to_drafts(
+            dialog_manager=dialog_manager,
+            state=state
+        )
+
+        await callback.answer("Публикация отправлена в черновики", show_alert=True)
+
+        if await self.alerts_manager.check_alerts(dialog_manager=dialog_manager, state=state):
+            return
+
+        await dialog_manager.start(
+            state=model.ContentMenuStates.content_menu,
+            mode=StartMode.RESET_STACK
+        )
 
     @auto_log()
     @traced_method()
