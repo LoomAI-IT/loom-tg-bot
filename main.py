@@ -37,7 +37,6 @@ from internal.dialog.content.generate_video_cut.dialog import GenerateVideoCutDi
 from internal.dialog.content.moderation_publication.dialog import ModerationPublicationDialog
 from internal.dialog.content.video_cut_draft_content.dialog import VideoCutsDraftDialog
 from internal.dialog.content.moderation_video_cut.dialog import VideoCutModerationDialog
-from internal.dialog.content.publication_draft_content.dialog import PublicationDraftDialog
 from internal.dialog.content.draft_publication.dialog import DraftPublicationDialog
 from internal.dialog.alerts.dialog import AlertsDialog
 from internal.dialog.brief.create_category.dialog import CreateCategoryDialog
@@ -59,7 +58,6 @@ from internal.dialog.content.generate_video_cut.service import GenerateVideoCutS
 from internal.dialog.content.moderation_publication.service import ModerationPublicationService
 from internal.dialog.content.video_cut_draft_content.service import VideoCutsDraftService
 from internal.dialog.content.moderation_video_cut.service import VideoCutModerationService
-from internal.dialog.content.publication_draft_content.service import PublicationDraftService
 from internal.dialog.content.draft_publication.service import DraftPublicationService
 from internal.dialog.alerts.service import AlertsService
 from internal.dialog.brief.create_category.service import CreateCategoryService
@@ -80,7 +78,6 @@ from internal.dialog.content.moderation_publication.getter import ModerationPubl
 from internal.dialog.content.generate_video_cut.getter import GenerateVideoCutGetter
 from internal.dialog.content.video_cut_draft_content.getter import VideoCutsDraftGetter
 from internal.dialog.content.moderation_video_cut.getter import VideoCutModerationGetter
-from internal.dialog.content.publication_draft_content.getter import PublicationDraftGetter
 from internal.dialog.content.draft_publication.getter import DraftPublicationGetter
 from internal.dialog.alerts.getter import AlertsGetter
 from internal.dialog.brief.create_category.getter import CreateCategoryGetter
@@ -254,14 +251,6 @@ video_cuts_draft_getter = VideoCutsDraftGetter(
     loom_content_client,
 )
 
-publication_draft_getter = PublicationDraftGetter(
-    tel,
-    state_repo,
-    loom_employee_client,
-    loom_content_client,
-    cfg.domain,
-)
-
 draft_publication_getter = DraftPublicationGetter(
     tel,
     bot,
@@ -411,13 +400,6 @@ video_cuts_draft_service = VideoCutsDraftService(
     loom_content_client,
 )
 
-publication_draft_service = PublicationDraftService(
-    tel,
-    bot,
-    state_repo,
-    loom_content_client,
-)
-
 draft_publication_service = DraftPublicationService(
     tel,
     bot,
@@ -557,12 +539,6 @@ video_cuts_draft_dialog = VideoCutsDraftDialog(
     video_cuts_draft_getter
 )
 
-publication_draft_dialog = PublicationDraftDialog(
-    tel,
-    publication_draft_service,
-    publication_draft_getter,
-)
-
 draft_publication_dialog = DraftPublicationDialog(
     tel,
     draft_publication_service,
@@ -636,7 +612,6 @@ dialog_bg_factory = NewTg(
     moderation_publication_dialog,
     video_cut_moderation_dialog,
     video_cuts_draft_dialog,
-    publication_draft_dialog,
     draft_publication_dialog,
     add_social_network_dialog,
     alerts_dialog,
