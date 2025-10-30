@@ -15,12 +15,6 @@ class BalanceManager:
             organization_cost_multiplier: model.CostMultiplier,
             operation: str
     ) -> bool:
-        """
-        Проверяет достаточность баланса для операции.
-
-        Returns:
-            True если баланса НЕ хватает, False если хватает
-        """
         if operation == "generate_text":
             return float(
                 organization.rub_balance) < organization_cost_multiplier.generate_text_cost_multiplier * self.avg_generate_text_rub_cost
@@ -40,16 +34,6 @@ class BalanceManager:
             organization_id: int,
             operation: str
     ) -> bool:
-        """
-        Проверяет достаточность баланса для операции.
-
-        Args:
-            organization_id: ID организации
-            operation: Тип операции (generate_text, generate_image, edit_image, transcribe_audio)
-
-        Returns:
-            True если баланса НЕ хватает, False если хватает
-        """
         organization = await self.loom_organization_client.get_organization_by_id(organization_id)
         organization_cost_multiplier = await self.loom_organization_client.get_cost_multiplier(organization_id)
 

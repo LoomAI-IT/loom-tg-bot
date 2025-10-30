@@ -554,7 +554,6 @@ class ImageManager:
             dialog_manager: DialogManager,
             organization_id: int,
             prompt: str,
-            chat_id: int
     ) -> list[str]:
         # Создаем backup текущего изображения перед редактированием
         self.backup_current_image(dialog_manager)
@@ -574,8 +573,7 @@ class ImageManager:
             current_image_content, _ = await self.download_image(image_url)
             current_image_filename = "current_image.jpg"
 
-        async with tg_action(self.bot, chat_id, "upload_photo"):
-            images_url, has_no_data = await self.loom_content_client.edit_image(
+        images_url, has_no_data = await self.loom_content_client.edit_image(
                 organization_id=organization_id,
                 prompt=prompt,
                 image_content=current_image_content,

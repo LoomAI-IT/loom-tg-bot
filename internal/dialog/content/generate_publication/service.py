@@ -276,7 +276,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         state = await self.state_manager.get_state(dialog_manager=dialog_manager)
 
-        # Проверка баланса перед регенерацией текста
         if await self.balance_manager.check_balance_for_operation(state.organization_id, "generate_text"):
             await callback.answer("💰 Недостаточно средств. Пополните баланс организации", show_alert=True)
             return
@@ -318,6 +317,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         if not self.validation.validate_content_type(message=message, dialog_manager=dialog_manager):
             return
+
         regenerate_text_prompt = await self.message_extractor.process_voice_or_text_input(
             message=message,
             dialog_manager=dialog_manager,
@@ -362,7 +362,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         self.dialog_data_helper.clear_text_edit(dialog_manager=dialog_manager)
         await message.delete()
 
-        new_text = message.html_text.replace('\n', '<br/>')
+        new_text = message.html_text.replace('\n', '<br>')
 
         if not self.validation.validate_edited_text(text=new_text, dialog_manager=dialog_manager):
             return
@@ -944,7 +944,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 dialog_manager=dialog_manager,
                 organization_id=state.organization_id,
                 prompt=edit_image_prompt,
-                chat_id=message.chat.id
             )
 
         self.dialog_data_helper.set_is_applying_edits(dialog_manager, False)
