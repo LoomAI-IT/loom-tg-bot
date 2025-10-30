@@ -1324,7 +1324,7 @@ class DraftPublicationDialog(interface.IDraftPublicationDialog):
                 Button(
                     Const("◀️ Назад"),
                     id="back_to_preview",
-                    on_click=lambda c, b, d: d.switch_to(model.DraftPublicationStates.edit_preview, ShowMode.EDIT),
+                    on_click=lambda c, b, d: d.switch_to(model.DraftPublicationStates.draft_list, ShowMode.EDIT),
                 ),
             ),
 
