@@ -34,6 +34,37 @@ class PublicationManager:
             publication_id=publication_id,
         )
 
+    async def publish_now(
+            self,
+            dialog_manager: DialogManager,
+            state: model.UserState,
+    ) -> dict:
+        original_pub = self.dialog_data_helper.get_original_publication(dialog_manager)
+        publication_id = original_pub["id"]
+
+        selected_networks = self.dialog_data_helper.get_selected_social_networks(dialog_manager)
+
+        selected_sources = {
+            "tg_source": selected_networks.get("telegram_checkbox", False),
+            "vk_source": selected_networks.get("vkontakte_checkbox", False),
+        }
+
+        # Обновляем публикацию с выбранными соцсетями
+        await self.loom_content_client.change_publication(
+            publication_id=publication_id,
+            tg_source=selected_sources["tg_source"],
+            vk_source=selected_sources["vk_source"],
+        )
+
+        # Одобряем публикацию
+        post_links = await self.loom_content_client.moderate_publication(
+            publication_id=publication_id,
+            moderator_id=state.account_id,
+            moderation_status="approved",
+        )
+
+        return post_links
+
     def has_changes(self, dialog_manager: DialogManager) -> bool:
         original = self.dialog_data_helper.get_original_publication_safe(dialog_manager)
         working = self.dialog_data_helper.get_working_publication_safe(dialog_manager)

@@ -48,7 +48,7 @@ class ContentMenuGetter(interface.IContentMenuGetter):
             total_generations += 1
             publication_count += 1
 
-            if pub.moderation_status == "draft":
+            if pub.moderation_status == "draft" and pub.creator_id == state.account_id:
                 drafts_count += 1
             elif pub.moderation_status == "moderation":
                 moderation_count += 1
@@ -59,7 +59,7 @@ class ContentMenuGetter(interface.IContentMenuGetter):
             total_generations += 1
             video_cut_count += 1
 
-            if video.moderation_status == "draft":
+            if video.moderation_status == "draft" and video.creator_id == state.account_id:
                 drafts_count += 1
             elif video.moderation_status == "moderation":
                 moderation_count += 1

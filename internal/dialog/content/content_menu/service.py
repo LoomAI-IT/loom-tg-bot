@@ -72,6 +72,18 @@ class ContentMenuService(interface.IContentMenuService):
             button: Button,
             dialog_manager: DialogManager
     ) -> None:
+        dialog_manager.show_mode = ShowMode.EDIT
+
+        state = await self._get_state(dialog_manager=dialog_manager)
+        await self.state_repo.change_user_state(
+            state_id=state.id,
+            can_show_alerts=False
+        )
+
+        await dialog_manager.start(
+            state=model.DraftPublicationStates.draft_list,
+            mode=StartMode.RESET_STACK
+        )
         await callback.answer("Функция черновиков публикаций находится в разработке", show_alert=True)
 
     @auto_log()

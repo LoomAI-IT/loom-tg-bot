@@ -29,3 +29,5 @@ class DraftPublicationStates(StatesGroup):
 
     # Алерты
     text_too_long_alert = State()
+
+    publication_success = State()

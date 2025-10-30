@@ -73,11 +73,11 @@ class DraftPublicationGetter(interface.IDraftPublicationGetter):
 
         draft_publications = [
             pub.to_dict() for pub in publications
-            if pub.moderation_status == "draft"
+            if pub.moderation_status == "draft" and pub.creator_id == state.account_id
         ]
 
         if not draft_publications:
-            self.logger.info("Нет публикаций на модерации")
+            self.logger.info("Нет черновиков")
             return {
                 "has_publications": False,
                 "publications_count": 0,
@@ -124,6 +124,19 @@ class DraftPublicationGetter(interface.IDraftPublicationGetter):
             "moderation_status": current_pub.moderation_status,
             "created_at": current_pub.created_at,
         })
+
+        selected_networks = self.dialog_data_helper.get_selected_social_networks(dialog_manager)
+
+        if not selected_networks:
+            self.logger.info("Инициализация выбранных социальных сетей")
+
+            social_networks = await self.loom_content_client.get_social_networks_by_organization(
+                organization_id=state.organization_id
+            )
+            selected_networks = self.social_network_manger.initialize_network_selection(
+                social_networks=social_networks
+            )
+            self.dialog_data_helper.set_selected_social_networks(dialog_manager, selected_networks)
 
         # Копируем в рабочую версию, если ее еще нет
         self.dialog_data_helper.initialize_working_from_original(dialog_manager)
@@ -173,6 +186,37 @@ class DraftPublicationGetter(interface.IDraftPublicationGetter):
 
     @auto_log()
     @traced_method()
+    async def get_social_network_select_data(
+            self,
+            dialog_manager: DialogManager,
+            **kwargs
+    ) -> dict:
+        state = await self.state_manager.get_state(dialog_manager)
+        social_networks = await self.loom_content_client.get_social_networks_by_organization(
+            organization_id=state.organization_id
+        )
+
+        telegram_connected = self.social_network_manger.is_network_connected(social_networks, "telegram")
+        vkontakte_connected = self.social_network_manger.is_network_connected(social_networks, "vkontakte")
+
+        selected_networks = self.dialog_data_helper.get_selected_social_networks(dialog_manager)
+
+        await self.social_network_manger.setup_checkbox_states(
+            dialog_manager=dialog_manager,
+            social_networks=social_networks,
+            selected_networks=selected_networks
+        )
+
+        data = {
+            "telegram_connected": telegram_connected,
+            "vkontakte_connected": vkontakte_connected,
+            "no_connected_networks": not telegram_connected and not vkontakte_connected,
+            "has_available_networks": telegram_connected or vkontakte_connected,
+        }
+        return data
+
+    @auto_log()
+    @traced_method()
     async def get_edit_publication_text_data(
             self,
             dialog_manager: DialogManager,
@@ -212,6 +256,14 @@ class DraftPublicationGetter(interface.IDraftPublicationGetter):
     ) -> dict:
         return self.dialog_data_helper.get_text_too_long_alert_window_data(dialog_manager)
 
+    @auto_log()
+    @traced_method()
+    async def get_publication_success_data(
+            self,
+            dialog_manager: DialogManager,
+            **kwargs
+    ) -> dict:
+        return self.dialog_data_helper.get_publication_success_window_data(dialog_manager)
 
     @auto_log()
     @traced_method()

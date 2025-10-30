@@ -461,6 +461,33 @@ class DraftPublicationService(interface.IDraftPublicationService):
 
     @auto_log()
     @traced_method()
+    async def handle_publish_now(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
+
+        if not self.validation.validate_selected_networks(dialog_manager):
+            await callback.answer(
+                "Выберите хотя бы одну социальную сеть",
+                show_alert=True
+            )
+            return
+
+        state = await self.state_manager.get_state(dialog_manager)
+        post_links = await self.publication_manager.publish_now(dialog_manager, state)
+
+        self.dialog_data_helper.set_post_links(dialog_manager, post_links)
+
+        self.publication_manager.remove_current_publication_from_list(dialog_manager)
+        await callback.answer("Опубликовано!", show_alert=True)
+
+        await dialog_manager.switch_to(state=model.DraftPublicationStates.publication_success)
+
+    @auto_log()
+    @traced_method()
     async def handle_remove_photo_from_long_text(
             self,
             callback: CallbackQuery,

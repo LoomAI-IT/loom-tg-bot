@@ -106,8 +106,10 @@ class DraftPublicationDialog(interface.IDraftPublicationDialog):
                 Button(
                     Const("🌐 Выбрать место публикации"),
                     id="select_social_network",
-                    on_click=lambda c, b, d: d.switch_to(model.DraftPublicationStates.social_network_select,
-                                                         ShowMode.EDIT),
+                    on_click=lambda c, b, d: d.switch_to(
+                        model.DraftPublicationStates.social_network_select,
+                        ShowMode.EDIT
+                    ),
                     when="can_publish_directly",
                 ),
                 Button(
@@ -131,7 +133,6 @@ class DraftPublicationDialog(interface.IDraftPublicationDialog):
             getter=self.draft_publication_getter.get_draft_list_data,
             parse_mode=SULGUK_PARSE_MODE,
         )
-
 
     def get_edit_preview_window(self) -> Window:
         return Window(
@@ -275,7 +276,8 @@ class DraftPublicationDialog(interface.IDraftPublicationDialog):
                 ),
                 Case(
                     {
-                        True: Const("<br>🎤 <b>Неверный формат</b><br><i>Отправьте текст, голосовое сообщение или аудиофайл</i>"),
+                        True: Const(
+                            "<br>🎤 <b>Неверный формат</b><br><i>Отправьте текст, голосовое сообщение или аудиофайл</i>"),
                         False: Const(""),
                     },
                     selector="has_invalid_content_type"
@@ -438,7 +440,8 @@ class DraftPublicationDialog(interface.IDraftPublicationDialog):
                 ),
                 Case(
                     {
-                        True: Const("<br>🎤 <b>Неверный формат</b><br><i>Отправьте текст, голосовое сообщение или аудиофайл</i>"),
+                        True: Const(
+                            "<br>🎤 <b>Неверный формат</b><br><i>Отправьте текст, голосовое сообщение или аудиофайл</i>"),
                         False: Const(""),
                     },
                     selector="has_invalid_content_type"
@@ -635,8 +638,10 @@ class DraftPublicationDialog(interface.IDraftPublicationDialog):
         return Window(
             Multi(
                 Const("<b>Что сделать с этой картинкой?</b><br><br>"),
-                Const("📌 <b>Сгенерировать автоматически</b> — ИИ сгенерирует изображение автоматически, изучив текст поста.<br><br>"),
-                Const("📌 <b>Сгенерировать по моему запросу</b> — ИИ сгенерирует изображение на основе того, что ты ему напишешь."),
+                Const(
+                    "📌 <b>Сгенерировать автоматически</b> — ИИ сгенерирует изображение автоматически, изучив текст поста.<br><br>"),
+                Const(
+                    "📌 <b>Сгенерировать по моему запросу</b> — ИИ сгенерирует изображение на основе того, что ты ему напишешь."),
                 sep="",
             ),
 
@@ -677,7 +682,8 @@ class DraftPublicationDialog(interface.IDraftPublicationDialog):
                             Const("· Счастливая семья стоит в центе новой квартиры в Питере<br>"),
                             Const("· Над замершим озером в лесу пролетает самолет</blockquote><br><br>"),
                             Const("📌 <b>Ты можешь добавить свое фото</b><br>"),
-                            Const("В этом случае ИИ сгенерирует изображение на основе картинки, которую ты отправишь, и на основе того, что ты ему напишешь.<br><br>"),
+                            Const(
+                                "В этом случае ИИ сгенерирует изображение на основе картинки, которую ты отправишь, и на основе того, что ты ему напишешь.<br><br>"),
                             Const("<blockquote><b>Например:</b><br>"),
                             Const("· Добавь на фото счастливую семью<br>"),
                             Const("· Убери людей с фона<br>"),
@@ -893,7 +899,8 @@ class DraftPublicationDialog(interface.IDraftPublicationDialog):
                             Const("💡 <b>Что хотите сделать?</b><br>"),
                             Const("• Принять изображение как есть<br>"),
                             Const("• Написать или записать правки для улучшения<br><br>"),
-                            Const("💬 <i>Отправьте текст или голосовое сообщение с правками, и изображение будет отредактировано</i><br>"),
+                            Const(
+                                "💬 <i>Отправьте текст или голосовое сообщение с правками, и изображение будет отредактировано</i><br>"),
                         ),
                         True: Multi(
                             Const("⏳ <b>Применяю правки к изображению...</b><br>"),
@@ -932,7 +939,8 @@ class DraftPublicationDialog(interface.IDraftPublicationDialog):
                 ),
                 Case(
                     {
-                        True: Const("<br>🎤 <b>Неверный формат</b><br><i>Отправьте текст, голосовое сообщение или аудиофайл</i>"),
+                        True: Const(
+                            "<br>🎤 <b>Неверный формат</b><br><i>Отправьте текст, голосовое сообщение или аудиофайл</i>"),
                         False: Const(""),
                     },
                     selector="has_invalid_content_type"
@@ -1057,7 +1065,8 @@ class DraftPublicationDialog(interface.IDraftPublicationDialog):
                 ),
                 Case(
                     {
-                        True: Format("<br>📍 <b>Сейчас показано:</b> изображение {combine_current_index} из {combine_images_count}"),
+                        True: Format(
+                            "<br>📍 <b>Сейчас показано:</b> изображение {combine_current_index} из {combine_images_count}"),
                         False: Const(""),
                     },
                     selector="has_multiple_combine_images"
@@ -1132,7 +1141,8 @@ class DraftPublicationDialog(interface.IDraftPublicationDialog):
                 Button(
                     Const("▶️ Далее"),
                     id="next_to_prompt",
-                    on_click=lambda c, b, d: d.switch_to(model.DraftPublicationStates.combine_images_prompt, ShowMode.EDIT),
+                    on_click=lambda c, b, d: d.switch_to(model.DraftPublicationStates.combine_images_prompt,
+                                                         ShowMode.EDIT),
                     when="has_enough_combine_images",
                 ),
             ),
@@ -1204,7 +1214,8 @@ class DraftPublicationDialog(interface.IDraftPublicationDialog):
                 ),
                 Case(
                     {
-                        True: Const("<br>🎤 <b>Неверный формат</b><br><i>Отправьте текст, голосовое сообщение или аудиофайл</i>"),
+                        True: Const(
+                            "<br>🎤 <b>Неверный формат</b><br><i>Отправьте текст, голосовое сообщение или аудиофайл</i>"),
                         False: Const(""),
                     },
                     selector="has_invalid_content_type"
@@ -1316,7 +1327,7 @@ class DraftPublicationDialog(interface.IDraftPublicationDialog):
             ),
 
             state=model.GeneratePublicationStates.social_network_select,
-            getter=self.draft_publication_service.get_social_network_select_data,
+            getter=self.draft_publication_getter.get_social_network_select_data,
             parse_mode=SULGUK_PARSE_MODE,
         )
 
@@ -1356,10 +1367,10 @@ class DraftPublicationDialog(interface.IDraftPublicationDialog):
             Button(
                 Const("📋 К меню контента"),
                 id="go_to_content_menu_from_success",
-                on_click=self.draft_publication_service.handle_go_to_content_menu,
+                on_click=self.draft_publication_service.handle_back_to_content_menu,
             ),
 
             state=model.GeneratePublicationStates.publication_success,
-            getter=self.draft_publication_service.get_publication_success_data,
+            getter=self.draft_publication_getter.get_publication_success_data,
             parse_mode=SULGUK_PARSE_MODE,
         )

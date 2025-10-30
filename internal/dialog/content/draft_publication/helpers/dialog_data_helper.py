@@ -57,8 +57,26 @@ class DialogDataHelper:
         dialog_manager.dialog_data["working_publication"]["is_custom_image"] = True
 
     @staticmethod
+    def set_selected_social_networks(dialog_manager: DialogManager, networks: dict) -> None:
+        dialog_manager.dialog_data["selected_social_networks"] = networks
+
+    @staticmethod
+    def set_post_links(dialog_manager: DialogManager, post_links: dict) -> None:
+        dialog_manager.dialog_data["post_links"] = post_links
+
+    @staticmethod
+    def toggle_social_network_selection(dialog_manager: DialogManager, network_id: str, is_checked: bool) -> None:
+        if "selected_social_networks" not in dialog_manager.dialog_data:
+            dialog_manager.dialog_data["selected_social_networks"] = {}
+        dialog_manager.dialog_data["selected_social_networks"][network_id] = is_checked
+
+    @staticmethod
     def get_current_index(dialog_manager: DialogManager) -> int:
         return dialog_manager.dialog_data.get("current_index", 0)
+
+    @staticmethod
+    def get_selected_social_networks(dialog_manager: DialogManager) -> dict:
+        return dialog_manager.dialog_data.get("selected_social_networks", {})
 
     @staticmethod
     def get_combine_images_choice_data(dialog_manager: DialogManager) -> dict:
@@ -83,6 +101,20 @@ class DialogDataHelper:
             "has_big_combine_image_size": dialog_manager.dialog_data.get("has_big_combine_image_size", False),
             "combine_images_limit_reached": dialog_manager.dialog_data.get("combine_images_limit_reached", False),
             "not_enough_combine_images": dialog_manager.dialog_data.get("not_enough_combine_images", False),
+        }
+
+    @staticmethod
+    def get_publication_success_window_data(dialog_manager: DialogManager) -> dict:
+        post_links = dialog_manager.dialog_data.get("post_links", {})
+        telegram_link = post_links.get("telegram")
+        vkontakte_link = post_links.get("vkontakte")
+
+        return {
+            "has_post_links": bool(post_links),
+            "has_telegram_link": bool(telegram_link),
+            "has_vkontakte_link": bool(vkontakte_link),
+            "telegram_link": telegram_link or "",
+            "vkontakte_link": vkontakte_link or "",
         }
 
     @staticmethod
@@ -207,6 +239,11 @@ class DialogDataHelper:
     @staticmethod
     def get_has_insufficient_balance(dialog_manager: DialogManager) -> bool:
         return dialog_manager.dialog_data.get("has_insufficient_balance", False)
+
+    @staticmethod
+    def clear_selected_networks(dialog_manager: DialogManager) -> None:
+        """Очистка выбранных социальных сетей"""
+        dialog_manager.dialog_data.pop("selected_networks", None)
 
     @staticmethod
     def clear(dialog_manager: DialogManager, *flags: str) -> None:

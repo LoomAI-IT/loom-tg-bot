@@ -101,6 +101,14 @@ class IDraftPublicationService(Protocol):
     ) -> None: pass
 
     @abstractmethod
+    async def handle_publish_now(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
+    @abstractmethod
     async def handle_regenerate_text(
             self,
             callback: CallbackQuery,
@@ -393,9 +401,14 @@ class IDraftPublicationGetter(Protocol):
             dialog_manager: DialogManager,
     ) -> dict: pass
 
-
     @abstractmethod
     async def get_edit_preview_data(
+            self,
+            dialog_manager: DialogManager,
+    ) -> dict: pass
+
+    @abstractmethod
+    async def get_social_network_select_data(
             self,
             dialog_manager: DialogManager,
     ) -> dict: pass
@@ -412,7 +425,6 @@ class IDraftPublicationGetter(Protocol):
             dialog_manager: DialogManager,
     ) -> dict: pass
 
-
     @abstractmethod
     async def get_upload_image_data(
             self,
@@ -421,6 +433,12 @@ class IDraftPublicationGetter(Protocol):
 
     @abstractmethod
     async def get_text_too_long_alert_data(
+            self,
+            dialog_manager: DialogManager,
+    ) -> dict: pass
+
+    @abstractmethod
+    async def get_publication_success_data(
             self,
             dialog_manager: DialogManager,
     ) -> dict: pass
