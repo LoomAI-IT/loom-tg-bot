@@ -24,7 +24,7 @@ class PersonalProfileService(interface.IPersonalProfileService):
             dialog_manager: DialogManager
     ) -> None:
         dialog_manager.show_mode = ShowMode.EDIT
-        await dialog_manager.switch_to(model.PersonalProfileStates.faq)
+        await dialog_manager.switch_to(state=model.PersonalProfileStates.faq)
         await callback.answer()
 
 
@@ -37,7 +37,7 @@ class PersonalProfileService(interface.IPersonalProfileService):
             dialog_manager: DialogManager
     ) -> None:
         dialog_manager.show_mode = ShowMode.EDIT
-        await dialog_manager.switch_to(model.PersonalProfileStates.support)
+        await dialog_manager.switch_to(state=model.PersonalProfileStates.support)
         await callback.answer()
 
     @auto_log()
@@ -49,7 +49,7 @@ class PersonalProfileService(interface.IPersonalProfileService):
             dialog_manager: DialogManager
     ) -> None:
         dialog_manager.show_mode = ShowMode.EDIT
-        await dialog_manager.switch_to(model.PersonalProfileStates.personal_profile)
+        await dialog_manager.switch_to(state=model.PersonalProfileStates.personal_profile)
         await callback.answer()
 
 
@@ -64,7 +64,7 @@ class PersonalProfileService(interface.IPersonalProfileService):
         dialog_manager.show_mode = ShowMode.EDIT
 
         await dialog_manager.start(
-            model.MainMenuStates.main_menu,
+            state=model.MainMenuStates.main_menu,
             mode=StartMode.RESET_STACK
         )
 

@@ -59,6 +59,7 @@ class TgMiddleware(interface.ITelegramMiddleware):
             await handler(event, data)
 
         except Exception as e:
+            self.logger.error("Ошибка!!!", {"traceback": traceback.format_exc()})
             if not await self._recovery_start_functionality(tg_chat_id, tg_username):
                 raise e
 
@@ -84,10 +85,10 @@ class TgMiddleware(interface.ITelegramMiddleware):
 
         # Определяем состояние для запуска на основе данных пользователя
         if user_state.organization_id == 0 and user_state.account_id == 0:
-            target_state = model.AuthStates.user_agreement
+            target_state = model.IntroStates.user_agreement
             self.logger.info(f"Восстанавливаем в состояние авторизации для пользователя")
         elif user_state.organization_id == 0 and user_state.account_id != 0:
-            target_state = model.AuthStates.access_denied
+            target_state = model.IntroStates.intro
             self.logger.info(f"Восстанавливаем в состояние отказа доступа для пользователя")
         else:
             target_state = model.MainMenuStates.main_menu

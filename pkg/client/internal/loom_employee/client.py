@@ -73,7 +73,9 @@ class LoomEmployeeClient(interface.ILoomEmployeeClient):
             add_employee_permission: bool = None,
             edit_employee_perm_permission: bool = None,
             top_up_balance_permission: bool = None,
-            sign_up_social_net_permission: bool = None
+            sign_up_social_net_permission: bool = None,
+            setting_category_permission: bool = None,
+            setting_organization_permission: bool = None
     ) -> None:
         body = {"account_id": account_id}
         if required_moderation is not None:
@@ -88,6 +90,10 @@ class LoomEmployeeClient(interface.ILoomEmployeeClient):
             body["top_up_balance_permission"] = top_up_balance_permission
         if sign_up_social_net_permission is not None:
             body["sign_up_social_net_permission"] = sign_up_social_net_permission
+        if setting_category_permission is not None:
+            body["setting_category_permission"] = setting_category_permission
+        if setting_organization_permission is not None:
+            body["setting_organization_permission"] = setting_organization_permission
 
         await self.client.put(f"/permissions", json=body)
 

@@ -65,7 +65,7 @@ class TelegramWebhookController(interface.ITelegramWebhookController):
     @traced_method()
     async def notify_employee_added(
             self,
-            body: EmployeeNotificationBody,
+            body: EmployeeAddedNotificationBody,
     ) -> JSONResponse:
         if body.interserver_secret_key != self.interserver_secret_key:
             self.logger.warning("Не верный межсервисный ключ")
@@ -88,6 +88,47 @@ class TelegramWebhookController(interface.ITelegramWebhookController):
             text=self._format_notification_message(body),
             parse_mode="HTML"
         )
+
+        return JSONResponse(
+            content={"status": "ok"},
+            status_code=200
+        )
+
+    @auto_log()
+    @traced_method()
+    async def notify_employee_deleted(
+            self,
+            body: EmployeeDeletedNotificationBody,
+    ) -> JSONResponse:
+        if body.interserver_secret_key != self.interserver_secret_key:
+            self.logger.warning("Не верный межсервисный ключ")
+            return JSONResponse(
+                content={"status": "error", "message": "Wrong secret token !"},
+                status_code=401
+            )
+
+        user_state = (await self.state_service.state_by_account_id(
+            body.account_id
+        ))[0]
+
+        await self.state_service.change_user_state(
+            user_state.id,
+            organization_id=0
+        )
+
+        await self.bot.send_message(
+            chat_id=user_state.tg_chat_id,
+            text="Вы были удалены из оранизации",
+            parse_mode="HTML"
+        )
+
+        dialog_manager = self.dialog_bg_factory.bg(
+            bot=self.bot,
+            user_id=user_state.tg_chat_id,
+            chat_id=user_state.tg_chat_id,
+        )
+
+        await dialog_manager.start(state=model.IntroStates.intro)
 
         return JSONResponse(
             content={"status": "ok"},
@@ -250,7 +291,7 @@ class TelegramWebhookController(interface.ITelegramWebhookController):
             status_code=200
         )
 
-    def _format_notification_message(self, body: EmployeeNotificationBody) -> str:
+    def _format_notification_message(self, body: EmployeeAddedNotificationBody) -> str:
         role_names = {
             "employee": "Сотрудник",
             "moderator": "Модератор",

@@ -39,28 +39,28 @@ class MainMenuDialog(interface.IMainMenuDialog):
                         ),
                         Format("👋 Привет, {name}! Я буду создавать контент для твоей компании вместе с тобой. <br><br>"),
                         Const("Расскажи мне о чём-нибудь текстом или голосом — и начнём ✨ <br><br>"),
-                        Const("Готов? Жду твоё сообщение! Или воспользуйся кнопками ниже👇 <br><br>"),
+                        Const("Готов? Жду твоё сообщение! Или воспользуйся кнопками ниже👇 <br>"),
                         # Text input error messages
                         Case(
                             {
-                                True: Const("<br><br>❌ <b>Ошибка:</b> Текст не может быть пустым"),
+                                True: Const("<br>❌ <b>Ошибка:</b> Текст не может быть пустым"),
                                 False: Const(""),
                             },
-                            selector="has_void_input_text"
+                            selector="has_void_text_prompt"
                         ),
                         Case(
                             {
-                                True: Const("<br><br>📏 <b>Слишком короткий текст</b><br/><i>Минимум 10 символов</i>"),
+                                True: Const("<br>📏 <b>Слишком короткий текст</b><br/><i>Минимум 10 символов</i>"),
                                 False: Const(""),
                             },
-                            selector="has_small_input_text"
+                            selector="has_small_text_prompt"
                         ),
                         Case(
                             {
-                                True: Const("<br><br>📏 <b>Слишком длинный текст</b><br/><i>Максимум 2000 символов</i>"),
+                                True: Const("<br>📏 <b>Слишком длинный текст</b><br/><i>Максимум 2000 символов</i>"),
                                 False: Const(""),
                             },
-                            selector="has_big_input_text"
+                            selector="has_big_text_prompt"
                         ),
                         # Voice input error messages
                         Case(
@@ -73,17 +73,24 @@ class MainMenuDialog(interface.IMainMenuDialog):
                         ),
                         Case(
                             {
-                                True: Const("<br><br>⏱️ <b>Слишком длинное сообщение</b>\n<i>Максимум 5 минут</i>"),
+                                True: Const("<br>⏱️ <b>Слишком длинное сообщение</b>\n<i>Максимум 5 минут</i>"),
                                 False: Const(""),
                             },
                             selector="has_long_voice_duration"
                         ),
                         Case(
                             {
-                                True: Const("<br><br>❌ <b>Ошибка:</b> <i>Неверная ссылка на YouTube</i>"),
+                                True: Const("<br>❌ <b>Ошибка:</b> <i>Неверная ссылка на YouTube</i>"),
                                 False: Const(""),
                             },
                             selector="has_invalid_youtube_url"
+                        ),
+                        Case(
+                            {
+                                True: Const("<br>💰 <b>Недостаточно средств</b><br/><i>Пополните баланс организации</i>"),
+                                False: Const(""),
+                            },
+                            selector="has_insufficient_balance"
                         ),
                     ),
                     True: Const("🔄 Распознавание речи...")
@@ -113,7 +120,7 @@ class MainMenuDialog(interface.IMainMenuDialog):
             ),
 
             MessageInput(
-                func=self.main_menu_service.handle_generate_publication_prompt_input,
+                func=self.main_menu_service.handle_text_prompt_input,
             ),
 
             state=model.MainMenuStates.main_menu,

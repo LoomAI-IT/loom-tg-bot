@@ -46,12 +46,12 @@ class CommandController(interface.ICommandController):
 
         if user_state.organization_id == 0 and user_state.account_id == 0:
             await dialog_manager.start(
-                model.AuthStates.user_agreement,
+                model.IntroStates.user_agreement,
                 mode=StartMode.RESET_STACK
             )
         elif user_state.organization_id == 0 and user_state.account_id != 0:
             await dialog_manager.start(
-                model.AuthStates.access_denied,
+                model.IntroStates.intro,
                 mode=StartMode.RESET_STACK
             )
         else:

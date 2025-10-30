@@ -34,13 +34,14 @@ class MainMenuGetter(interface.IMainMenuGetter):
             "show_error_recovery": show_error_recovery,
             "voice_transcribe": dialog_manager.dialog_data.get("voice_transcribe", False),
 
-            "has_void_input_text": dialog_manager.dialog_data.get("has_void_input_text", False),
-            "has_small_input_text": dialog_manager.dialog_data.get("has_small_input_text", False),
-            "has_big_input_text": dialog_manager.dialog_data.get("has_big_input_text", False),
+            "has_void_text_prompt": dialog_manager.dialog_data.get("has_void_text_prompt", False),
+            "has_small_text_prompt": dialog_manager.dialog_data.get("has_small_text_prompt", False),
+            "has_big_text_prompt": dialog_manager.dialog_data.get("has_big_text_prompt", False),
             # Voice input error flags
             "has_invalid_content_type": dialog_manager.dialog_data.get("has_invalid_content_type", False),
             "has_long_voice_duration": dialog_manager.dialog_data.get("has_long_voice_duration", False),
             "has_invalid_youtube_url": dialog_manager.dialog_data.get("has_invalid_youtube_url", False),
+            "has_insufficient_balance": dialog_manager.dialog_data.get("has_insufficient_balance", False),
         }
 
         await self.state_repo.change_user_state(

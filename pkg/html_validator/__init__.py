@@ -1,0 +1,1 @@
+from pkg.html_validator.validator import validate_html

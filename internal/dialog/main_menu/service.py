@@ -1,16 +1,19 @@
-import re
 from typing import Any
 
 from aiogram import Bot
 from aiogram.enums import ContentType
 from aiogram.types import CallbackQuery, Message
-from aiogram_dialog import DialogManager, StartMode, ShowMode
+from aiogram_dialog import DialogManager, StartMode
 from aiogram_dialog.widgets.input import MessageInput
-
 
 from internal import interface, model
 from pkg.log_wrapper import auto_log
 from pkg.trace_wrapper import traced_method
+
+from internal.dialog.helpers import StateManager
+from internal.dialog.helpers import MessageExtractor
+
+from internal.dialog.main_menu.helpers import ErrorFlagsManager, NavigationManager, ValidationService
 
 
 class MainMenuService(interface.IMainMenuService):
@@ -27,58 +30,60 @@ class MainMenuService(interface.IMainMenuService):
         self.bot = bot
         self.loom_content_client = loom_content_client
 
+        # Инициализация приватных сервисов
+        self.state_manager = StateManager(
+            self.state_repo
+        )
+        self.validation = ValidationService(
+            self.logger
+        )
+        self.message_extractor = MessageExtractor(
+            self.logger,
+            self.bot,
+            self.loom_content_client
+        )
+        self.navigation = NavigationManager(
+            state_repo
+        )
+        self.dialog_data_helper = ErrorFlagsManager()
+
     @auto_log()
     @traced_method()
-    async def handle_generate_publication_prompt_input(
+    async def handle_text_prompt_input(
             self,
             message: Message,
             widget: MessageInput,
             dialog_manager: DialogManager
     ) -> None:
-        dialog_manager.show_mode = ShowMode.EDIT
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
 
         await message.delete()
 
-        dialog_manager.dialog_data.pop("has_void_input_text", None)
-        dialog_manager.dialog_data.pop("has_small_input_text", None)
-        dialog_manager.dialog_data.pop("has_big_input_text", None)
-        dialog_manager.dialog_data.pop("has_invalid_content_type", None)
-        dialog_manager.dialog_data.pop("has_small_input_text", None)
-        dialog_manager.dialog_data.pop("has_big_input_text", None)
+        self.dialog_data_helper.clear_input(dialog_manager=dialog_manager)
 
-        state = await self._get_state(dialog_manager)
+        state = await self.state_manager.get_state(dialog_manager=dialog_manager)
 
         if message.content_type not in [ContentType.VOICE, ContentType.AUDIO, ContentType.TEXT]:
             self.logger.info("Неверный тип контента")
             dialog_manager.dialog_data["has_invalid_content_type"] = True
             return
 
-        if message.content_type == ContentType.TEXT:
-            text = message.text
-        else:
-            text = await self._speech_to_text(message, dialog_manager, state.organization_id)
+        generate_text_prompt = await self.message_extractor.process_voice_or_text_input(
+            message=message,
+            dialog_manager=dialog_manager,
+            organization_id=state.organization_id
+        )
 
-        if not text:
-            self.logger.info("Пустой текст")
-            dialog_manager.dialog_data["has_void_input_text"] = True
+        if not self.validation.validate_generate_text_prompt(text=generate_text_prompt, dialog_manager=dialog_manager):
             return
 
-        if len(text) < 10:
-            self.logger.info("Слишком короткий текст")
-            dialog_manager.dialog_data["has_small_input_text"] = True
-            return
-
-        if len(text) > 2000:
-            self.logger.info("Слишком длинный текст")
-            dialog_manager.dialog_data["has_big_input_text"] = True
-            return
-
-        dialog_manager.dialog_data["input_text"] = text
-        dialog_manager.dialog_data["has_input_text"] = True
+        dialog_manager.dialog_data["generate_text_prompt"] = generate_text_prompt
+        dialog_manager.dialog_data["has_generate_text_prompt"] = True
 
         await dialog_manager.start(
-            model.GeneratePublicationStates.select_category,
+            state=model.GeneratePublicationStates.select_category,
             data=dialog_manager.dialog_data,
+            mode=StartMode.RESET_STACK
         )
 
     @auto_log()
@@ -89,18 +94,12 @@ class MainMenuService(interface.IMainMenuService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        state = await self._get_state(dialog_manager)
-        await self.state_repo.change_user_state(
-            state_id=state.id,
-            show_error_recovery=False
+        state = await self.state_manager.get_state(dialog_manager=dialog_manager)
+        await self.navigation.navigate_to_content(
+            callback=callback,
+            dialog_manager=dialog_manager,
+            state=state
         )
-
-        await dialog_manager.start(
-            model.ContentMenuStates.content_menu,
-            mode=StartMode.RESET_STACK
-        )
-
-        await callback.answer()
 
     @auto_log()
     @traced_method()
@@ -110,18 +109,12 @@ class MainMenuService(interface.IMainMenuService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        state = await self._get_state(dialog_manager)
-        await self.state_repo.change_user_state(
-            state_id=state.id,
-            show_error_recovery=False
+        state = await self.state_manager.get_state(dialog_manager=dialog_manager)
+        await self.navigation.navigate_to_organization(
+            callback=callback,
+            dialog_manager=dialog_manager,
+            state=state
         )
-
-        await dialog_manager.start(
-            model.OrganizationMenuStates.organization_menu,
-            mode=StartMode.RESET_STACK
-        )
-
-        await callback.answer()
 
     @auto_log()
     @traced_method()
@@ -131,55 +124,9 @@ class MainMenuService(interface.IMainMenuService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        state = await self._get_state(dialog_manager)
-        await self.state_repo.change_user_state(
-            state_id=state.id,
-            show_error_recovery=False
+        state = await self.state_manager.get_state(dialog_manager=dialog_manager)
+        await self.navigation.navigate_to_personal_profile(
+            callback=callback,
+            dialog_manager=dialog_manager,
+            state=state
         )
-
-        await dialog_manager.start(
-            model.PersonalProfileStates.personal_profile,
-            mode=StartMode.RESET_STACK
-        )
-
-        await callback.answer()
-
-    async def _speech_to_text(self, message: Message, dialog_manager: DialogManager, organization_id: int) -> str:
-        if message.voice:
-            file_id = message.voice.file_id
-        else:
-            file_id = message.audio.file_id
-
-        dialog_manager.dialog_data["voice_transcribe"] = True
-        await dialog_manager.show()
-
-        file = await self.bot.get_file(file_id)
-        file_data = await self.bot.download_file(file.file_path)
-
-        text = await self.loom_content_client.transcribe_audio(
-            organization_id,
-            audio_content=file_data.read(),
-            audio_filename="audio.mp3",
-        )
-        dialog_manager.dialog_data["voice_transcribe"] = False
-        return text
-
-    def _is_valid_youtube_url(self, url: str) -> bool:
-        youtube_regex = re.compile(
-            r'(https?://)?(www\.)?(youtube|youtu|youtube-nocookie)\.(com|be)/'
-            r'(watch\?v=|embed/|v/|.+\?v=)?([^&=%\?]{11})'
-        )
-        return bool(youtube_regex.match(url))
-
-    async def _get_state(self, dialog_manager: DialogManager) -> model.UserState:
-        if hasattr(dialog_manager.event, 'message') and dialog_manager.event.message:
-            chat_id = dialog_manager.event.message.chat.id
-        elif hasattr(dialog_manager.event, 'chat'):
-            chat_id = dialog_manager.event.chat.id
-        else:
-            raise ValueError("Cannot extract chat_id from dialog_manager")
-
-        state = await self.state_repo.state_by_id(chat_id)
-        if not state:
-            raise ValueError(f"State not found for chat_id: {chat_id}")
-        return state[0]

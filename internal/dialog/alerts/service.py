@@ -1,9 +1,7 @@
-import re
 from typing import Any
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import CallbackQuery
 from aiogram_dialog import DialogManager, StartMode, ShowMode
 
-from opentelemetry.trace import SpanKind, Status, StatusCode
 
 from internal import interface, model
 from pkg.log_wrapper import auto_log
@@ -30,14 +28,14 @@ class AlertsService(interface.IAlertsService):
     ) -> None:
         dialog_manager.show_mode = ShowMode.EDIT
 
-        state = await self._get_state(dialog_manager)
+        state = await self._get_state(dialog_manager=dialog_manager)
 
         await self.state_repo.delete_vizard_video_cut_alert(
-            state.id
+            state_id=state.id
         )
 
         await dialog_manager.start(
-            model.VideoCutsDraftStates.video_cut_list,
+            state=model.VideoCutsDraftStates.video_cut_list,
             mode=StartMode.RESET_STACK
         )
 
@@ -53,10 +51,13 @@ class AlertsService(interface.IAlertsService):
     ) -> None:
         dialog_manager.show_mode = ShowMode.EDIT
 
-        state = await self._get_state(dialog_manager)
+        state = await self._get_state(dialog_manager=dialog_manager)
 
-        await self._delete_current_alert(dialog_manager.current_context().state, state.id)
-        next_alert_state = await self._get_next_alert_by_priority(state.id)
+        await self._delete_current_alert(
+            current_state=dialog_manager.current_context().state,
+            state_id=state.id
+        )
+        next_alert_state = await self._get_next_alert_by_priority(state_id=state.id)
 
         if next_alert_state:
             await dialog_manager.start(next_alert_state, mode=StartMode.RESET_STACK)
@@ -74,20 +75,22 @@ class AlertsService(interface.IAlertsService):
 
     async def _delete_current_alert(self, current_state: Any, state_id: int) -> None:
         if current_state == model.AlertsStates.publication_approved_alert:
-            await self.state_repo.delete_publication_approved_alert(state_id)
+            await self.state_repo.delete_publication_approved_alert(state_id=state_id)
+
         elif current_state == model.AlertsStates.publication_rejected_alert:
-            await self.state_repo.delete_publication_rejected_alert(state_id)
+            await self.state_repo.delete_publication_rejected_alert(state_id=state_id)
+
         elif current_state == model.AlertsStates.video_generated_alert:
-            await self.state_repo.delete_vizard_video_cut_alert(state_id)
+            await self.state_repo.delete_vizard_video_cut_alert(state_id=state_id)
 
     async def _get_next_alert_by_priority(self, state_id: int) -> Any | None:
-        if await self.state_repo.get_publication_approved_alert_by_state_id(state_id):
+        if await self.state_repo.get_publication_approved_alert_by_state_id(state_id=state_id):
             return model.AlertsStates.publication_approved_alert
 
-        if await self.state_repo.get_publication_rejected_alert_by_state_id(state_id):
+        if await self.state_repo.get_publication_rejected_alert_by_state_id(state_id=state_id):
             return model.AlertsStates.publication_rejected_alert
 
-        if await self.state_repo.get_vizard_video_cut_alert_by_state_id(state_id):
+        if await self.state_repo.get_vizard_video_cut_alert_by_state_id(state_id=state_id):
             return model.AlertsStates.video_generated_alert
 
         return None
@@ -100,7 +103,7 @@ class AlertsService(interface.IAlertsService):
         else:
             raise ValueError("Cannot extract chat_id from dialog_manager")
 
-        state = await self.state_repo.state_by_id(chat_id)
+        state = await self.state_repo.state_by_id(tg_chat_id=chat_id)
         if not state:
             raise ValueError(f"State not found for chat_id: {chat_id}")
         return state[0]

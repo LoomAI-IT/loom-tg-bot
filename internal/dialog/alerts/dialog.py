@@ -117,7 +117,7 @@ class AlertsDialog(interface.IAlertsDialog):
                         ),
                         False: Multi(
                             Const("❌ <b>Публикация отклонена</b><br>"),
-                            Format("<i>{text_preview}</i><br>"),
+                            Format("<i>{text_preview}</i><br><br>"),
                             Case(
                                 {
                                     True: Format("💬 <b>Комментарий модератора:</b><br>{moderation_comment}"),

@@ -9,7 +9,7 @@ def NewTg(
         dp: Dispatcher,
         command_controller: interface.ICommandController,
         tg_middleware: interface.ITelegramMiddleware,
-        auth_dialog: interface.IAuthDialog,
+        auth_dialog: interface.IIntroDialog,
         main_menu_dialog: interface.IMainMenuDialog,
         personal_profile_dialog: interface.IPersonalProfileDialog,
         organization_menu_dialog: interface.IOrganizationMenuDialog,
@@ -21,9 +21,13 @@ def NewTg(
         moderation_publication_dialog: interface.IModerationPublicationDialog,
         moderation_video_cut_dialog: interface.IVideoCutModerationDialog,
         video_cuts_draft_dialog: interface.IVideoCutsDraftDialog,
-        publication_draft_dialog: interface.IPublicationDraftDialog,
+        draft_publication_dialog: interface.IDraftPublicationDialog,
         add_social_network_dialog: interface.IAddSocialNetworkDialog,
         alerts_dialog: interface.IAlertsDialog,
+        create_category_dialog: interface.ICreateCategoryDialog,
+        create_organization_dialog: interface.ICreateOrganizationDialog,
+        update_category_dialog: interface.IUpdateCategoryDialog,
+        update_organization_dialog: interface.IUpdateOrganizationDialog,
 ) -> BgManagerFactory:
     include_command_handlers(
         dp,
@@ -47,9 +51,13 @@ def NewTg(
         moderation_publication_dialog,
         moderation_video_cut_dialog,
         video_cuts_draft_dialog,
-        publication_draft_dialog,
+        draft_publication_dialog,
         add_social_network_dialog,
-        alerts_dialog
+        alerts_dialog,
+        create_category_dialog,
+        create_organization_dialog,
+        update_category_dialog,
+        update_organization_dialog,
     )
 
     return dialog_bg_factory
@@ -74,7 +82,7 @@ def include_command_handlers(
 
 def include_dialogs(
         dp: Dispatcher,
-        auth_dialog: interface.IAuthDialog,
+        auth_dialog: interface.IIntroDialog,
         main_menu_dialog: interface.IMainMenuDialog,
         personal_profile_dialog: interface.IPersonalProfileDialog,
         organization_menu_dialog: interface.IOrganizationMenuDialog,
@@ -86,9 +94,13 @@ def include_dialogs(
         moderation_publication_dialog: interface.IModerationPublicationDialog,
         moderation_video_cut_dialog: interface.IVideoCutModerationDialog,
         video_cuts_draft_dialog: interface.IVideoCutsDraftDialog,
-        publication_draft_dialog: interface.IPublicationDraftDialog,
+        draft_publication_dialog: interface.IDraftPublicationDialog,
         add_social_network_dialog: interface.IAddSocialNetworkDialog,
         alerts_dialog: interface.IAlertsDialog,
+        create_category_dialog: interface.ICreateCategoryDialog,
+        create_organization_dialog: interface.ICreateOrganizationDialog,
+        update_category_dialog: interface.IUpdateCategoryDialog,
+        update_organization_dialog: interface.IUpdateOrganizationDialog,
 ) -> BgManagerFactory:
     dialog_router = Router()
     dialog_router.include_routers(
@@ -104,9 +116,13 @@ def include_dialogs(
         generate_video_cut_dialog.get_dialog(),
         moderation_video_cut_dialog.get_dialog(),
         video_cuts_draft_dialog.get_dialog(),
-        publication_draft_dialog.get_dialog(),
+        draft_publication_dialog.get_dialog(),
         add_social_network_dialog.get_dialog(),
         alerts_dialog.get_dialog(),
+        create_category_dialog.get_dialog(),
+        create_organization_dialog.get_dialog(),
+        update_category_dialog.get_dialog(),
+        update_organization_dialog.get_dialog(),
     )
 
     dp.include_routers(dialog_router)

@@ -14,6 +14,8 @@ class Employee:
     edit_employee_perm_permission: bool
     top_up_balance_permission: bool
     sign_up_social_net_permission: bool
+    setting_category_permission: bool
+    setting_organization_permission: bool
 
     name: str
     role: str
