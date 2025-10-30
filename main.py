@@ -389,6 +389,7 @@ moderation_publication_service = ModerationPublicationService(
     bot,
     state_repo,
     loom_content_client,
+    loom_organization_client,
     cfg.domain
 )
 
