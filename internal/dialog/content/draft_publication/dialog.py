@@ -39,6 +39,8 @@ class DraftPublicationDialog(interface.IDraftPublicationDialog):
             self.get_combine_images_upload_window(),
             self.get_combine_images_prompt_window(),
             self.get_text_too_long_alert_window(),
+            self.get_social_network_select_window(),
+            self.get_publication_success_window(),
         )
 
     def get_draft_list_window(self) -> Window:

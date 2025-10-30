@@ -174,7 +174,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, send=True)
         state = await self.state_manager.get_state(dialog_manager=dialog_manager)
 
         if await self.balance_manager.check_balance_for_operation(state.organization_id, "generate_text"):
@@ -204,6 +204,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, send=True)
 
         state = await self.state_manager.get_state(dialog_manager=dialog_manager)
 
