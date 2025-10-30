@@ -1324,11 +1324,11 @@ class DraftPublicationDialog(interface.IDraftPublicationDialog):
                 Button(
                     Const("◀️ Назад"),
                     id="back_to_preview",
-                    on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.preview, ShowMode.EDIT),
+                    on_click=lambda c, b, d: d.switch_to(model.DraftPublicationStates.edit_preview, ShowMode.EDIT),
                 ),
             ),
 
-            state=model.GeneratePublicationStates.social_network_select,
+            state=model.DraftPublicationStates.social_network_select,
             getter=self.draft_publication_getter.get_social_network_select_data,
             parse_mode=SULGUK_PARSE_MODE,
         )
@@ -1372,7 +1372,7 @@ class DraftPublicationDialog(interface.IDraftPublicationDialog):
                 on_click=self.draft_publication_service.handle_back_to_content_menu,
             ),
 
-            state=model.GeneratePublicationStates.publication_success,
+            state=model.DraftPublicationStates.publication_success,
             getter=self.draft_publication_getter.get_publication_success_data,
             parse_mode=SULGUK_PARSE_MODE,
         )
