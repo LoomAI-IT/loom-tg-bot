@@ -8,6 +8,7 @@ from internal import model
 
 from internal.dialog.brief.helpers import LLMContextManager, TelegramPostFormatter
 from internal.dialog.brief.create_category.helpers import CategoryManager
+from pkg.html_validator import validate_html
 
 
 class LLMChatManager:
@@ -239,6 +240,21 @@ HTML разметка должны быть валидной, если есть 
             enable_web_search=enable_web_search,
             llm_model="claude-haiku-4-5-20251001"
         )
+
+        if llm_response_json.get("message_to_user"):
+            try:
+                validate_html(llm_response_json["message_to_user"])
+            except Exception as e:
+                self.logger.warning("LLM сгенерировала невалидный HTML", {"error": str(e)})
+                llm_response_json, generate_cost = await self.anthropic_client.generate_json(
+                    history=history,
+                    system_prompt=system_prompt,
+                    max_tokens=max_tokens,
+                    thinking_tokens=thinking_tokens,
+                    enable_web_search=enable_web_search,
+                    llm_model="claude-haiku-4-5-20251001"
+                )
+
         self.llm_context_manager.track_tokens(
             dialog_manager=dialog_manager,
             generate_cost=generate_cost
