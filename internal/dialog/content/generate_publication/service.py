@@ -830,7 +830,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         self.dialog_data_helper.set_is_combining_images(dialog_manager, False)
 
         if self.dialog_data_helper.get_has_no_combine_image_result(dialog_manager):
-            await dialog_manager.show()
             return
 
         self.dialog_data_helper.set_combine_image_url(dialog_manager, combined_result_url)
@@ -876,7 +875,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         self.dialog_data_helper.set_is_combining_images(dialog_manager, False)
 
         if self.dialog_data_helper.get_has_no_combine_image_result(dialog_manager):
-            await dialog_manager.show()
             return
 
         self.dialog_data_helper.set_combine_image_url(dialog_manager, combined_result_url)
@@ -953,7 +951,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         if self.dialog_data_helper.get_has_no_image_edit_result(dialog_manager):
             self.dialog_data_helper.set_edit_image_prompt(dialog_manager, "")
-            await dialog_manager.show()
             return
 
         self.image_manager.update_image_after_edit_from_confirm_new_image(
@@ -962,8 +959,6 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         )
 
         self.dialog_data_helper.set_edit_image_prompt(dialog_manager, "")
-
-        await dialog_manager.show()
 
     @auto_log()
     @traced_method()

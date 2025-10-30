@@ -181,36 +181,6 @@ class ImageManager:
 
         return None, None, None
 
-    async def combine_images_with_prompt(
-            self,
-            dialog_manager: DialogManager,
-            state: model.UserState,
-            combine_images_list: list[str],
-            prompt: str,
-            chat_id: int
-    ) -> tuple[list[str] | None, bool]:
-        images_content = []
-        images_filenames = []
-
-        for i, file_id in enumerate(combine_images_list):
-            image_io = await self.bot.download(file_id)
-            content = image_io.read()
-            images_content.append(content)
-            images_filenames.append(f"image_{i}.jpg")
-
-        category_id = self.dialog_data_helper.get_category_id(dialog_manager)
-
-        async with tg_action(self.bot, chat_id, "upload_photo"):
-            combined_images_url, has_no_data = await self.loom_content_client.combine_images(
-                organization_id=state.organization_id,
-                category_id=category_id,
-                images_content=images_content,
-                images_filenames=images_filenames,
-                prompt=prompt,
-            )
-
-        return combined_images_url, has_no_data
-
     def restore_image_from_backup(
             self,
             dialog_manager: DialogManager,
@@ -503,13 +473,25 @@ class ImageManager:
         # Сохраняем backups как при обычной генерации
         self.backup_current_image(dialog_manager)
 
-        combined_images_url, has_no_data = await self.combine_images_with_prompt(
-            dialog_manager=dialog_manager,
-            state=state,
-            combine_images_list=combine_images_list,
-            prompt=prompt,
-            chat_id=chat_id
-        )
+        images_content = []
+        images_filenames = []
+
+        for i, file_id in enumerate(combine_images_list):
+            image_io = await self.bot.download(file_id)
+            content = image_io.read()
+            images_content.append(content)
+            images_filenames.append(f"image_{i}.jpg")
+
+        category_id = self.dialog_data_helper.get_category_id(dialog_manager)
+
+        async with tg_action(self.bot, chat_id, "upload_photo"):
+            combined_images_url, has_no_data = await self.loom_content_client.combine_images(
+                organization_id=state.organization_id,
+                category_id=category_id,
+                images_content=images_content,
+                images_filenames=images_filenames,
+                prompt=prompt,
+            )
 
         # Если нейросеть не стала объединять изображения
         if has_no_data:
