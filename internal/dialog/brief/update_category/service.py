@@ -129,7 +129,7 @@ class UpdateCategoryService(interface.IUpdateCategoryService):
                 user_text_reference = llm_response_json["user_text_reference"]
 
                 async with tg_action(self.bot, message.chat.id):
-                    llm_response_json, test_publication_text = await self.llm_chat_manager.process_test_generate_publication(
+                    llm_response_json, test_publication_text, test_publication_image_url = await self.llm_chat_manager.process_test_generate_publication(
                         dialog_manager=dialog_manager,
                         chat_id=chat_id,
                         category_id=category_id,
@@ -138,9 +138,14 @@ class UpdateCategoryService(interface.IUpdateCategoryService):
                         user_text_reference=user_text_reference,
                     )
 
+                await self.bot.send_photo(
+                    chat_id=state.tg_chat_id,
+                    photo=test_publication_image_url
+                )
+
                 await self.bot.send_message(
                     chat_id=state.tg_chat_id,
-                    text="Ваша публикация:<br><br>" + test_publication_text,
+                    text="<b>Ваша публикация:</b><br><br>" + test_publication_text,
                     parse_mode=SULGUK_PARSE_MODE
                 )
 
