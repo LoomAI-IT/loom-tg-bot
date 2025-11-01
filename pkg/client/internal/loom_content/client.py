@@ -457,7 +457,7 @@ class LoomContentClient(interface.ILoomContentClient):
             prompt_for_image_style: str,
     ) -> list[str]:
         body = {
-            "test_publication_text": test_publication_text,
+            "publication_text": test_publication_text,
             "organization_id": organization_id,
             "name": name,
             "hint": hint,
