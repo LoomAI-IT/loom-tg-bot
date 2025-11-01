@@ -171,6 +171,37 @@ class ILoomContentClient(Protocol):
     ) -> str: pass
 
     @abstractmethod
+    async def test_generate_publication_image(
+            self,
+            test_publication_text: str,
+            organization_id: int,
+            name: str,
+            hint: str,
+
+            goal: str,
+            tone_of_voice: list[str],
+            brand_rules: list[str],
+
+            creativity_level: int,
+            audience_segment: str,
+
+            len_min: int,
+            len_max: int,
+
+            n_hashtags_min: int,
+            n_hashtags_max: int,
+
+            cta_type: str,
+            cta_strategy: dict,
+
+            good_samples: list[dict],
+            bad_samples: list[dict],
+            additional_info: list[dict],
+
+            prompt_for_image_style: str
+    ) -> list[str]: pass
+
+    @abstractmethod
     async def update_category(
             self,
             category_id: int,

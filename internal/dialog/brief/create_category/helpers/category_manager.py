@@ -39,6 +39,36 @@ class CategoryManager:
         )
         return test_publication_text
 
+
+    async def test_category_generation_image(
+            self,
+            test_category_data: dict,
+            test_publication_text: str,
+            organization_id: int,
+    ) -> str:
+        test_images_url = await self.loom_content_client.test_generate_publication_image(
+            test_publication_text=test_publication_text,
+            organization_id=organization_id,
+            name=test_category_data.get("name", ""),
+            hint=test_category_data.get("hint", ""),
+            goal=test_category_data.get("goal", ""),
+            tone_of_voice=test_category_data.get("tone_of_voice", []),
+            brand_rules=test_category_data.get("brand_rules", []),
+            creativity_level=test_category_data.get("creativity_level", 5),
+            audience_segment=test_category_data.get("audience_segment", ""),
+            len_min=test_category_data.get("len_min", 200),
+            len_max=test_category_data.get("len_max", 400),
+            n_hashtags_min=test_category_data.get("n_hashtags_min", 1),
+            n_hashtags_max=test_category_data.get("n_hashtags_max", 2),
+            cta_type=test_category_data.get("cta_type", ""),
+            cta_strategy=test_category_data.get("cta_strategy", {}),
+            good_samples=test_category_data.get("good_samples", []),
+            bad_samples=test_category_data.get("bad_samples", []),
+            additional_info=test_category_data.get("additional_info", []),
+            prompt_for_image_style=test_category_data.get("prompt_for_image_style", ""),
+        )
+        return test_images_url[0]
+
     async def save_category(
             self,
             dialog_manager: DialogManager,

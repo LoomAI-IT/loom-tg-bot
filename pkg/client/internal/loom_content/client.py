@@ -427,6 +427,62 @@ class LoomContentClient(interface.ILoomContentClient):
         return json_response["text"]
 
     @traced_method(SpanKind.CLIENT)
+    async def test_generate_publication_image(
+            self,
+            test_publication_text: str,
+            organization_id: int,
+            name: str,
+            hint: str,
+
+            goal: str,
+            tone_of_voice: list[str],
+            brand_rules: list[str],
+
+            creativity_level: int,
+            audience_segment: str,
+
+            len_min: int,
+            len_max: int,
+
+            n_hashtags_min: int,
+            n_hashtags_max: int,
+
+            cta_type: str,
+            cta_strategy: dict,
+
+            good_samples: list[dict],
+            bad_samples: list[dict],
+            additional_info: list[dict],
+
+            prompt_for_image_style: str,
+    ) -> list[str]:
+        body = {
+            "test_publication_text": test_publication_text,
+            "organization_id": organization_id,
+            "name": name,
+            "hint": hint,
+            "goal": goal,
+            "tone_of_voice": tone_of_voice,
+            "brand_rules": brand_rules,
+            "creativity_level": creativity_level,
+            "audience_segment": audience_segment,
+            "len_min": len_min,
+            "len_max": len_max,
+            "n_hashtags_min": n_hashtags_min,
+            "n_hashtags_max": n_hashtags_max,
+            "cta_type": cta_type,
+            "cta_strategy": cta_strategy,
+            "good_samples": good_samples,
+            "bad_samples": bad_samples,
+            "additional_info": additional_info,
+            "prompt_for_image_style": prompt_for_image_style,
+        }
+        response = await self.client.post(f"/publication/image/test-generate", json=body)
+        json_response = response.json()
+
+        return json_response
+
+    @traced_method(SpanKind.CLIENT)
     async def update_category(
             self,
             category_id: int,

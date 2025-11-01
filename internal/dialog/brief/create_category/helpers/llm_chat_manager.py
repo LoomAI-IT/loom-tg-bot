@@ -1,3 +1,4 @@
+import aiohttp
 from aiogram import Bot
 from aiogram.types import Message
 from aiogram_dialog import DialogManager
@@ -147,12 +148,18 @@ HTML разметка должны быть валидной, если есть 
             test_category_data: dict,
             user_text_reference: str,
             use_train_prompt: bool = False
-    ) -> tuple[dict, str]:
+    ) -> tuple[dict, str, str]:
         test_publication_text = await self.category_manager.test_category_generation(
             test_category_data=test_category_data,
             user_text_reference=user_text_reference,
             organization_id=organization_id,
         )
+        test_publication_image_url = await self.category_manager.test_category_generation_image(
+            test_category_data=test_category_data,
+            test_publication_text=test_publication_text,
+            organization_id=organization_id,
+        )
+        test_publication_image_content, _ = await self.download_image(test_publication_image_url)
 
         message_to_llm = f"""
 <system>
@@ -180,10 +187,11 @@ HTML разметка должны быть валидной, если есть 
             dialog_manager=dialog_manager,
             chat_id=chat_id,
             organization_id=organization_id,
-            use_train_prompt=use_train_prompt
+            use_train_prompt=use_train_prompt,
+            images=[test_publication_image_content]
         )
 
-        return llm_response_json, test_publication_text
+        return llm_response_json, test_publication_text, test_publication_image_url
 
     async def clear_chat_history(self, dialog_manager: DialogManager, chat_id: int) -> None:
         dialog_manager.dialog_data["total_tokens"] = 0
@@ -197,7 +205,8 @@ HTML разметка должны быть валидной, если есть 
             max_tokens: int = 15000,
             thinking_tokens: int = 10000,
             enable_web_search: bool = True,
-            use_train_prompt: bool = False
+            use_train_prompt: bool = False,
+            images: list[bytes] = None,
     ) -> dict:
         organization = await self.loom_organization_client.get_organization_by_id(
             organization_id=organization_id
@@ -238,7 +247,8 @@ HTML разметка должны быть валидной, если есть 
             max_tokens=max_tokens,
             thinking_tokens=thinking_tokens,
             enable_web_search=enable_web_search,
-            llm_model="claude-haiku-4-5-20251001"
+            llm_model="claude-haiku-4-5-20251001",
+            images=images
         )
 
         if llm_response_json.get("message_to_user"):
@@ -272,3 +282,11 @@ HTML разметка должны быть валидной, если есть 
             role="assistant",
             text=str(llm_response_json)
         )
+
+    async def download_image(self, image_url: str) -> tuple[bytes, str]:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(image_url) as response:
+                response.raise_for_status()
+                content = await response.read()
+                content_type = response.headers.get('content-type', 'image/png')
+                return content, content_type

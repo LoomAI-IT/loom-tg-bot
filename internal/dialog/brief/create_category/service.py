@@ -122,7 +122,7 @@ class CreateCategoryService(interface.ICreateCategoryService):
                 )
 
                 async with tg_action(self.bot, message.chat.id):
-                    llm_response_json, test_publication_text = await self.llm_chat_manager.process_test_generate_publication(
+                    llm_response_json, test_publication_text, test_publication_url  = await self.llm_chat_manager.process_test_generate_publication(
                         dialog_manager=dialog_manager,
                         chat_id=chat_id,
                         organization_id=state.organization_id,
@@ -130,6 +130,11 @@ class CreateCategoryService(interface.ICreateCategoryService):
                         user_text_reference=user_text_reference,
                         use_train_prompt=use_train_prompt
                     )
+
+                await self.bot.send_photo(
+                    chat_id=state.tg_chat_id,
+                    photo=test_publication_url
+                )
 
                 await self.bot.send_message(
                     chat_id=state.tg_chat_id,
