@@ -469,7 +469,7 @@ class AnthropicClient(interface.IAnthropicClient):
 
     def _extract_and_parse_json(self, text: str) -> dict:
         match = re.search(r"\{.*\}", text, re.DOTALL)
-        json_str = match.group(0)
+        json_str = match.group(0).replace("'", '"')
 
         try:
             data = json.loads(json_str)
