@@ -27,6 +27,7 @@ class CreateCategoryPromptGenerator(interface.ICreateCategoryPromptGenerator):
 
 <message_formatting>
 - используй <br> для переноса строк, у тебя действуют правила HTML форматирования
+- <table> запрещен
 </message_formatting>
 
 <web_search>

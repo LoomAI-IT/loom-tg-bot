@@ -34,6 +34,7 @@ class UpdateOrganizationPromptGenerator(interface.IUpdateOrganizationPromptGener
 
 <message_formatting>
 - Используй HTML теги для улучшения читаемости
+- <table> запрещен
 - <details><summary> для скрытия больших блоков
 - <b>, <i>, <u> для выделения ключевых моментов
 - <ol> и <li> для списков, не используй <ul>
