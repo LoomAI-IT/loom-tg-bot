@@ -5,7 +5,7 @@ from aiogram_dialog import DialogManager
 
 class ValidationService:
     MIN_TEXT_LENGTH = 10
-    MAX_TEXT_LENGTH = 2000
+    MAX_TEXT_LENGTH = 4000
 
     def __init__(self, logger):
         self.logger = logger

@@ -57,7 +57,7 @@ class MainMenuDialog(interface.IMainMenuDialog):
                         ),
                         Case(
                             {
-                                True: Const("<br>📏 <b>Слишком длинный текст</b><br/><i>Максимум 2000 символов</i>"),
+                                True: Const("<br>📏 <b>Слишком длинный текст</b><br/><i>Максимум 4000 символов</i>"),
                                 False: Const(""),
                             },
                             selector="has_big_text_prompt"

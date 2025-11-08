@@ -8,10 +8,10 @@ from internal.dialog.content.generate_publication.helpers.dialog_data_helper imp
 
 class ValidationService:
     MIN_TEXT_PROMPT_LENGTH = 10
-    MAX_TEXT_PROMPT_LENGTH = 2000
+    MAX_TEXT_PROMPT_LENGTH = 4000
 
     MIN_IMAGE_PROMPT_LENGTH = 10
-    MAX_IMAGE_PROMPT_LENGTH = 2000
+    MAX_IMAGE_PROMPT_LENGTH = 4000
 
     MIN_EDIT_IMAGE_PROMPT_LENGTH = 10
     MAX_EDIT_IMAGE_PROMPT_LENGTH = 1000
