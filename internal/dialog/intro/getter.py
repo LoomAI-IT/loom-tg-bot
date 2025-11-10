@@ -21,9 +21,9 @@ class IntroGetter(interface.IIntroGetter):
     @traced_method()
     async def get_agreement_data(self, **kwargs) -> dict:
         data = {
-            "user_agreement_link": f"https://{self.domain}/agreement",
-            "privacy_policy_link": f"https://{self.domain}/privacy",
-            "data_processing_link": f"https://{self.domain}/data-processing",
+            "user_agreement_link": f"https://disk.yandex.ru/i/rUM8JjkqyfF6zw",
+            "privacy_policy_link": f"https://disk.yandex.ru/i/pJnZqTEBonPyrw",
+            "data_processing_link": f"https://disk.yandex.ru/i/JkM5gxeAaqjLJQ",
         }
 
         return data
