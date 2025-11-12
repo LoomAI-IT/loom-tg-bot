@@ -644,6 +644,7 @@ app = NewServer(
     http_middleware,
     tg_webhook_controller,
     cfg.prefix,
+    cfg.environment
 )
 
 if __name__ == "__main__":

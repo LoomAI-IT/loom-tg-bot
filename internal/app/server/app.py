@@ -7,7 +7,8 @@ def NewServer(
         db: interface.IDB,
         http_middleware: interface.IHttpMiddleware,
         tg_webhook_controller: interface.ITelegramWebhookController,
-        prefix: str
+        prefix: str,
+        environment: str
 ):
     app = FastAPI(
         openapi_url=prefix + "/openapi.json",
@@ -16,7 +17,7 @@ def NewServer(
     )
     include_http_middleware(app, http_middleware)
 
-    include_db_handler(app, db, prefix)
+    include_db_handler(app, db, prefix, environment)
     include_tg_webhook(app, tg_webhook_controller, prefix)
 
     return app
@@ -83,9 +84,9 @@ def include_tg_webhook(
     )
 
 
-def include_db_handler(app: FastAPI, db: interface.IDB, prefix):
+def include_db_handler(app: FastAPI, db: interface.IDB, prefix: str, environment: str):
     app.add_api_route(prefix + "/table/create", create_table_handler(db), methods=["GET"])
-    app.add_api_route(prefix + "/table/drop", drop_table_handler(db), methods=["GET"])
+    app.add_api_route(prefix + "/table/drop", drop_table_handler(db, environment), methods=["GET"])
     app.add_api_route(prefix + "/health", heath_check_handler(), methods=["GET"])
 
 
@@ -106,8 +107,11 @@ def heath_check_handler():
     return heath_check
 
 
-def drop_table_handler(db: interface.IDB):
+def drop_table_handler(db: interface.IDB, environment: str):
     async def delete_table():
+        if environment == "prod":
+            return
+
         try:
             await db.multi_query(model.drop_queries)
         except Exception as err:
