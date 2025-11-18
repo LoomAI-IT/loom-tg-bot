@@ -8,4 +8,3 @@ class IntroStates(StatesGroup):
     data_processing = State()
     intro = State()
     create_organization = State()
-    join_to_organization = State()

@@ -24,9 +24,6 @@ class IIntroDialog(Protocol):
     @abstractmethod
     def get_intro_window(self) -> Window: pass
 
-    @abstractmethod
-    def get_join_to_organization_window(self) -> Window: pass
-
 
 class IIntroService(Protocol):
     @abstractmethod
