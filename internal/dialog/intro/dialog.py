@@ -59,7 +59,6 @@ class IntroDialog(interface.IIntroDialog):
     def get_user_agreement_window(self) -> Window:
         return Window(
             Const("📋 <b>1/3 Перед началом работы необходимо принять пользовательское соглашение:</b><br>"),
-            Format("{user_agreement_link}"),
             Url(
                 Const("📖 Читать соглашение"),
                 Format("{user_agreement_link}"),
