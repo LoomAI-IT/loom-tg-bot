@@ -46,7 +46,7 @@ class CommandController(interface.ICommandController):
 
         if user_state.organization_id == 0 and user_state.account_id == 0:
             await dialog_manager.start(
-                model.IntroStates.user_agreement,
+                model.IntroStates.welcome,
                 mode=StartMode.RESET_STACK
             )
         elif user_state.organization_id == 0 and user_state.account_id != 0:

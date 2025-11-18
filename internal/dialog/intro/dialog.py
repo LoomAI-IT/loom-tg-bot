@@ -21,11 +21,37 @@ class IntroDialog(interface.IIntroDialog):
 
     def get_dialog(self) -> Dialog:
         return Dialog(
+            self.get_welcome_window(),
             self.get_user_agreement_window(),
             self.get_privacy_policy_window(),
             self.get_data_processing_window(),
             self.get_intro_window(),
             self.get_join_to_organization_window(),
+        )
+
+    def get_welcome_window(self) -> Window:
+        return Window(
+            Const("👋 <b>Добро пожаловать в Loom</b><br><br>"),
+            Const("AI SMM инструмент для снижения затрат на рутину.<br><br>"),
+            Const("<b>Как это работает:</b><br><br>"),
+            Const("Представьте: ваш сотрудник просто говорит голосом 🎤 — \"У нас крутой кейс с клиентом, сделали проект за неделю вместо месяца...\"<br><br>"),
+            Const("Через пару минут получаете:<br>"),
+            Const("✍️ Профессиональный текст в стиле вашего бренда (Claude 4.5)<br>"),
+            Const("🎨 Идеальную картинку под рубрику (AI-image-studio)<br>"),
+            Const("📱 Готовый пост для всех ваших соцсетей<br><br>"),
+            Const("При необходимости — быстрая модерация. Нет необходимости — сразу публикуете.<br><br>"),
+            Const("<b>Вместо:</b><br>"),
+            Const("⏱ 2-3 часа работы SMM-специалиста (бриф, текст, правки, дизайн, адаптация)<br><br>"),
+            Const("<b>Получаете:</b><br>"),
+            Const("⚡️ 5 минут на всю вашу команду<br><br>"),
+            Const("Больше контента. Меньше времени. Меньше бюджета на рутину. 💰"),
+            Button(
+                Const("Продолжить ➡️"),
+                id="continue_to_agreements",
+                on_click=lambda c, b, d: d.switch_to(model.IntroStates.user_agreement, ShowMode.EDIT),
+            ),
+            state=model.IntroStates.welcome,
+            parse_mode=SULGUK_PARSE_MODE,
         )
 
     def get_user_agreement_window(self) -> Window:
@@ -49,7 +75,6 @@ class IntroDialog(interface.IIntroDialog):
     def get_privacy_policy_window(self) -> Window:
         return Window(
             Const("🔒 <b>2/3 Перед началом работы необходимо принять политику конфиденциальности:</b><br>"),
-            Format("{privacy_policy_link}"),
             Url(
                 Const("📖 Читать политику"),
                 Format("{privacy_policy_link}"),
@@ -68,7 +93,6 @@ class IntroDialog(interface.IIntroDialog):
     def get_data_processing_window(self) -> Window:
         return Window(
             Const("📊 <b>3/3 Перед началом работы необходимо принять согласие на обработку персональных данных:</b><br>"),
-            Format("{data_processing_link}"),
             Url(
                 Const("📖 Читать согласие"),
                 Format("{data_processing_link}"),

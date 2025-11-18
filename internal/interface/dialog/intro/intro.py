@@ -10,6 +10,9 @@ class IIntroDialog(Protocol):
     def get_dialog(self) -> Dialog: pass
 
     @abstractmethod
+    def get_welcome_window(self) -> Window: pass
+
+    @abstractmethod
     def get_user_agreement_window(self) -> Window: pass
 
     @abstractmethod
