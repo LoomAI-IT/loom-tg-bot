@@ -105,11 +105,12 @@ class TelegramWebhookController(interface.ITelegramWebhookController):
             organization_id=body.organization_id
         )
 
-        await self.bot.send_message(
-            chat_id=user_state.tg_chat_id,
-            text=self._format_notification_message(body),
-            parse_mode="HTML"
-        )
+        if body.employee_name != "admin":
+            await self.bot.send_message(
+                chat_id=user_state.tg_chat_id,
+                text=self._format_notification_message(body),
+                parse_mode="HTML"
+            )
 
         return JSONResponse(
             content={"status": "ok"},
