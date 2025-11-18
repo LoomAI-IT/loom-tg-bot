@@ -24,13 +24,8 @@ class OrganizationManager:
 
         await self.loom_organization_client.update_organization(
             organization_id=organization_id,
-            name=organization_data["name"],
             description=organization_data["description"],
-            tone_of_voice=organization_data["tone_of_voice"],
-            compliance_rules=organization_data["compliance_rules"],
-            products=organization_data["products"],
             locale=organization_data["locale"],
-            additional_info=organization_data["additional_info"],
         )
         await self.state_repo.change_user_state(
             state_id=state_id,
