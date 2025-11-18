@@ -149,7 +149,7 @@ class CreateOrganizationService(interface.ICreateOrganizationService):
 
     @auto_log()
     @traced_method()
-    async def go_to_create_category(
+    async def go_to_select_category(
             self,
             callback: CallbackQuery,
             button: Button,
@@ -159,14 +159,8 @@ class CreateOrganizationService(interface.ICreateOrganizationService):
 
         await callback.answer()
 
-        state = await self.state_manager.get_state(dialog_manager)
-
-        chat = await self.llm_chat_repo.get_chat_by_state_id(state.id)
-        if chat:
-            await self.llm_chat_repo.delete_chat(chat[0].id)
-
         await dialog_manager.start(
-            state=model.CreateCategoryStates.create_category,
+            state=model.GeneratePublicationStates.select_category,
             mode=StartMode.RESET_STACK
         )
 
