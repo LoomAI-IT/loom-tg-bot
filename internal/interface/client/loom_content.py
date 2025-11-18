@@ -194,6 +194,9 @@ class ILoomContentClient(Protocol):
     ) -> None: pass
 
     @abstractmethod
+    async def generate_categories(self, organization_id: int) -> None: pass
+
+    @abstractmethod
     async def get_category_by_id(self, category_id: int) -> model.Category: pass
 
     @abstractmethod

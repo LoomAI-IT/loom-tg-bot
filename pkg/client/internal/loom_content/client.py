@@ -486,6 +486,13 @@ class LoomContentClient(interface.ILoomContentClient):
         await self.client.put(f"/publication/category/{category_id}", json=body)
 
     @traced_method(SpanKind.CLIENT)
+    async def generate_categories(self, organization_id: int) -> None:
+        body = {
+            "organization_id": organization_id
+        }
+        await self.client.post("/publication/categories/generate", json=body)
+
+    @traced_method(SpanKind.CLIENT)
     async def get_category_by_id(self, category_id: int) -> model.Category:
         response = await self.client.get(f"/publication/category/{category_id}")
         json_response = response.json()

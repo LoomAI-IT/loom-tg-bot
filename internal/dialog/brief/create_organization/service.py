@@ -56,6 +56,7 @@ class CreateOrganizationService(interface.ICreateOrganizationService):
         self._organization_manager = OrganizationManager(
             loom_organization_client=self.loom_organization_client,
             loom_employee_client=self.loom_employee_client,
+            loom_content_client=self.loom_content_client,
             state_repo=self.state_repo
         )
         self.llm_chat_manager = LLMChatManager(
@@ -108,7 +109,7 @@ class CreateOrganizationService(interface.ICreateOrganizationService):
             if llm_response_json.get("organization_data"):
                 organization_data = llm_response_json["organization_data"]
 
-                _ = await self._organization_manager.create_organization_and_admin(
+                _ = await self._organization_manager.create_organization_and_admin_and_categories(
                     state_id=state.id,
                     account_id=state.account_id,
                     organization_data=organization_data

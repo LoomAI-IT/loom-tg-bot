@@ -6,13 +6,15 @@ class OrganizationManager:
             self,
             loom_organization_client: interface.ILoomOrganizationClient,
             loom_employee_client: interface.ILoomEmployeeClient,
+            loom_content_client: interface.ILoomContentClient,
             state_repo: interface.IStateRepo
     ):
         self.loom_organization_client = loom_organization_client
+        self.loom_content_client = loom_content_client
         self.loom_employee_client = loom_employee_client
         self.state_repo = state_repo
 
-    async def create_organization_and_admin(
+    async def create_organization_and_admin_and_categories(
             self,
             state_id: int,
             account_id: int,
@@ -27,6 +29,7 @@ class OrganizationManager:
             description=organization_data["description"],
             locale=organization_data["locale"],
         )
+        await self.loom_content_client.generate_categories(organization_id)
         await self.state_repo.change_user_state(
             state_id=state_id,
             organization_id=organization_id,
