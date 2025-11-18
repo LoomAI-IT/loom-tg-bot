@@ -15,7 +15,6 @@ class LLMChatManager:
             logger,
             bot: Bot,
             anthropic_client: interface.IAnthropicClient,
-            telegram_client: interface.ITelegramClient,
             loom_content_client: interface.ILoomContentClient,
             create_organization_prompt_generator: interface.ICreateOrganizationPromptGenerator,
             llm_chat_repo: interface.ILLMChatRepo,
@@ -23,7 +22,6 @@ class LLMChatManager:
         self.logger = logger
         self.bot = bot
         self.anthropic_client = anthropic_client
-        self.telegram_client = telegram_client
         self.loom_content_client = loom_content_client
         self.create_organization_prompt_generator = create_organization_prompt_generator
         self.llm_chat_repo = llm_chat_repo
@@ -73,44 +71,6 @@ ultrathink
         llm_response_json, generate_cost = await self.get_llm_response(
             dialog_manager=dialog_manager,
             chat_id=chat_id
-        )
-
-        return llm_response_json
-
-    async def process_telegram_channel(
-            self,
-            dialog_manager: DialogManager,
-            chat_id: int,
-            telegram_channel_username: str
-    ) -> dict:
-        telegram_posts = await self.telegram_client.get_channel_posts(
-            channel_id=telegram_channel_username,
-            limit=50
-        )
-
-        posts_text = self.telegram_post_formatter.format_telegram_posts(
-            posts=telegram_posts
-        )
-        message_to_llm = f"""
-<system>
-{posts_text}
-HTML разметка должны быть валидной, если есть открывающий тэг, значит должен быть закрывающий, закрывающий не должен существовать без открывающего
-</system>
-
-<user>
-Покажи что узнал
-</user>
-"""
-        await self.llm_chat_repo.create_message(
-            chat_id=chat_id,
-            role="user",
-            text=f'{{"message_to_llm": {message_to_llm}}}'
-        )
-
-        llm_response_json, generate_cost = await self.get_llm_response(
-            dialog_manager=dialog_manager,
-            chat_id=chat_id,
-            enable_web_search=False
         )
 
         return llm_response_json
