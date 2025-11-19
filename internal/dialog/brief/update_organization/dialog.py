@@ -1,7 +1,7 @@
 from aiogram_dialog import Window, Dialog
 from aiogram_dialog.widgets.input import MessageInput
 from aiogram_dialog.widgets.text import Const, Format, Multi
-from aiogram_dialog.widgets.kbd import Button, Row, Back
+from aiogram_dialog.widgets.kbd import Button, Row, Back, Column
 from sulguk import SULGUK_PARSE_MODE
 
 from internal import interface, model
@@ -47,7 +47,7 @@ class UpdateOrganizationDialog(interface.IUpdateOrganizationDialog):
                 sep="",
             ),
 
-            Row(
+            Column(
                 Button(
                     Const("▶️ Начать обновление"),
                     id="start_update",
