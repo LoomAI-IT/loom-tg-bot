@@ -44,7 +44,7 @@ class OrganizationMenuDialog(interface.IOrganizationMenuDialog):
                     on_click=self.organization_menu_service.handle_go_to_update_category,
                 ),
                 Button(
-                    Const("⚙️ Настройка пользователей"),
+                    Const("⚙️ Настройка сотрудников"),
                     id="user_settings",
                     on_click=self.organization_menu_service.handle_go_to_employee_settings,
                 ),
