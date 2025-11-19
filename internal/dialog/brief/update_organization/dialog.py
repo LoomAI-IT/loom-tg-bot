@@ -1,7 +1,7 @@
 from aiogram_dialog import Window, Dialog
 from aiogram_dialog.widgets.input import MessageInput
 from aiogram_dialog.widgets.text import Const, Format, Multi
-from aiogram_dialog.widgets.kbd import Button, Row, Back
+from aiogram_dialog.widgets.kbd import Button, Row, Back, Column
 from sulguk import SULGUK_PARSE_MODE
 
 from internal import interface, model
@@ -21,9 +21,47 @@ class UpdateOrganizationDialog(interface.IUpdateOrganizationDialog):
 
     def get_dialog(self) -> Dialog:
         return Dialog(
+            self.get_intro_organization_window(),
             self.get_update_organization_window(),
             self.get_confirm_cancel_window(),
             self.get_organization_result_window(),
+        )
+
+    def get_intro_organization_window(self) -> Window:
+        return Window(
+            Multi(
+                Const("🏢 <b>Обновление профиля организации</b><br><br>"),
+                Const("💡 <b>Что вас ждет:</b><br>"),
+                Const("Loom поможет вам обновить настройки организации через дружественный диалог. Вы сможете изменить любые параметры профиля.<br><br>"),
+                Const("📝 <b>Что можно обновить:</b><br>"),
+                Const("• Название компании<br>"),
+                Const("• Стиль общения (tone of voice)<br>"),
+                Const("• Продукты и услуги (добавить, изменить, удалить)<br>"),
+                Const("• Ограничения контента и правила бренда<br>"),
+                Const("• Регион и язык<br>"),
+                Const("• Дополнительная информация<br><br>"),
+                Const("🎯 <b>Зачем это нужно:</b><br>"),
+                Const("Точные настройки организации помогают Loom генерировать контент, который идеально соответствует вашему бренду, стилю общения и требованиям.<br><br>"),
+                Const("📋 <b>Как это работает:</b><br>"),
+                Const("Loom покажет текущие данные профиля, вы скажете что хотите изменить, подтвердите обновления — и готово!<br>"),
+                sep="",
+            ),
+
+            Column(
+                Button(
+                    Const("▶️ Начать обновление"),
+                    id="start_update",
+                    on_click=self.update_organization_service.handle_start_update,
+                ),
+                Button(
+                    Const("🏠 В главное меню"),
+                    id="cancel_to_main_menu",
+                    on_click=self.update_organization_service.handle_go_to_main_menu,
+                ),
+            ),
+
+            state=model.UpdateOrganizationStates.intro_organization,
+            parse_mode=SULGUK_PARSE_MODE,
         )
 
     def get_update_organization_window(self) -> Window:

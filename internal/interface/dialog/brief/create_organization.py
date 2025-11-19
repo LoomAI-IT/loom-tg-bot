@@ -45,7 +45,7 @@ class ICreateOrganizationService(Protocol):
         pass
 
     @abstractmethod
-    async def go_to_create_category(
+    async def go_to_select_category(
             self,
             callback: CallbackQuery,
             button: Button,

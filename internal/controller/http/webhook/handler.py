@@ -61,6 +61,28 @@ class TelegramWebhookController(interface.ITelegramWebhookController):
             allowed_updates=["message", "callback_query"],
         )
 
+        # Устанавливаем короткое описание бота (показывается под именем)
+        await self.bot.set_my_short_description(
+            short_description="AI SMM инструмент для снижения затрат на рутину. От голосового сообщения до поста в соцсетях за минуты."
+        )
+
+        # Устанавливаем полное описание бота (показывается на странице бота)
+        await self.bot.set_my_description(
+            description=(
+                "👋 Добро пожаловать в Loom\n\n"
+                "AI SMM инструмент для снижения затрат на рутину.\n\n"
+                "Сотрудник говорит голосом:\n"
+                "«У нас крутой кейс с клиентом, проект сделали за неделю!»\n\n"
+                "Через минуты получаете:\n"
+                "✍️ Текст в стиле бренда\n"
+                "🎨 Картинку под рубрику\n"
+                "📱 Пост для всех соцсетей\n\n"
+                "Вместо: ⏱ 2-3 часа работы SMM\n"
+                "Получаете: ⚡️ 5 минут на команду\n\n"
+                "Нажмите /start чтобы начать!"
+            )
+        )
+
     @auto_log()
     @traced_method()
     async def notify_employee_added(
@@ -83,11 +105,12 @@ class TelegramWebhookController(interface.ITelegramWebhookController):
             organization_id=body.organization_id
         )
 
-        await self.bot.send_message(
-            chat_id=user_state.tg_chat_id,
-            text=self._format_notification_message(body),
-            parse_mode="HTML"
-        )
+        if body.employee_name != "admin":
+            await self.bot.send_message(
+                chat_id=user_state.tg_chat_id,
+                text=self._format_notification_message(body),
+                parse_mode="HTML"
+            )
 
         return JSONResponse(
             content={"status": "ok"},

@@ -24,7 +24,6 @@ class CreateOrganizationService(interface.ICreateOrganizationService):
             tel: interface.ITelemetry,
             bot: Bot,
             anthropic_client: interface.IAnthropicClient,
-            telegram_client: interface.ITelegramClient,
             create_organization_prompt_generator: interface.ICreateOrganizationPromptGenerator,
             loom_organization_client: interface.ILoomOrganizationClient,
             loom_employee_client: interface.ILoomEmployeeClient,
@@ -36,7 +35,6 @@ class CreateOrganizationService(interface.ICreateOrganizationService):
         self.logger = tel.logger()
         self.bot = bot
         self.anthropic_client = anthropic_client
-        self.telegram_client = telegram_client
         self.create_organization_prompt_generator = create_organization_prompt_generator
         self.loom_organization_client = loom_organization_client
         self.loom_employee_client = loom_employee_client
@@ -56,13 +54,13 @@ class CreateOrganizationService(interface.ICreateOrganizationService):
         self._organization_manager = OrganizationManager(
             loom_organization_client=self.loom_organization_client,
             loom_employee_client=self.loom_employee_client,
+            loom_content_client=self.loom_content_client,
             state_repo=self.state_repo
         )
         self.llm_chat_manager = LLMChatManager(
             logger=self.logger,
             bot=self.bot,
             anthropic_client=self.anthropic_client,
-            telegram_client=self.telegram_client,
             loom_content_client=self.loom_content_client,
             create_organization_prompt_generator=self.create_organization_prompt_generator,
             llm_chat_repo=self.llm_chat_repo,
@@ -89,30 +87,15 @@ class CreateOrganizationService(interface.ICreateOrganizationService):
                     chat_id=chat_id,
                 )
 
-            if llm_response_json.get("telegram_channel_username"):
-                telegram_channel_username = llm_response_json["telegram_channel_username"]
-
-                # Сохраняем промежуточный ответ ассистента для правильного кэширования
-                await self.llm_chat_manager.save_llm_response(
-                    chat_id=chat_id,
-                    llm_response_json=llm_response_json
-                )
-
-                async with tg_action(self.bot, message.chat.id):
-                    llm_response_json = await self.llm_chat_manager.process_telegram_channel(
-                        dialog_manager=dialog_manager,
-                        chat_id=chat_id,
-                        telegram_channel_username=telegram_channel_username
-                    )
-
             if llm_response_json.get("organization_data"):
                 organization_data = llm_response_json["organization_data"]
 
-                _ = await self._organization_manager.create_organization_and_admin(
-                    state_id=state.id,
-                    account_id=state.account_id,
-                    organization_data=organization_data
-                )
+                async with tg_action(self.bot, message.chat.id):
+                    _ = await self._organization_manager.create_organization_and_admin_and_categories(
+                        state_id=state.id,
+                        account_id=state.account_id,
+                        organization_data=organization_data
+                    )
 
                 await dialog_manager.switch_to(state=model.CreateOrganizationStates.organization_created)
                 return
@@ -149,7 +132,7 @@ class CreateOrganizationService(interface.ICreateOrganizationService):
 
     @auto_log()
     @traced_method()
-    async def go_to_create_category(
+    async def go_to_select_category(
             self,
             callback: CallbackQuery,
             button: Button,
@@ -159,14 +142,8 @@ class CreateOrganizationService(interface.ICreateOrganizationService):
 
         await callback.answer()
 
-        state = await self.state_manager.get_state(dialog_manager)
-
-        chat = await self.llm_chat_repo.get_chat_by_state_id(state.id)
-        if chat:
-            await self.llm_chat_repo.delete_chat(chat[0].id)
-
         await dialog_manager.start(
-            state=model.CreateCategoryStates.create_category,
+            state=model.GeneratePublicationStates.select_category,
             mode=StartMode.RESET_STACK
         )
 

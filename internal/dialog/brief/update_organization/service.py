@@ -126,6 +126,24 @@ class UpdateOrganizationService(interface.IUpdateOrganizationService):
 
     @auto_log()
     @traced_method()
+    async def handle_start_update(
+            self,
+            callback: CallbackQuery,
+            button: Button,
+            dialog_manager: DialogManager
+    ) -> None:
+        dialog_manager.show_mode = ShowMode.EDIT
+        await callback.answer()
+        state = await self.state_manager.get_state(dialog_manager)
+
+        chat = await self.llm_chat_repo.get_chat_by_state_id(state.id)
+        if chat:
+            await self.llm_chat_repo.delete_chat(chat_id=chat[0].id)
+
+        await dialog_manager.switch_to(state=model.UpdateOrganizationStates.update_organization)
+
+    @auto_log()
+    @traced_method()
     async def handle_go_to_main_menu(
             self,
             callback: CallbackQuery,

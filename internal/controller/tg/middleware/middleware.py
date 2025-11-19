@@ -86,7 +86,7 @@ class TgMiddleware(interface.ITelegramMiddleware):
 
         # Определяем состояние для запуска на основе данных пользователя
         if user_state.organization_id == 0 and user_state.account_id == 0:
-            target_state = model.IntroStates.user_agreement
+            target_state = model.IntroStates.welcome
             self.logger.info(f"Восстанавливаем в состояние авторизации для пользователя")
         elif user_state.organization_id == 0 and user_state.account_id != 0:
             target_state = model.IntroStates.intro

@@ -21,17 +21,43 @@ class IntroDialog(interface.IIntroDialog):
 
     def get_dialog(self) -> Dialog:
         return Dialog(
+            self.get_welcome_window(),
             self.get_user_agreement_window(),
             self.get_privacy_policy_window(),
             self.get_data_processing_window(),
             self.get_intro_window(),
-            self.get_join_to_organization_window(),
+        )
+
+    def get_welcome_window(self) -> Window:
+        return Window(
+            Const("👋 <b>Добро пожаловать в Loom</b><br><br>"),
+            Const("AI SMM инструмент<br>"),
+            Const("для снижения затрат на рутину.<br><br>"),
+            Const("<b>Как это работает:</b><br><br>"),
+            Const("Сотрудник говорит голосом 🎤<br>"),
+            Const("<blockquote>\"У нас крутой кейс с клиентом,<br>"),
+            Const("проект сделали за неделю!\"</blockquote><br><br>"),
+            Const("Через пару минут получаете:<br>"),
+            Const("✍️ Текст в стиле бренда<br>"),
+            Const("🎨 Картинку под рубрику<br>"),
+            Const("📱 Пост для всех соцсетей<br><br>"),
+            Const("<b>Вместо:</b> ⏱ 2-3 часа работы SMM<br>"),
+            Const("<b>Получаете:</b> ⚡️ 5 минут на команду<br><br>"),
+            Const("Больше контента.<br>"),
+            Const("Меньше времени.<br>"),
+            Const("Меньше бюджета. 💰"),
+            Button(
+                Const("Продолжить ➡️"),
+                id="continue_to_agreements",
+                on_click=lambda c, b, d: d.switch_to(model.IntroStates.user_agreement, ShowMode.EDIT),
+            ),
+            state=model.IntroStates.welcome,
+            parse_mode=SULGUK_PARSE_MODE,
         )
 
     def get_user_agreement_window(self) -> Window:
         return Window(
             Const("📋 <b>1/3 Перед началом работы необходимо принять пользовательское соглашение:</b><br>"),
-            Format("{user_agreement_link}"),
             Url(
                 Const("📖 Читать соглашение"),
                 Format("{user_agreement_link}"),
@@ -49,7 +75,6 @@ class IntroDialog(interface.IIntroDialog):
     def get_privacy_policy_window(self) -> Window:
         return Window(
             Const("🔒 <b>2/3 Перед началом работы необходимо принять политику конфиденциальности:</b><br>"),
-            Format("{privacy_policy_link}"),
             Url(
                 Const("📖 Читать политику"),
                 Format("{privacy_policy_link}"),
@@ -68,7 +93,6 @@ class IntroDialog(interface.IIntroDialog):
     def get_data_processing_window(self) -> Window:
         return Window(
             Const("📊 <b>3/3 Перед началом работы необходимо принять согласие на обработку персональных данных:</b><br>"),
-            Format("{data_processing_link}"),
             Url(
                 Const("📖 Читать согласие"),
                 Format("{data_processing_link}"),
@@ -86,32 +110,27 @@ class IntroDialog(interface.IIntroDialog):
 
     def get_intro_window(self) -> Window:
         return Window(
-            Const("Перед переходом к работе с контентом, выбери"),
+            Const("🚀 <b>Начало работы с Loom</b><br><br>"),
+            Const("Выберите сценарий:<br><br>"),
+            Const("📋 <b>Сценарий 1: Внедрение Loom</b><br>"),
+            Const("Если вы руководитель или владелец бизнеса,<br>"),
+            Const("пройдите бриф создания организации.<br><br>"),
+            Const("Мы зададим вопросы про вашу деятельность,<br>"),
+            Const("чтобы AI понял специфику компании<br>"),
+            Const("Это займёт 5 минут.<br><br>"),
+            Const("👥 <b>Сценарий 2: Приглашение от руководителя</b><br>"),
+            Const("Если вас пригласил руководитель,<br>"),
+            Const("отправьте ему ваш ID:<br><br>"),
+            Format("<b>Ваш ID:</b> <code>{account_id}</code><br><br>"),
+            Const("После добавления в организацию<br>"),
+            Const("вы получите уведомление.<br>"),
             Button(
-                Const("Вступить в организацию"),
-                id="join_to_organization",
-                on_click=lambda c, b, d: d.switch_to(model.IntroStates.join_to_organization, ShowMode.EDIT),
-            ),
-            Button(
-                Const("Создать организацию"),
+                Const("📋 Пройти бриф создания организации"),
                 id="create_organization",
                 on_click=self.intro_service.go_to_create_organization
             ),
             state=model.IntroStates.intro,
-            getter=self.intro_getter.get_agreement_data,
-            parse_mode=SULGUK_PARSE_MODE,
-        )
-
-    def get_join_to_organization_window(self) -> Window:
-        return Window(
-            Format("Ваш ID: <code>{account_id}</code><br><br>"),
-            Const("Отправьте его тому, кто пригласил вас в Loom"),
-            Button(
-                Const("Назад"),
-                id="contact_support",
-                on_click=lambda c, b, d: d.switch_to(model.IntroStates.intro, ShowMode.EDIT),
-            ),
-            state=model.IntroStates.join_to_organization,
             getter=self.intro_getter.get_user_status,
             parse_mode=SULGUK_PARSE_MODE,
         )
+
