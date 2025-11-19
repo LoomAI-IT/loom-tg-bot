@@ -70,7 +70,8 @@ ultrathink
 
         llm_response_json, generate_cost = await self.get_llm_response(
             dialog_manager=dialog_manager,
-            chat_id=chat_id
+            chat_id=chat_id,
+            enable_web_search=True
         )
 
         return llm_response_json
@@ -92,7 +93,7 @@ ultrathink
             chat_id: int,
             max_tokens: int = 15000,
             thinking_tokens: int = 10000,
-            enable_web_search: bool = True
+            enable_web_search: bool = False
     ) -> tuple[dict, dict]:
         messages = await self.llm_chat_repo.get_all_messages(chat_id)
         history = []

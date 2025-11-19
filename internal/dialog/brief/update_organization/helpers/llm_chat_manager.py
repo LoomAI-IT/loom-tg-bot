@@ -72,7 +72,8 @@ ultrathink
         llm_response_json, generate_cost = await self.get_llm_response(
             dialog_manager=dialog_manager,
             chat_id=chat_id,
-            organization_id=organization_id
+            organization_id=organization_id,
+            enable_web_search=True
         )
 
         return llm_response_json
