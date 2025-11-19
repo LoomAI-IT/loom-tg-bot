@@ -105,13 +105,6 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                         Const("📝 <b>Создание контента</b><br><br>"),
                         Format("{category_hint}<br><br>"),
                         Const("💬 <i>Отправьте текст или голосовое сообщение — я превращу их в готовый контент</i><br>"),
-                        Case(
-                            {
-                                True: Format("<br>📄 <b>Ваш текст:</b><br><i>{generate_text_prompt}</i>"),
-                                False: Const(""),
-                            },
-                            selector="has_generate_text_prompt"
-                        ),
                         # Text input error messages
                         Case(
                             {
@@ -1337,13 +1330,6 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                         ),
                     },
                     selector="is_applying_edits"
-                ),
-                Case(
-                    {
-                        True: Format("<br>📝 <b>Ваши правки:</b><br><i>{edit_image_prompt}</i>"),
-                        False: Const(""),
-                    },
-                    selector="has_edit_image_prompt"
                 ),
                 Case(
                     {

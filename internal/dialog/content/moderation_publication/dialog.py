@@ -1051,13 +1051,6 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
                 ),
                 Case(
                     {
-                        True: Format("<br>📝 <b>Ваши правки:</b><br><i>{edit_image_prompt}</i>"),
-                        False: Const(""),
-                    },
-                    selector="has_edit_image_prompt"
-                ),
-                Case(
-                    {
                         True: Const("<br>🔄 <b>Распознаю голосовое сообщение...</b>"),
                         False: Const(""),
                     },
