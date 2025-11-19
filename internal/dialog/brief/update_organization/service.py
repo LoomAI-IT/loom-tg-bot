@@ -126,6 +126,19 @@ class UpdateOrganizationService(interface.IUpdateOrganizationService):
 
     @auto_log()
     @traced_method()
+    async def handle_start_update(
+            self,
+            callback: CallbackQuery,
+            button: Button,
+            dialog_manager: DialogManager
+    ) -> None:
+        dialog_manager.show_mode = ShowMode.EDIT
+        await callback.answer()
+
+        await dialog_manager.switch_to(state=model.UpdateOrganizationStates.update_organization)
+
+    @auto_log()
+    @traced_method()
     async def handle_go_to_main_menu(
             self,
             callback: CallbackQuery,

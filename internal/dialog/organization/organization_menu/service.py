@@ -73,7 +73,7 @@ class OrganizationMenuService(interface.IOrganizationMenuService):
         # await self._chat_manager.clear_chat(state.id)
         #
         # await dialog_manager.start(
-        #     model.UpdateOrganizationStates.update_organization,
+        #     model.UpdateOrganizationStates.intro_organization,
         #     mode=StartMode.RESET_STACK
         # )
 
