@@ -6,6 +6,7 @@ from aiogram import Bot
 from aiogram.types import CallbackQuery, Message
 from aiogram_dialog import DialogManager, StartMode
 from aiogram_dialog.widgets.kbd import ManagedCheckbox, Button
+from sulguk import SULGUK_PARSE_MODE
 
 from internal import interface, model
 from pkg.log_wrapper import auto_log
@@ -183,8 +184,15 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         await callback.answer()
         await callback.message.edit_text(
-            "Генерирую текст, это может занять время... Не совершайте никаких действий",
-            reply_markup=None
+            "⏳ <b>Генерирую текст публикации</b><br><br>"
+            "💡 Качество зависит от настроек рубрики и профиля организации<br><br>"
+            "<i>Если результат не устраивает, донастройте:</i><br>"
+            "• Цель и тон рубрики<br>"
+            "• Описание компании и продуктов<br>"
+            "• Правила бренда<br><br>"
+            "📍 Главное меню → Меню организации → Обновить рубрику/организацию",
+            reply_markup=None,
+            parse_mode=SULGUK_PARSE_MODE
         )
 
         async with tg_action(self.bot, callback.message.chat.id):
@@ -214,8 +222,16 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         await callback.answer()
         await callback.message.edit_text(
-            "Генерирую текст с картинкой, это может занять минуты 3. Не совершайте никаких действий...",
-            reply_markup=None
+            "⏳ <b>Генерирую текст и изображение</b><br><br>"
+            "💡 <b>Качество зависит от настроек рубрики и профиля организации</b><br><br>"
+            "<i>Если результат не устраивает, донастройте:</i><br>"
+            "• Цель и тон рубрики<br>"
+            "• Описание компании и продуктов<br>"
+            "• Правила бренда<br><br>"
+            "📍 <b>Главное меню → Меню организации → Обновить рубрику/организацию</b>"
+            ,
+            reply_markup=None,
+            parse_mode=SULGUK_PARSE_MODE
         )
 
         async with tg_action(self.bot, callback.message.chat.id):
@@ -594,8 +610,10 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         await callback.answer()
         await callback.message.edit_text(
-            "Сжимаю текст, это может занять время... Не совершайте никаких действий",
-            reply_markup=None
+            "⏳ <b>Сжимаю текст до нужной длины</b><br><br>"
+            "✂️ AI сокращает текст, сохраняя ключевые мысли<br><br>",
+            reply_markup=None,
+            parse_mode=SULGUK_PARSE_MODE
         )
 
         async with tg_action(self.bot, callback.message.chat.id):
@@ -1055,8 +1073,12 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         await callback.answer()
         # TODO сделать через  show()
         await callback.message.edit_text(
-            "Генерирую изображение, это может занять время... Не совершайте никаких действий",
-            reply_markup=None
+            "🎨 AI создаёт изображение на основе текста публикации<br><br>"
+            "💡 Качество зависит от стиля изображения рубрики<br><br>"
+            "<i>Если результат не устраивает, донастройте стиль изображения:</i><br>"
+            "📍 Главное меню → Меню организации → Обновить рубрику",
+            reply_markup=None,
+            parse_mode=SULGUK_PARSE_MODE
         )
 
         async with tg_action(self.bot, callback.message.chat.id, "upload_photo"):
