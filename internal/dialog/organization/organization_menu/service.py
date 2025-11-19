@@ -59,23 +59,19 @@ class OrganizationMenuService(interface.IOrganizationMenuService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        await callback.answer("В разработке", show_alert=True)
-        return
-        # self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
-        #
-        # state = await self.state_manager.get_state(dialog_manager)
-        #
-        # if not await self.permission_checker.check_update_organization_permission(state, callback):
-        #     return
-        #
-        # await callback.answer()
-        #
-        # await self._chat_manager.clear_chat(state.id)
-        #
-        # await dialog_manager.start(
-        #     model.UpdateOrganizationStates.intro_organization,
-        #     mode=StartMode.RESET_STACK
-        # )
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
+
+        state = await self.state_manager.get_state(dialog_manager)
+
+        if not await self.permission_checker.check_update_organization_permission(state, callback):
+            return
+
+        await callback.answer()
+
+        await dialog_manager.start(
+            model.UpdateOrganizationStates.intro_organization,
+            mode=StartMode.RESET_STACK
+        )
 
     @auto_log()
     @traced_method()
