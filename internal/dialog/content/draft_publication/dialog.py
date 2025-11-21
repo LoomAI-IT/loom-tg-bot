@@ -1066,7 +1066,7 @@ class DraftPublicationDialog(interface.IDraftPublicationDialog):
                     },
                     selector="has_multiple_combine_images"
                 ),
-                Const("📷 <i>Отправьте изображения (максимум 3)</i><br>"),
+                Const("📷 <i>Отправьте изображения (максимум 14)</i><br>"),
                 Const("💡 <i>После загрузки всех изображений нажмите \"Далее\"</i><br>"),
                 # Error messages
                 Case(
@@ -1086,7 +1086,7 @@ class DraftPublicationDialog(interface.IDraftPublicationDialog):
                 ),
                 Case(
                     {
-                        True: Const("<br>⚠️ <b>Достигнут лимит</b><br><i>Максимум 3 изображения</i>"),
+                        True: Const("<br>⚠️ <b>Достигнут лимит</b><br><i>Максимум 14 изображения</i>"),
                         False: Const(""),
                     },
                     selector="combine_images_limit_reached"
