@@ -1064,7 +1064,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                 Const("📤 <b>Загрузка изображений</b><br><br>"),
                 Case(
                     {
-                        True: Format("🖼️ <b>Изображений загружено: {combine_images_count} из 3</b><br>"),
+                        True: Format("🖼️ <b>Изображений загружено: {combine_images_count} из 14</b><br>"),
                         False: Const(""),
                     },
                     selector="has_combine_images"
@@ -1077,7 +1077,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                     },
                     selector="has_multiple_combine_images"
                 ),
-                Const("📷 <i>Отправьте изображения (максимум 3)</i><br>"),
+                Const("📷 <i>Отправьте изображения (максимум 14)</i><br>"),
                 Const("💡 <i>После загрузки всех изображений нажмите \"Далее\"</i>"),
                 # Error messages
                 Case(
@@ -1097,7 +1097,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                 ),
                 Case(
                     {
-                        True: Const("<br>⚠️ <b>Достигнут лимит</b><br><i>Максимум 3 изображения</i>"),
+                        True: Const("<br>⚠️ <b>Достигнут лимит</b><br><i>Максимум 14 изображения</i>"),
                         False: Const(""),
                     },
                     selector="combine_images_limit_reached"
