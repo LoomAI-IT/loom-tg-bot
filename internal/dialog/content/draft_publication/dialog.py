@@ -1061,7 +1061,7 @@ class DraftPublicationDialog(interface.IDraftPublicationDialog):
                 Case(
                     {
                         True: Format(
-                            "<br>📍 <b>Сейчас показано:</b> изображение {combine_current_index} из {combine_images_count}"),
+                            "<br>📍 <b>Сейчас показано:</b> изображение {combine_current_index} из {combine_images_count}<br>"),
                         False: Const(""),
                     },
                     selector="has_multiple_combine_images"
