@@ -642,7 +642,7 @@ class ModerationPublicationService(interface.IModerationPublicationService):
 
         combine_images_list = self.dialog_data_helper.get_combine_images_list(dialog_manager)
 
-        if len(combine_images_list) >= 3:
+        if len(combine_images_list) >= 14:
             self.dialog_data_helper.set_validation_flag(dialog_manager, "combine_images_limit_reached")
             return
 

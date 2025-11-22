@@ -667,4 +667,13 @@ class ImageManager:
 
                     return file_id
 
+            # Проверяем оригинальное изображение публикации
+            image_url = working_pub.get("image_url")
+            if image_url:
+                file_id = await self.download_and_get_file_id(
+                    image_url=image_url,
+                    chat_id=chat_id
+                )
+                return file_id
+
         return None
