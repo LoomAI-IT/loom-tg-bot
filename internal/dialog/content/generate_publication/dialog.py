@@ -48,7 +48,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
     def get_select_category_window(self) -> Window:
         return Window(
             StaticMedia(
-                path="../../helpers/images/select_category.jpeg",
+                path="internal/dialog/helpers/images/select_category.jpeg",
             ),
 
             Multi(
