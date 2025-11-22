@@ -3,7 +3,7 @@ from aiogram_dialog import Window, Dialog, ShowMode
 from aiogram_dialog.widgets.text import Const, Format, Multi, Case
 from aiogram_dialog.widgets.kbd import Button, Column, Row, Back, Select, Checkbox
 from aiogram_dialog.widgets.input import TextInput, MessageInput
-from aiogram_dialog.widgets.media import DynamicMedia
+from aiogram_dialog.widgets.media import DynamicMedia, StaticMedia
 from sulguk import SULGUK_PARSE_MODE
 
 from internal import interface, model
@@ -47,15 +47,11 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
 
     def get_select_category_window(self) -> Window:
         return Window(
+            StaticMedia(
+                path="../../helpers/images/select_category.jpeg",
+            ),
+
             Multi(
-                Const("🎯 <b>Выберите рубрику для генерации контента</b><br><br>"),
-                Const("💡 <b>Что такое рубрика?</b><br>"),
-                Const("Рубрика — это раздел контента с определёнными правилами: стиль, тон, длина поста, целевая аудитория и призывы к действию.<br><br>"),
-                Const("✨ <b>Зачем создавать свои рубрики?</b><br>"),
-                Const("• Каждая рубрика решает конкретную задачу бизнеса<br>"),
-                Const("• Контент создаётся под определённый сегмент вашей аудитории<br>"),
-                Const("• Единый стиль и тон для каждого типа публикаций<br>"),
-                Const("• Автоматическое соблюдение правил бренда<br><br>"),
                 Case(
                     {
                         True: Const("📋 <b>Доступные рубрики:</b>"),
