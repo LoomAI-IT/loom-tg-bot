@@ -1150,7 +1150,7 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
                             Const("💡 <b>Выберите действие:</b>"),
                         ),
                         False: Multi(
-                            Const("📤 <i>Загрузите от 2 до 3 изображений для объединения</i>"),
+                            Const("📤 <i>Загрузите от 2 до 14 изображений для объединения</i>"),
                         ),
                     },
                     selector="has_image"
@@ -1190,7 +1190,7 @@ class ModerationPublicationDialog(interface.IModerationPublicationDialog):
                 Const("📤 <b>Загрузка изображений</b><br><br>"),
                 Case(
                     {
-                        True: Format("🖼️ <b>Изображений загружено: {combine_images_count} из 3</b><br>"),
+                        True: Format("🖼️ <b>Изображений загружено: {combine_images_count} из 14</b><br>"),
                         False: Const(""),
                     },
                     selector="has_combine_images"
