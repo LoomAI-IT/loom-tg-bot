@@ -54,7 +54,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             Multi(
                 Case(
                     {
-                        True: Const("📋 <b>Доступные рубрики:</b>"),
+                        True: Const(""),
                         False: Multi(
                             Const("🚫 <b>Рубрики не созданы</b><br>"),
                             Const("💡 <i>Обратитесь к администратору для создания рубрик</i>"),
