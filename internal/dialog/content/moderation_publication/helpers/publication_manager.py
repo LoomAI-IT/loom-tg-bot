@@ -320,7 +320,7 @@ class PublicationManager:
         working_pub = self.dialog_data_helper.get_working_publication(dialog_manager)
         category_id = working_pub["category_id"]
 
-        combined_images_url = await self.loom_content_client.combine_images(
+        urls, _ = await self.loom_content_client.combine_images(
             organization_id=organization_id,
             category_id=category_id,
             images_content=images_content,
@@ -328,4 +328,4 @@ class PublicationManager:
             prompt=prompt,
         )
 
-        return combined_images_url[0] if combined_images_url else None
+        return urls[0] if urls else None

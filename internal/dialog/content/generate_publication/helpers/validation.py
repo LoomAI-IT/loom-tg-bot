@@ -20,7 +20,7 @@ class ValidationService:
     MAX_EDITED_TEXT_LENGTH = 4000
 
     MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024
-    MAX_COMBINE_IMAGES = 3
+    MAX_COMBINE_IMAGES = 14
     MIN_COMBINE_IMAGES = 2
 
     # Константы для валидации длины публикационного текста
