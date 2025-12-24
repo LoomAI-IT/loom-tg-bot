@@ -37,6 +37,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             self.get_edit_text_window(),
             self.get_upload_image_window(),
             self.get_new_image_confirm_window(),
+            self.get_image_generation_error_window(),
             self.get_combine_images_choice_window(),
             self.get_combine_images_upload_window(),
             self.get_combine_images_prompt_window(),
@@ -491,6 +492,15 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                         False: Const(""),
                     },
                     selector="has_no_image_edit_result"
+                ),
+                Case(
+                    {
+                        True: Const(
+                            "<br>⚠️ <b>Нейросеть не смогла сгенерировать изображение.</b><br>"
+                            "💡 <i>Попробуйте изменить текст публикации или настройки стиля в рубрике.</i>"),
+                        False: Const(""),
+                    },
+                    selector="has_no_image_generation_result"
                 ),
                 Case(
                     {
@@ -1429,6 +1439,32 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
 
             state=model.GeneratePublicationStates.new_image_confirm,
             getter=self.generate_publication_getter.get_new_image_confirm_data,
+            parse_mode=SULGUK_PARSE_MODE,
+        )
+
+    def get_image_generation_error_window(self) -> Window:
+        return Window(
+            Multi(
+                Const("⚠️ <b>Не удалось сгенерировать изображение</b><br><br>"),
+                Const("💡 <b>Что произошло?</b><br>"),
+                Const("Нейросеть не смогла создать изображение на основе текста публикации.<br><br>"),
+                Const("🔧 <b>Что можно сделать:</b><br>"),
+                Const("• Продолжить с текстом без изображения<br>"),
+                Const("• Изменить настройки стиля изображения в рубрике<br>"),
+                Const("• Изменить текст публикации<br><br>"),
+                Const("📍 <i>Настройки стиля: Главное меню → Меню организации → Обновить рубрику</i>"),
+                sep="",
+            ),
+
+            Column(
+                Button(
+                    Const("📝 Перейти к тексту"),
+                    id="go_to_text_from_error",
+                    on_click=self.generate_publication_service.handle_go_to_text_from_generation_error,
+                ),
+            ),
+
+            state=model.GeneratePublicationStates.image_generation_error,
             parse_mode=SULGUK_PARSE_MODE,
         )
 

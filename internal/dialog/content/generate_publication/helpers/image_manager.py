@@ -364,11 +364,16 @@ class ImageManager:
         publication_text = self.dialog_data_helper.get_publication_text(dialog_manager)
         generate_text_prompt = self.dialog_data_helper.get_generate_text_prompt(dialog_manager)
 
-        images_url = await self.loom_content_client.generate_publication_image(
+        images_url, has_no_data = await self.loom_content_client.generate_publication_image(
             category_id=category_id,
             publication_text=publication_text,
             text_reference=generate_text_prompt,
         )
+
+        # Если нейросеть не стала генерировать изображение
+        if has_no_data:
+            self.dialog_data_helper.set_has_no_image_generation_result(dialog_manager, True)
+            return []
 
         return images_url
 
@@ -423,7 +428,7 @@ class ImageManager:
             image_content = image_io.read()
             image_filename = f"{reference_generation_image_file_id}.jpg"
 
-        images_url = await self.loom_content_client.generate_publication_image(
+        images_url, has_no_data = await self.loom_content_client.generate_publication_image(
             category_id=category_id,
             publication_text=publication_text,
             text_reference=generate_text_prompt,
@@ -431,6 +436,11 @@ class ImageManager:
             image_content=image_content,
             image_filename=image_filename,
         )
+
+        # Если нейросеть не стала генерировать изображение
+        if has_no_data:
+            self.dialog_data_helper.set_has_no_image_generation_result(dialog_manager, True)
+            return []
 
         return images_url
 

@@ -240,7 +240,13 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         async with tg_action(self.bot, callback.message.chat.id, "upload_photo"):
             images_url = await self.image_manager.generate_new_image(dialog_manager)
-            self.dialog_data_helper.set_new_publication_image(dialog_manager, images_url, 0)
+
+        # Проверка ошибки генерации изображения
+        if self.dialog_data_helper.get_has_no_image_generation_result(dialog_manager):
+            await dialog_manager.switch_to(state=model.GeneratePublicationStates.image_generation_error)
+            return
+
+        self.dialog_data_helper.set_new_publication_image(dialog_manager, images_url, 0)
 
         if await self.text_processor.check_text_length_with_image(dialog_manager=dialog_manager):
             return
@@ -1087,6 +1093,12 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             )
 
         self.dialog_data_helper.set_is_generating_image(dialog_manager, False)
+
+        # Проверка ошибки генерации изображения
+        if self.dialog_data_helper.get_has_no_image_generation_result(dialog_manager):
+            await dialog_manager.switch_to(state=model.GeneratePublicationStates.image_menu)
+            return
+
         self.dialog_data_helper.set_generated_images_url(dialog_manager, images_url)
 
         await dialog_manager.switch_to(state=model.GeneratePublicationStates.new_image_confirm)
@@ -1154,6 +1166,13 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             )
 
         self.dialog_data_helper.set_is_generating_image(dialog_manager, False)
+
+        # Проверка ошибки генерации изображения
+        if self.dialog_data_helper.get_has_no_image_generation_result(dialog_manager):
+            self.dialog_data_helper.clear_reference_generation_image_data(dialog_manager)
+            await dialog_manager.switch_to(state=model.GeneratePublicationStates.image_menu)
+            return
+
         self.dialog_data_helper.set_generated_images_url(dialog_manager, images_url)
         self.dialog_data_helper.clear_reference_generation_image_data(dialog_manager)
 
@@ -1227,3 +1246,19 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             await dialog_manager.switch_to(state=model.GeneratePublicationStates.reference_image_generation)
         else:
             await callback.answer("Ошибка при загрузке изображения", show_alert=True)
+
+    @auto_log()
+    @traced_method()
+    async def handle_go_to_text_from_generation_error(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None:
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, edit=True)
+
+        # Очищаем флаг ошибки перед переходом
+        self.dialog_data_helper.set_has_no_image_generation_result(dialog_manager, False)
+
+        await callback.answer()
+        await dialog_manager.switch_to(state=model.GeneratePublicationStates.preview)

@@ -133,7 +133,7 @@ class LoomContentClient(interface.ILoomContentClient):
             prompt: str = None,
             image_content: bytes = None,
             image_filename: str = None,
-    ) -> list[str]:
+    ) -> tuple[list[str] | None, bool]:
         data = {
             "category_id": category_id,
             "publication_text": publication_text,
@@ -170,7 +170,12 @@ class LoomContentClient(interface.ILoomContentClient):
                     raise common.ErrInsufficientBalance()
             raise
         json_response = response.json()
-        return json_response
+
+        # Проверяем флаг no_image_data от бэкенда
+        if "no_image_data" in json_response and json_response["no_image_data"]:
+            return None, True
+
+        return json_response["images_url"], False
 
     @traced_method(SpanKind.CLIENT)
     async def create_publication(

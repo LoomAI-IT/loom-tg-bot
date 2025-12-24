@@ -22,6 +22,7 @@ class GeneratePublicationStates(StatesGroup):
     reference_image_generation = State()
     reference_image_upload = State()
     new_image_confirm = State()
+    image_generation_error = State()
     upload_image = State()
 
     # Состояния объединения изображений

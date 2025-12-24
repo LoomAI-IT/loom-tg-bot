@@ -161,7 +161,7 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
         preview_image_media = self.image_manager.get_image_menu_media(dialog_manager)
         has_image = preview_image_media is not None
 
-        flags_data = self.dialog_data_helper.get_image_menu_flags(dialog_manager)
+        flags_data = self.dialog_data_helper.get_image_menu_with_generation_error_flags(dialog_manager)
 
         return {
             "has_image": has_image,
