@@ -56,7 +56,7 @@ class IGeneratePublicationDialog(Protocol):
     def get_new_image_confirm_window(self) -> Window: pass
 
     @abstractmethod
-    def get_image_generation_mode_select_window(self) -> Window: pass
+    def get_generate_image_mode_select_window(self) -> Window: pass
 
     @abstractmethod
     def get_reference_generation_image_window(self) -> Window: pass
@@ -148,6 +148,14 @@ class IGeneratePublicationService(Protocol):
             self,
             message: Message,
             widget: MessageInput,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
+    @abstractmethod
+    async def back_to_preview_from_image_menu(
+            self,
+            callback: CallbackQuery,
+            button: Any,
             dialog_manager: DialogManager
     ) -> None: pass
 
@@ -408,6 +416,14 @@ class IGeneratePublicationService(Protocol):
             dialog_manager: DialogManager
     ) -> None: pass
 
+    @abstractmethod
+    async def handle_go_to_text_from_generation_error(
+            self,
+            callback: CallbackQuery,
+            button: Any,
+            dialog_manager: DialogManager
+    ) -> None: pass
+
 
 class IGeneratePublicationGetter(Protocol):
 
@@ -486,6 +502,12 @@ class IGeneratePublicationGetter(Protocol):
 
     @abstractmethod
     async def get_new_image_confirm_data(
+            self,
+            dialog_manager: DialogManager,
+    ) -> dict: pass
+
+    @abstractmethod
+    async def get_generate_image_error_data(
             self,
             dialog_manager: DialogManager,
     ) -> dict: pass

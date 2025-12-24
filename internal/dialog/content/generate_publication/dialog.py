@@ -31,12 +31,13 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             self.get_edit_text_menu_window(),
             self.get_image_menu_window(),
             self.get_edit_image_input_window(),
-            self.get_image_generation_mode_select_window(),
+            self.get_generate_image_mode_select_window(),
             self.get_reference_generation_image_window(),
             self.get_reference_generation_image_upload_window(),
             self.get_edit_text_window(),
             self.get_upload_image_window(),
             self.get_new_image_confirm_window(),
+            self.get_generate_image_error_window(),
             self.get_combine_images_choice_window(),
             self.get_combine_images_upload_window(),
             self.get_combine_images_prompt_window(),
@@ -494,6 +495,15 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                 ),
                 Case(
                     {
+                        True: Const(
+                            "<br>⚠️ <b>Нейросеть не смогла сгенерировать изображение.</b><br>"
+                            "💡 <i>Попробуйте изменить текст публикации или настройки стиля в рубрике.</i>"),
+                        False: Const(""),
+                    },
+                    selector="has_no_generate_image_result"
+                ),
+                Case(
+                    {
                         True: Const("<br>❌ <b>Ошибка:</b> Описание не может быть пустым"),
                         False: Const(""),
                     },
@@ -540,7 +550,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                 Button(
                     Const("🎨 Сгенерировать картинку"),
                     id="goto_generate_image",
-                    on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.image_generation_mode_select,
+                    on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.generate_image_mode_select,
                                                          ShowMode.SEND),
                 ),
                 Button(
@@ -571,7 +581,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             Button(
                 Const("◀️ Назад"),
                 id="back_to_preview_from_image_menu",
-                on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.preview, ShowMode.EDIT),
+                on_click=self.generate_publication_service.back_to_preview_from_image_menu,
                 when=~F["is_generating_image"]
             ),
 
@@ -681,7 +691,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             parse_mode=SULGUK_PARSE_MODE,
         )
 
-    def get_image_generation_mode_select_window(self) -> Window:
+    def get_generate_image_mode_select_window(self) -> Window:
         return Window(
             Multi(
                 Const("<b>Что сделать с этой картинкой?</b><br><br>"),
@@ -699,7 +709,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                 Button(
                     Const("🖍 По моему запросу"),
                     id="custom_generate",
-                    on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.reference_image_generation,
+                    on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.reference_generate_image,
                                                          ShowMode.EDIT),
                 ),
             ),
@@ -710,7 +720,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                 on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.image_menu, ShowMode.EDIT),
             ),
 
-            state=model.GeneratePublicationStates.image_generation_mode_select,
+            state=model.GeneratePublicationStates.generate_image_mode_select,
             parse_mode=SULGUK_PARSE_MODE,
         )
 
@@ -842,7 +852,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                 when=~F["is_generating_image"]
             ),
 
-            state=model.GeneratePublicationStates.reference_image_generation,
+            state=model.GeneratePublicationStates.reference_generate_image,
             getter=self.generate_publication_getter.get_reference_generation_image_data,
             parse_mode=SULGUK_PARSE_MODE,
         )
@@ -876,7 +886,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             Button(
                 Const("◀️ Назад"),
                 id="back_to_custom_generation",
-                on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.reference_image_generation,
+                on_click=lambda c, b, d: d.switch_to(model.GeneratePublicationStates.reference_generate_image,
                                                      ShowMode.EDIT),
             ),
 
@@ -1429,6 +1439,38 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
 
             state=model.GeneratePublicationStates.new_image_confirm,
             getter=self.generate_publication_getter.get_new_image_confirm_data,
+            parse_mode=SULGUK_PARSE_MODE,
+        )
+
+    def get_generate_image_error_window(self) -> Window:
+        return Window(
+            Multi(
+                Const("⚠️ <b>Не удалось сгенерировать изображение</b><br><br>"),
+                Const("💡 <b>Что произошло?</b><br>"),
+                Case(
+                    {
+                        True: Const(
+                            "Нейросеть отказалась генерировать изображение из-за своих убеждений.<br>"
+                        ),
+                        False: Const(""),
+                    },
+                    selector="has_no_generate_image_result"
+                ),
+                Const("🔧 <b>Что можно сделать:</b><br>"),
+                Const("• Продолжить с текстом без изображения<br>"),
+                Const("• Попробовать еще раз — может повезет<br>"),
+            ),
+
+            Column(
+                Button(
+                    Const("📝 Перейти к тексту"),
+                    id="go_to_text_from_error",
+                    on_click=self.generate_publication_service.handle_go_to_text_from_generation_error,
+                ),
+            ),
+
+            state=model.GeneratePublicationStates.generate_image_error,
+            getter=self.generate_publication_getter.get_generate_image_error_data,
             parse_mode=SULGUK_PARSE_MODE,
         )
 

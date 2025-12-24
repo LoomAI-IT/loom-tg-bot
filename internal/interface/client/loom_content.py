@@ -52,7 +52,7 @@ class ILoomContentClient(Protocol):
             prompt: str = None,
             image_content: bytes = None,
             image_filename: str = None,
-    ) -> list[str]: pass
+    ) -> tuple[list[str] | None, bool]: pass
 
     @abstractmethod
     async def create_publication(
