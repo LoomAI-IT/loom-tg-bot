@@ -212,7 +212,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             button: Any,
             dialog_manager: DialogManager
     ) -> None:
-        self.state_manager.set_show_mode(dialog_manager=dialog_manager, send=True)
+        self.state_manager.set_show_mode(dialog_manager=dialog_manager, delete_and_send=True)
 
         state = await self.state_manager.get_state(dialog_manager=dialog_manager)
 
