@@ -18,11 +18,11 @@ class GeneratePublicationStates(StatesGroup):
     image_menu = State()
     edit_image_input = State()
     generate_image = State()
-    image_generation_mode_select = State()
-    reference_image_generation = State()
+    generate_image_mode_select = State()
+    reference_generate_image = State()
     reference_image_upload = State()
     new_image_confirm = State()
-    image_generation_error = State()
+    generate_image_error = State()
     upload_image = State()
 
     # Состояния объединения изображений

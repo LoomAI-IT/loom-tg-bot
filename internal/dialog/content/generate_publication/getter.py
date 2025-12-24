@@ -268,15 +268,15 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
 
     @auto_log()
     @traced_method()
-    async def get_image_generation_error_data(
+    async def get_generate_image_error_data(
             self,
             dialog_manager: DialogManager,
             **kwargs
     ) -> dict:
-        self.dialog_data_helper.get_has_no_image_generation_result(dialog_manager)
+        self.dialog_data_helper.get_has_no_generate_image_result(dialog_manager)
 
         return {
-            "has_no_image_generation_result": self.dialog_data_helper.get_has_no_image_generation_result(dialog_manager),
+            "has_no_generate_image_result": self.dialog_data_helper.get_has_no_generate_image_result(dialog_manager),
         }
 
     @auto_log()

@@ -372,7 +372,7 @@ class ImageManager:
 
         # Если нейросеть не стала генерировать изображение
         if has_no_data:
-            self.dialog_data_helper.set_has_no_image_generation_result(dialog_manager, True)
+            self.dialog_data_helper.set_has_no_generate_image_result(dialog_manager, True)
             return []
 
         return images_url
@@ -439,7 +439,7 @@ class ImageManager:
 
         # Если нейросеть не стала генерировать изображение
         if has_no_data:
-            self.dialog_data_helper.set_has_no_image_generation_result(dialog_manager, True)
+            self.dialog_data_helper.set_has_no_generate_image_result(dialog_manager, True)
             return []
 
         return images_url

@@ -66,7 +66,7 @@ class DialogDataHelper:
             "has_invalid_content_type": dialog_manager.dialog_data.get("has_invalid_content_type", False),
             "has_no_image_edit_result": dialog_manager.dialog_data.get("has_no_image_edit_result", False),
             # Error flag for generation
-            "has_no_image_generation_result": dialog_manager.dialog_data.get("has_no_image_generation_result", False),
+            "has_no_generate_image_result": dialog_manager.dialog_data.get("has_no_generate_image_result", False),
         }
 
     def get_upload_imagedialog_data_helper(self, dialog_manager: DialogManager) -> dict:
@@ -216,8 +216,8 @@ class DialogDataHelper:
     def get_has_no_combine_image_result(self, dialog_manager: DialogManager) -> bool:
         return dialog_manager.dialog_data.get("has_no_combine_image_result", False)
 
-    def get_has_no_image_generation_result(self, dialog_manager: DialogManager) -> bool:
-        return dialog_manager.dialog_data.get("has_no_image_generation_result", False)
+    def get_has_no_generate_image_result(self, dialog_manager: DialogManager) -> bool:
+        return dialog_manager.dialog_data.get("has_no_generate_image_result", False)
 
     # Соцсети и публикация
     def get_selected_social_networks(self, dialog_manager: DialogManager) -> dict:
@@ -255,8 +255,6 @@ class DialogDataHelper:
     def get_has_big_reference_generation_image_size(self, dialog_manager: DialogManager) -> bool:
         return dialog_manager.dialog_data.get("has_big_reference_generation_image_size", False)
 
-    def get_has_no_image_generation_result(self, dialog_manager: DialogManager) -> bool:
-        return dialog_manager.dialog_data["has_no_image_generation_result"]
     # ============= СЕТТЕРЫ ДЛЯ ЗАПИСИ ДАННЫХ =============
 
     # Категория
@@ -367,8 +365,8 @@ class DialogDataHelper:
     def set_has_no_combine_image_result(self, dialog_manager: DialogManager, value: bool) -> None:
         dialog_manager.dialog_data["has_no_combine_image_result"] = value
 
-    def set_has_no_image_generation_result(self, dialog_manager: DialogManager, value: bool) -> None:
-        dialog_manager.dialog_data["has_no_image_generation_result"] = value
+    def set_has_no_generate_image_result(self, dialog_manager: DialogManager, value: bool) -> None:
+        dialog_manager.dialog_data["has_no_generate_image_result"] = value
 
     # Соцсети и публикация
     def set_selected_social_networks(self, dialog_manager: DialogManager, networks: dict) -> None:
@@ -437,6 +435,13 @@ class DialogDataHelper:
             "has_void_publication_text",
             "has_big_publication_text",
             "has_small_publication_text"
+        )
+
+    def clear_image_menu_error(self, dialog_manager: DialogManager) -> None:
+        self.clear(
+            dialog_manager,
+            "has_no_generate_image_result",
+
         )
 
     def clear_image_upload(self, dialog_manager: DialogManager) -> None:
@@ -569,8 +574,7 @@ class DialogDataHelper:
             "has_invalid_content_type",
             "voice_transcribe",
             "has_insufficient_balance",
-            "has_no_image_generation_result",
-            "image_generation_error_reason"
+            "has_no_generate_image_result",
         )
 
     def clear_reference_generation_image_errors(self, dialog_manager: DialogManager) -> None:
