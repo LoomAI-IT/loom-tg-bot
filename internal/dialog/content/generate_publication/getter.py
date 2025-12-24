@@ -268,6 +268,19 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
 
     @auto_log()
     @traced_method()
+    async def get_image_generation_error_data(
+            self,
+            dialog_manager: DialogManager,
+            **kwargs
+    ) -> dict:
+        self.dialog_data_helper.get_has_no_image_generation_result(dialog_manager)
+
+        return {
+            "has_no_image_generation_result": self.dialog_data_helper.get_has_no_image_generation_result(dialog_manager),
+        }
+
+    @auto_log()
+    @traced_method()
     async def get_reference_generation_image_data(
             self,
             dialog_manager: DialogManager,
@@ -314,3 +327,5 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
             "has_invalid_reference_generation_image_type": self.dialog_data_helper.get_has_invalid_reference_generation_image_type(dialog_manager),
             "has_big_reference_generation_image_size": self.dialog_data_helper.get_has_big_reference_generation_image_size(dialog_manager),
         }
+
+

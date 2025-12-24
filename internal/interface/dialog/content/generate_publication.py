@@ -499,6 +499,12 @@ class IGeneratePublicationGetter(Protocol):
     ) -> dict: pass
 
     @abstractmethod
+    async def get_image_generation_error_data(
+            self,
+            dialog_manager: DialogManager,
+    ) -> dict: pass
+
+    @abstractmethod
     async def get_reference_generation_image_data(
             self,
             dialog_manager: DialogManager,

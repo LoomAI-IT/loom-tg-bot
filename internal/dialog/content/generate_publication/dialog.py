@@ -1447,13 +1447,18 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             Multi(
                 Const("⚠️ <b>Не удалось сгенерировать изображение</b><br><br>"),
                 Const("💡 <b>Что произошло?</b><br>"),
-                Const("Нейросеть не смогла создать изображение на основе текста публикации.<br><br>"),
+                Case(
+                    {
+                        True: Const(
+                            "Нейросеть отказалась генерировать изображение из-за своих убеждений.<br>"
+                        ),
+                        False: Const(""),
+                    },
+                    selector="has_no_image_generation_result"
+                ),
                 Const("🔧 <b>Что можно сделать:</b><br>"),
                 Const("• Продолжить с текстом без изображения<br>"),
-                Const("• Изменить настройки стиля изображения в рубрике<br>"),
-                Const("• Изменить текст публикации<br><br>"),
-                Const("📍 <i>Настройки стиля: Главное меню → Меню организации → Обновить рубрику</i>"),
-                sep="",
+                Const("• Попробовать еще раз — может повезет<br>"),
             ),
 
             Column(
@@ -1465,6 +1470,7 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
             ),
 
             state=model.GeneratePublicationStates.image_generation_error,
+            getter=self.generate_publication_getter.get_image_generation_error_data,
             parse_mode=SULGUK_PARSE_MODE,
         )
 

@@ -255,6 +255,8 @@ class DialogDataHelper:
     def get_has_big_reference_generation_image_size(self, dialog_manager: DialogManager) -> bool:
         return dialog_manager.dialog_data.get("has_big_reference_generation_image_size", False)
 
+    def get_has_no_image_generation_result(self, dialog_manager: DialogManager) -> bool:
+        return dialog_manager.dialog_data["has_no_image_generation_result"]
     # ============= СЕТТЕРЫ ДЛЯ ЗАПИСИ ДАННЫХ =============
 
     # Категория
@@ -567,7 +569,8 @@ class DialogDataHelper:
             "has_invalid_content_type",
             "voice_transcribe",
             "has_insufficient_balance",
-            "has_no_image_generation_result"
+            "has_no_image_generation_result",
+            "image_generation_error_reason"
         )
 
     def clear_reference_generation_image_errors(self, dialog_manager: DialogManager) -> None:
