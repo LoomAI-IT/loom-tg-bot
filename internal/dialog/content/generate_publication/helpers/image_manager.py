@@ -499,7 +499,7 @@ class ImageManager:
 
         category_id = self.dialog_data_helper.get_category_id(dialog_manager)
 
-        async with tg_action(self.bot, chat_id, "upload_photo"):
+        try:
             combined_images_url, has_no_data = await self.loom_content_client.combine_images(
                 organization_id=state.organization_id,
                 category_id=category_id,
@@ -507,6 +507,9 @@ class ImageManager:
                 images_filenames=images_filenames,
                 prompt=prompt,
             )
+        except common.ErrExternalAIImageService:
+            self.dialog_data_helper.set_has_external_error_combine_image_result(dialog_manager, True)
+            return None
 
         # Если нейросеть не стала объединять изображения
         if has_no_data:

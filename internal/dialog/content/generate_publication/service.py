@@ -891,6 +891,9 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         if self.dialog_data_helper.get_has_no_combine_image_result(dialog_manager):
             return
 
+        if self.dialog_data_helper.get_has_external_error_combine_image_result(dialog_manager):
+            return
+
         self.dialog_data_helper.set_combine_image_url(dialog_manager, combined_result_url)
 
         await dialog_manager.switch_to(state=model.GeneratePublicationStates.new_image_confirm)

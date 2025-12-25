@@ -1252,6 +1252,15 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                 ),
                 Case(
                     {
+                        True: Const(
+                            "<br>⚠️ <b>Внешняя нейросеть вернула ошибку и сейчас не работает.</b><br>"
+                            "💡 <i>Попробуйте заново.</i>"),
+                        False: Const(""),
+                    },
+                    selector="has_external_error_combine_image_result"
+                ),
+                Case(
+                    {
                         True: Const("<br>💰 <b>Недостаточно средств</b><br><i>Пополните баланс организации</i>"),
                         False: Const(""),
                     },
