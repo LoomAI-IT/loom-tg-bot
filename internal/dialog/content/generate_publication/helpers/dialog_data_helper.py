@@ -67,6 +67,8 @@ class DialogDataHelper:
             "has_no_image_edit_result": dialog_manager.dialog_data.get("has_no_image_edit_result", False),
             # Error flag for generation
             "has_no_generate_image_result": dialog_manager.dialog_data.get("has_no_generate_image_result", False),
+            "has_external_error_generate_image_result": dialog_manager.dialog_data.get("has_external_error_generate_image_result", False),
+            "has_external_error_edit_image_result": dialog_manager.dialog_data.get("has_external_error_edit_image_result", False),
         }
 
     def get_upload_imagedialog_data_helper(self, dialog_manager: DialogManager) -> dict:
@@ -155,6 +157,7 @@ class DialogDataHelper:
             "has_big_edit_image_prompt": dialog_manager.dialog_data.get("has_big_edit_image_prompt", False),
             "has_invalid_content_type": dialog_manager.dialog_data.get("has_invalid_content_type", False),
             "has_no_image_edit_result": dialog_manager.dialog_data.get("has_no_image_edit_result", False),
+            "has_external_error_edit_image_result": dialog_manager.dialog_data.get("has_external_error_edit_image_result", False),
         }
 
     # ============= ГЕТТЕРЫ ДЛЯ ЧТЕНИЯ ДАННЫХ =============
