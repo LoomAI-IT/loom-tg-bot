@@ -242,6 +242,10 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             images_url = await self.image_manager.generate_new_image(dialog_manager)
 
         # Проверка ошибки генерации изображения
+        if self.dialog_data_helper.get_has_external_error_generate_image_result(dialog_manager):
+            await dialog_manager.switch_to(state=model.GeneratePublicationStates.generate_image_error)
+            return
+
         if self.dialog_data_helper.get_has_no_generate_image_result(dialog_manager):
             await dialog_manager.switch_to(state=model.GeneratePublicationStates.generate_image_error)
             return

@@ -4,7 +4,7 @@ from aiogram.types import BufferedInputFile, ContentType
 from aiogram_dialog import DialogManager
 from aiogram_dialog.api.entities import MediaAttachment, MediaId
 
-from internal import interface, model
+from internal import interface, model, common
 from pkg.tg_action_wrapper import tg_action
 from internal.dialog.content.generate_publication.helpers.dialog_data_helper import DialogDataHelper
 
@@ -364,11 +364,16 @@ class ImageManager:
         publication_text = self.dialog_data_helper.get_publication_text(dialog_manager)
         generate_text_prompt = self.dialog_data_helper.get_generate_text_prompt(dialog_manager)
 
-        images_url, has_no_data = await self.loom_content_client.generate_publication_image(
-            category_id=category_id,
-            publication_text=publication_text,
-            text_reference=generate_text_prompt,
-        )
+        try:
+            images_url, has_no_data = await self.loom_content_client.generate_publication_image(
+                category_id=category_id,
+                publication_text=publication_text,
+                text_reference=generate_text_prompt,
+            )
+        except common.ErrExternalAIImageService:
+            self.dialog_data_helper.set_has_external_error_generate_image_result(dialog_manager, True)
+            return []
+
 
         # Если нейросеть не стала генерировать изображение
         if has_no_data:

@@ -219,6 +219,9 @@ class DialogDataHelper:
     def get_has_no_generate_image_result(self, dialog_manager: DialogManager) -> bool:
         return dialog_manager.dialog_data.get("has_no_generate_image_result", False)
 
+    def get_has_external_error_generate_image_result(self, dialog_manager: DialogManager) -> bool:
+        return dialog_manager.dialog_data.get("has_external_error_generate_image_result", False)
+
     # Соцсети и публикация
     def get_selected_social_networks(self, dialog_manager: DialogManager) -> dict:
         return dialog_manager.dialog_data.get("selected_social_networks", {})
@@ -367,6 +370,9 @@ class DialogDataHelper:
 
     def set_has_no_generate_image_result(self, dialog_manager: DialogManager, value: bool) -> None:
         dialog_manager.dialog_data["has_no_generate_image_result"] = value
+
+    def set_has_external_error_generate_image_result(self, dialog_manager: DialogManager, value: bool) -> None:
+        dialog_manager.dialog_data["has_external_error_generate_image_result"] = value
 
     # Соцсети и публикация
     def set_selected_social_networks(self, dialog_manager: DialogManager, networks: dict) -> None:

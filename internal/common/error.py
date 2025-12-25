@@ -6,3 +6,6 @@ class ValidationError(Exception):
 class ErrInsufficientBalance(Exception):
     """Ошибка недостаточного баланса организации"""
     pass
+
+class ErrExternalAIImageService(Exception):
+    pass

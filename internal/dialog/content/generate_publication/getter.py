@@ -277,6 +277,7 @@ class GeneratePublicationDataGetter(interface.IGeneratePublicationGetter):
 
         return {
             "has_no_generate_image_result": self.dialog_data_helper.get_has_no_generate_image_result(dialog_manager),
+            "has_external_error_generate_image_result": self.dialog_data_helper.get_has_external_error_generate_image_result(dialog_manager),
         }
 
     @auto_log()

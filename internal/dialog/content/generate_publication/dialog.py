@@ -1456,6 +1456,15 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                     },
                     selector="has_no_generate_image_result"
                 ),
+                Case(
+                    {
+                        True: Const(
+                            "Ошибка со стороны внешней нейросети.<br>"
+                        ),
+                        False: Const(""),
+                    },
+                    selector="has_external_error_generate_image_result"
+                ),
                 Const("🔧 <b>Что можно сделать:</b><br>"),
                 Const("• Продолжить с текстом без изображения<br>"),
                 Const("• Попробовать еще раз — может повезет<br>"),
