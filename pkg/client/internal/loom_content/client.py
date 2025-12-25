@@ -178,7 +178,7 @@ class LoomContentClient(interface.ILoomContentClient):
         if "external_service_error" in json_response and json_response["external_service_error"]:
             raise common.ErrExternalAIImageService()
 
-        return json_response["images_url"], False
+        return json_response, False
 
     @traced_method(SpanKind.CLIENT)
     async def create_publication(
