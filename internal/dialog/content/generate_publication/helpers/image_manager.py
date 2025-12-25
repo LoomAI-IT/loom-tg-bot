@@ -4,7 +4,7 @@ from aiogram.types import BufferedInputFile, ContentType
 from aiogram_dialog import DialogManager
 from aiogram_dialog.api.entities import MediaAttachment, MediaId
 
-from internal import interface, model
+from internal import interface, model, common
 from pkg.tg_action_wrapper import tg_action
 from internal.dialog.content.generate_publication.helpers.dialog_data_helper import DialogDataHelper
 
@@ -111,7 +111,6 @@ class ImageManager:
             # Первая генерация - используем текущую картинку публикации
             current_backup = self.create_image_backup_dict(dialog_manager)
             self.dialog_data_helper.set_previous_generation_backup(dialog_manager, current_backup)
-
 
     def set_generated_images(self, dialog_manager: DialogManager, images_url: list[str]) -> None:
         self.dialog_data_helper.set_publication_images_url(dialog_manager, images_url, 0)
@@ -364,11 +363,15 @@ class ImageManager:
         publication_text = self.dialog_data_helper.get_publication_text(dialog_manager)
         generate_text_prompt = self.dialog_data_helper.get_generate_text_prompt(dialog_manager)
 
-        images_url, has_no_data = await self.loom_content_client.generate_publication_image(
-            category_id=category_id,
-            publication_text=publication_text,
-            text_reference=generate_text_prompt,
-        )
+        try:
+            images_url, has_no_data = await self.loom_content_client.generate_publication_image(
+                category_id=category_id,
+                publication_text=publication_text,
+                text_reference=generate_text_prompt,
+            )
+        except common.ErrExternalAIImageService:
+            self.dialog_data_helper.set_has_external_error_generate_image_result(dialog_manager, True)
+            return []
 
         # Если нейросеть не стала генерировать изображение
         if has_no_data:
@@ -393,12 +396,16 @@ class ImageManager:
                 dialog_manager=dialog_manager
             )
 
-        images_url, has_no_data = await self.loom_content_client.edit_image(
-            organization_id=organization_id,
-            prompt=prompt,
-            image_content=current_image_content,
-            image_filename=current_image_filename,
-        )
+        try:
+            images_url, has_no_data = await self.loom_content_client.edit_image(
+                organization_id=organization_id,
+                prompt=prompt,
+                image_content=current_image_content,
+                image_filename=current_image_filename,
+            )
+        except common.ErrExternalAIImageService:
+            self.dialog_data_helper.set_has_external_error_edit_image_result(dialog_manager, True)
+            return []
 
         # Если нейросеть не стала редактировать изображение
         if has_no_data:
@@ -428,14 +435,18 @@ class ImageManager:
             image_content = image_io.read()
             image_filename = f"{reference_generation_image_file_id}.jpg"
 
-        images_url, has_no_data = await self.loom_content_client.generate_publication_image(
-            category_id=category_id,
-            publication_text=publication_text,
-            text_reference=generate_text_prompt,
-            prompt=prompt,
-            image_content=image_content,
-            image_filename=image_filename,
-        )
+        try:
+            images_url, has_no_data = await self.loom_content_client.generate_publication_image(
+                category_id=category_id,
+                publication_text=publication_text,
+                text_reference=generate_text_prompt,
+                prompt=prompt,
+                image_content=image_content,
+                image_filename=image_filename,
+            )
+        except common.ErrExternalAIImageService:
+            self.dialog_data_helper.set_has_external_error_generate_image_result(dialog_manager, True)
+            return []
 
         # Если нейросеть не стала генерировать изображение
         if has_no_data:
@@ -478,7 +489,6 @@ class ImageManager:
             state: model.UserState,
             combine_images_list: list[str],
             prompt: str,
-            chat_id: int
     ) -> str | None:
         # Сохраняем backups как при обычной генерации
         self.backup_current_image(dialog_manager)
@@ -494,7 +504,7 @@ class ImageManager:
 
         category_id = self.dialog_data_helper.get_category_id(dialog_manager)
 
-        async with tg_action(self.bot, chat_id, "upload_photo"):
+        try:
             combined_images_url, has_no_data = await self.loom_content_client.combine_images(
                 organization_id=state.organization_id,
                 category_id=category_id,
@@ -502,6 +512,9 @@ class ImageManager:
                 images_filenames=images_filenames,
                 prompt=prompt,
             )
+        except common.ErrExternalAIImageService:
+            self.dialog_data_helper.set_has_external_error_combine_image_result(dialog_manager, True)
+            return None
 
         # Если нейросеть не стала объединять изображения
         if has_no_data:
@@ -564,15 +577,18 @@ class ImageManager:
         if image_url:
             current_image_content, _ = await self.download_image(image_url)
             current_image_filename = "current_image.jpg"
-
-        images_url, has_no_data = await self.loom_content_client.edit_image(
+        try:
+            images_url, has_no_data = await self.loom_content_client.edit_image(
                 organization_id=organization_id,
                 prompt=prompt,
                 image_content=current_image_content,
                 image_filename=current_image_filename,
             )
+        except common.ErrExternalAIImageService:
+            self.dialog_data_helper.set_has_external_error_edit_image_result(dialog_manager, True)
+            return []
 
-        # Если нейросеть не стала редактировать изображение
+            # Если нейросеть не стала редактировать изображение
         if has_no_data:
             self.dialog_data_helper.set_has_no_image_edit_result(dialog_manager, True)
             return []

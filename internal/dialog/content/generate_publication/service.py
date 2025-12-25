@@ -242,6 +242,10 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             images_url = await self.image_manager.generate_new_image(dialog_manager)
 
         # Проверка ошибки генерации изображения
+        if self.dialog_data_helper.get_has_external_error_generate_image_result(dialog_manager):
+            await dialog_manager.switch_to(state=model.GeneratePublicationStates.generate_image_error)
+            return
+
         if self.dialog_data_helper.get_has_no_generate_image_result(dialog_manager):
             await dialog_manager.switch_to(state=model.GeneratePublicationStates.generate_image_error)
             return
@@ -439,6 +443,10 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
         self.dialog_data_helper.set_is_generating_image(dialog_manager, False)
 
         if self.dialog_data_helper.get_has_no_image_edit_result(dialog_manager):
+            await dialog_manager.switch_to(state=model.GeneratePublicationStates.image_menu)
+            return
+
+        if self.dialog_data_helper.get_has_external_error_edit_image_result(dialog_manager):
             await dialog_manager.switch_to(state=model.GeneratePublicationStates.image_menu)
             return
 
@@ -879,12 +887,14 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 state=state,
                 combine_images_list=combine_images_list,
                 prompt=combine_image_prompt or self.DEFAULT_combine_image_prompt,
-                chat_id=message.chat.id
             )
 
         self.dialog_data_helper.set_is_combining_images(dialog_manager, False)
 
         if self.dialog_data_helper.get_has_no_combine_image_result(dialog_manager):
+            return
+
+        if self.dialog_data_helper.get_has_external_error_combine_image_result(dialog_manager):
             return
 
         self.dialog_data_helper.set_combine_image_url(dialog_manager, combined_result_url)
@@ -924,12 +934,14 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
                 state=state,
                 combine_images_list=combine_images_list,
                 prompt=self.DEFAULT_combine_image_prompt,
-                chat_id=callback.message.chat.id
             )
 
         self.dialog_data_helper.set_is_combining_images(dialog_manager, False)
 
         if self.dialog_data_helper.get_has_no_combine_image_result(dialog_manager):
+            return
+
+        if self.dialog_data_helper.get_has_external_error_combine_image_result(dialog_manager):
             return
 
         self.dialog_data_helper.set_combine_image_url(dialog_manager, combined_result_url)
@@ -1003,9 +1015,12 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             )
 
         self.dialog_data_helper.set_is_applying_edits(dialog_manager, False)
+        self.dialog_data_helper.set_edit_image_prompt(dialog_manager, "")
 
         if self.dialog_data_helper.get_has_no_image_edit_result(dialog_manager):
-            self.dialog_data_helper.set_edit_image_prompt(dialog_manager, "")
+            return
+
+        if self.dialog_data_helper.get_has_external_error_edit_image_result(dialog_manager):
             return
 
         self.image_manager.update_image_after_edit_from_confirm_new_image(
@@ -1013,7 +1028,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             images_url=images_url
         )
 
-        self.dialog_data_helper.set_edit_image_prompt(dialog_manager, "")
+
 
     @auto_log()
     @traced_method()
@@ -1113,6 +1128,10 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             await dialog_manager.switch_to(state=model.GeneratePublicationStates.image_menu)
             return
 
+        if self.dialog_data_helper.get_has_external_error_generate_image_result(dialog_manager):
+            await dialog_manager.switch_to(state=model.GeneratePublicationStates.image_menu)
+            return
+
         self.dialog_data_helper.set_generated_images_url(dialog_manager, images_url)
 
         await dialog_manager.switch_to(state=model.GeneratePublicationStates.new_image_confirm)
@@ -1180,15 +1199,18 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             )
 
         self.dialog_data_helper.set_is_generating_image(dialog_manager, False)
+        self.dialog_data_helper.clear_reference_generation_image_data(dialog_manager)
 
         # Проверка ошибки генерации изображения
         if self.dialog_data_helper.get_has_no_generate_image_result(dialog_manager):
-            self.dialog_data_helper.clear_reference_generation_image_data(dialog_manager)
+            await dialog_manager.switch_to(state=model.GeneratePublicationStates.image_menu)
+            return
+
+        if self.dialog_data_helper.get_has_external_error_generate_image_result(dialog_manager):
             await dialog_manager.switch_to(state=model.GeneratePublicationStates.image_menu)
             return
 
         self.dialog_data_helper.set_generated_images_url(dialog_manager, images_url)
-        self.dialog_data_helper.clear_reference_generation_image_data(dialog_manager)
 
         await dialog_manager.switch_to(state=model.GeneratePublicationStates.new_image_confirm)
 
@@ -1273,6 +1295,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         # Очищаем флаг ошибки перед переходом
         self.dialog_data_helper.set_has_no_generate_image_result(dialog_manager, False)
+        self.dialog_data_helper.set_has_external_error_generate_image_result(dialog_manager, False)
 
         await callback.answer()
         await dialog_manager.switch_to(state=model.GeneratePublicationStates.preview)

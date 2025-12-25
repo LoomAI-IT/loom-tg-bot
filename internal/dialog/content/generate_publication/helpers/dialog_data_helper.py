@@ -36,7 +36,8 @@ class DialogDataHelper:
             "has_big_publication_text": dialog_manager.dialog_data.get("has_big_publication_text", False),
             # Error flags for regenerate prompt
             "has_void_regenerate_text_prompt": dialog_manager.dialog_data.get("has_void_regenerate_text_prompt", False),
-            "has_small_regenerate_text_prompt": dialog_manager.dialog_data.get("has_small_regenerate_text_prompt", False),
+            "has_small_regenerate_text_prompt": dialog_manager.dialog_data.get("has_small_regenerate_text_prompt",
+                                                                               False),
             "has_big_regenerate_text_prompt": dialog_manager.dialog_data.get("has_big_regenerate_text_prompt", False),
             "has_invalid_content_type": dialog_manager.dialog_data.get("has_invalid_content_type", False),
         }
@@ -67,6 +68,10 @@ class DialogDataHelper:
             "has_no_image_edit_result": dialog_manager.dialog_data.get("has_no_image_edit_result", False),
             # Error flag for generation
             "has_no_generate_image_result": dialog_manager.dialog_data.get("has_no_generate_image_result", False),
+            "has_external_error_generate_image_result": dialog_manager.dialog_data.get(
+                "has_external_error_generate_image_result", False),
+            "has_external_error_edit_image_result": dialog_manager.dialog_data.get(
+                "has_external_error_edit_image_result", False),
         }
 
     def get_upload_imagedialog_data_helper(self, dialog_manager: DialogManager) -> dict:
@@ -141,6 +146,8 @@ class DialogDataHelper:
             "has_big_combine_image_prompt": dialog_manager.dialog_data.get("has_big_combine_image_prompt", False),
             "has_invalid_content_type": dialog_manager.dialog_data.get("has_invalid_content_type", False),
             "has_no_combine_image_result": dialog_manager.dialog_data.get("has_no_combine_image_result", False),
+            "has_external_error_combine_image_result": dialog_manager.dialog_data.get(
+                "has_external_error_combine_image_result", False),
         }
 
     def get_new_image_confirm_flags(self, dialog_manager: DialogManager) -> dict:
@@ -154,6 +161,8 @@ class DialogDataHelper:
             "has_big_edit_image_prompt": dialog_manager.dialog_data.get("has_big_edit_image_prompt", False),
             "has_invalid_content_type": dialog_manager.dialog_data.get("has_invalid_content_type", False),
             "has_no_image_edit_result": dialog_manager.dialog_data.get("has_no_image_edit_result", False),
+            "has_external_error_edit_image_result": dialog_manager.dialog_data.get(
+                "has_external_error_edit_image_result", False),
         }
 
     # ============= ГЕТТЕРЫ ДЛЯ ЧТЕНИЯ ДАННЫХ =============
@@ -218,6 +227,15 @@ class DialogDataHelper:
 
     def get_has_no_generate_image_result(self, dialog_manager: DialogManager) -> bool:
         return dialog_manager.dialog_data.get("has_no_generate_image_result", False)
+
+    def get_has_external_error_generate_image_result(self, dialog_manager: DialogManager) -> bool:
+        return dialog_manager.dialog_data.get("has_external_error_generate_image_result", False)
+
+    def get_has_external_error_combine_image_result(self, dialog_manager: DialogManager) -> bool:
+        return dialog_manager.dialog_data.get("has_external_error_combine_image_result", False)
+
+    def get_has_external_error_edit_image_result(self, dialog_manager: DialogManager) -> bool:
+        return dialog_manager.dialog_data.get("has_external_error_edit_image_result", False)
 
     # Соцсети и публикация
     def get_selected_social_networks(self, dialog_manager: DialogManager) -> dict:
@@ -368,6 +386,15 @@ class DialogDataHelper:
     def set_has_no_generate_image_result(self, dialog_manager: DialogManager, value: bool) -> None:
         dialog_manager.dialog_data["has_no_generate_image_result"] = value
 
+    def set_has_external_error_generate_image_result(self, dialog_manager: DialogManager, value: bool) -> None:
+        dialog_manager.dialog_data["has_external_error_generate_image_result"] = value
+
+    def set_has_external_error_combine_image_result(self, dialog_manager: DialogManager, value: bool) -> None:
+        dialog_manager.dialog_data["has_external_error_combine_image_result"] = value
+
+    def set_has_external_error_edit_image_result(self, dialog_manager: DialogManager, value: bool) -> None:
+        dialog_manager.dialog_data["has_external_error_edit_image_result"] = value
+
     # Соцсети и публикация
     def set_selected_social_networks(self, dialog_manager: DialogManager, networks: dict) -> None:
         dialog_manager.dialog_data["selected_social_networks"] = networks
@@ -441,7 +468,8 @@ class DialogDataHelper:
         self.clear(
             dialog_manager,
             "has_no_generate_image_result",
-
+            "has_external_error_generate_image_result",
+            "has_external_error_edit_image_result",
         )
 
     def clear_image_upload(self, dialog_manager: DialogManager) -> None:

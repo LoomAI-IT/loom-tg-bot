@@ -175,6 +175,9 @@ class LoomContentClient(interface.ILoomContentClient):
         if "no_image_data" in json_response and json_response["no_image_data"]:
             return None, True
 
+        if "external_service_error" in json_response and json_response["external_service_error"]:
+            raise common.ErrExternalAIImageService()
+
         return json_response["images_url"], False
 
     @traced_method(SpanKind.CLIENT)
@@ -667,6 +670,9 @@ class LoomContentClient(interface.ILoomContentClient):
         if "no_image_data" in json_response and json_response["no_image_data"]:
             return None, True
 
+        if "external_service_error" in json_response and json_response["external_service_error"]:
+            raise common.ErrExternalAIImageService()
+
         return json_response["images_url"], False
 
     @traced_method(SpanKind.CLIENT)
@@ -706,5 +712,8 @@ class LoomContentClient(interface.ILoomContentClient):
         # Проверяем, вернул ли бэкенд флаг no_image_data
         if "no_image_data" in json_response and json_response["no_image_data"]:
             return None, True
+
+        if "external_service_error" in json_response and json_response["external_service_error"]:
+            raise common.ErrExternalAIImageService()
 
         return json_response["images_url"], False
