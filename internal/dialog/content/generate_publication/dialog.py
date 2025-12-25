@@ -509,10 +509,16 @@ class GeneratePublicationDialog(interface.IGeneratePublicationDialog):
                             "💡 <i>Попробуйте заново.</i>"),
                         False: Const(""),
                     },
-                    selector=F[
-                        "has_external_error_generate_image_result",
-                        "has_external_error_edit_image_result"
-                    ]
+                    selector="has_external_error_generate_image_result"
+                ),
+                Case(
+                    {
+                        True: Const(
+                            "<br>⚠️ <b>Внешняя нейросеть вернула ошибку и сейчас не работает.</b><br>"
+                            "💡 <i>Попробуйте заново.</i>"),
+                        False: Const(""),
+                    },
+                    selector="has_external_error_edit_image_result"
                 ),
                 Case(
                     {
