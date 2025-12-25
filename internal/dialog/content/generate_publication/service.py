@@ -1128,7 +1128,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
             await dialog_manager.switch_to(state=model.GeneratePublicationStates.image_menu)
             return
 
-        if self.dialog_data_helper.get_has_no_generate_image_result(dialog_manager):
+        if self.dialog_data_helper.get_has_external_error_generate_image_result(dialog_manager):
             await dialog_manager.switch_to(state=model.GeneratePublicationStates.image_menu)
             return
 
@@ -1295,6 +1295,7 @@ class GeneratePublicationService(interface.IGeneratePublicationService):
 
         # Очищаем флаг ошибки перед переходом
         self.dialog_data_helper.set_has_no_generate_image_result(dialog_manager, False)
+        self.dialog_data_helper.set_has_external_error_generate_image_result(dialog_manager, False)
 
         await callback.answer()
         await dialog_manager.switch_to(state=model.GeneratePublicationStates.preview)
